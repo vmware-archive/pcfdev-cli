@@ -1,0 +1,3 @@
+#!/bin/bash
+
+go generate $(go list github.com/pivotal-cf/pcfdev-cli/... | grep -v /vendor/)

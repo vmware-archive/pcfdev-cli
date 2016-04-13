@@ -44,7 +44,7 @@ var _ = AfterSuite(func() {
 
 var _ = Describe("PCFDev", func() {
 	Context("pivnet api token is set in environment", func() {
-		XIt("should start and stop a virtualbox instance", func() {
+		It("should start and stop a virtualbox instance", func() {
 			pcfdevCommand := exec.Command("cf", "dev", "start")
 			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())

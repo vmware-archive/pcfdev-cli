@@ -28,15 +28,15 @@ func (_m *MockSSH) EXPECT() *_MockSSHRecorder {
 	return _m.recorder
 }
 
-func (_m *MockSSH) RandomPort() (string, error) {
-	ret := _m.ctrl.Call(_m, "RandomPort")
+func (_m *MockSSH) FreePort() (string, error) {
+	ret := _m.ctrl.Call(_m, "FreePort")
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockSSHRecorder) RandomPort() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "RandomPort")
+func (_mr *_MockSSHRecorder) FreePort() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "FreePort")
 }
 
 func (_m *MockSSH) RunSSHCommand(_param0 string, _param1 string) error {

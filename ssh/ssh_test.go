@@ -8,9 +8,9 @@ import (
 )
 
 var _ = Describe("ssh", func() {
-	It("Should return a random port", func() {
+	It("Should return a free port", func() {
 		ssh := &SSH{}
-		port, err := ssh.RandomPort()
+		port, err := ssh.FreePort()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(port).To(MatchRegexp("^[\\d]+$"))
 	})

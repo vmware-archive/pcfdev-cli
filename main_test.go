@@ -3,8 +3,8 @@ package main_test
 import (
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -32,7 +32,7 @@ var _ = BeforeSuite(func() {
 	installCommand := exec.Command("cf", "install-plugin", "-f", pluginPath)
 	session, err = gexec.Start(installCommand, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
-	Eventually(session).Should(gexec.Exit(0))
+	Eventually(session, "1m").Should(gexec.Exit(0))
 })
 
 var _ = AfterSuite(func() {
@@ -77,19 +77,31 @@ var _ = Describe("PCFDev", func() {
 			Eventually(session).Should(gexec.Exit(1))
 			Expect(session).To(gbytes.Say("Usage: cf dev start|stop"))
 		})
+		It("should import a VM without starting it", func() {
+			pcfdevCommand := exec.Command("cf", "dev", "import")
+			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "1h").Should(gexec.Exit(0))
+
+			listVmsCommand := exec.Command("VboxManage", "list", "vms")
+			session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session).Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("pcfdev-2016-03-29_1728"))
+		})
 
 		AfterEach(func() {
-			exec.Command("VBoxManage", "controlvm", "pcfdev-2016-03-29_1728", "acpipowerbutton").Run()
-
-			for attempts := 0; attempts < 30; attempts++ {
-				err := exec.Command("VBoxManage", "unregistervm", "pcfdev-2016-03-29_1728", "--delete").Run()
-				if err == nil {
-					break
-				}
-				time.Sleep(time.Second)
+			output, err := exec.Command("VBoxManage", "showvminfo", "pcfdev-2016-03-29_1728", "--machinereadable").Output()
+			if err != nil {
+				return
 			}
 
-			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet0").Run()
+			regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
+			vboxnet := regex.FindStringSubmatch(string(output))[1]
+
+			exec.Command("VBoxManage", "controlvm", "pcfdev-2016-03-29_1728", "poweroff").Run()
+			exec.Command("VBoxManage", "unregistervm", "pcfdev-2016-03-29_1728", "--delete").Run()
+			exec.Command("VBoxManage", "hostonlyif", "remove", vboxnet).Run()
 		})
 	})
 })

@@ -10,7 +10,7 @@ import (
 
 type SSH struct{}
 
-func (*SSH) RandomPort() (string, error) {
+func (*SSH) FreePort() (string, error) {
 	conn, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return "", err

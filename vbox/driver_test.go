@@ -43,7 +43,8 @@ var _ = Describe("driver", func() {
 	})
 
 	AfterEach(func() {
-		driver.VBoxManage("controlvm", vmName, "poweroff")
+		driver.VBoxManage("controlvm", vmName, "acpipowerbutton")
+		Eventually(func() bool { return driver.IsVMRunning(vmName) }, 120*time.Second).Should(BeFalse())
 		driver.VBoxManage("unregistervm", vmName, "--delete")
 	})
 
@@ -204,9 +205,17 @@ var _ = Describe("driver", func() {
 		})
 		Context("VM is running", func() {
 			It("Should return true", func() {
+				sshClient := &ssh.SSH{}
 				err = driver.StartVM("Snappy")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(driver.IsVMRunning("Snappy")).To(BeTrue())
+
+				sshClient.WaitForSSH(&cssh.ClientConfig{
+					User: "ubuntu",
+					Auth: []cssh.AuthMethod{
+						cssh.Password("vagrant"),
+					},
+				}, "2222")
 			})
 		})
 	})

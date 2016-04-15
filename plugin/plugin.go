@@ -177,7 +177,7 @@ func (*Plugin) GetMetadata() plugin.PluginMetadata {
 				Name:  "dev",
 				Alias: "pcfdev",
 				UsageDetails: plugin.Usage{
-					Usage: "cf dev start|stop",
+					Usage: "cf dev import|start|stop",
 				},
 			},
 		},

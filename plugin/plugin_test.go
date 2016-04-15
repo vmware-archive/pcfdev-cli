@@ -64,7 +64,7 @@ var _ = Describe("Plugin", func() {
 		})
 		Context("wrong number of arguments", func() {
 			It("prints the usage message", func() {
-				mockUI.EXPECT().Failed("Usage: %s", "cf dev start|stop")
+				mockUI.EXPECT().Failed("Usage: %s", "cf dev import|start|stop")
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev"})
 			})
 		})

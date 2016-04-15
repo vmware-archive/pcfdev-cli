@@ -75,7 +75,7 @@ var _ = Describe("PCFDev", func() {
 			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(1))
-			Expect(session).To(gbytes.Say("Usage: cf dev start|stop"))
+			Expect(session).To(gbytes.Say("Usage: cf dev import|start|stop"))
 		})
 		It("should import a VM without starting it", func() {
 			pcfdevCommand := exec.Command("cf", "dev", "import")

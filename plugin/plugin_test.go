@@ -82,7 +82,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Finished downloading OVA"),
 						mockUI.EXPECT().Say("Importing VM..."),
 						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", "pcfdev-2016-03-29_1728").Return(nil),
-						mockUI.EXPECT().Say("PCFDev is now imported to Virtualbox"),
+						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import"})
@@ -123,7 +123,7 @@ var _ = Describe("Plugin", func() {
 					mockVBox.EXPECT().StartVM("pcfdev-2016-03-29_1728").Return(vm, nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
-					mockUI.EXPECT().Say("PCFDev is now running"),
+					mockUI.EXPECT().Say("PCF Dev is now running"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -166,13 +166,13 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("pcfdev.ova already downloaded"),
 						mockUI.EXPECT().Say("Importing VM..."),
 						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", "pcfdev-2016-03-29_1728").Return(nil),
-						mockUI.EXPECT().Say("PCFDev is now imported to Virtualbox"),
+						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM("pcfdev-2016-03-29_1728").Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
 						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
-						mockUI.EXPECT().Say("PCFDev is now running"),
+						mockUI.EXPECT().Say("PCF Dev is now running"),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 				})
@@ -185,7 +185,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("OVA already imported"),
 
 						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
-						mockUI.EXPECT().Say("PCFDev is already running"),
+						mockUI.EXPECT().Say("PCF Dev is running"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -245,23 +245,90 @@ var _ = Describe("Plugin", func() {
 		Context("stop", func() {
 			It("should stop the vm", func() {
 				gomock.InOrder(
-					mockUI.EXPECT().Say("Stopping VM..."),
-					mockVBox.EXPECT().StopVM("pcfdev-2016-03-29_1728").Return(nil),
-					mockUI.EXPECT().Say("PCFDev is now stopped"),
+					mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+					mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
+					mockUI.EXPECT().Say("PCF Dev is stopped"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
 			})
-			Context("Vbox fails to stop VM", func() {
-				It("should print an error", func() {
-					err := errors.New("some-error")
+			Context("VM is running", func() {
+				It("should stop the vm", func() {
 					gomock.InOrder(
+						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
 						mockUI.EXPECT().Say("Stopping VM..."),
-						mockVBox.EXPECT().StopVM("pcfdev-2016-03-29_1728").Return(err),
-						mockUI.EXPECT().Failed("failed to stop VM: some-error"),
+						mockVBox.EXPECT().StopVM("pcfdev-2016-03-29_1728").Return(nil),
+						mockUI.EXPECT().Say("PCF Dev is now stopped"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+				})
+				Context("Vbox fails to stop VM", func() {
+					It("should print an error", func() {
+						err := errors.New("some-error")
+						gomock.InOrder(
+							mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+							mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
+							mockUI.EXPECT().Say("Stopping VM..."),
+							mockVBox.EXPECT().StopVM("pcfdev-2016-03-29_1728").Return(err),
+							mockUI.EXPECT().Failed("failed to stop VM: some-error"),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+					})
+				})
+			})
+			Context("there is no VM", func() {
+				It("should send an error message", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
+						mockUI.EXPECT().Say("PCF Dev VM has not been created"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+				})
+			})
+
+		})
+		Context("destroy", func() {
+			It("should destroy the vm", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+					mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
+					mockUI.EXPECT().Say("Destroying VM..."),
+					mockVBox.EXPECT().DestroyVM("pcfdev-2016-03-29_1728").Return(nil),
+					mockUI.EXPECT().Say("PCF Dev has been destroyed"),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
+			})
+			Context("VM is running", func() {
+				It("should stop and destroy the vm", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
+						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
+						mockUI.EXPECT().Say("Stopping VM..."),
+						mockVBox.EXPECT().StopVM("pcfdev-2016-03-29_1728").Return(nil),
+						mockUI.EXPECT().Say("PCF Dev is now stopped"),
+						mockUI.EXPECT().Say("Destroying VM..."),
+						mockVBox.EXPECT().DestroyVM("pcfdev-2016-03-29_1728").Return(nil),
+						mockUI.EXPECT().Say("PCF Dev has been destroyed"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
+				})
+			})
+			Context("there is no VM", func() {
+				It("should send an error message", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
+						mockUI.EXPECT().Say("PCF Dev VM has not been created"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
 				})
 			})
 		})

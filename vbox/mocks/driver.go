@@ -49,6 +49,16 @@ func (_mr *_MockDriverRecorder) CreateHostOnlyInterface(arg0 interface{}) *gomoc
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateHostOnlyInterface", arg0)
 }
 
+func (_m *MockDriver) DestroyVM(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "DestroyVM", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) DestroyVM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DestroyVM", arg0)
+}
+
 func (_m *MockDriver) ForwardPort(_param0 string, _param1 string, _param2 string, _param3 string) error {
 	ret := _m.ctrl.Call(_m, "ForwardPort", _param0, _param1, _param2, _param3)
 	ret0, _ := ret[0].(error)

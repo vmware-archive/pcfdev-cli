@@ -7,6 +7,7 @@ type Driver interface {
 	VBoxManage(arg ...string) ([]byte, error)
 	StopVM(string) error
 	StartVM(string) error
+	DestroyVM(string) error
 	CreateHostOnlyInterface(string) (string, error)
 	AttachNetworkInterface(string, string) error
 	ForwardPort(string, string, string, string) error
@@ -88,6 +89,10 @@ func (v *VBox) ImportVM(path string, name string) error {
 		return fmt.Errorf("failed to forward ssh port: %s", err)
 	}
 	return nil
+}
+
+func (v *VBox) DestroyVM(name string) error {
+	return v.Driver.DestroyVM(name)
 }
 
 func (v *VBox) StopVM(name string) error {

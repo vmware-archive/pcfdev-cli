@@ -9,5 +9,5 @@ import (
 
 func TestSSH(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "PCFDev SSH Suite")
+	RunSpecs(t, "PCF Dev SSH Suite")
 }

@@ -39,6 +39,7 @@ type UI interface {
 type VBox interface {
 	StartVM(string) (*vbox.VM, error)
 	StopVM(string) error
+	DestroyVM(string) error
 	ImportVM(string, string) error
 	IsVMRunning(string) bool
 	IsVMImported(string) (bool, error)
@@ -80,6 +81,10 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 		if err := p.stop(); err != nil {
 			p.UI.Failed(err.Error())
 		}
+	case "destroy":
+		if err := p.destroy(); err != nil {
+			p.UI.Failed(err.Error())
+		}
 	}
 }
 
@@ -103,14 +108,14 @@ func (p *Plugin) importVM() error {
 		p.UI.Failed("failed to import VM: %s", err)
 		return errors.New("failed to import vm")
 	}
-	p.UI.Say("PCFDev is now imported to Virtualbox")
+	p.UI.Say("PCF Dev is now imported to Virtualbox")
 
 	return nil
 }
 
 func (p *Plugin) start() error {
 	if p.VBox.IsVMRunning(vmName) {
-		p.UI.Say("PCFDev is already running")
+		p.UI.Say("PCF Dev is running")
 		return nil
 	}
 
@@ -125,17 +130,54 @@ func (p *Plugin) start() error {
 		return fmt.Errorf("failed to provision VM: %s", err)
 	}
 
-	p.UI.Say("PCFDev is now running")
+	p.UI.Say("PCF Dev is now running")
 	return nil
 }
 
 func (p *Plugin) stop() error {
+	exists, err := p.VBox.IsVMImported(vmName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		p.UI.Say("PCF Dev VM has not been created")
+		return nil
+	}
+	if !p.VBox.IsVMRunning(vmName) {
+		p.UI.Say("PCF Dev is stopped")
+		return nil
+	}
+
 	p.UI.Say("Stopping VM...")
-	err := p.VBox.StopVM(vmName)
+	err = p.VBox.StopVM(vmName)
 	if err != nil {
 		return fmt.Errorf("failed to stop VM: %s", err)
 	}
-	p.UI.Say("PCFDev is now stopped")
+	p.UI.Say("PCF Dev is now stopped")
+	return nil
+}
+
+func (p *Plugin) destroy() error {
+	exists, err := p.VBox.IsVMImported(vmName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		p.UI.Say("PCF Dev VM has not been created")
+		return nil
+	}
+	if p.VBox.IsVMRunning(vmName) {
+		if err := p.stop(); err != nil {
+			p.UI.Failed(err.Error())
+		}
+	}
+
+	p.UI.Say("Destroying VM...")
+	err = p.VBox.DestroyVM(vmName)
+	if err != nil {
+		return fmt.Errorf("failed to destroy VM: %s", err)
+	}
+	p.UI.Say("PCF Dev has been destroyed")
 	return nil
 }
 
@@ -171,7 +213,7 @@ func (p *Plugin) getOVAFile() (string, error) {
 
 func (*Plugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
-		Name: "PCFDev",
+		Name: "pcfdev",
 		Commands: []plugin.Command{
 			plugin.Command{
 				Name:  "dev",

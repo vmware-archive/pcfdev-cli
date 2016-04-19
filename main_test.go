@@ -22,7 +22,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(session.Wait().Out.Contents()).NotTo(ContainSubstring("192.168.11.1"))
 
-	uninstallCommand := exec.Command("cf", "uninstall-plugin", "PCFDev")
+	uninstallCommand := exec.Command("cf", "uninstall-plugin", "pcfdev")
 	session, err = gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session, "10s").Should(gexec.Exit())
@@ -36,20 +36,20 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	uninstallCommand := exec.Command("cf", "uninstall-plugin", "PCFDev")
+	uninstallCommand := exec.Command("cf", "uninstall-plugin", "pcfdev")
 	session, err := gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session, "10s").Should(gexec.Exit(0))
 })
 
-var _ = Describe("PCFDev", func() {
+var _ = Describe("pcfdev", func() {
 	Context("pivnet api token is set in environment", func() {
-		It("should start and stop a virtualbox instance", func() {
+		It("should start, stop, and destroy a virtualbox instance", func() {
 			pcfdevCommand := exec.Command("cf", "dev", "start")
 			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1h").Should(gexec.Exit(0))
-			Expect(session).To(gbytes.Say("PCFDev is now running"))
+			Expect(session).To(gbytes.Say("PCF Dev is now running"))
 			Expect(isVMRunning()).To(BeTrue())
 
 			// rerunning start has no effect
@@ -57,7 +57,7 @@ var _ = Describe("PCFDev", func() {
 			session, err = gexec.Start(restartCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1m").Should(gexec.Exit(0))
-			Expect(session).To(gbytes.Say("PCFDev is already running"))
+			Expect(session).To(gbytes.Say("PCF Dev is already running"))
 			Expect(isVMRunning()).To(BeTrue())
 
 			Eventually(cf("api", "api.local.pcfdev.io", "--skip-ssl-validation")).Should(gexec.Exit(0))
@@ -67,8 +67,14 @@ var _ = Describe("PCFDev", func() {
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "10m").Should(gexec.Exit(0))
-			Expect(session).To(gbytes.Say("PCFDev is now stopped"))
+			Expect(session).To(gbytes.Say("PCF Dev is now stopped"))
 			Expect(isVMRunning()).NotTo(BeTrue())
+
+			pcfdevCommand = exec.Command("cf", "dev", "destroy")
+			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "10m").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("PCF Dev VM has been destroyed"))
 		})
 		It("should respond to pcfdev alias", func() {
 			pcfdevCommand := exec.Command("cf", "pcfdev")

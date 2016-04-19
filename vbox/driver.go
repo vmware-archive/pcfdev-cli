@@ -37,7 +37,7 @@ func (d *VBoxDriver) StopVM(name string) error {
 	var err error
 	_, err = d.VBoxManage("controlvm", name, "acpipowerbutton")
 	if err != nil {
-		return fmt.Errorf("failed to execute 'VBoxManage controlvm some-bad-vm-name acipipowerbutton':%s", name, err)
+		return fmt.Errorf("failed to execute 'VBoxManage controlvm %s acpipowerbutton':%s", name, err)
 	}
 	for attempts := 0; attempts < 100; attempts++ {
 		if !d.IsVMRunning(name) {
@@ -46,6 +46,15 @@ func (d *VBoxDriver) StopVM(name string) error {
 		time.Sleep(time.Second)
 	}
 	return errors.New("timed out waiting for vm to stop")
+}
+
+func (d *VBoxDriver) DestroyVM(name string) error {
+	var err error
+	_, err = d.VBoxManage("unregistervm", name, "--delete")
+	if err != nil {
+		return fmt.Errorf("failed to execute 'VBoxManage unregistervm %s --delete':%s", name, err)
+	}
+	return nil
 }
 
 func (d *VBoxDriver) ForwardPort(vmName string, ruleName string, guestPort string, hostPort string) error {

@@ -9,5 +9,5 @@ import (
 
 func TestPlugin(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "PCFDev Plugin Suite")
+	RunSpecs(t, "PCF Dev Plugin Suite")
 }

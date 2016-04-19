@@ -188,6 +188,23 @@ var _ = Describe("vbox", func() {
 			})
 		})
 	})
+	Describe("DestroyVM", func() {
+		It("should stop the VM", func() {
+			mockDriver.EXPECT().DestroyVM("some-vm")
+
+			err := vbx.DestroyVM("some-vm")
+			Expect(err).NotTo(HaveOccurred())
+		})
+		Context("Driver fails to stop VM", func() {
+			It("should return the error", func() {
+				ExpectedError := errors.New("some-error")
+
+				mockDriver.EXPECT().DestroyVM("some-vm").Return(ExpectedError)
+				err := vbx.DestroyVM("some-vm")
+				Expect(err).To(Equal(ExpectedError))
+			})
+		})
+	})
 	Describe("IsVMRunning", func() {
 		Context("VM is running", func() {
 			It("should return true", func() {

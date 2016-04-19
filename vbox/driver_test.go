@@ -43,9 +43,15 @@ var _ = Describe("driver", func() {
 	})
 
 	AfterEach(func() {
-		driver.VBoxManage("controlvm", vmName, "acpipowerbutton")
+		if driver.IsVMRunning(vmName) {
+			driver.VBoxManage("controlvm", vmName, "acpipowerbutton")
+		}
 		Eventually(func() bool { return driver.IsVMRunning(vmName) }, 120*time.Second).Should(BeFalse())
-		driver.VBoxManage("unregistervm", vmName, "--delete")
+		exists, err := driver.VMExists(vmName)
+		Expect(err).NotTo(HaveOccurred())
+		if exists {
+			driver.VBoxManage("unregistervm", vmName, "--delete")
+		}
 	})
 
 	Describe("#VBoxManage", func() {
@@ -61,8 +67,8 @@ var _ = Describe("driver", func() {
 		})
 	})
 
-	Describe("StartVM and StopVM", func() {
-		It("Should start and stop a VBox VM", func() {
+	Describe("StartVM and StopVM and DestroyVM", func() {
+		It("Should start and stop and destroy a VBox VM", func() {
 			sshClient := &ssh.SSH{}
 			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
@@ -77,8 +83,12 @@ var _ = Describe("driver", func() {
 			err = driver.StopVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() bool { return driver.IsVMRunning(vmName) }, 120*time.Second).Should(BeFalse())
+
+			err = driver.DestroyVM(vmName)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
+
 	Describe("#VMExists", func() {
 		Context("VM Exists", func() {
 			It("returns true", func() {
@@ -107,7 +117,7 @@ var _ = Describe("driver", func() {
 		Context("VM with given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.StopVM("some-bad-vm-name")
-				Expect(err.Error()).To(ContainSubstring("failed to execute 'VBoxManage controlvm some-bad-vm-name acipipowerbutton':"))
+				Expect(err.Error()).To(ContainSubstring("failed to execute 'VBoxManage controlvm some-bad-vm-name acpipowerbutton':"))
 			})
 		})
 	})

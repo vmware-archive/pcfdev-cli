@@ -29,6 +29,16 @@ func (_m *MockVBox) EXPECT() *_MockVBoxRecorder {
 	return _m.recorder
 }
 
+func (_m *MockVBox) DestroyVM(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "DestroyVM", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockVBoxRecorder) DestroyVM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DestroyVM", arg0)
+}
+
 func (_m *MockVBox) ImportVM(_param0 string, _param1 string) error {
 	ret := _m.ctrl.Call(_m, "ImportVM", _param0, _param1)
 	ret0, _ := ret[0].(error)

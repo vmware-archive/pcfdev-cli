@@ -9,5 +9,5 @@ import (
 
 func TestFs(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "PCFDev FS Suite")
+	RunSpecs(t, "PCF Dev FS Suite")
 }

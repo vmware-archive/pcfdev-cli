@@ -9,5 +9,5 @@ import (
 
 func TestPivNet(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "PCFDev PivNet Suite")
+	RunSpecs(t, "PCF Dev PivNet Suite")
 }

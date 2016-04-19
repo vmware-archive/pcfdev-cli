@@ -9,5 +9,5 @@ import (
 
 func TestVBox(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "PCFDev VBox Suite")
+	RunSpecs(t, "PCF Dev VBox Suite")
 }

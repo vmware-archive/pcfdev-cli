@@ -9,6 +9,8 @@ type Driver interface {
 	StartVM(string) error
 	DestroyVM(string) error
 	CreateHostOnlyInterface(string) (string, error)
+	DestroyHostOnlyInterface(string) (string, error)
+	GetVBoxNetName(string) (string, error)
 	AttachNetworkInterface(string, string) error
 	ForwardPort(string, string, string, string) error
 	VMExists(string) (bool, error)

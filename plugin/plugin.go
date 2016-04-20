@@ -177,7 +177,7 @@ func (p *Plugin) destroy() error {
 	if err != nil {
 		return fmt.Errorf("failed to destroy VM: %s", err)
 	}
-	p.UI.Say("PCF Dev has been destroyed")
+	p.UI.Say("PCF Dev VM has been destroyed")
 	return nil
 }
 

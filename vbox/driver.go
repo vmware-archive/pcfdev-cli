@@ -49,11 +49,23 @@ func (d *VBoxDriver) StopVM(name string) error {
 }
 
 func (d *VBoxDriver) DestroyVM(name string) error {
-	var err error
+	vboxnet, err := d.GetVBoxNetName(name)
+	if err != nil {
+		return fmt.Errorf("failed to execute 'VBoxManage showvminfo %s --machinereadable':%s", name, err)
+	}
+
 	_, err = d.VBoxManage("unregistervm", name, "--delete")
 	if err != nil {
 		return fmt.Errorf("failed to execute 'VBoxManage unregistervm %s --delete':%s", name, err)
 	}
+
+	if vboxnet != "" {
+		err = d.DestroyHostOnlyInterface(vboxnet)
+		if err != nil {
+			return fmt.Errorf("failed to execute 'VBoxManage hostonlyif remove %s':%s", vboxnet, err)
+		}
+	}
+
 	return nil
 }
 
@@ -106,4 +118,24 @@ func (d *VBoxDriver) IsVMRunning(name string) bool {
 		return false
 	}
 	return strings.Contains(string(vmStatus), `VMState="running"`)
+}
+
+func (d *VBoxDriver) DestroyHostOnlyInterface(name string) error {
+	_, err := d.VBoxManage("hostonlyif", "remove", name)
+	return err
+}
+
+func (d *VBoxDriver) GetVBoxNetName(name string) (string, error) {
+	output, err := d.VBoxManage("showvminfo", name, "--machinereadable")
+	if err != nil {
+		return "", err
+	}
+
+	regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
+	matches := regex.FindStringSubmatch(string(output))
+	if len(matches) > 1 {
+		return matches[1], nil
+	} else {
+		return "", nil
+	}
 }

@@ -85,7 +85,7 @@ var _ = Describe("vbox", func() {
 				Expect(err.Error()).To(Equal("failed to create host only interface: some-error"))
 			})
 		})
-		Context("fails to attache interface", func() {
+		Context("fails to attach interface", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockSSH.EXPECT().FreePort().Return("1234", nil),

@@ -298,7 +298,7 @@ var _ = Describe("Plugin", func() {
 					mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
 					mockUI.EXPECT().Say("Destroying VM..."),
 					mockVBox.EXPECT().DestroyVM("pcfdev-2016-03-29_1728").Return(nil),
-					mockUI.EXPECT().Say("PCF Dev has been destroyed"),
+					mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
@@ -315,7 +315,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("PCF Dev is now stopped"),
 						mockUI.EXPECT().Say("Destroying VM..."),
 						mockVBox.EXPECT().DestroyVM("pcfdev-2016-03-29_1728").Return(nil),
-						mockUI.EXPECT().Say("PCF Dev has been destroyed"),
+						mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})

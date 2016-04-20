@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -57,11 +58,12 @@ var _ = Describe("pcfdev", func() {
 			session, err = gexec.Start(restartCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1m").Should(gexec.Exit(0))
-			Expect(session).To(gbytes.Say("PCF Dev is already running"))
+			Expect(session).To(gbytes.Say("OVA already imported"))
+			Expect(session).To(gbytes.Say("PCF Dev is running"))
 			Expect(isVMRunning()).To(BeTrue())
 
-			Eventually(cf("api", "api.local.pcfdev.io", "--skip-ssl-validation")).Should(gexec.Exit(0))
-			Eventually(cf("auth", "admin", "admin")).Should(gexec.Exit(0))
+			Eventually(cf("login", "-a", "api.local.pcfdev.io", "-u", "admin", "-p", "admin", "--skip-ssl-validation")).Should(gexec.Exit(0))
+			Eventually(cf("push", "app", "-o", "cloudfoundry/lattice-app"), 2*time.Minute).Should(gexec.Exit(0))
 
 			pcfdevCommand = exec.Command("cf", "dev", "stop")
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
@@ -75,6 +77,24 @@ var _ = Describe("pcfdev", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "10m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("PCF Dev VM has been destroyed"))
+
+			// rerunning destroy has no effect
+			redestroyCommand := exec.Command("cf", "dev", "destroy")
+			session, err = gexec.Start(redestroyCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "10m").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("PCF Dev VM has not been created"))
+
+			// can start and push app after running destroy
+			pcfdevCommand = exec.Command("cf", "dev", "start")
+			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "1h").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("PCF Dev is now running"))
+			Expect(isVMRunning()).To(BeTrue())
+
+			Eventually(cf("login", "-a", "api.local.pcfdev.io", "-u", "admin", "-p", "admin", "--skip-ssl-validation")).Should(gexec.Exit(0))
+			Eventually(cf("push", "app", "-o", "cloudfoundry/lattice-app"), 2*time.Minute).Should(gexec.Exit(0))
 		})
 		It("should respond to pcfdev alias", func() {
 			pcfdevCommand := exec.Command("cf", "pcfdev")

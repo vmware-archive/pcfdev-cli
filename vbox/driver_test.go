@@ -68,7 +68,7 @@ var _ = Describe("driver", func() {
 	})
 
 	Describe("StartVM and StopVM and DestroyVM", func() {
-		It("Should start and stop and destroy a VBox VM", func() {
+		It("Should start, stop, and then destroy a VBox VM", func() {
 			sshClient := &ssh.SSH{}
 			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
@@ -86,6 +86,41 @@ var _ = Describe("driver", func() {
 
 			err = driver.DestroyVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() bool {
+				exists, err := driver.VMExists(vmName)
+				Expect(err).NotTo(HaveOccurred())
+				return exists
+			}, 120*time.Second).Should(BeFalse())
+		})
+		It("Should destroy the VBox VM network interface", func() {
+			vboxnet, err := driver.CreateHostOnlyInterface("192.168.88.1")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = driver.AttachNetworkInterface(vboxnet, vmName)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = driver.StartVM(vmName)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() string {
+				exists, err := driver.GetVBoxNetName(vmName)
+				Expect(err).NotTo(HaveOccurred())
+				return string(exists)
+			}).Should(ContainSubstring(vboxnet))
+			Expect(driver.VBoxManage("list", "hostonlyifs")).To(ContainSubstring(vboxnet))
+
+			_, err = driver.VBoxManage("controlvm", vmName, "poweroff")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = driver.DestroyVM(vmName)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() string {
+				exists, err := driver.VBoxManage("list", "hostonlyifs")
+				Expect(err).NotTo(HaveOccurred())
+				return string(exists)
+			}, 120*time.Second).ShouldNot(ContainSubstring(vboxnet))
 		})
 	})
 
@@ -121,6 +156,14 @@ var _ = Describe("driver", func() {
 			})
 		})
 	})
+	Describe("#DestroyVM", func() {
+		Context("VM with given name does not exist", func() {
+			It("should return an error", func() {
+				err := driver.DestroyVM("some-bad-vm-name")
+				Expect(err.Error()).To(ContainSubstring("failed to execute 'VBoxManage showvminfo some-bad-vm-name --machinereadable':"))
+			})
+		})
+	})
 	Describe("#CreateHostOnlyInterface", func() {
 		It("Should create a hostonlyif", func() {
 			name, err := driver.CreateHostOnlyInterface("192.168.77.1")
@@ -141,6 +184,25 @@ var _ = Describe("driver", func() {
 			Expect(output.String()).To(MatchRegexp(`Name:\s+` + name))
 			Expect(output.String()).To(MatchRegexp(`IPAddress:\s+192.168.77.1`))
 			Expect(output.String()).To(MatchRegexp(`NetworkMask:\s+255.255.255.0`))
+		})
+
+		AfterEach(func() {
+			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet1").Run()
+		})
+	})
+
+	Describe("#DestroyHostOnlyInterface", func() {
+		It("Should destroy a hostonlyif", func() {
+			name, err := driver.CreateHostOnlyInterface("192.168.77.1")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = driver.DestroyHostOnlyInterface(name)
+			Expect(err).NotTo(HaveOccurred())
+			listCommand := exec.Command("VBoxManage", "list", "hostonlyifs")
+			session, err := gexec.Start(listCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session).Should(gexec.Exit(0))
+			Expect(session).NotTo(gbytes.Say(name))
 		})
 
 		AfterEach(func() {

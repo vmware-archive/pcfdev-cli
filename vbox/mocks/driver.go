@@ -49,6 +49,17 @@ func (_mr *_MockDriverRecorder) CreateHostOnlyInterface(arg0 interface{}) *gomoc
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateHostOnlyInterface", arg0)
 }
 
+func (_m *MockDriver) DestroyHostOnlyInterface(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "DestroyHostOnlyInterface", _param0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) DestroyHostOnlyInterface(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DestroyHostOnlyInterface", arg0)
+}
+
 func (_m *MockDriver) DestroyVM(_param0 string) error {
 	ret := _m.ctrl.Call(_m, "DestroyVM", _param0)
 	ret0, _ := ret[0].(error)
@@ -78,6 +89,17 @@ func (_m *MockDriver) GetHostForwardPort(_param0 string, _param1 string) (string
 
 func (_mr *_MockDriverRecorder) GetHostForwardPort(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetHostForwardPort", arg0, arg1)
+}
+
+func (_m *MockDriver) GetVBoxNetName(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "GetVBoxNetName", _param0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) GetVBoxNetName(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVBoxNetName", arg0)
 }
 
 func (_m *MockDriver) IsVMRunning(_param0 string) bool {

@@ -35,6 +35,12 @@ type VM struct {
 	IP      string
 }
 
+const (
+	StatusRunning    = "Running"
+	StatusStopped    = "Stopped"
+	StatusNotCreated = "Not Created"
+)
+
 func (v *VBox) StartVM(name string) (*VM, error) {
 	var sshPort string
 	ip := "192.168.11.11"
@@ -111,4 +117,21 @@ func (v *VBox) IsVMImported(name string) (bool, error) {
 		return false, fmt.Errorf("failed to query for VM: %s", err)
 	}
 	return exists, nil
+}
+
+func (v *VBox) Status(name string) (string, error) {
+	exists, err := v.Driver.VMExists(name)
+	if err != nil {
+		return "", err
+	}
+
+	if !exists {
+		return StatusNotCreated, nil
+	}
+
+	if v.Driver.IsVMRunning(name) {
+		return StatusRunning, nil
+	}
+
+	return StatusStopped, nil
 }

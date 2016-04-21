@@ -28,6 +28,8 @@ var _ = Describe("Plugin", func() {
 		err        error
 	)
 
+	const vmName = "pcfdev-2016-03-29_1728"
+
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockClient = mocks.NewMockClient(mockCtrl)
@@ -73,7 +75,7 @@ var _ = Describe("Plugin", func() {
 				It("should import the VM", func() {
 					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(false, nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
 						mockUI.EXPECT().Say("Downloading OVA..."),
@@ -81,7 +83,7 @@ var _ = Describe("Plugin", func() {
 						mockFS.EXPECT().Write("/some/dir/.pcfdev/pcfdev.ova", readCloser).Return(nil),
 						mockUI.EXPECT().Say("Finished downloading OVA"),
 						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", "pcfdev-2016-03-29_1728").Return(nil),
+						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", vmName).Return(nil),
 						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 					)
 
@@ -92,7 +94,7 @@ var _ = Describe("Plugin", func() {
 			Context("when already imported", func() {
 				It("should not import the VM", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
 						mockUI.EXPECT().Say("OVA already imported"),
 					)
 
@@ -103,7 +105,7 @@ var _ = Describe("Plugin", func() {
 			Context("when errors trying to query", func() {
 				It("should report the error", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, err),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(false, err),
 						mockUI.EXPECT().Failed("some-error"),
 					)
 
@@ -115,12 +117,12 @@ var _ = Describe("Plugin", func() {
 		Context("start", func() {
 			It("should start and provision the VM", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+					mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
 					mockUI.EXPECT().Say("OVA already imported"),
 
-					mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
+					mockVBox.EXPECT().IsVMRunning(vmName).Return(false),
 					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM("pcfdev-2016-03-29_1728").Return(vm, nil),
+					mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
 					mockUI.EXPECT().Say("PCF Dev is now running"),
@@ -133,7 +135,7 @@ var _ = Describe("Plugin", func() {
 				It("prints an error", func() {
 					err := errors.New("some-error")
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(false, nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(err),
 						mockUI.EXPECT().Failed("failed to fetch OVA: some-error"),
 					)
@@ -147,7 +149,7 @@ var _ = Describe("Plugin", func() {
 					err := errors.New("some-error")
 
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(false, nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, err),
 						mockUI.EXPECT().Failed("failed to fetch OVA: some-error"),
@@ -160,16 +162,16 @@ var _ = Describe("Plugin", func() {
 			Context("pcfdev.ova already exists", func() {
 				It("should start without downloading the ova", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(false, nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
 						mockUI.EXPECT().Say("pcfdev.ova already downloaded"),
 						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", "pcfdev-2016-03-29_1728").Return(nil),
+						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", vmName).Return(nil),
 						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
-						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
+						mockVBox.EXPECT().IsVMRunning(vmName).Return(false),
 						mockUI.EXPECT().Say("Starting VM..."),
-						mockVBox.EXPECT().StartVM("pcfdev-2016-03-29_1728").Return(vm, nil),
+						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
 						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
 						mockUI.EXPECT().Say("PCF Dev is now running"),
@@ -181,10 +183,10 @@ var _ = Describe("Plugin", func() {
 			Context("VM is already running", func() {
 				It("prints a message and exits", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
 						mockUI.EXPECT().Say("OVA already imported"),
 
-						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
+						mockVBox.EXPECT().IsVMRunning(vmName).Return(true),
 						mockUI.EXPECT().Say("PCF Dev is running"),
 					)
 
@@ -196,7 +198,7 @@ var _ = Describe("Plugin", func() {
 				It("prints an error", func() {
 					err := errors.New("some-error")
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(false, nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
 						mockUI.EXPECT().Say("Downloading OVA..."),
@@ -211,12 +213,12 @@ var _ = Describe("Plugin", func() {
 			Context("VM fails to start", func() {
 				It("prints an error", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
 						mockUI.EXPECT().Say("OVA already imported"),
 
-						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
+						mockVBox.EXPECT().IsVMRunning(vmName).Return(false),
 						mockUI.EXPECT().Say("Starting VM..."),
-						mockVBox.EXPECT().StartVM("pcfdev-2016-03-29_1728").Return(nil, errors.New("some-error")),
+						mockVBox.EXPECT().StartVM(vmName).Return(nil, errors.New("some-error")),
 						mockUI.EXPECT().Failed("failed to start VM: some-error"),
 					)
 
@@ -227,12 +229,12 @@ var _ = Describe("Plugin", func() {
 			Context("VM fails to provision", func() {
 				It("prints an error", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
 						mockUI.EXPECT().Say("OVA already imported"),
 
-						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
+						mockVBox.EXPECT().IsVMRunning(vmName).Return(false),
 						mockUI.EXPECT().Say("Starting VM..."),
-						mockVBox.EXPECT().StartVM("pcfdev-2016-03-29_1728").Return(vm, nil),
+						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
 						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port").Return(err),
 						mockUI.EXPECT().Failed("failed to provision VM: some-error"),
@@ -245,8 +247,8 @@ var _ = Describe("Plugin", func() {
 		Context("stop", func() {
 			It("should stop the vm", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
-					mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
+					mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
+					mockVBox.EXPECT().IsVMRunning(vmName).Return(false),
 					mockUI.EXPECT().Say("PCF Dev is stopped"),
 				)
 
@@ -255,10 +257,10 @@ var _ = Describe("Plugin", func() {
 			Context("VM is running", func() {
 				It("should stop the vm", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
-						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
+						mockVBox.EXPECT().IsVMRunning(vmName).Return(true),
 						mockUI.EXPECT().Say("Stopping VM..."),
-						mockVBox.EXPECT().StopVM("pcfdev-2016-03-29_1728").Return(nil),
+						mockVBox.EXPECT().StopVM(vmName).Return(nil),
 						mockUI.EXPECT().Say("PCF Dev is now stopped"),
 					)
 
@@ -268,10 +270,10 @@ var _ = Describe("Plugin", func() {
 					It("should print an error", func() {
 						err := errors.New("some-error")
 						gomock.InOrder(
-							mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
-							mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
+							mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
+							mockVBox.EXPECT().IsVMRunning(vmName).Return(true),
 							mockUI.EXPECT().Say("Stopping VM..."),
-							mockVBox.EXPECT().StopVM("pcfdev-2016-03-29_1728").Return(err),
+							mockVBox.EXPECT().StopVM(vmName).Return(err),
 							mockUI.EXPECT().Failed("failed to stop VM: some-error"),
 						)
 
@@ -284,8 +286,7 @@ var _ = Describe("Plugin", func() {
 			Context("VBox VM is running", func() {
 				It("should return the status Running", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
-						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
+						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusRunning, nil),
 						mockUI.EXPECT().Say("Running"),
 					)
 
@@ -295,8 +296,7 @@ var _ = Describe("Plugin", func() {
 			Context("VBox VM is stopped", func() {
 				It("should return the status Stopped", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
-						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
+						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusStopped, nil),
 						mockUI.EXPECT().Say("Stopped"),
 					)
 
@@ -306,7 +306,7 @@ var _ = Describe("Plugin", func() {
 			Context("VBox VM is not created (i.e. not imported to VBox)", func() {
 				It("should return the status Not Created", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
+						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
 						mockUI.EXPECT().Say("Not Created"),
 					)
 
@@ -317,10 +317,10 @@ var _ = Describe("Plugin", func() {
 		Context("destroy", func() {
 			It("should destroy the vm", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
-					mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
+					mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
+					mockVBox.EXPECT().IsVMRunning(vmName).Return(false),
 					mockUI.EXPECT().Say("Destroying VM..."),
-					mockVBox.EXPECT().DestroyVM("pcfdev-2016-03-29_1728").Return(nil),
+					mockVBox.EXPECT().DestroyVM(vmName).Return(nil),
 					mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
 				)
 
@@ -329,15 +329,15 @@ var _ = Describe("Plugin", func() {
 			Context("VM is running", func() {
 				It("should stop and destroy the vm", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
-						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
-						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
+						mockVBox.EXPECT().IsVMRunning(vmName).Return(true),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(true, nil),
+						mockVBox.EXPECT().IsVMRunning(vmName).Return(true),
 						mockUI.EXPECT().Say("Stopping VM..."),
-						mockVBox.EXPECT().StopVM("pcfdev-2016-03-29_1728").Return(nil),
+						mockVBox.EXPECT().StopVM(vmName).Return(nil),
 						mockUI.EXPECT().Say("PCF Dev is now stopped"),
 						mockUI.EXPECT().Say("Destroying VM..."),
-						mockVBox.EXPECT().DestroyVM("pcfdev-2016-03-29_1728").Return(nil),
+						mockVBox.EXPECT().DestroyVM(vmName).Return(nil),
 						mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
 					)
 
@@ -347,7 +347,7 @@ var _ = Describe("Plugin", func() {
 			Context("there is no VM", func() {
 				It("should send an error message", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
+						mockVBox.EXPECT().IsVMImported(vmName).Return(false, nil),
 						mockUI.EXPECT().Say("PCF Dev VM has not been created"),
 					)
 

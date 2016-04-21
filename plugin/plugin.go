@@ -43,6 +43,7 @@ type VBox interface {
 	ImportVM(string, string) error
 	IsVMRunning(string) bool
 	IsVMImported(string) (bool, error)
+	Status(string) (string, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin FS
@@ -78,8 +79,10 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 			p.UI.Failed(err.Error())
 		}
 	case "status":
-		if err := p.status(); err != nil {
+		if status, err := p.VBox.Status(vmName); err != nil {
 			p.UI.Failed(err.Error())
+		} else {
+			p.UI.Say(status)
 		}
 	case "stop":
 		if err := p.stop(); err != nil {
@@ -182,27 +185,6 @@ func (p *Plugin) destroy() error {
 		return fmt.Errorf("failed to destroy VM: %s", err)
 	}
 	p.UI.Say("PCF Dev VM has been destroyed")
-	return nil
-}
-
-func (p *Plugin) status() error {
-	exists, err := p.VBox.IsVMImported(vmName)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		p.UI.Say("Not Created")
-		return nil
-	}
-
-	running := p.VBox.IsVMRunning(vmName)
-
-	if !running {
-		p.UI.Say("Stopped")
-		return nil
-	}
-
-	p.UI.Say("Running")
 	return nil
 }
 

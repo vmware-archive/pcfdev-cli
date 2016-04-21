@@ -205,6 +205,49 @@ var _ = Describe("vbox", func() {
 			})
 		})
 	})
+	Describe("#Status", func() {
+		Context("VM is running", func() {
+			It("should return running", func() {
+				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
+				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
+
+				status, err := vbx.Status("some-vm")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(status).To(Equal("Running"))
+			})
+		})
+
+		Context("VM is not created", func() {
+			It("should return not created", func() {
+				mockDriver.EXPECT().VMExists("some-vm").Return(false, nil)
+
+				status, err := vbx.Status("some-vm")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(status).To(Equal("Not Created"))
+			})
+		})
+
+		Context("VM is stopped", func() {
+			It("should return stopped", func() {
+				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
+				mockDriver.EXPECT().IsVMRunning("some-vm").Return(false)
+
+				status, err := vbx.Status("some-vm")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(status).To(Equal("Stopped"))
+			})
+		})
+		Context("An error checking the VM Status", func() {
+			It("should return an error", func() {
+				someError := errors.New("some-error")
+				mockDriver.EXPECT().VMExists("some-vm").Return(false, someError)
+
+				_, err := vbx.Status("some-vm")
+				Expect(err).To(Equal(someError))
+			})
+		})
+	})
+
 	Describe("IsVMRunning", func() {
 		Context("VM is running", func() {
 			It("should return true", func() {

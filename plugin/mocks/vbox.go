@@ -81,6 +81,17 @@ func (_mr *_MockVBoxRecorder) StartVM(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "StartVM", arg0)
 }
 
+func (_m *MockVBox) Status(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "Status", _param0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockVBoxRecorder) Status(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Status", arg0)
+}
+
 func (_m *MockVBox) StopVM(_param0 string) error {
 	ret := _m.ctrl.Call(_m, "StopVM", _param0)
 	ret0, _ := ret[0].(error)

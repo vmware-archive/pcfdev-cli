@@ -320,21 +320,6 @@ var _ = Describe("Plugin", func() {
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
 			})
-			Context("VM is running", func() {
-				It("should stop and destroy the vm", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusRunning, nil).Times(2),
-						mockUI.EXPECT().Say("Stopping VM..."),
-						mockVBox.EXPECT().StopVM(vmName).Return(nil),
-						mockUI.EXPECT().Say("PCF Dev is now stopped"),
-						mockUI.EXPECT().Say("Destroying VM..."),
-						mockVBox.EXPECT().DestroyVM(vmName).Return(nil),
-						mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
-				})
-			})
 			Context("there is no VM", func() {
 				It("should send an error message", func() {
 					gomock.InOrder(

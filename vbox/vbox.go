@@ -1,6 +1,8 @@
 package vbox
 
-import "fmt"
+import (
+	"fmt"
+)
 
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vbox Driver
 type Driver interface {
@@ -98,6 +100,18 @@ func (v *VBox) ImportVM(path string, name string) error {
 }
 
 func (v *VBox) DestroyVM(name string) error {
+	status, err := v.Status(name)
+	if err != nil {
+		return err
+	}
+
+	if status == StatusRunning {
+		err = v.StopVM(name)
+		if err != nil {
+			return err
+		}
+	}
+
 	return v.Driver.DestroyVM(name)
 }
 

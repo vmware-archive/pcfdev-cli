@@ -185,12 +185,6 @@ func (p *Plugin) destroy() error {
 		return nil
 	}
 
-	if status == vbox.StatusRunning {
-		if err := p.stop(); err != nil {
-			p.UI.Failed(err.Error())
-		}
-	}
-
 	p.UI.Say("Destroying VM...")
 	err = p.VBox.DestroyVM(vmName)
 	if err != nil {

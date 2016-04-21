@@ -3,4 +3,4 @@
 pcfdev_cli_dir=$(cd `dirname $0` && cd .. && pwd)
 
 go install github.com/pivotal-cf/pcfdev-cli/vendor/github.com/onsi/ginkgo/ginkgo
-ginkgo $pcfdev_cli_dir/*
+ginkgo "$@" -r $pcfdev_cli_dir/*

@@ -61,3 +61,5 @@ fixtures/config/plugin-config/.cf/plugins/empty_plugin
 *.ova
 
 /pcfdev-cli
+
+*NERD_tree_*

@@ -17,8 +17,6 @@ var _ = Describe("vbox", func() {
 		mockDriver *mocks.MockDriver
 		mockSSH    *mocks.MockSSH
 		vbx        *vbox.VBox
-		path       string
-		name       string
 	)
 
 	BeforeEach(func() {
@@ -29,8 +27,6 @@ var _ = Describe("vbox", func() {
 			Driver: mockDriver,
 			SSH:    mockSSH,
 		}
-		path = "some-path"
-		name = "some-vm"
 	})
 
 	AfterEach(func() {
@@ -38,29 +34,23 @@ var _ = Describe("vbox", func() {
 	})
 
 	Describe("ImportVM", func() {
-		var path string
-		var name string
 
-		BeforeEach(func() {
-			path = "some-path"
-			name = "some-vm"
-		})
 		It("should import the VM", func() {
 			gomock.InOrder(
 				mockSSH.EXPECT().FreePort().Return("1234", nil),
-				mockDriver.EXPECT().VBoxManage("import", path),
+				mockDriver.EXPECT().VBoxManage("import", "some-path"),
 				mockDriver.EXPECT().CreateHostOnlyInterface("192.168.11.1").Return("vboxnet1", nil),
 				mockDriver.EXPECT().AttachNetworkInterface("vboxnet1", "some-vm"),
 				mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "22", "1234"),
 			)
-			err := vbx.ImportVM(path, name)
+			err := vbx.ImportVM("some-path", "some-vm")
 			Expect(err).NotTo(HaveOccurred())
 		})
 		Context("fail to aquire random host port", func() {
 			It("should return an error", func() {
 				mockSSH.EXPECT().FreePort().Return("", errors.New("some-error"))
 
-				err := vbx.ImportVM(path, name)
+				err := vbx.ImportVM("some-path", "some-vm")
 				Expect(err.Error()).To(Equal("failed to aquire random port: some-error"))
 			})
 		})
@@ -68,9 +58,9 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockSSH.EXPECT().FreePort().Return("1234", nil),
-					mockDriver.EXPECT().VBoxManage("import", path).Return(nil, errors.New("some-error")),
+					mockDriver.EXPECT().VBoxManage("import", "some-path").Return(nil, errors.New("some-error")),
 				)
-				err := vbx.ImportVM(path, name)
+				err := vbx.ImportVM("some-path", "some-vm")
 				Expect(err.Error()).To(Equal("failed to import ova: some-error"))
 			})
 		})
@@ -78,10 +68,10 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockSSH.EXPECT().FreePort().Return("1234", nil),
-					mockDriver.EXPECT().VBoxManage("import", path),
+					mockDriver.EXPECT().VBoxManage("import", "some-path"),
 					mockDriver.EXPECT().CreateHostOnlyInterface("192.168.11.1").Return("", errors.New("some-error")),
 				)
-				err := vbx.ImportVM(path, name)
+				err := vbx.ImportVM("some-path", "some-vm")
 				Expect(err.Error()).To(Equal("failed to create host only interface: some-error"))
 			})
 		})
@@ -89,11 +79,11 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockSSH.EXPECT().FreePort().Return("1234", nil),
-					mockDriver.EXPECT().VBoxManage("import", path),
+					mockDriver.EXPECT().VBoxManage("import", "some-path"),
 					mockDriver.EXPECT().CreateHostOnlyInterface("192.168.11.1").Return("vboxnet1", nil),
 					mockDriver.EXPECT().AttachNetworkInterface("vboxnet1", "some-vm").Return(errors.New("some-error")),
 				)
-				err := vbx.ImportVM(path, name)
+				err := vbx.ImportVM("some-path", "some-vm")
 				Expect(err.Error()).To(Equal("failed to attach interface: some-error"))
 			})
 		})
@@ -101,12 +91,12 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockSSH.EXPECT().FreePort().Return("1234", nil),
-					mockDriver.EXPECT().VBoxManage("import", path),
+					mockDriver.EXPECT().VBoxManage("import", "some-path"),
 					mockDriver.EXPECT().CreateHostOnlyInterface("192.168.11.1").Return("vboxnet1", nil),
 					mockDriver.EXPECT().AttachNetworkInterface("vboxnet1", "some-vm"),
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "22", "1234").Return(errors.New("some-error")),
 				)
-				err := vbx.ImportVM(path, name)
+				err := vbx.ImportVM("some-path", "some-vm")
 				Expect(err.Error()).To(Equal("failed to forward ssh port: some-error"))
 			})
 		})
@@ -121,7 +111,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().StopVM("some-vm"),
 					mockDriver.EXPECT().StartVM("some-vm"),
 				)
-				vm, err := vbx.StartVM(name)
+				vm, err := vbx.StartVM("some-vm")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(vm.Name).To(Equal("some-vm"))
 				Expect(vm.SSHPort).To(Equal("5678"))
@@ -130,7 +120,7 @@ var _ = Describe("vbox", func() {
 				It("should return an error", func() {
 					mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("", errors.New("some-error"))
 
-					vm, err := vbx.StartVM(name)
+					vm, err := vbx.StartVM("some-vm")
 					Expect(vm).To(BeNil())
 					Expect(err.Error()).To(Equal("failed to get host port for ssh forwarding: some-error"))
 				})
@@ -142,7 +132,7 @@ var _ = Describe("vbox", func() {
 						mockDriver.EXPECT().StartVM("some-vm").Return(errors.New("some-error")),
 					)
 
-					_, err := vbx.StartVM(name)
+					_, err := vbx.StartVM("some-vm")
 					Expect(err.Error()).To(Equal("failed to start vm: some-error"))
 				})
 			})
@@ -153,7 +143,7 @@ var _ = Describe("vbox", func() {
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "5678").Return(errors.New("some-error")),
 					)
-					_, err := vbx.StartVM(name)
+					_, err := vbx.StartVM("some-vm")
 					Expect(err.Error()).To(Equal("failed to set static ip: some-error"))
 				})
 			})
@@ -165,7 +155,7 @@ var _ = Describe("vbox", func() {
 						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "5678"),
 						mockDriver.EXPECT().StopVM("some-vm").Return(errors.New("some-error")),
 					)
-					_, err := vbx.StartVM(name)
+					_, err := vbx.StartVM("some-vm")
 					Expect(err.Error()).To(Equal("failed to stop vm: some-error"))
 				})
 			})

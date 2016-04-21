@@ -18,7 +18,7 @@ func (*VBoxDriver) VBoxManage(arg ...string) ([]byte, error) {
 func (d *VBoxDriver) StartVM(name string) error {
 	_, err := d.VBoxManage("startvm", name, "--type", "headless")
 	if err != nil {
-		return fmt.Errorf("failed to execute 'VBoxManage startvm %s':%s", name, err)
+		return fmt.Errorf("failed to execute 'VBoxManage startvm %s': %s", name, err)
 	}
 	return nil
 }
@@ -37,7 +37,7 @@ func (d *VBoxDriver) StopVM(name string) error {
 	var err error
 	_, err = d.VBoxManage("controlvm", name, "acpipowerbutton")
 	if err != nil {
-		return fmt.Errorf("failed to execute 'VBoxManage controlvm %s acpipowerbutton':%s", name, err)
+		return fmt.Errorf("failed to execute 'VBoxManage controlvm %s acpipowerbutton': %s", name, err)
 	}
 	for attempts := 0; attempts < 100; attempts++ {
 		if !d.IsVMRunning(name) {
@@ -51,18 +51,18 @@ func (d *VBoxDriver) StopVM(name string) error {
 func (d *VBoxDriver) DestroyVM(name string) error {
 	vboxnet, err := d.GetVBoxNetName(name)
 	if err != nil {
-		return fmt.Errorf("failed to execute 'VBoxManage showvminfo %s --machinereadable':%s", name, err)
+		return fmt.Errorf("failed to execute 'VBoxManage showvminfo %s --machinereadable': %s", name, err)
 	}
 
 	_, err = d.VBoxManage("unregistervm", name, "--delete")
 	if err != nil {
-		return fmt.Errorf("failed to execute 'VBoxManage unregistervm %s --delete':%s", name, err)
+		return fmt.Errorf("failed to execute 'VBoxManage unregistervm %s --delete': %s", name, err)
 	}
 
 	if vboxnet != "" {
 		err = d.DestroyHostOnlyInterface(vboxnet)
 		if err != nil {
-			return fmt.Errorf("failed to execute 'VBoxManage hostonlyif remove %s':%s", vboxnet, err)
+			return fmt.Errorf("failed to execute 'VBoxManage hostonlyif remove %s': %s", vboxnet, err)
 		}
 	}
 
@@ -73,7 +73,7 @@ func (d *VBoxDriver) ForwardPort(vmName string, ruleName string, guestPort strin
 	var err error
 	_, err = d.VBoxManage("modifyvm", vmName, "--natpf1", fmt.Sprintf("%s,tcp,127.0.0.1,%s,,%s", ruleName, hostPort, guestPort))
 	if err != nil {
-		return fmt.Errorf("failed to forward guest port %s to host port %s:%s", guestPort, hostPort, err)
+		return fmt.Errorf("failed to forward guest port %s to host port %s: %s", guestPort, hostPort, err)
 	}
 	return nil
 }
@@ -92,14 +92,14 @@ func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (string, error) {
 	var err error
 	output, err := d.VBoxManage("hostonlyif", "create")
 	if err != nil {
-		return "", fmt.Errorf("failed to create hostonlyif:%s", err)
+		return "", fmt.Errorf("failed to create hostonlyif: %s", err)
 	}
 	regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
 	name := regex.FindStringSubmatch(string(output))[1]
 
 	_, err = d.VBoxManage("hostonlyif", "ipconfig", name, "--ip", ip, "--netmask", "255.255.255.0")
 	if err != nil {
-		return "", fmt.Errorf("failed to configure hostonlyif:%s", err)
+		return "", fmt.Errorf("failed to configure hostonlyif: %s", err)
 	}
 	return name, nil
 }

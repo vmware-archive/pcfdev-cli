@@ -15,7 +15,7 @@ type Client struct {
 func (c *Client) DownloadOVA() (io.ReadCloser, error) {
 	client := http.DefaultClient
 	if c.Token == "" {
-		return nil, errors.New("missing Pivotal Network Api token, please set PIVNET_TOKEN environment variable")
+		return nil, errors.New("missing Pivotal Network API token, please set PIVNET_TOKEN environment variable")
 	}
 
 	req, err := http.NewRequest("POST", c.Host+"/api/v2/products/pcfdev/releases/1622/product_files/4149/download", nil)
@@ -30,7 +30,7 @@ func (c *Client) DownloadOVA() (io.ReadCloser, error) {
 	}
 
 	if resp.StatusCode == 451 {
-		return nil, fmt.Errorf("you must accept the eula before you can download the pcfdev image: %s/products/pcfdev#/releases/1622", c.Host)
+		return nil, fmt.Errorf("you must accept the EULA before you can download the PCF Dev image: %s/products/pcfdev#/releases/1622", c.Host)
 	}
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("Pivotal Network returned: %s", resp.Status)

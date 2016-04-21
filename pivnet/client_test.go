@@ -13,9 +13,6 @@ import (
 )
 
 var _ = Describe("PivNet Client", func() {
-	var (
-		path string
-	)
 
 	Context("API token is set in env", func() {
 		BeforeEach(func() {
@@ -84,12 +81,11 @@ var _ = Describe("PivNet Client", func() {
 					Token: "some-token",
 				}
 				_, err := client.DownloadOVA()
-				Expect(err.Error()).To(MatchRegexp("you must accept the eula before you can download the pcfdev image: .*/products/pcfdev#/releases/1622"))
+				Expect(err.Error()).To(MatchRegexp("you must accept the EULA before you can download the PCF Dev image: .*/products/pcfdev#/releases/1622"))
 			})
 		})
 
 		AfterEach(func() {
-			os.Remove(path)
 			os.Unsetenv("PIVNET_TOKEN")
 		})
 	})

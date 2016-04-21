@@ -5,14 +5,19 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pivotal-cf/pcfdev-cli/fs"
+	pcfdevfs "github.com/pivotal-cf/pcfdev-cli/fs"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Filesystem", func() {
-	fs := &fs.FS{}
+	var fs *pcfdevfs.FS
+
+	BeforeEach(func() {
+		fs = &pcfdevfs.FS{}
+	})
+
 	Describe("#Exists", func() {
 		Context("File exists", func() {
 			BeforeEach(func() {

@@ -41,8 +41,6 @@ type VBox interface {
 	StopVM(string) error
 	DestroyVM(string) error
 	ImportVM(string, string) error
-	IsVMRunning(string) bool
-	IsVMImported(string) (bool, error)
 	Status(string) (string, error)
 }
 
@@ -71,10 +69,6 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 			p.UI.Failed(err.Error())
 		}
 	case "start":
-		if err := p.importVM(); err != nil {
-			p.UI.Failed(err.Error())
-			return
-		}
 		if err := p.start(); err != nil {
 			p.UI.Failed(err.Error())
 		}
@@ -96,14 +90,16 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 }
 
 func (p *Plugin) importVM() error {
-	imported, err := p.VBox.IsVMImported(vmName)
+	status, err := p.VBox.Status(vmName)
 	if err != nil {
 		return err
 	}
-	if imported {
+
+	if status != vbox.StatusNotCreated {
 		p.UI.Say("OVA already imported")
 		return nil
 	}
+
 	path, err := p.getOVAFile()
 	if err != nil {
 		return fmt.Errorf("failed to fetch OVA: %s", err)
@@ -121,7 +117,19 @@ func (p *Plugin) importVM() error {
 }
 
 func (p *Plugin) start() error {
-	if p.VBox.IsVMRunning(vmName) {
+	status, err := p.VBox.Status(vmName)
+	if err != nil {
+		return err
+	}
+
+	if status == vbox.StatusNotCreated {
+		err = p.importVM()
+		if err != nil {
+			return err
+		}
+	}
+
+	if status == vbox.StatusRunning {
 		p.UI.Say("PCF Dev is running")
 		return nil
 	}
@@ -142,15 +150,17 @@ func (p *Plugin) start() error {
 }
 
 func (p *Plugin) stop() error {
-	exists, err := p.VBox.IsVMImported(vmName)
+	status, err := p.VBox.Status(vmName)
 	if err != nil {
 		return err
 	}
-	if !exists {
+
+	if status == vbox.StatusNotCreated {
 		p.UI.Say("PCF Dev VM has not been created")
 		return nil
 	}
-	if !p.VBox.IsVMRunning(vmName) {
+
+	if status == vbox.StatusStopped {
 		p.UI.Say("PCF Dev is stopped")
 		return nil
 	}
@@ -165,15 +175,17 @@ func (p *Plugin) stop() error {
 }
 
 func (p *Plugin) destroy() error {
-	exists, err := p.VBox.IsVMImported(vmName)
+	status, err := p.VBox.Status(vmName)
 	if err != nil {
 		return err
 	}
-	if !exists {
+
+	if status == vbox.StatusNotCreated {
 		p.UI.Say("PCF Dev VM has not been created")
 		return nil
 	}
-	if p.VBox.IsVMRunning(vmName) {
+
+	if status == vbox.StatusRunning {
 		if err := p.stop(); err != nil {
 			p.UI.Failed(err.Error())
 		}

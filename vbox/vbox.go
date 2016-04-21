@@ -9,8 +9,6 @@ type Driver interface {
 	StartVM(string) error
 	DestroyVM(string) error
 	CreateHostOnlyInterface(string) (string, error)
-	DestroyHostOnlyInterface(string) (string, error)
-	GetVBoxNetName(string) (string, error)
 	AttachNetworkInterface(string, string) error
 	ForwardPort(string, string, string, string) error
 	VMExists(string) (bool, error)
@@ -105,18 +103,6 @@ func (v *VBox) DestroyVM(name string) error {
 
 func (v *VBox) StopVM(name string) error {
 	return v.Driver.StopVM(name)
-}
-
-func (v *VBox) IsVMRunning(name string) bool {
-	return v.Driver.IsVMRunning(name)
-}
-
-func (v *VBox) IsVMImported(name string) (bool, error) {
-	exists, err := v.Driver.VMExists(name)
-	if err != nil {
-		return false, fmt.Errorf("failed to query for VM: %s", err)
-	}
-	return exists, nil
 }
 
 func (v *VBox) Status(name string) (string, error) {

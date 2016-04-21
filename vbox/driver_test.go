@@ -43,15 +43,8 @@ var _ = Describe("driver", func() {
 	})
 
 	AfterEach(func() {
-		if driver.IsVMRunning(vmName) {
-			driver.VBoxManage("controlvm", vmName, "acpipowerbutton")
-		}
-		Eventually(func() bool { return driver.IsVMRunning(vmName) }, 120*time.Second).Should(BeFalse())
-		exists, err := driver.VMExists(vmName)
-		Expect(err).NotTo(HaveOccurred())
-		if exists {
-			driver.VBoxManage("unregistervm", vmName, "--delete")
-		}
+		driver.VBoxManage("controlvm", vmName, "poweroff")
+		driver.VBoxManage("unregistervm", vmName, "--delete")
 	})
 
 	Describe("#VBoxManage", func() {

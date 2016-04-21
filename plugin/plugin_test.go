@@ -64,7 +64,7 @@ var _ = Describe("Plugin", func() {
 		})
 		Context("wrong number of arguments", func() {
 			It("prints the usage message", func() {
-				mockUI.EXPECT().Failed("Usage: %s", "cf dev import|start|stop")
+				mockUI.EXPECT().Failed("Usage: %s", "cf dev import|start|status|stop|destroy")
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev"})
 			})
 		})
@@ -279,17 +279,40 @@ var _ = Describe("Plugin", func() {
 					})
 				})
 			})
-			Context("there is no VM", func() {
-				It("should send an error message", func() {
+		})
+		Context("status", func() {
+			Context("VBox VM is running", func() {
+				It("should return the status Running", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
-						mockUI.EXPECT().Say("PCF Dev VM has not been created"),
+						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(true),
+						mockUI.EXPECT().Say("Running"),
 					)
 
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
 				})
 			})
+			Context("VBox VM is stopped", func() {
+				It("should return the status Stopped", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(true, nil),
+						mockVBox.EXPECT().IsVMRunning("pcfdev-2016-03-29_1728").Return(false),
+						mockUI.EXPECT().Say("Stopped"),
+					)
 
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
+				})
+			})
+			Context("VBox VM is not created (i.e. not imported to VBox)", func() {
+				It("should return the status Not Created", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().IsVMImported("pcfdev-2016-03-29_1728").Return(false, nil),
+						mockUI.EXPECT().Say("Not Created"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
+				})
+			})
 		})
 		Context("destroy", func() {
 			It("should destroy the vm", func() {

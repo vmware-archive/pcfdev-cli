@@ -77,6 +77,10 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 		if err := p.start(); err != nil {
 			p.UI.Failed(err.Error())
 		}
+	case "status":
+		if err := p.status(); err != nil {
+			p.UI.Failed(err.Error())
+		}
 	case "stop":
 		if err := p.stop(); err != nil {
 			p.UI.Failed(err.Error())
@@ -181,6 +185,27 @@ func (p *Plugin) destroy() error {
 	return nil
 }
 
+func (p *Plugin) status() error {
+	exists, err := p.VBox.IsVMImported(vmName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		p.UI.Say("Not Created")
+		return nil
+	}
+
+	running := p.VBox.IsVMRunning(vmName)
+
+	if !running {
+		p.UI.Say("Stopped")
+		return nil
+	}
+
+	p.UI.Say("Running")
+	return nil
+}
+
 func (p *Plugin) provision(vm *vbox.VM) error {
 	return p.SSH.RunSSHCommand(fmt.Sprintf("sudo /var/pcfdev/run local.pcfdev.io %s", vm.IP), vm.SSHPort)
 }
@@ -219,7 +244,7 @@ func (*Plugin) GetMetadata() plugin.PluginMetadata {
 				Name:  "dev",
 				Alias: "pcfdev",
 				UsageDetails: plugin.Usage{
-					Usage: "cf dev import|start|stop",
+					Usage: "cf dev import|start|status|stop|destroy",
 				},
 			},
 		},

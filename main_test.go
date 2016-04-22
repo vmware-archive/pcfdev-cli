@@ -81,7 +81,7 @@ var _ = Describe("pcfdev", func() {
 			Expect(session).To(gbytes.Say("PCF Dev is running"))
 			Expect(isVMRunning()).To(BeTrue())
 
-			Eventually(cf("login", "-a", "api.local.pcfdev.io", "-u", "admin", "-p", "admin", "--skip-ssl-validation")).Should(gexec.Exit(0))
+			Eventually(cf("login", "-a", "api.local.pcfdev.io", "-u", "admin", "-p", "admin", "--skip-ssl-validation"), 5*time.Second).Should(gexec.Exit(0))
 			Eventually(cf("push", "app", "-o", "cloudfoundry/lattice-app"), 2*time.Minute).Should(gexec.Exit(0))
 
 			pcfdevCommand = exec.Command("cf", "dev", "stop")
@@ -112,7 +112,7 @@ var _ = Describe("pcfdev", func() {
 			Expect(session).To(gbytes.Say("PCF Dev is now running"))
 			Expect(isVMRunning()).To(BeTrue())
 
-			Eventually(cf("login", "-a", "api.local.pcfdev.io", "-u", "admin", "-p", "admin", "--skip-ssl-validation")).Should(gexec.Exit(0))
+			Eventually(cf("login", "-a", "api.local.pcfdev.io", "-u", "admin", "-p", "admin", "--skip-ssl-validation"), 5*time.Second).Should(gexec.Exit(0))
 			Eventually(cf("push", "app", "-o", "cloudfoundry/lattice-app"), 2*time.Minute).Should(gexec.Exit(0))
 		})
 
@@ -133,7 +133,7 @@ var _ = Describe("pcfdev", func() {
 			_, err = os.Stat(filepath.Join(os.Getenv("HOME"), ".pcfdev", "pcfdev.ova"))
 			Expect(err).NotTo(HaveOccurred())
 
-			listVmsCommand := exec.Command("VboxManage", "list", "vms")
+			listVmsCommand := exec.Command("VBoxManage", "list", "vms")
 			session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))

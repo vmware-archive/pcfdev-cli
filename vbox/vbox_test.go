@@ -46,12 +46,12 @@ var _ = Describe("vbox", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		Context("fail to aquire random host port", func() {
+		Context("fail to acquire random host port", func() {
 			It("should return an error", func() {
 				mockSSH.EXPECT().GenerateAddress().Return("", "", errors.New("some-error"))
 
 				err := vbx.ImportVM("some-path", "some-vm")
-				Expect(err.Error()).To(Equal("failed to aquire random port: some-error"))
+				Expect(err).To(MatchError("failed to acquire random port: some-error"))
 			})
 		})
 
@@ -62,7 +62,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().VBoxManage("import", "some-path").Return(nil, errors.New("some-error")),
 				)
 				err := vbx.ImportVM("some-path", "some-vm")
-				Expect(err.Error()).To(Equal("failed to import ova: some-error"))
+				Expect(err).To(MatchError("failed to import ova: some-error"))
 			})
 		})
 
@@ -74,7 +74,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().CreateHostOnlyInterface("192.168.11.1").Return("", errors.New("some-error")),
 				)
 				err := vbx.ImportVM("some-path", "some-vm")
-				Expect(err.Error()).To(Equal("failed to create host only interface: some-error"))
+				Expect(err).To(MatchError("failed to create host only interface: some-error"))
 			})
 		})
 
@@ -87,7 +87,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachNetworkInterface("vboxnet1", "some-vm").Return(errors.New("some-error")),
 				)
 				err := vbx.ImportVM("some-path", "some-vm")
-				Expect(err.Error()).To(Equal("failed to attach interface: some-error"))
+				Expect(err).To(MatchError("failed to attach interface: some-error"))
 			})
 		})
 
@@ -101,7 +101,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "22", "1234").Return(errors.New("some-error")),
 				)
 				err := vbx.ImportVM("some-path", "some-vm")
-				Expect(err.Error()).To(Equal("failed to forward ssh port: some-error"))
+				Expect(err).To(MatchError("failed to forward ssh port: some-error"))
 			})
 		})
 	})
@@ -128,7 +128,7 @@ var _ = Describe("vbox", func() {
 
 					vm, err := vbx.StartVM("some-vm")
 					Expect(vm).To(BeNil())
-					Expect(err.Error()).To(Equal("failed to get host port for ssh forwarding: some-error"))
+					Expect(err).To(MatchError("failed to get host port for ssh forwarding: some-error"))
 				})
 			})
 
@@ -140,7 +140,7 @@ var _ = Describe("vbox", func() {
 					)
 
 					_, err := vbx.StartVM("some-vm")
-					Expect(err.Error()).To(Equal("failed to start vm: some-error"))
+					Expect(err).To(MatchError("failed to start vm: some-error"))
 				})
 			})
 
@@ -152,7 +152,7 @@ var _ = Describe("vbox", func() {
 						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "5678").Return(errors.New("some-error")),
 					)
 					_, err := vbx.StartVM("some-vm")
-					Expect(err.Error()).To(Equal("failed to set static ip: some-error"))
+					Expect(err).To(MatchError("failed to set static ip: some-error"))
 				})
 			})
 
@@ -165,7 +165,7 @@ var _ = Describe("vbox", func() {
 						mockDriver.EXPECT().StopVM("some-vm").Return(errors.New("some-error")),
 					)
 					_, err := vbx.StartVM("some-vm")
-					Expect(err.Error()).To(Equal("failed to stop vm: some-error"))
+					Expect(err).To(MatchError("failed to stop vm: some-error"))
 				})
 			})
 		})
@@ -185,7 +185,7 @@ var _ = Describe("vbox", func() {
 
 				mockDriver.EXPECT().StopVM("some-vm").Return(expectedError)
 				err := vbx.StopVM("some-vm")
-				Expect(err).To(Equal(expectedError))
+				Expect(err).To(MatchError(expectedError))
 			})
 		})
 	})
@@ -222,7 +222,7 @@ var _ = Describe("vbox", func() {
 				expectedError := errors.New("some-error")
 				mockDriver.EXPECT().StopVM("some-vm").Return(expectedError)
 				err := vbx.DestroyVM("some-vm")
-				Expect(err).To(Equal(expectedError))
+				Expect(err).To(MatchError(expectedError))
 			})
 		})
 
@@ -235,7 +235,7 @@ var _ = Describe("vbox", func() {
 				expectedError := errors.New("some-error")
 				mockDriver.EXPECT().DestroyVM("some-vm").Return(expectedError)
 				err := vbx.DestroyVM("some-vm")
-				Expect(err).To(Equal(expectedError))
+				Expect(err).To(MatchError(expectedError))
 			})
 		})
 	})
@@ -279,7 +279,7 @@ var _ = Describe("vbox", func() {
 				mockDriver.EXPECT().VMExists("some-vm").Return(false, someError)
 
 				_, err := vbx.Status("some-vm")
-				Expect(err).To(Equal(someError))
+				Expect(err).To(MatchError(someError))
 			})
 		})
 	})

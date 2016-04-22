@@ -25,7 +25,6 @@ var _ = Describe("Plugin", func() {
 		mockFS     *mocks.MockFS
 		pcfdev     *plugin.Plugin
 		vm         *vbox.VM
-		err        error
 	)
 
 	const vmName = "pcfdev-2016-03-29_1728"
@@ -48,7 +47,6 @@ var _ = Describe("Plugin", func() {
 			IP:      "some-ip",
 			SSHPort: "some-port",
 		}
-		err = errors.New("some-error")
 	})
 
 	AfterEach(func() {
@@ -243,8 +241,9 @@ var _ = Describe("Plugin", func() {
 				})
 			})
 
-			Context("VM fails to provision", func() {
-				It("prints an error", func() {
+			Context("when the VM fails to provision", func() {
+				It("should print an error", func() {
+					err := errors.New("some-error")
 					gomock.InOrder(
 						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusStopped, nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),

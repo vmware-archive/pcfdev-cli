@@ -9,8 +9,7 @@ import (
 type FS struct{}
 
 func (fs *FS) Exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err != nil {
+	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
 		}

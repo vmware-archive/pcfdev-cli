@@ -15,12 +15,15 @@ import (
 var _ = Describe("PivNet Client", func() {
 
 	Context("API token is set in env", func() {
+		var oldPivnetToken string
+
 		BeforeEach(func() {
+			oldPivnetToken = os.Getenv("PIVNET_TOKEN")
 			os.Setenv("PIVNET_TOKEN", "some-token")
 		})
 
 		AfterEach(func() {
-			os.Unsetenv("PIVNET_TOKEN")
+			os.Setenv("PIVNET_TOKEN", oldPivnetToken)
 		})
 
 		It("should download an ova from network.pivotal.io", func() {

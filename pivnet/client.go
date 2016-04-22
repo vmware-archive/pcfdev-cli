@@ -13,7 +13,6 @@ type Client struct {
 }
 
 func (c *Client) DownloadOVA() (io.ReadCloser, error) {
-	client := http.DefaultClient
 	if c.Token == "" {
 		return nil, errors.New("missing Pivotal Network API token, please set PIVNET_TOKEN environment variable")
 	}
@@ -24,7 +23,7 @@ func (c *Client) DownloadOVA() (io.ReadCloser, error) {
 	}
 
 	req.Header.Set("Authorization", "Token "+c.Token)
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.New("failed to reach Pivotal Network")
 	}

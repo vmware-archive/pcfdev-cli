@@ -2,7 +2,6 @@ package vbox_test
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -22,15 +21,12 @@ import (
 
 var _ = Describe("driver", func() {
 	var driver *vbox.VBoxDriver
-	var err error
-
-	const vmName = "Snappy"
 
 	BeforeEach(func() {
 		driver = &vbox.VBoxDriver{}
 		_, err := os.Stat("../assets/snappy.ova")
 		if os.IsNotExist(err) {
-			fmt.Println("Downloading ova...")
+			By("Downloading ova...")
 			resp, err := http.Get("https://s3.amazonaws.com/pcfdev/ovas/snappy.ova")
 			Expect(err).NotTo(HaveOccurred())
 			ovaFile, err := os.Create("../assets/snappy.ova")
@@ -38,13 +34,14 @@ var _ = Describe("driver", func() {
 			defer ovaFile.Close()
 			_, err = io.Copy(ovaFile, resp.Body)
 		}
+
 		_, err = driver.VBoxManage("import", "../assets/snappy.ova")
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		driver.VBoxManage("controlvm", vmName, "poweroff")
-		driver.VBoxManage("unregistervm", vmName, "--delete")
+		driver.VBoxManage("controlvm", "Snappy", "poweroff")
+		driver.VBoxManage("unregistervm", "Snappy", "--delete")
 	})
 
 	Describe("#VBoxManage", func() {
@@ -57,16 +54,16 @@ var _ = Describe("driver", func() {
 		It("should return any errors", func() {
 			stdout, err := driver.VBoxManage("some-bad-command")
 			Expect(err).To(HaveOccurred())
-			Expect(string(stdout)).To(Equal(""))
+			Expect(string(stdout)).To(BeEmpty())
 		})
 	})
 
 	Describe("StartVM and StopVM and DestroyVM", func() {
 		It("Should start, stop, and then destroy a VBox VM", func() {
 			sshClient := &ssh.SSH{}
-			err = driver.StartVM(vmName)
+			err := driver.StartVM("Snappy")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(driver.IsVMRunning(vmName)).To(BeTrue())
+			Expect(driver.IsVMRunning("Snappy")).To(BeTrue())
 			_, err = sshClient.WaitForSSH(&cssh.ClientConfig{
 				User: "ubuntu",
 				Auth: []cssh.AuthMethod{
@@ -75,15 +72,15 @@ var _ = Describe("driver", func() {
 			}, "2222")
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.StopVM(vmName)
+			err = driver.StopVM("Snappy")
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() bool { return driver.IsVMRunning(vmName) }, 120*time.Second).Should(BeFalse())
+			Eventually(func() bool { return driver.IsVMRunning("Snappy") }, 120*time.Second).Should(BeFalse())
 
-			err = driver.DestroyVM(vmName)
+			err = driver.DestroyVM("Snappy")
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() bool {
-				exists, err := driver.VMExists(vmName)
+				exists, err := driver.VMExists("Snappy")
 				Expect(err).NotTo(HaveOccurred())
 				return exists
 			}, 120*time.Second).Should(BeFalse())
@@ -93,23 +90,23 @@ var _ = Describe("driver", func() {
 			vboxnet, err := driver.CreateHostOnlyInterface("192.168.88.1")
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.AttachNetworkInterface(vboxnet, vmName)
+			err = driver.AttachNetworkInterface(vboxnet, "Snappy")
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.StartVM(vmName)
+			err = driver.StartVM("Snappy")
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() string {
-				exists, err := driver.GetVBoxNetName(vmName)
+				exists, err := driver.GetVBoxNetName("Snappy")
 				Expect(err).NotTo(HaveOccurred())
 				return string(exists)
 			}).Should(ContainSubstring(vboxnet))
 			Expect(driver.VBoxManage("list", "hostonlyifs")).To(ContainSubstring(vboxnet))
 
-			_, err = driver.VBoxManage("controlvm", vmName, "poweroff")
+			_, err = driver.VBoxManage("controlvm", "Snappy", "poweroff")
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.DestroyVM(vmName)
+			err = driver.DestroyVM("Snappy")
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() string {
@@ -142,7 +139,7 @@ var _ = Describe("driver", func() {
 		Context("VM with given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.StartVM("some-bad-vm-name")
-				Expect(err.Error()).To(ContainSubstring("failed to execute 'VBoxManage startvm some-bad-vm-name':"))
+				Expect(err).To(MatchError("failed to execute 'VBoxManage startvm some-bad-vm-name --type headless': exit status 1"))
 			})
 		})
 	})
@@ -151,7 +148,7 @@ var _ = Describe("driver", func() {
 		Context("VM with given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.StopVM("some-bad-vm-name")
-				Expect(err.Error()).To(ContainSubstring("failed to execute 'VBoxManage controlvm some-bad-vm-name acpipowerbutton':"))
+				Expect(err).To(MatchError("failed to execute 'VBoxManage controlvm some-bad-vm-name acpipowerbutton': exit status 1"))
 			})
 		})
 	})
@@ -160,7 +157,7 @@ var _ = Describe("driver", func() {
 		Context("VM with given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.DestroyVM("some-bad-vm-name")
-				Expect(err.Error()).To(ContainSubstring("failed to execute 'VBoxManage showvminfo some-bad-vm-name --machinereadable':"))
+				Expect(err).To(MatchError("failed to execute 'VBoxManage showvminfo some-bad-vm-name --machinereadable': exit status 1"))
 			})
 		})
 	})
@@ -213,7 +210,7 @@ var _ = Describe("driver", func() {
 
 	Describe("#AttachInterface", func() {
 		BeforeEach(func() {
-			_, err = driver.CreateHostOnlyInterface("192.168.77.1")
+			_, err := driver.CreateHostOnlyInterface("192.168.77.1")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -222,10 +219,10 @@ var _ = Describe("driver", func() {
 		})
 
 		It("Should attach a network interface to the vm", func() {
-			err := driver.AttachNetworkInterface("vboxnet1", vmName)
+			err := driver.AttachNetworkInterface("vboxnet1", "Snappy")
 			Expect(err).NotTo(HaveOccurred())
 
-			showvmInfoCommand := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable")
+			showvmInfoCommand := exec.Command("VBoxManage", "showvminfo", "Snappy", "--machinereadable")
 			session, err := gexec.Start(showvmInfoCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))
@@ -237,17 +234,17 @@ var _ = Describe("driver", func() {
 			It("returns an error", func() {
 				name := "some-bad-vm"
 				err := driver.AttachNetworkInterface("vboxnet1", name)
-				Expect(err.Error()).To(ContainSubstring("failed to attach vboxnet1 interface to vm some-bad-vm:"))
+				Expect(err).To(MatchError("failed to execute 'VBoxManage modifyvm some-bad-vm --nic2 hostonly --hostonlyadapter2 vboxnet1': exit status 1"))
 			})
 		})
 	})
 
 	Describe("#GetHostForwardPort", func() {
 		It("Returns the port of the forwarded port on the host", func() {
-			err := driver.ForwardPort(vmName, "some-rule-name", "22", "2739")
+			err := driver.ForwardPort("Snappy", "some-rule-name", "22", "2739")
 			Expect(err).NotTo(HaveOccurred())
 
-			port, err := driver.GetHostForwardPort(vmName, "some-rule-name")
+			port, err := driver.GetHostForwardPort("Snappy", "some-rule-name")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(port).To(Equal("2739"))
@@ -256,9 +253,9 @@ var _ = Describe("driver", func() {
 
 	Describe("#ForwardPort", func() {
 		It("Should forward guest port to the given host port", func() {
-			err := driver.ForwardPort(vmName, "some-rule-name", "22", "2739")
+			err := driver.ForwardPort("Snappy", "some-rule-name", "22", "2739")
 			Expect(err).NotTo(HaveOccurred())
-			err = driver.StartVM(vmName)
+			err = driver.StartVM("Snappy")
 			Expect(err).NotTo(HaveOccurred())
 			sshClient := &ssh.SSH{}
 			_, err = sshClient.WaitForSSH(&cssh.ClientConfig{
@@ -287,7 +284,7 @@ var _ = Describe("driver", func() {
 		Context("VM is running", func() {
 			It("Should return true", func() {
 				sshClient := &ssh.SSH{}
-				err = driver.StartVM("Snappy")
+				err := driver.StartVM("Snappy")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(driver.IsVMRunning("Snappy")).To(BeTrue())
 

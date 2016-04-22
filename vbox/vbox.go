@@ -78,7 +78,7 @@ func (v *VBox) ImportVM(path string, name string) error {
 	var sshPort string
 	_, sshPort, err := v.SSH.GenerateAddress()
 	if err != nil {
-		return fmt.Errorf("failed to aquire random port: %s", err)
+		return fmt.Errorf("failed to acquire random port: %s", err)
 	}
 	_, err = v.Driver.VBoxManage("import", path)
 	if err != nil {

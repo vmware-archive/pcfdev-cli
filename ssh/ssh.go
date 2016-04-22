@@ -41,10 +41,7 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 
 	defer session.Close()
 
-	if err := session.Run(command); err != nil {
-		return err
-	}
-	return nil
+	return session.Run(command)
 }
 
 func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string) (*ssh.Client, error) {

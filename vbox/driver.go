@@ -12,32 +12,32 @@ import (
 type VBoxDriver struct{}
 
 func (*VBoxDriver) VBoxManage(arg ...string) ([]byte, error) {
-	return exec.Command("VBoxManage", arg...).Output()
+	output, err := exec.Command("VBoxManage", arg...).Output()
+	if err != nil {
+		return output, fmt.Errorf("failed to execute 'VBoxManage %s': %s", strings.Join(arg, " "), err)
+	}
+	return output, nil
 }
 
 func (d *VBoxDriver) StartVM(name string) error {
 	_, err := d.VBoxManage("startvm", name, "--type", "headless")
-	if err != nil {
-		return fmt.Errorf("failed to execute 'VBoxManage startvm %s': %s", name, err)
-	}
-	return nil
+	return err
 }
 
 func (d *VBoxDriver) VMExists(name string) (bool, error) {
 	output, err := d.VBoxManage("list", "vms")
 
 	if err != nil {
-		return false, fmt.Errorf("failed to execute 'VBoxManage list vms: %s", err)
+		return false, err
 	}
 
 	return strings.Contains(string(output), `"`+name+`"`), nil
 }
 
 func (d *VBoxDriver) StopVM(name string) error {
-	var err error
-	_, err = d.VBoxManage("controlvm", name, "acpipowerbutton")
+	_, err := d.VBoxManage("controlvm", name, "acpipowerbutton")
 	if err != nil {
-		return fmt.Errorf("failed to execute 'VBoxManage controlvm %s acpipowerbutton': %s", name, err)
+		return err
 	}
 	for attempts := 0; attempts < 100; attempts++ {
 		if !d.IsVMRunning(name) {
@@ -51,18 +51,18 @@ func (d *VBoxDriver) StopVM(name string) error {
 func (d *VBoxDriver) DestroyVM(name string) error {
 	vboxnet, err := d.GetVBoxNetName(name)
 	if err != nil {
-		return fmt.Errorf("failed to execute 'VBoxManage showvminfo %s --machinereadable': %s", name, err)
+		return err
 	}
 
 	_, err = d.VBoxManage("unregistervm", name, "--delete")
 	if err != nil {
-		return fmt.Errorf("failed to execute 'VBoxManage unregistervm %s --delete': %s", name, err)
+		return err
 	}
 
 	if vboxnet != "" {
 		err = d.DestroyHostOnlyInterface(vboxnet)
 		if err != nil {
-			return fmt.Errorf("failed to execute 'VBoxManage hostonlyif remove %s': %s", vboxnet, err)
+			return err
 		}
 	}
 
@@ -70,18 +70,14 @@ func (d *VBoxDriver) DestroyVM(name string) error {
 }
 
 func (d *VBoxDriver) ForwardPort(vmName string, ruleName string, guestPort string, hostPort string) error {
-	var err error
-	_, err = d.VBoxManage("modifyvm", vmName, "--natpf1", fmt.Sprintf("%s,tcp,127.0.0.1,%s,,%s", ruleName, hostPort, guestPort))
-	if err != nil {
-		return fmt.Errorf("failed to forward guest port %s to host port %s: %s", guestPort, hostPort, err)
-	}
-	return nil
+	_, err := d.VBoxManage("modifyvm", vmName, "--natpf1", fmt.Sprintf("%s,tcp,127.0.0.1,%s,,%s", ruleName, hostPort, guestPort))
+	return err
 }
 
 func (d *VBoxDriver) GetHostForwardPort(vmName string, ruleName string) (string, error) {
 	output, err := d.VBoxManage("showvminfo", vmName, "--machinereadable")
 	if err != nil {
-		return "", fmt.Errorf("failed to execute 'VBoxManage showvminfo %s --machinereadable': %s", vmName, err)
+		return "", err
 	}
 
 	regex := regexp.MustCompile(`Forwarding\(\d+\)="` + ruleName + `,tcp,127.0.0.1,(.*),,22"`)
@@ -89,27 +85,23 @@ func (d *VBoxDriver) GetHostForwardPort(vmName string, ruleName string) (string,
 }
 
 func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (string, error) {
-	var err error
 	output, err := d.VBoxManage("hostonlyif", "create")
 	if err != nil {
-		return "", fmt.Errorf("failed to create hostonlyif: %s", err)
+		return "", err
 	}
 	regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
 	name := regex.FindStringSubmatch(string(output))[1]
 
 	_, err = d.VBoxManage("hostonlyif", "ipconfig", name, "--ip", ip, "--netmask", "255.255.255.0")
 	if err != nil {
-		return "", fmt.Errorf("failed to configure hostonlyif: %s", err)
+		return "", err
 	}
 	return name, nil
 }
 
 func (d *VBoxDriver) AttachNetworkInterface(vboxnet string, vmName string) error {
 	_, err := d.VBoxManage("modifyvm", vmName, "--nic2", "hostonly", "--hostonlyadapter2", vboxnet)
-	if err != nil {
-		return fmt.Errorf("failed to attach %s interface to vm %s: %s", vboxnet, vmName, err)
-	}
-	return nil
+	return err
 }
 
 func (d *VBoxDriver) IsVMRunning(name string) bool {

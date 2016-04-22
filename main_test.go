@@ -45,6 +45,20 @@ var _ = AfterSuite(func() {
 
 var _ = Describe("pcfdev", func() {
 	Context("pivnet api token is set in environment", func() {
+		AfterEach(func() {
+			output, err := exec.Command("VBoxManage", "showvminfo", "pcfdev-2016-03-29_1728", "--machinereadable").Output()
+			if err != nil {
+				return
+			}
+
+			regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
+			vboxnet := regex.FindStringSubmatch(string(output))[1]
+
+			exec.Command("VBoxManage", "controlvm", "pcfdev-2016-03-29_1728", "poweroff").Run()
+			exec.Command("VBoxManage", "unregistervm", "pcfdev-2016-03-29_1728", "--delete").Run()
+			exec.Command("VBoxManage", "hostonlyif", "remove", vboxnet).Run()
+		})
+
 		It("should start, stop, and destroy a virtualbox instance", func() {
 			pcfdevCommand := exec.Command("cf", "dev", "start")
 			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
@@ -96,6 +110,7 @@ var _ = Describe("pcfdev", func() {
 			Eventually(cf("login", "-a", "api.local.pcfdev.io", "-u", "admin", "-p", "admin", "--skip-ssl-validation")).Should(gexec.Exit(0))
 			Eventually(cf("push", "app", "-o", "cloudfoundry/lattice-app"), 2*time.Minute).Should(gexec.Exit(0))
 		})
+
 		It("should respond to pcfdev alias", func() {
 			pcfdevCommand := exec.Command("cf", "pcfdev")
 			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
@@ -103,6 +118,7 @@ var _ = Describe("pcfdev", func() {
 			Eventually(session).Should(gexec.Exit(1))
 			Expect(session).To(gbytes.Say("Usage: cf dev import|start|stop"))
 		})
+
 		It("should import a VM without starting it", func() {
 			pcfdevCommand := exec.Command("cf", "dev", "import")
 			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
@@ -114,20 +130,6 @@ var _ = Describe("pcfdev", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("pcfdev-2016-03-29_1728"))
-		})
-
-		AfterEach(func() {
-			output, err := exec.Command("VBoxManage", "showvminfo", "pcfdev-2016-03-29_1728", "--machinereadable").Output()
-			if err != nil {
-				return
-			}
-
-			regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
-			vboxnet := regex.FindStringSubmatch(string(output))[1]
-
-			exec.Command("VBoxManage", "controlvm", "pcfdev-2016-03-29_1728", "poweroff").Run()
-			exec.Command("VBoxManage", "unregistervm", "pcfdev-2016-03-29_1728", "--delete").Run()
-			exec.Command("VBoxManage", "hostonlyif", "remove", vboxnet).Run()
 		})
 	})
 })

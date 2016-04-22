@@ -57,19 +57,23 @@ var _ = Describe("Plugin", func() {
 
 	Describe("Run", func() {
 		var home string
+
 		BeforeEach(func() {
 			home = os.Getenv("HOME")
 			os.Setenv("HOME", "/some/dir")
 		})
+
 		AfterEach(func() {
 			os.Setenv("HOME", home)
 		})
+
 		Context("wrong number of arguments", func() {
 			It("prints the usage message", func() {
 				mockUI.EXPECT().Failed("Usage: %s", "cf dev import|start|status|stop|destroy")
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev"})
 			})
 		})
+
 		Context("import", func() {
 			Context("when not already imported", func() {
 				It("should import the VM", func() {
@@ -251,6 +255,7 @@ var _ = Describe("Plugin", func() {
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
 			})
+
 			Context("VM is running", func() {
 				It("should stop the vm", func() {
 					gomock.InOrder(
@@ -262,6 +267,7 @@ var _ = Describe("Plugin", func() {
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
 				})
+
 				Context("Vbox fails to stop VM", func() {
 					It("should print an error", func() {
 						err := errors.New("some-error")
@@ -277,6 +283,7 @@ var _ = Describe("Plugin", func() {
 				})
 			})
 		})
+
 		Context("status", func() {
 			Context("VBox VM is running", func() {
 				It("should return the status Running", func() {
@@ -288,6 +295,7 @@ var _ = Describe("Plugin", func() {
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
 				})
 			})
+
 			Context("VBox VM is stopped", func() {
 				It("should return the status Stopped", func() {
 					gomock.InOrder(
@@ -298,6 +306,7 @@ var _ = Describe("Plugin", func() {
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
 				})
 			})
+
 			Context("VBox VM is not created (i.e. not imported to VBox)", func() {
 				It("should return the status Not Created", func() {
 					gomock.InOrder(
@@ -309,6 +318,7 @@ var _ = Describe("Plugin", func() {
 				})
 			})
 		})
+
 		Context("destroy", func() {
 			It("should destroy the vm", func() {
 				gomock.InOrder(
@@ -320,6 +330,7 @@ var _ = Describe("Plugin", func() {
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
 			})
+
 			Context("there is no VM", func() {
 				It("should send an error message", func() {
 					gomock.InOrder(

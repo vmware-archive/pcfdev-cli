@@ -53,6 +53,7 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(stdout)).To(ContainSubstring("Oracle VM VirtualBox Command Line Management Interface"))
 		})
+
 		It("should return any errors", func() {
 			stdout, err := driver.VBoxManage("some-bad-command")
 			Expect(err).To(HaveOccurred())
@@ -86,6 +87,7 @@ var _ = Describe("driver", func() {
 				return exists
 			}, 120*time.Second).Should(BeFalse())
 		})
+
 		It("Should destroy the VBox VM network interface", func() {
 			vboxnet, err := driver.CreateHostOnlyInterface("192.168.88.1")
 			Expect(err).NotTo(HaveOccurred())
@@ -125,6 +127,7 @@ var _ = Describe("driver", func() {
 				Expect(exists).To(BeTrue())
 			})
 		})
+
 		Context("VM does Not exist", func() {
 			It("returns false", func() {
 				exists, err := driver.VMExists("does-not-exist")
@@ -133,6 +136,7 @@ var _ = Describe("driver", func() {
 			})
 		})
 	})
+
 	Describe("#StartVM", func() {
 		Context("VM with given name does not exist", func() {
 			It("should return an error", func() {
@@ -141,6 +145,7 @@ var _ = Describe("driver", func() {
 			})
 		})
 	})
+
 	Describe("#StopVM", func() {
 		Context("VM with given name does not exist", func() {
 			It("should return an error", func() {
@@ -149,6 +154,7 @@ var _ = Describe("driver", func() {
 			})
 		})
 	})
+
 	Describe("#DestroyVM", func() {
 		Context("VM with given name does not exist", func() {
 			It("should return an error", func() {
@@ -157,7 +163,12 @@ var _ = Describe("driver", func() {
 			})
 		})
 	})
+
 	Describe("#CreateHostOnlyInterface", func() {
+		AfterEach(func() {
+			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet1").Run()
+		})
+
 		It("Should create a hostonlyif", func() {
 			name, err := driver.CreateHostOnlyInterface("192.168.77.1")
 			Expect(err).NotTo(HaveOccurred())
@@ -178,13 +189,13 @@ var _ = Describe("driver", func() {
 			Expect(output.String()).To(MatchRegexp(`IPAddress:\s+192.168.77.1`))
 			Expect(output.String()).To(MatchRegexp(`NetworkMask:\s+255.255.255.0`))
 		})
-
-		AfterEach(func() {
-			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet1").Run()
-		})
 	})
 
 	Describe("#DestroyHostOnlyInterface", func() {
+		AfterEach(func() {
+			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet1").Run()
+		})
+
 		It("Should destroy a hostonlyif", func() {
 			name, err := driver.CreateHostOnlyInterface("192.168.77.1")
 			Expect(err).NotTo(HaveOccurred())
@@ -197,16 +208,18 @@ var _ = Describe("driver", func() {
 			Eventually(session).Should(gexec.Exit(0))
 			Expect(session).NotTo(gbytes.Say(name))
 		})
-
-		AfterEach(func() {
-			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet1").Run()
-		})
 	})
+
 	Describe("#AttachInterface", func() {
 		BeforeEach(func() {
 			_, err = driver.CreateHostOnlyInterface("192.168.77.1")
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		AfterEach(func() {
+			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet1").Run()
+		})
+
 		It("Should attach a network interface to the vm", func() {
 			err := driver.AttachNetworkInterface("vboxnet1", vmName)
 			Expect(err).NotTo(HaveOccurred())
@@ -218,15 +231,13 @@ var _ = Describe("driver", func() {
 			Expect(session).To(gbytes.Say(`hostonlyadapter2="vboxnet1"`))
 			Expect(session).To(gbytes.Say(`nic2="hostonly"`))
 		})
+
 		Context("fails to attach interface", func() {
 			It("returns an error", func() {
 				name := "some-bad-vm"
 				err := driver.AttachNetworkInterface("vboxnet1", name)
 				Expect(err.Error()).To(ContainSubstring("failed to attach vboxnet1 interface to vm some-bad-vm:"))
 			})
-		})
-		AfterEach(func() {
-			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet1").Run()
 		})
 	})
 
@@ -257,17 +268,20 @@ var _ = Describe("driver", func() {
 			}, "2739")
 		})
 	})
+
 	Describe("#IsVMRunning", func() {
 		Context("VM does not exist", func() {
 			It("Should return false", func() {
 				Expect(driver.IsVMRunning("some-bad-vm")).To(BeFalse())
 			})
 		})
+
 		Context("VM is not running", func() {
 			It("Should return false", func() {
 				Expect(driver.IsVMRunning("Snappy")).To(BeFalse())
 			})
 		})
+
 		Context("VM is running", func() {
 			It("Should return true", func() {
 				sshClient := &ssh.SSH{}

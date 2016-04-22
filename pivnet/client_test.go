@@ -19,6 +19,10 @@ var _ = Describe("PivNet Client", func() {
 			os.Setenv("PIVNET_TOKEN", "some-token")
 		})
 
+		AfterEach(func() {
+			os.Unsetenv("PIVNET_TOKEN")
+		})
+
 		It("should download an ova from network.pivotal.io", func() {
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				defer GinkgoRecover()
@@ -83,10 +87,6 @@ var _ = Describe("PivNet Client", func() {
 				_, err := client.DownloadOVA()
 				Expect(err.Error()).To(MatchRegexp("you must accept the EULA before you can download the PCF Dev image: .*/products/pcfdev#/releases/1622"))
 			})
-		})
-
-		AfterEach(func() {
-			os.Unsetenv("PIVNET_TOKEN")
 		})
 	})
 })

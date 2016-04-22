@@ -34,7 +34,6 @@ var _ = Describe("vbox", func() {
 	})
 
 	Describe("ImportVM", func() {
-
 		It("should import the VM", func() {
 			gomock.InOrder(
 				mockSSH.EXPECT().FreePort().Return("1234", nil),
@@ -46,6 +45,7 @@ var _ = Describe("vbox", func() {
 			err := vbx.ImportVM("some-path", "some-vm")
 			Expect(err).NotTo(HaveOccurred())
 		})
+
 		Context("fail to aquire random host port", func() {
 			It("should return an error", func() {
 				mockSSH.EXPECT().FreePort().Return("", errors.New("some-error"))
@@ -54,6 +54,7 @@ var _ = Describe("vbox", func() {
 				Expect(err.Error()).To(Equal("failed to aquire random port: some-error"))
 			})
 		})
+
 		Context("VM fails to import", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
@@ -64,6 +65,7 @@ var _ = Describe("vbox", func() {
 				Expect(err.Error()).To(Equal("failed to import ova: some-error"))
 			})
 		})
+
 		Context("Creation of host only interface fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
@@ -75,6 +77,7 @@ var _ = Describe("vbox", func() {
 				Expect(err.Error()).To(Equal("failed to create host only interface: some-error"))
 			})
 		})
+
 		Context("fails to attach interface", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
@@ -87,6 +90,7 @@ var _ = Describe("vbox", func() {
 				Expect(err.Error()).To(Equal("failed to attach interface: some-error"))
 			})
 		})
+
 		Context("Port fowarding fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
@@ -101,6 +105,7 @@ var _ = Describe("vbox", func() {
 			})
 		})
 	})
+
 	Describe("StartVM", func() {
 		Context("VM is already imported", func() {
 			It("starts without reimporting", func() {
@@ -116,6 +121,7 @@ var _ = Describe("vbox", func() {
 				Expect(vm.Name).To(Equal("some-vm"))
 				Expect(vm.SSHPort).To(Equal("5678"))
 			})
+
 			Context("fails so get forward port", func() {
 				It("should return an error", func() {
 					mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("", errors.New("some-error"))
@@ -125,6 +131,7 @@ var _ = Describe("vbox", func() {
 					Expect(err.Error()).To(Equal("failed to get host port for ssh forwarding: some-error"))
 				})
 			})
+
 			Context("VM fails to start", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
@@ -136,6 +143,7 @@ var _ = Describe("vbox", func() {
 					Expect(err.Error()).To(Equal("failed to start vm: some-error"))
 				})
 			})
+
 			Context("SSH Command to set static ip fails", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
@@ -147,6 +155,7 @@ var _ = Describe("vbox", func() {
 					Expect(err.Error()).To(Equal("failed to set static ip: some-error"))
 				})
 			})
+
 			Context("VM fails to stop", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
@@ -161,6 +170,7 @@ var _ = Describe("vbox", func() {
 			})
 		})
 	})
+
 	Describe("StopVM", func() {
 		It("should stop the VM", func() {
 			mockDriver.EXPECT().StopVM("some-vm")
@@ -168,6 +178,7 @@ var _ = Describe("vbox", func() {
 			err := vbx.StopVM("some-vm")
 			Expect(err).NotTo(HaveOccurred())
 		})
+
 		Context("Driver fails to stop VM", func() {
 			It("should return the error", func() {
 				expectedError := errors.New("some-error")
@@ -178,6 +189,7 @@ var _ = Describe("vbox", func() {
 			})
 		})
 	})
+
 	Describe("DestroyVM", func() {
 		Context("VM is stopped", func() {
 			It("should stop the VM", func() {
@@ -227,6 +239,7 @@ var _ = Describe("vbox", func() {
 			})
 		})
 	})
+
 	Describe("#Status", func() {
 		Context("VM is running", func() {
 			It("should return running", func() {
@@ -259,6 +272,7 @@ var _ = Describe("vbox", func() {
 				Expect(status).To(Equal("Stopped"))
 			})
 		})
+
 		Context("An error checking the VM Status", func() {
 			It("should return an error", func() {
 				someError := errors.New("some-error")

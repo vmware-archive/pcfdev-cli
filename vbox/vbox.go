@@ -46,7 +46,7 @@ func (v *VBox) StartVM(name string) (*VM, error) {
 	ip := "192.168.11.11"
 	sshPort, err := v.Driver.GetHostForwardPort(name, "ssh")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get host port for ssh forwarding: %s", err)
+		return nil, err
 	}
 	vm := &VM{
 		SSHPort: sshPort,
@@ -56,19 +56,19 @@ func (v *VBox) StartVM(name string) (*VM, error) {
 
 	err = v.Driver.StartVM(name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start vm: %s", err)
+		return nil, err
 	}
 	err = v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), sshPort)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set static ip: %s", err)
+		return nil, err
 	}
 	err = v.Driver.StopVM(name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to stop vm: %s", err)
+		return nil, err
 	}
 	err = v.Driver.StartVM(vm.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start vm: %s", err)
+		return nil, err
 	}
 
 	return vm, nil
@@ -78,23 +78,23 @@ func (v *VBox) ImportVM(path string, name string) error {
 	var sshPort string
 	_, sshPort, err := v.SSH.GenerateAddress()
 	if err != nil {
-		return fmt.Errorf("failed to acquire random port: %s", err)
+		return err
 	}
 	_, err = v.Driver.VBoxManage("import", path)
 	if err != nil {
-		return fmt.Errorf("failed to import ova: %s", err)
+		return err
 	}
 	vboxnet, err := v.Driver.CreateHostOnlyInterface("192.168.11.1")
 	if err != nil {
-		return fmt.Errorf("failed to create host only interface: %s", err)
+		return err
 	}
 	err = v.Driver.AttachNetworkInterface(vboxnet, name)
 	if err != nil {
-		return fmt.Errorf("failed to attach interface: %s", err)
+		return err
 	}
 	err = v.Driver.ForwardPort(name, "ssh", "22", sshPort)
 	if err != nil {
-		return fmt.Errorf("failed to forward ssh port: %s", err)
+		return err
 	}
 	return nil
 }

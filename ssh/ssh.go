@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"errors"
 	"net"
 	"strings"
 	"time"
@@ -10,13 +11,15 @@ import (
 
 type SSH struct{}
 
-func (*SSH) FreePort() (string, error) {
+func (*SSH) GenerateAddress() (string, string, error) {
 	conn, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return "", err
+		panic(err)
+		return "", "", err
 	}
 	defer conn.Close()
-	return strings.Split(conn.Addr().String(), ":")[1], nil
+	address := strings.Split(conn.Addr().String(), ":")
+	return address[0], address[1], nil
 }
 
 func (s *SSH) RunSSHCommand(command string, port string) error {
@@ -27,8 +30,10 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 		},
 	}
 
-	var err error
-	client := s.WaitForSSH(config, port)
+	client, err := s.WaitForSSH(config, port)
+	if err != nil {
+		return err
+	}
 	session, err := client.NewSession()
 	if err != nil {
 		return err
@@ -42,11 +47,23 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 	return nil
 }
 
-func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string) *ssh.Client {
-	var client *ssh.Client
-	var err error
-	for client, err = ssh.Dial("tcp", "127.0.0.1:"+port, config); err != nil; {
-		time.Sleep(time.Second)
+func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string) (*ssh.Client, error) {
+	successChan := make(chan *ssh.Client)
+	timeoutChan := time.After(time.Minute)
+
+	go func() {
+		var client *ssh.Client
+		var err error
+		for client, err = ssh.Dial("tcp", "127.0.0.1:"+port, config); err != nil; {
+			time.Sleep(time.Second)
+		}
+		successChan <- client
+	}()
+
+	select {
+	case client := <-successChan:
+		return client, nil
+	case <-timeoutChan:
+		return nil, errors.New("ssh connection timed out")
 	}
-	return client
 }

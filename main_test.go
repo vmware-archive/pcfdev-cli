@@ -3,6 +3,7 @@ package main_test
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -45,6 +46,11 @@ var _ = AfterSuite(func() {
 
 var _ = Describe("pcfdev", func() {
 	Context("pivnet api token is set in environment", func() {
+		BeforeEach(func() {
+			err := os.RemoveAll(filepath.Join(os.Getenv("HOME"), ".pcfdev"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		AfterEach(func() {
 			output, err := exec.Command("VBoxManage", "showvminfo", "pcfdev-2016-03-29_1728", "--machinereadable").Output()
 			if err != nil {
@@ -72,7 +78,6 @@ var _ = Describe("pcfdev", func() {
 			session, err = gexec.Start(restartCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1m").Should(gexec.Exit(0))
-			Expect(session).To(gbytes.Say("OVA already imported"))
 			Expect(session).To(gbytes.Say("PCF Dev is running"))
 			Expect(isVMRunning()).To(BeTrue())
 
@@ -116,20 +121,28 @@ var _ = Describe("pcfdev", func() {
 			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(1))
-			Expect(session).To(gbytes.Say("Usage: cf dev import|start|stop"))
+			Expect(session).To(gbytes.Say(`Usage: cf dev download\|start\|status\|stop\|destroy`))
 		})
 
-		It("should import a VM without starting it", func() {
-			pcfdevCommand := exec.Command("cf", "dev", "import")
+		It("should download a VM without importing it", func() {
+			pcfdevCommand := exec.Command("cf", "dev", "download")
 			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1h").Should(gexec.Exit(0))
+
+			_, err = os.Stat(filepath.Join(os.Getenv("HOME"), ".pcfdev", "pcfdev.ova"))
+			Expect(err).NotTo(HaveOccurred())
 
 			listVmsCommand := exec.Command("VboxManage", "list", "vms")
 			session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))
-			Expect(session).To(gbytes.Say("pcfdev-2016-03-29_1728"))
+			Expect(session).NotTo(gbytes.Say("pcfdev-2016-03-29_1728"))
+
+			pcfdevCommand = exec.Command("cf", "dev", "download")
+			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session).Should(gexec.Exit(0))
 		})
 	})
 })

@@ -75,109 +75,47 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("import", func() {
-			Context("when not already imported", func() {
+			Context("when ova does not exist", func() {
 				It("should import the VM", func() {
+					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
+					gomock.InOrder(
+						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
+						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
+						mockUI.EXPECT().Say("Downloading VM..."),
+						mockClient.EXPECT().DownloadOVA().Return(readCloser, nil),
+						mockFS.EXPECT().Write("/some/dir/.pcfdev/pcfdev.ova", readCloser).Return(nil),
+						mockUI.EXPECT().Say("Finished downloading VM"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import"})
+				})
+			})
+
+			Context("when ova already exists", func() {
+				It("should not import the VM", func() {
+					gomock.InOrder(
+						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
+						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
+						mockUI.EXPECT().Say("VM already downloaded"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import"})
+				})
+			})
+		})
+
+		Context("start", func() {
+			Context("VM has not been created and pcfdev.ova has not been downloaded", func() {
+				It("should start without downloading the ova", func() {
 					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
 					gomock.InOrder(
 						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
-						mockUI.EXPECT().Say("Downloading OVA..."),
+						mockUI.EXPECT().Say("Downloading VM..."),
 						mockClient.EXPECT().DownloadOVA().Return(readCloser, nil),
 						mockFS.EXPECT().Write("/some/dir/.pcfdev/pcfdev.ova", readCloser).Return(nil),
-						mockUI.EXPECT().Say("Finished downloading OVA"),
-						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", vmName).Return(nil),
-						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import"})
-				})
-			})
-
-			Context("when vm is stopped", func() {
-				It("should not import the VM", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusStopped, nil),
-						mockUI.EXPECT().Say("OVA already imported"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import"})
-				})
-			})
-
-			Context("when vm is running", func() {
-				It("should not import the VM", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusRunning, nil),
-						mockUI.EXPECT().Say("OVA already imported"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import"})
-				})
-			})
-
-			Context("when errors trying to query", func() {
-				It("should report the error", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Status(vmName).Return("", err),
-						mockUI.EXPECT().Failed("some-error"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import"})
-				})
-			})
-
-		})
-		Context("start", func() {
-			It("should start and provision the VM", func() {
-				gomock.InOrder(
-					mockVBox.EXPECT().Status(vmName).Return(vbox.StatusStopped, nil),
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
-					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
-					mockUI.EXPECT().Say("PCF Dev is now running"),
-				)
-
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-			})
-
-			Context("fails to create .pcfdev dir", func() {
-				It("prints an error", func() {
-					err := errors.New("some-error")
-					gomock.InOrder(
-						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil).Times(2),
-						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(err),
-						mockUI.EXPECT().Failed("failed to fetch OVA: some-error"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("fails to check if pcfdev.ova exists", func() {
-				It("prints an error", func() {
-					err := errors.New("some-error")
-
-					gomock.InOrder(
-						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil).Times(2),
-						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
-						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, err),
-						mockUI.EXPECT().Failed("failed to fetch OVA: some-error"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("pcfdev.ova already exists", func() {
-				It("should start without downloading the ova", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil).Times(2),
-						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
-						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
-						mockUI.EXPECT().Say("pcfdev.ova already downloaded"),
+						mockUI.EXPECT().Say("Finished downloading VM"),
 						mockUI.EXPECT().Say("Importing VM..."),
 						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", vmName).Return(nil),
 						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
@@ -187,6 +125,49 @@ var _ = Describe("Plugin", func() {
 						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
 						mockUI.EXPECT().Say("PCF Dev is now running"),
 					)
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
+
+			Context("VM has not been created and pcfdev.ova has been downloaded", func() {
+				It("should start without downloading the ova", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
+						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
+						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
+						mockUI.EXPECT().Say("VM already downloaded"),
+						mockUI.EXPECT().Say("Importing VM..."),
+						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", vmName).Return(nil),
+						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
+						mockUI.EXPECT().Say("Starting VM..."),
+						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
+						mockUI.EXPECT().Say("Provisioning VM..."),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
+						mockUI.EXPECT().Say("PCF Dev is now running"),
+					)
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
+
+			Context("VM is stopped", func() {
+				It("should start and provision the VM", func() {
+					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
+					gomock.InOrder(
+						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusStopped, nil),
+						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
+						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
+						mockUI.EXPECT().Say("Downloading VM..."),
+						mockClient.EXPECT().DownloadOVA().Return(readCloser, nil),
+						mockFS.EXPECT().Write("/some/dir/.pcfdev/pcfdev.ova", readCloser).Return(nil),
+						mockUI.EXPECT().Say("Finished downloading VM"),
+
+						mockUI.EXPECT().Say("Starting VM..."),
+						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
+						mockUI.EXPECT().Say("Provisioning VM..."),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
+						mockUI.EXPECT().Say("PCF Dev is now running"),
+					)
+
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 				})
 			})
@@ -202,16 +183,44 @@ var _ = Describe("Plugin", func() {
 				})
 			})
 
+			Context("fails to create .pcfdev dir", func() {
+				It("prints an error", func() {
+					err := errors.New("some-error")
+					gomock.InOrder(
+						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
+						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(err),
+						mockUI.EXPECT().Failed("failed to fetch VM: some-error"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
+
+			Context("fails to check if pcfdev.ova exists", func() {
+				It("prints an error", func() {
+					err := errors.New("some-error")
+
+					gomock.InOrder(
+						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
+						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
+						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, err),
+						mockUI.EXPECT().Failed("failed to fetch VM: some-error"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
+
 			Context("OVA fails to download", func() {
 				It("prints an error", func() {
 					err := errors.New("some-error")
 					gomock.InOrder(
-						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil).Times(2),
+						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
-						mockUI.EXPECT().Say("Downloading OVA..."),
+						mockUI.EXPECT().Say("Downloading VM..."),
 						mockClient.EXPECT().DownloadOVA().Return(nil, err),
-						mockUI.EXPECT().Failed("failed to fetch OVA: some-error"),
+						mockUI.EXPECT().Failed("failed to fetch VM: some-error"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -222,6 +231,9 @@ var _ = Describe("Plugin", func() {
 				It("prints an error", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusStopped, nil),
+						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
+						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
+						mockUI.EXPECT().Say("VM already downloaded"),
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM(vmName).Return(nil, errors.New("some-error")),
 						mockUI.EXPECT().Failed("failed to start VM: some-error"),
@@ -235,6 +247,9 @@ var _ = Describe("Plugin", func() {
 				It("prints an error", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusStopped, nil),
+						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
+						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
+						mockUI.EXPECT().Say("VM already downloaded"),
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
@@ -245,7 +260,38 @@ var _ = Describe("Plugin", func() {
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 				})
 			})
+
+			Context("VM status query fails", func() {
+				It("prints an error", func() {
+					expectedError := errors.New("some-error")
+					gomock.InOrder(
+						mockVBox.EXPECT().Status(vmName).Return("", expectedError),
+						mockUI.EXPECT().Failed("failed to get VM status: some-error"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
+
+			Context("VM importing fails", func() {
+				It("prints an error", func() {
+					expectedError := errors.New("some-error")
+					gomock.InOrder(
+						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
+						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
+						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
+						mockUI.EXPECT().Say("VM already downloaded"),
+						mockUI.EXPECT().Say("Importing VM..."),
+
+						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", vmName).Return(expectedError),
+						mockUI.EXPECT().Failed("failed to import VM: some-error"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
 		})
+
 		Context("stop", func() {
 			It("should stop the vm", func() {
 				gomock.InOrder(

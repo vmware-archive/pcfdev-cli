@@ -20,7 +20,7 @@ type Driver interface {
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
 type SSH interface {
-	FreePort() (string, error)
+	GenerateAddress() (string, string, error)
 	RunSSHCommand(string, string) error
 }
 
@@ -76,7 +76,7 @@ func (v *VBox) StartVM(name string) (*VM, error) {
 
 func (v *VBox) ImportVM(path string, name string) error {
 	var sshPort string
-	sshPort, err := v.SSH.FreePort()
+	_, sshPort, err := v.SSH.GenerateAddress()
 	if err != nil {
 		return fmt.Errorf("failed to aquire random port: %s", err)
 	}

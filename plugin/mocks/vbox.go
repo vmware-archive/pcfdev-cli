@@ -49,27 +49,6 @@ func (_mr *_MockVBoxRecorder) ImportVM(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ImportVM", arg0, arg1)
 }
 
-func (_m *MockVBox) IsVMImported(_param0 string) (bool, error) {
-	ret := _m.ctrl.Call(_m, "IsVMImported", _param0)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockVBoxRecorder) IsVMImported(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsVMImported", arg0)
-}
-
-func (_m *MockVBox) IsVMRunning(_param0 string) bool {
-	ret := _m.ctrl.Call(_m, "IsVMRunning", _param0)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-func (_mr *_MockVBoxRecorder) IsVMRunning(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsVMRunning", arg0)
-}
-
 func (_m *MockVBox) StartVM(_param0 string) (*vbox.VM, error) {
 	ret := _m.ctrl.Call(_m, "StartVM", _param0)
 	ret0, _ := ret[0].(*vbox.VM)

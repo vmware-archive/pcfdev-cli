@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -64,8 +63,8 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 
 	switch args[1] {
-	case "import":
-		if err := p.importVM(); err != nil {
+	case "download":
+		if err := p.downloadVM(); err != nil {
 			p.UI.Failed(err.Error())
 		}
 	case "start":
@@ -89,29 +88,10 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 }
 
-func (p *Plugin) importVM() error {
-	status, err := p.VBox.Status(vmName)
-	if err != nil {
-		return err
+func (p *Plugin) downloadVM() error {
+	if _, err := p.getOVAFile(); err != nil {
+		return fmt.Errorf("failed to fetch VM: %s", err)
 	}
-
-	if status != vbox.StatusNotCreated {
-		p.UI.Say("OVA already imported")
-		return nil
-	}
-
-	path, err := p.getOVAFile()
-	if err != nil {
-		return fmt.Errorf("failed to fetch OVA: %s", err)
-	}
-
-	p.UI.Say("Importing VM...")
-	err = p.VBox.ImportVM(path, vmName)
-	if err != nil {
-		p.UI.Failed("failed to import VM: %s", err)
-		return errors.New("failed to import vm")
-	}
-	p.UI.Say("PCF Dev is now imported to Virtualbox")
 
 	return nil
 }
@@ -119,19 +99,26 @@ func (p *Plugin) importVM() error {
 func (p *Plugin) start() error {
 	status, err := p.VBox.Status(vmName)
 	if err != nil {
-		return err
-	}
-
-	if status == vbox.StatusNotCreated {
-		err = p.importVM()
-		if err != nil {
-			return err
-		}
+		return fmt.Errorf("failed to get VM status: %s", err)
 	}
 
 	if status == vbox.StatusRunning {
 		p.UI.Say("PCF Dev is running")
 		return nil
+	}
+
+	path, err := p.getOVAFile()
+	if err != nil {
+		return fmt.Errorf("failed to fetch VM: %s", err)
+	}
+
+	if status == vbox.StatusNotCreated {
+		p.UI.Say("Importing VM...")
+		err = p.VBox.ImportVM(path, vmName)
+		if err != nil {
+			return fmt.Errorf("failed to import VM: %s", err)
+		}
+		p.UI.Say("PCF Dev is now imported to Virtualbox")
 	}
 
 	p.UI.Say("Starting VM...")
@@ -211,15 +198,15 @@ func (p *Plugin) getOVAFile() (string, error) {
 		return "", err
 	}
 	if !ovaExists {
-		p.UI.Say("Downloading OVA...")
+		p.UI.Say("Downloading VM...")
 		ova, err := p.PivnetClient.DownloadOVA()
 		if err != nil {
 			return "", err
 		}
 		p.FS.Write(path, ova)
-		p.UI.Say("Finished downloading OVA")
+		p.UI.Say("Finished downloading VM")
 	} else {
-		p.UI.Say("pcfdev.ova already downloaded")
+		p.UI.Say("VM already downloaded")
 	}
 	return path, nil
 }
@@ -232,7 +219,7 @@ func (*Plugin) GetMetadata() plugin.PluginMetadata {
 				Name:  "dev",
 				Alias: "pcfdev",
 				UsageDetails: plugin.Usage{
-					Usage: "cf dev import|start|status|stop|destroy",
+					Usage: "cf dev download|start|status|stop|destroy",
 				},
 			},
 		},

@@ -1,7 +1,7 @@
 package ssh
 
 import (
-	"errors"
+	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -47,10 +47,10 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string) (*ssh.Client, error) {
 	successChan := make(chan *ssh.Client)
 	timeoutChan := time.After(time.Minute)
+	var err error
 
 	go func() {
 		var client *ssh.Client
-		var err error
 		for client, err = ssh.Dial("tcp", "127.0.0.1:"+port, config); err != nil; {
 			time.Sleep(time.Second)
 		}
@@ -61,6 +61,6 @@ func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string) (*ssh.Client, erro
 	case client := <-successChan:
 		return client, nil
 	case <-timeoutChan:
-		return nil, errors.New("ssh connection timed out")
+		return nil, fmt.Errorf("ssh connection timed out: %s", err)
 	}
 }

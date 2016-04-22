@@ -67,7 +67,7 @@ var _ = Describe("ssh", func() {
 		Context("when the server is unavailable", func() {
 			It("should timeout and return an error", func() {
 				_, err := ssh.WaitForSSH(config, "some-bad-port")
-				Expect(err).To(MatchError("ssh connection timed out: dial tcp: lookup tcp/some-bad-port: nodename nor servname provided, or not known"))
+				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})
 	})

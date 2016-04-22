@@ -69,14 +69,14 @@ var _ = Describe("Plugin", func() {
 
 		Context("wrong number of arguments", func() {
 			It("prints the usage message", func() {
-				mockUI.EXPECT().Failed("Usage: %s", "cf dev import|start|status|stop|destroy")
+				mockUI.EXPECT().Failed("Usage: %s", "cf dev download|start|status|stop|destroy")
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev"})
 			})
 		})
 
-		Context("import", func() {
+		Context("download", func() {
 			Context("when ova does not exist", func() {
-				It("should import the VM", func() {
+				It("should download the VM", func() {
 					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
 					gomock.InOrder(
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
@@ -87,19 +87,19 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Finished downloading VM"),
 					)
 
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import"})
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
 				})
 			})
 
 			Context("when ova already exists", func() {
-				It("should not import the VM", func() {
+				It("should not download the VM", func() {
 					gomock.InOrder(
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
 						mockUI.EXPECT().Say("VM already downloaded"),
 					)
 
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import"})
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
 				})
 			})
 		})

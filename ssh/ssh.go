@@ -46,7 +46,7 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 
 func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string) (*ssh.Client, error) {
 	successChan := make(chan *ssh.Client)
-	timeoutChan := time.After(time.Minute)
+	timeoutChan := time.After(5 * time.Minute)
 	var err error
 
 	go func() {

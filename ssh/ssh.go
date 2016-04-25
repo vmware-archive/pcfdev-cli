@@ -14,7 +14,6 @@ type SSH struct{}
 func (*SSH) GenerateAddress() (string, string, error) {
 	conn, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		panic(err)
 		return "", "", err
 	}
 	defer conn.Close()

@@ -58,6 +58,7 @@ var _ = Describe("ssh", func() {
 			It("should return a pointer to an ssh client", func() {
 				client, err := ssh.WaitForSSH(config, port)
 				Expect(err).NotTo(HaveOccurred())
+				defer client.Close()
 				session, err := client.NewSession()
 				defer session.Close()
 				Expect(err).NotTo(HaveOccurred())

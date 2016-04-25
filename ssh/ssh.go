@@ -33,11 +33,12 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 	if err != nil {
 		return err
 	}
+	defer client.Close()
+
 	session, err := client.NewSession()
 	if err != nil {
 		return err
 	}
-
 	defer session.Close()
 
 	return session.Run(command)

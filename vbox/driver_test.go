@@ -64,13 +64,14 @@ var _ = Describe("driver", func() {
 			err := driver.StartVM("Snappy")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(driver.IsVMRunning("Snappy")).To(BeTrue())
-			_, err = sshClient.WaitForSSH(&cssh.ClientConfig{
+			client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
 				User: "ubuntu",
 				Auth: []cssh.AuthMethod{
 					cssh.Password("vagrant"),
 				},
 			}, "2222")
 			Expect(err).NotTo(HaveOccurred())
+			defer client.Close()
 
 			err = driver.StopVM("Snappy")
 			Expect(err).NotTo(HaveOccurred())
@@ -258,13 +259,14 @@ var _ = Describe("driver", func() {
 			err = driver.StartVM("Snappy")
 			Expect(err).NotTo(HaveOccurred())
 			sshClient := &ssh.SSH{}
-			_, err = sshClient.WaitForSSH(&cssh.ClientConfig{
+			client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
 				User: "ubuntu",
 				Auth: []cssh.AuthMethod{
 					cssh.Password("vagrant"),
 				},
 			}, "2739")
 			Expect(err).NotTo(HaveOccurred())
+			client.Close()
 		})
 	})
 
@@ -288,13 +290,14 @@ var _ = Describe("driver", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(driver.IsVMRunning("Snappy")).To(BeTrue())
 
-				_, err = sshClient.WaitForSSH(&cssh.ClientConfig{
+				client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
 					User: "ubuntu",
 					Auth: []cssh.AuthMethod{
 						cssh.Password("vagrant"),
 					},
 				}, "2222")
 				Expect(err).NotTo(HaveOccurred())
+				client.Close()
 			})
 		})
 	})

@@ -258,7 +258,7 @@ var _ = Describe("vbox", func() {
 
 				status, err := vbx.Status("some-vm")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(status).To(Equal("Not Created"))
+				Expect(status).To(Equal("Not created"))
 			})
 		})
 

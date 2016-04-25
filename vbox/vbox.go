@@ -38,7 +38,7 @@ type VM struct {
 const (
 	StatusRunning    = "Running"
 	StatusStopped    = "Stopped"
-	StatusNotCreated = "Not Created"
+	StatusNotCreated = "Not created"
 )
 
 func (v *VBox) StartVM(name string) (*VM, error) {

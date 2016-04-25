@@ -353,10 +353,10 @@ var _ = Describe("Plugin", func() {
 			})
 
 			Context("VBox VM is not created (i.e. not imported to VBox)", func() {
-				It("should return the status Not Created", func() {
+				It("should return the status Not created", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
-						mockUI.EXPECT().Say("Not Created"),
+						mockUI.EXPECT().Say("Not created"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})

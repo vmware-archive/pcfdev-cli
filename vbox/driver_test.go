@@ -42,6 +42,7 @@ var _ = Describe("driver", func() {
 	AfterEach(func() {
 		driver.VBoxManage("controlvm", "Snappy", "poweroff")
 		driver.VBoxManage("unregistervm", "Snappy", "--delete")
+		driver.VBoxManage("hostonlyif", "remove", "vboxnet0")
 	})
 
 	Describe("#VBoxManage", func() {
@@ -295,7 +296,7 @@ var _ = Describe("driver", func() {
 					Auth: []cssh.AuthMethod{
 						cssh.Password("vagrant"),
 					},
-				}, "2222")
+				}, "2937")
 				Expect(err).NotTo(HaveOccurred())
 				client.Close()
 			})

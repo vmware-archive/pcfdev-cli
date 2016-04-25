@@ -243,13 +243,13 @@ var _ = Describe("driver", func() {
 
 	Describe("#GetHostForwardPort", func() {
 		It("Returns the port of the forwarded port on the host", func() {
-			err := driver.ForwardPort("Snappy", "some-rule-name", "22", "2739")
+			err := driver.ForwardPort("Snappy", "some-rule-name", "22", "2738")
 			Expect(err).NotTo(HaveOccurred())
 
 			port, err := driver.GetHostForwardPort("Snappy", "some-rule-name")
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(port).To(Equal("2739"))
+			Expect(port).To(Equal("2738"))
 		})
 	})
 
@@ -296,7 +296,7 @@ var _ = Describe("driver", func() {
 					Auth: []cssh.AuthMethod{
 						cssh.Password("vagrant"),
 					},
-				}, "2937")
+				}, "2740")
 				Expect(err).NotTo(HaveOccurred())
 				client.Close()
 			})

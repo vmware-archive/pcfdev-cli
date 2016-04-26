@@ -40,16 +40,9 @@ var _ = Describe("driver", func() {
 	})
 
 	AfterEach(func() {
-		if driver.IsVMRunning("Snappy") {
-			driver.VBoxManage("controlvm", "Snappy", "acpipowerbutton")
-		}
-		Eventually(func() bool { return driver.IsVMRunning("Snappy") }, 120*time.Second).Should(BeFalse())
-		exists, err := driver.VMExists("Snappy")
-		Expect(err).NotTo(HaveOccurred())
-		if exists {
-			driver.VBoxManage("unregistervm", "Snappy", "--delete")
-			driver.VBoxManage("hostonlyif", "remove", "vboxnet0")
-		}
+		driver.VBoxManage("controlvm", "Snappy", "poweroff")
+		driver.VBoxManage("unregistervm", "Snappy", "--delete")
+		driver.VBoxManage("hostonlyif", "remove", "vboxnet0")
 	})
 
 	Describe("#VBoxManage", func() {

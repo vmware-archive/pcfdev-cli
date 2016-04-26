@@ -296,7 +296,7 @@ var _ = Describe("driver", func() {
 					Auth: []cssh.AuthMethod{
 						cssh.Password("vagrant"),
 					},
-				}, "2740")
+				}, "2222")
 				Expect(err).NotTo(HaveOccurred())
 				client.Close()
 			})

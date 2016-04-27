@@ -104,4 +104,50 @@ var _ = Describe("Filesystem", func() {
 			})
 		})
 	})
+
+	Describe("#MD5", func() {
+		Context("when the file exists", func() {
+			BeforeEach(func() {
+				err := ioutil.WriteFile("../assets/some-file", []byte("some-contents"), 0644)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				err := os.Remove("../assets/some-file")
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should return the md5 of the given file", func() {
+				md5, err := fs.MD5("../assets/some-file")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(md5).To(Equal("0b9791ad102b5f5f06ef68cef2aae26e"))
+			})
+		})
+
+		Context("when the file does not exist", func() {
+			It("should return an error", func() {
+				md5, err := fs.MD5("../assets/some-non-existent-file")
+				Expect(err).To(MatchError(ContainSubstring("could not read ../assets/some-non-existent-file:")))
+				Expect(md5).To(Equal(""))
+			})
+		})
+	})
+
+	Describe("#RemoveFile", func() {
+		BeforeEach(func() {
+			err := ioutil.WriteFile("../assets/some-file", []byte("some-contents"), 0644)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			os.Remove("../assets/some-file")
+		})
+
+		It("should remove the given file", func() {
+			err := fs.RemoveFile("../assets/some-file")
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = os.Stat("../assets/some-file")
+			Expect(os.IsNotExist(err)).To(BeTrue())
+		})
+	})
 })

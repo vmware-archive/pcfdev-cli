@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -21,6 +22,7 @@ type Plugin struct {
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
 type Client interface {
 	DownloadOVA() (io.ReadCloser, error)
+	MD5() (string, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -48,6 +50,8 @@ type FS interface {
 	Exists(string) (bool, error)
 	Write(string, io.ReadCloser) error
 	CreateDir(string) error
+	RemoveFile(string) error
+	MD5(string) (string, error)
 }
 
 const vmName = "pcfdev-2016-03-29_1728"
@@ -89,11 +93,7 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 }
 
 func (p *Plugin) downloadVM() error {
-	if _, err := p.getOVAFile(); err != nil {
-		return fmt.Errorf("failed to fetch VM: %s", err)
-	}
-
-	return nil
+	return p.getOVAFile()
 }
 
 func (p *Plugin) start() error {
@@ -107,14 +107,13 @@ func (p *Plugin) start() error {
 		return nil
 	}
 
-	path, err := p.getOVAFile()
-	if err != nil {
-		return fmt.Errorf("failed to fetch VM: %s", err)
+	if err := p.getOVAFile(); err != nil {
+		return err
 	}
 
 	if status == vbox.StatusNotCreated {
 		p.UI.Say("Importing VM...")
-		err = p.VBox.ImportVM(path, vmName)
+		err = p.VBox.ImportVM(p.ovaPath(), vmName)
 		if err != nil {
 			return fmt.Errorf("failed to import VM: %s", err)
 		}
@@ -185,30 +184,73 @@ func (p *Plugin) provision(vm *vbox.VM) error {
 	return p.SSH.RunSSHCommand(fmt.Sprintf("sudo /var/pcfdev/run local.pcfdev.io %s", vm.IP), vm.SSHPort)
 }
 
-func (p *Plugin) getOVAFile() (string, error) {
-	pcfdevDir := filepath.Join(os.Getenv("HOME"), ".pcfdev")
-	err := p.FS.CreateDir(pcfdevDir)
+func (p *Plugin) downloadOVAFile() error {
+	p.UI.Say("Downloading VM...")
+	ova, err := p.PivnetClient.DownloadOVA()
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	path := filepath.Join(pcfdevDir, "pcfdev.ova")
-	ovaExists, err := p.FS.Exists(path)
+	p.FS.Write(p.ovaPath(), ova)
+	p.UI.Say("Finished downloading VM")
+	return nil
+}
+
+func (p *Plugin) pcfdevDir() string {
+	return filepath.Join(os.Getenv("HOME"), ".pcfdev")
+}
+
+func (p *Plugin) ovaPath() string {
+	return filepath.Join(p.pcfdevDir(), "pcfdev.ova")
+}
+
+func (p *Plugin) getOVAFile() error {
+	err := p.FS.CreateDir(p.pcfdevDir())
 	if err != nil {
-		return "", err
+		return err
 	}
+
+	ovaExists, err := p.FS.Exists(p.ovaPath())
+	if err != nil {
+		return err
+	}
+
 	if !ovaExists {
-		p.UI.Say("Downloading VM...")
-		ova, err := p.PivnetClient.DownloadOVA()
-		if err != nil {
-			return "", err
-		}
-		p.FS.Write(path, ova)
-		p.UI.Say("Finished downloading VM")
-	} else {
-		p.UI.Say("VM already downloaded")
+		return p.downloadOVAFile()
 	}
-	return path, nil
+
+	ovaMD5, err := p.FS.MD5(p.ovaPath())
+	if err != nil {
+		return fmt.Errorf("failed to compute checksum of %s", p.ovaPath())
+	}
+
+	apiMD5, err := p.PivnetClient.MD5()
+	if err != nil {
+		return errors.New("failed to get checksum of machine image from Pivotal Network")
+	}
+
+	if ovaMD5 == apiMD5 {
+		p.UI.Say("VM already downloaded")
+		return nil
+	}
+
+	status, err := p.VBox.Status(vmName)
+	if err != nil {
+		panic(err)
+	}
+
+	if status != vbox.StatusNotCreated {
+		return errors.New("Old version of PCF Dev detected. You must run `cf dev destroy` to continue.")
+	}
+
+	p.UI.Say("Upgrading your locally stored version of PCF Dev...")
+	err = p.FS.RemoveFile(p.ovaPath())
+	if err != nil {
+		return fmt.Errorf("failed to remove old machine image %s", p.ovaPath())
+	}
+
+	return p.downloadOVAFile()
+
 }
 
 func (*Plugin) GetMetadata() plugin.PluginMetadata {

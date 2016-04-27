@@ -39,3 +39,14 @@ func (_m *MockClient) DownloadOVA() (io.ReadCloser, error) {
 func (_mr *_MockClientRecorder) DownloadOVA() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "DownloadOVA")
 }
+
+func (_m *MockClient) MD5() (string, error) {
+	ret := _m.ctrl.Call(_m, "MD5")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockClientRecorder) MD5() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "MD5")
+}

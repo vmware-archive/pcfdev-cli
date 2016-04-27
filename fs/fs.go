@@ -1,8 +1,10 @@
 package fs
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 )
 
@@ -33,4 +35,17 @@ func (fs *FS) Write(path string, contents io.ReadCloser) error {
 
 func (fs *FS) CreateDir(path string) error {
 	return os.MkdirAll(path, 0755)
+}
+
+func (fs *FS) RemoveFile(path string) error {
+	return os.Remove(path)
+}
+
+func (fs *FS) MD5(path string) (string, error) {
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("could not read %s: %s", path, err)
+	}
+
+	return fmt.Sprintf("%x", md5.Sum(contents)), nil
 }

@@ -21,14 +21,14 @@ func main() {
 		SSH: &ssh.SSH{},
 		PivnetClient: &pivnet.Client{
 			Host: "https://network.pivotal.io",
-			Config: &config.Config{
-				UI: ui,
-			},
 		},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},
 			Driver: &vbox.VBoxDriver{},
 		},
 		FS: &fs.FS{},
+		Config: &config.Config{
+			UI: ui,
+		},
 	})
 }

@@ -52,13 +52,30 @@ var _ = Describe("Config", func() {
 
 			AfterEach(func() {
 				os.Setenv("PIVNET_TOKEN", savedToken)
+				mockCtrl.Finish()
 			})
 
 			It("should prompt the user to enter their PivNet token", func() {
-				mockUI.EXPECT().AskForPassword("Enter your Pivotal Network API token:").Return("some-user-provided-token")
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Please retrieve your Pivotal Network API from:"),
+					mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile"),
+					mockUI.EXPECT().AskForPassword("API token").Return("some-user-provided-token"),
+				)
+
 				Expect(cfg.GetToken()).To(Equal("some-user-provided-token"))
 			})
 
+			Context("when pivnet token has already been fetched", func() {
+				It("should return the same value", func() {
+					gomock.InOrder(
+						mockUI.EXPECT().Say("Please retrieve your Pivotal Network API from:").Times(1),
+						mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile").Times(1),
+						mockUI.EXPECT().AskForPassword("API token").Return("some-user-provided-token").Times(1),
+					)
+					Expect(cfg.GetToken()).To(Equal("some-user-provided-token"))
+					Expect(cfg.GetToken()).To(Equal("some-user-provided-token"))
+				})
+			})
 		})
 	})
 })

@@ -17,12 +17,12 @@ type Plugin struct {
 	UI           UI
 	VBox         VBox
 	FS           FS
+	Config       Config
 }
 
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
 type Client interface {
-	DownloadOVA() (io.ReadCloser, error)
-	MD5() (string, error)
+	DownloadOVA(string) (io.ReadCloser, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -54,7 +54,15 @@ type FS interface {
 	MD5(string) (string, error)
 }
 
-const vmName = "pcfdev-2016-03-29_1728"
+//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/plugin Config
+type Config interface {
+	GetToken() string
+}
+
+const (
+	vmName      = "pcfdev-2016-03-29_1728"
+	expectedMD5 = "d31706e2dea302d461a1a695a4558b2a"
+)
 
 func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
@@ -97,6 +105,10 @@ func (p *Plugin) downloadVM() error {
 }
 
 func (p *Plugin) start() error {
+	if err := p.getOVAFile(); err != nil {
+		return err
+	}
+
 	status, err := p.VBox.Status(vmName)
 	if err != nil {
 		return fmt.Errorf("failed to get VM status: %s", err)
@@ -105,10 +117,6 @@ func (p *Plugin) start() error {
 	if status == vbox.StatusRunning {
 		p.UI.Say("PCF Dev is running")
 		return nil
-	}
-
-	if err := p.getOVAFile(); err != nil {
-		return err
 	}
 
 	if status == vbox.StatusNotCreated {
@@ -185,8 +193,10 @@ func (p *Plugin) provision(vm *vbox.VM) error {
 }
 
 func (p *Plugin) downloadOVAFile() error {
+	token := p.Config.GetToken()
+
 	p.UI.Say("Downloading VM...")
-	ova, err := p.PivnetClient.DownloadOVA()
+	ova, err := p.PivnetClient.DownloadOVA(token)
 	if err != nil {
 		return err
 	}
@@ -224,19 +234,14 @@ func (p *Plugin) getOVAFile() error {
 		return fmt.Errorf("failed to compute checksum of %s", p.ovaPath())
 	}
 
-	apiMD5, err := p.PivnetClient.MD5()
-	if err != nil {
-		return errors.New("failed to get checksum of machine image from Pivotal Network")
-	}
-
-	if ovaMD5 == apiMD5 {
+	if ovaMD5 == expectedMD5 {
 		p.UI.Say("VM already downloaded")
 		return nil
 	}
 
 	status, err := p.VBox.Status(vmName)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to get VM status: %s", err)
 	}
 
 	if status != vbox.StatusNotCreated {

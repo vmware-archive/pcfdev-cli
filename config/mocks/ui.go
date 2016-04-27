@@ -42,3 +42,16 @@ func (_mr *_MockUIRecorder) AskForPassword(arg0 interface{}, arg1 ...interface{}
 	_s := append([]interface{}{arg0}, arg1...)
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "AskForPassword", _s...)
 }
+
+func (_m *MockUI) Say(_param0 string, _param1 ...interface{}) {
+	_s := []interface{}{_param0}
+	for _, _x := range _param1 {
+		_s = append(_s, _x)
+	}
+	_m.ctrl.Call(_m, "Say", _s...)
+}
+
+func (_mr *_MockUIRecorder) Say(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0}, arg1...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Say", _s...)
+}

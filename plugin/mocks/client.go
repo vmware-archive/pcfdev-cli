@@ -29,24 +29,13 @@ func (_m *MockClient) EXPECT() *_MockClientRecorder {
 	return _m.recorder
 }
 
-func (_m *MockClient) DownloadOVA() (io.ReadCloser, error) {
-	ret := _m.ctrl.Call(_m, "DownloadOVA")
+func (_m *MockClient) DownloadOVA(_param0 string) (io.ReadCloser, error) {
+	ret := _m.ctrl.Call(_m, "DownloadOVA", _param0)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockClientRecorder) DownloadOVA() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "DownloadOVA")
-}
-
-func (_m *MockClient) MD5() (string, error) {
-	ret := _m.ctrl.Call(_m, "MD5")
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockClientRecorder) MD5() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "MD5")
+func (_mr *_MockClientRecorder) DownloadOVA(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DownloadOVA", arg0)
 }

@@ -4,9 +4,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 
+	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
+	"github.com/pivotal-cf/pcfdev-cli/pivnet/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,15 +16,15 @@ import (
 var _ = Describe("PivNet Client", func() {
 
 	Context("API token is set in env", func() {
-		var oldPivnetToken string
+		var (
+			mockConfig *mocks.MockConfig
+			mockCtrl   *gomock.Controller
+		)
 
 		BeforeEach(func() {
-			oldPivnetToken = os.Getenv("PIVNET_TOKEN")
-			os.Setenv("PIVNET_TOKEN", "some-token")
-		})
-
-		AfterEach(func() {
-			os.Setenv("PIVNET_TOKEN", oldPivnetToken)
+			mockCtrl = gomock.NewController(GinkgoT())
+			mockConfig = mocks.NewMockConfig(mockCtrl)
+			mockConfig.EXPECT().GetToken().Return("some-token")
 		})
 
 		It("should download an ova from network.pivotal.io", func() {
@@ -37,8 +38,8 @@ var _ = Describe("PivNet Client", func() {
 
 			ts := httptest.NewServer(http.HandlerFunc(handler))
 			client := pivnet.Client{
-				Host:  ts.URL,
-				Token: "some-token",
+				Host:   ts.URL,
+				Config: mockConfig,
 			}
 			ova, err := client.DownloadOVA()
 			Expect(err).NotTo(HaveOccurred())
@@ -50,11 +51,11 @@ var _ = Describe("PivNet Client", func() {
 		Context("Can't reach PivNet", func() {
 			It("Should return an appropriate error", func() {
 				client := pivnet.Client{
-					Host:  "some-bad-host",
-					Token: "some-token",
+					Host:   "some-bad-host",
+					Config: mockConfig,
 				}
 				_, err := client.DownloadOVA()
-				Expect(err).To(MatchError("failed to reach Pivotal Network"))
+				Expect(err).To(MatchError(ContainSubstring("failed to reach Pivotal Network:")))
 			})
 		})
 
@@ -67,8 +68,8 @@ var _ = Describe("PivNet Client", func() {
 
 				ts := httptest.NewServer(http.HandlerFunc(handler))
 				client := pivnet.Client{
-					Host:  ts.URL,
-					Token: "some-token",
+					Host:   ts.URL,
+					Config: mockConfig,
 				}
 				_, err := client.DownloadOVA()
 				Expect(err).To(MatchError("Pivotal Network returned: 400 Bad Request"))
@@ -84,11 +85,27 @@ var _ = Describe("PivNet Client", func() {
 
 				ts := httptest.NewServer(http.HandlerFunc(handler))
 				client := pivnet.Client{
-					Host:  ts.URL,
-					Token: "some-token",
+					Host:   ts.URL,
+					Config: mockConfig,
 				}
 				_, err := client.DownloadOVA()
 				Expect(err.Error()).To(MatchRegexp("you must accept the EULA before you can download the PCF Dev image: .*/products/pcfdev#/releases/1622"))
+			})
+		})
+		Context("PivNet returns status 401", func() {
+			It("Should return an error telling user that their pivnet token is bad", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+					w.WriteHeader(401)
+				}
+
+				ts := httptest.NewServer(http.HandlerFunc(handler))
+				client := pivnet.Client{
+					Host:   ts.URL,
+					Config: mockConfig,
+				}
+				_, err := client.DownloadOVA()
+				Expect(err.Error()).To(MatchRegexp("invalid Pivotal Network API token"))
 			})
 		})
 	})

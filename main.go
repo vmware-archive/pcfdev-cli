@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
@@ -14,12 +15,15 @@ import (
 )
 
 func main() {
+	ui := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 	cfplugin.Start(&plugin.Plugin{
-		UI:  terminal.NewUI(os.Stdin, terminal.NewTeePrinter()),
+		UI:  ui,
 		SSH: &ssh.SSH{},
 		PivnetClient: &pivnet.Client{
-			Host:  "https://network.pivotal.io",
-			Token: os.Getenv("PIVNET_TOKEN"),
+			Host: "https://network.pivotal.io",
+			Config: &config.Config{
+				UI: ui,
+			},
 		},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},

@@ -27,6 +27,7 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 		Auth: []ssh.AuthMethod{
 			ssh.Password("vagrant"),
 		},
+		Timeout: 30 * time.Second,
 	}
 
 	client, err := s.WaitForSSH(config, port, 2*time.Minute)
@@ -51,6 +52,7 @@ func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string, timeout time.Durat
 	go func() {
 		var client *ssh.Client
 		for client, err = ssh.Dial("tcp", "127.0.0.1:"+port, config); err != nil; {
+			fmt.Println("SSH ERROR: %s", err)
 			time.Sleep(time.Second)
 		}
 		successChan <- client

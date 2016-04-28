@@ -1,7 +1,6 @@
 package ssh
 
 import (
-	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -59,7 +58,7 @@ func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string, timeout time.Durat
 	select {
 	case client := <-successChan:
 		return client, nil
-	case <-time.After(timeout):
-		return nil, fmt.Errorf("ssh connection timed out: %s", err)
+		// case <-time.After(timeout):
+		// return nil, fmt.Errorf("ssh connection timed out: %s", err)
 	}
 }

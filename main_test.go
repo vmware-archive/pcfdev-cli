@@ -77,7 +77,7 @@ var _ = Describe("pcfdev", func() {
 			restartCommand := exec.Command("cf", "dev", "start")
 			session, err = gexec.Start(restartCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "1m").Should(gexec.Exit(0))
+			Eventually(session, "3m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("PCF Dev is running"))
 			Expect(isVMRunning()).To(BeTrue())
 
@@ -142,7 +142,7 @@ var _ = Describe("pcfdev", func() {
 			pcfdevCommand = exec.Command("cf", "dev", "download")
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "1m").Should(gexec.Exit(0))
+			Eventually(session, "3m").Should(gexec.Exit(0))
 		})
 	})
 })

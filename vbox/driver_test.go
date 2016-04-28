@@ -73,7 +73,7 @@ var _ = Describe("driver", func() {
 				Auth: []cssh.AuthMethod{
 					cssh.Password("vagrant"),
 				},
-			}, "2222", 2*time.Minute)
+			}, port, time.Hour)
 			Expect(err).NotTo(HaveOccurred())
 			defer client.Close()
 

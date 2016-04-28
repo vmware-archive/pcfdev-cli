@@ -60,7 +60,7 @@ var _ = Describe("driver", func() {
 	})
 
 	Describe("StartVM and StopVM and DestroyVM", func() {
-		It("Should start, stop, and then destroy a VBox VM", func() {
+		FIt("Should start, stop, and then destroy a VBox VM", func() {
 			sshClient := &ssh.SSH{}
 			err := driver.StartVM("Snappy")
 			Expect(err).NotTo(HaveOccurred())
@@ -70,7 +70,7 @@ var _ = Describe("driver", func() {
 				Auth: []cssh.AuthMethod{
 					cssh.Password("vagrant"),
 				},
-			}, "2222")
+			}, "2222", 2*time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 			defer client.Close()
 
@@ -265,7 +265,7 @@ var _ = Describe("driver", func() {
 				Auth: []cssh.AuthMethod{
 					cssh.Password("vagrant"),
 				},
-			}, "2739")
+			}, "2739", 2*time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 			client.Close()
 		})
@@ -285,7 +285,7 @@ var _ = Describe("driver", func() {
 		})
 
 		Context("VM is running", func() {
-			It("Should return true", func() {
+			FIt("Should return true", func() {
 				sshClient := &ssh.SSH{}
 				err := driver.StartVM("Snappy")
 				Expect(err).NotTo(HaveOccurred())
@@ -296,7 +296,7 @@ var _ = Describe("driver", func() {
 					Auth: []cssh.AuthMethod{
 						cssh.Password("vagrant"),
 					},
-				}, "2222")
+				}, "2222", 2*time.Minute)
 				Expect(err).NotTo(HaveOccurred())
 				client.Close()
 			})

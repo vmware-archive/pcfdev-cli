@@ -1,6 +1,8 @@
 package ssh_test
 
 import (
+	"time"
+
 	gossh "golang.org/x/crypto/ssh"
 
 	. "github.com/pivotal-cf/pcfdev-cli/ssh"
@@ -56,7 +58,7 @@ var _ = Describe("ssh", func() {
 
 		Context("when the server is available", func() {
 			It("should return a pointer to an ssh client", func() {
-				client, err := ssh.WaitForSSH(config, port)
+				client, err := ssh.WaitForSSH(config, port, 2*time.Minute)
 				Expect(err).NotTo(HaveOccurred())
 				defer client.Close()
 				session, err := client.NewSession()
@@ -67,7 +69,7 @@ var _ = Describe("ssh", func() {
 
 		Context("when the server is unavailable", func() {
 			It("should timeout and return an error", func() {
-				_, err := ssh.WaitForSSH(config, "some-bad-port")
+				_, err := ssh.WaitForSSH(config, "some-bad-port", time.Second)
 				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})

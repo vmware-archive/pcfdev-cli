@@ -29,7 +29,7 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 		},
 	}
 
-	client, err := s.WaitForSSH(config, port)
+	client, err := s.WaitForSSH(config, port, 2*time.Minute)
 	if err != nil {
 		return err
 	}
@@ -44,9 +44,8 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 	return session.Run(command)
 }
 
-func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string) (*ssh.Client, error) {
+func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string, timeout time.Duration) (*ssh.Client, error) {
 	successChan := make(chan *ssh.Client)
-	timeoutChan := time.After(2 * time.Minute)
 	var err error
 
 	go func() {
@@ -60,7 +59,7 @@ func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string) (*ssh.Client, erro
 	select {
 	case client := <-successChan:
 		return client, nil
-	case <-timeoutChan:
+	case <-time.After(timeout):
 		return nil, fmt.Errorf("ssh connection timed out: %s", err)
 	}
 }

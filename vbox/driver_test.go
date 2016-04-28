@@ -63,15 +63,22 @@ var _ = Describe("driver", func() {
 	})
 
 	Describe("StartVM and StopVM and DestroyVM", func() {
-		FIt("Should start, stop, and then destroy a VBox VM", func() {
+		It("Should start, stop, and then destroy a VBox VM", func() {
 			sshClient := &ssh.SSH{}
-			err := driver.StartVM(vmName)
+			_, port, err := sshClient.GenerateAddress()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = driver.ForwardPort(vmName, "some-rule-name", "22", port)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(driver.IsVMRunning(vmName)).To(BeTrue())
+
 			client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
 				User: "ubuntu",
 				Auth: []cssh.AuthMethod{
-					cssh.Password("vagrant"),
+					cssh.Password("ubuntu"),
 				},
 			}, port, time.Hour)
 			Expect(err).NotTo(HaveOccurred())
@@ -246,29 +253,36 @@ var _ = Describe("driver", func() {
 
 	Describe("#GetHostForwardPort", func() {
 		It("Returns the port of the forwarded port on the host", func() {
-			err := driver.ForwardPort(vmName, "some-rule-name", "22", "2738")
+			sshClient := &ssh.SSH{}
+			_, expectedPort, err := sshClient.GenerateAddress()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = driver.ForwardPort(vmName, "some-rule-name", "22", expectedPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			port, err := driver.GetHostForwardPort(vmName, "some-rule-name")
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(port).To(Equal("2738"))
+			Expect(port).To(Equal(expectedPort))
 		})
 	})
 
 	Describe("#ForwardPort", func() {
 		It("Should forward guest port to the given host port", func() {
-			err := driver.ForwardPort(vmName, "some-rule-name", "22", "2739")
+			sshClient := &ssh.SSH{}
+			_, port, err := sshClient.GenerateAddress()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = driver.ForwardPort(vmName, "some-rule-name", "22", port)
 			Expect(err).NotTo(HaveOccurred())
 			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
-			sshClient := &ssh.SSH{}
 			client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
 				User: "ubuntu",
 				Auth: []cssh.AuthMethod{
-					cssh.Password("vagrant"),
+					cssh.Password("ubuntu"),
 				},
-			}, "2739", 2*time.Minute)
+			}, port, 5*time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 			client.Close()
 		})
@@ -290,16 +304,23 @@ var _ = Describe("driver", func() {
 		Context("VM is running", func() {
 			It("Should return true", func() {
 				sshClient := &ssh.SSH{}
-				err := driver.StartVM(vmName)
+
+				_, port, err := sshClient.GenerateAddress()
+				Expect(err).NotTo(HaveOccurred())
+
+				err = driver.ForwardPort(vmName, "some-rule-name", "22", port)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = driver.StartVM(vmName)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(driver.IsVMRunning(vmName)).To(BeTrue())
 
 				client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
 					User: "ubuntu",
 					Auth: []cssh.AuthMethod{
-						cssh.Password("vagrant"),
+						cssh.Password("ubuntu"),
 					},
-				}, "2222", 2*time.Minute)
+				}, port, 5*time.Minute)
 				Expect(err).NotTo(HaveOccurred())
 				client.Close()
 			})

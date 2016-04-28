@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
@@ -37,8 +38,14 @@ var _ = Describe("driver", func() {
 			_, err = io.Copy(ovaFile, resp.Body)
 		}
 
+		tmpDir := os.Getenv("TMPDIR")
 		vmName = "Snappy-" + RandomName()
-		_, err = driver.VBoxManage("import", "../assets/snappy.ova", "--vsys", "0", "--vmname", vmName)
+		_, err = driver.VBoxManage("import",
+			"../assets/snappy.ova",
+			"--vsys", "0",
+			"--vmname", vmName,
+			"--unit", "6", "--disk", filepath.Join(tmpDir, vmName+"-disk1_4.vmdk"),
+			"--unit", "7", "--disk", filepath.Join(tmpDir, vmName+"-disk2.vmdk"))
 		Expect(err).NotTo(HaveOccurred())
 	})
 

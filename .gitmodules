@@ -13,3 +13,6 @@
 [submodule "vendor/golang.org/x/crypto"]
 	path = vendor/golang.org/x/crypto
 	url = https://github.com/golang/crypto.git
+[submodule "vendor/github.com/nu7hatch/gouuid"]
+	path = vendor/github.com/nu7hatch/gouuid
+	url = https://github.com/nu7hatch/gouuid.git

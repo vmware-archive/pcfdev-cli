@@ -11,6 +11,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 
+	uuid "github.com/nu7hatch/gouuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -21,6 +22,7 @@ import (
 
 var _ = Describe("driver", func() {
 	var driver *vbox.VBoxDriver
+	var vmName string
 
 	BeforeEach(func() {
 		driver = &vbox.VBoxDriver{}
@@ -35,13 +37,14 @@ var _ = Describe("driver", func() {
 			_, err = io.Copy(ovaFile, resp.Body)
 		}
 
-		_, err = driver.VBoxManage("import", "../assets/snappy.ova")
+		vmName = "Snappy-" + RandomName()
+		_, err = driver.VBoxManage("import", "../assets/snappy.ova", "--vsys", "0", "--vmname", vmName)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		driver.VBoxManage("controlvm", "Snappy", "poweroff")
-		driver.VBoxManage("unregistervm", "Snappy", "--delete")
+		driver.VBoxManage("controlvm", vmName, "poweroff")
+		driver.VBoxManage("unregistervm", vmName, "--delete")
 		driver.VBoxManage("hostonlyif", "remove", "vboxnet0")
 	})
 
@@ -62,9 +65,9 @@ var _ = Describe("driver", func() {
 	Describe("StartVM and StopVM and DestroyVM", func() {
 		FIt("Should start, stop, and then destroy a VBox VM", func() {
 			sshClient := &ssh.SSH{}
-			err := driver.StartVM("Snappy")
+			err := driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(driver.IsVMRunning("Snappy")).To(BeTrue())
+			Expect(driver.IsVMRunning(vmName)).To(BeTrue())
 			client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
 				User: "ubuntu",
 				Auth: []cssh.AuthMethod{
@@ -74,15 +77,15 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer client.Close()
 
-			err = driver.StopVM("Snappy")
+			err = driver.StopVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() bool { return driver.IsVMRunning("Snappy") }, 120*time.Second).Should(BeFalse())
+			Eventually(func() bool { return driver.IsVMRunning(vmName) }, 120*time.Second).Should(BeFalse())
 
-			err = driver.DestroyVM("Snappy")
+			err = driver.DestroyVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() bool {
-				exists, err := driver.VMExists("Snappy")
+				exists, err := driver.VMExists(vmName)
 				Expect(err).NotTo(HaveOccurred())
 				return exists
 			}, 120*time.Second).Should(BeFalse())
@@ -92,23 +95,23 @@ var _ = Describe("driver", func() {
 			vboxnet, err := driver.CreateHostOnlyInterface("192.168.88.1")
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.AttachNetworkInterface(vboxnet, "Snappy")
+			err = driver.AttachNetworkInterface(vboxnet, vmName)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.StartVM("Snappy")
+			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() string {
-				exists, err := driver.GetVBoxNetName("Snappy")
+				exists, err := driver.GetVBoxNetName(vmName)
 				Expect(err).NotTo(HaveOccurred())
 				return string(exists)
 			}).Should(ContainSubstring(vboxnet))
 			Expect(driver.VBoxManage("list", "hostonlyifs")).To(ContainSubstring(vboxnet))
 
-			_, err = driver.VBoxManage("controlvm", "Snappy", "poweroff")
+			_, err = driver.VBoxManage("controlvm", vmName, "poweroff")
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.DestroyVM("Snappy")
+			err = driver.DestroyVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() string {
@@ -122,7 +125,7 @@ var _ = Describe("driver", func() {
 	Describe("#VMExists", func() {
 		Context("VM Exists", func() {
 			It("returns true", func() {
-				exists, err := driver.VMExists("Snappy")
+				exists, err := driver.VMExists(vmName)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(exists).To(BeTrue())
 			})
@@ -221,10 +224,10 @@ var _ = Describe("driver", func() {
 		})
 
 		It("Should attach a network interface to the vm", func() {
-			err := driver.AttachNetworkInterface("vboxnet1", "Snappy")
+			err := driver.AttachNetworkInterface("vboxnet1", vmName)
 			Expect(err).NotTo(HaveOccurred())
 
-			showvmInfoCommand := exec.Command("VBoxManage", "showvminfo", "Snappy", "--machinereadable")
+			showvmInfoCommand := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable")
 			session, err := gexec.Start(showvmInfoCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))
@@ -243,10 +246,10 @@ var _ = Describe("driver", func() {
 
 	Describe("#GetHostForwardPort", func() {
 		It("Returns the port of the forwarded port on the host", func() {
-			err := driver.ForwardPort("Snappy", "some-rule-name", "22", "2738")
+			err := driver.ForwardPort(vmName, "some-rule-name", "22", "2738")
 			Expect(err).NotTo(HaveOccurred())
 
-			port, err := driver.GetHostForwardPort("Snappy", "some-rule-name")
+			port, err := driver.GetHostForwardPort(vmName, "some-rule-name")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(port).To(Equal("2738"))
@@ -255,9 +258,9 @@ var _ = Describe("driver", func() {
 
 	Describe("#ForwardPort", func() {
 		It("Should forward guest port to the given host port", func() {
-			err := driver.ForwardPort("Snappy", "some-rule-name", "22", "2739")
+			err := driver.ForwardPort(vmName, "some-rule-name", "22", "2739")
 			Expect(err).NotTo(HaveOccurred())
-			err = driver.StartVM("Snappy")
+			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
 			sshClient := &ssh.SSH{}
 			client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
@@ -280,16 +283,16 @@ var _ = Describe("driver", func() {
 
 		Context("VM is not running", func() {
 			It("Should return false", func() {
-				Expect(driver.IsVMRunning("Snappy")).To(BeFalse())
+				Expect(driver.IsVMRunning(vmName)).To(BeFalse())
 			})
 		})
 
 		Context("VM is running", func() {
 			FIt("Should return true", func() {
 				sshClient := &ssh.SSH{}
-				err := driver.StartVM("Snappy")
+				err := driver.StartVM(vmName)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(driver.IsVMRunning("Snappy")).To(BeTrue())
+				Expect(driver.IsVMRunning(vmName)).To(BeTrue())
 
 				client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
 					User: "ubuntu",
@@ -303,3 +306,12 @@ var _ = Describe("driver", func() {
 		})
 	})
 })
+
+func RandomName() string {
+	guid, err := uuid.NewV4()
+	if err != nil {
+		panic(err)
+	}
+
+	return guid.String()
+}

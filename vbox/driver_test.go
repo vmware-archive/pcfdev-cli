@@ -288,7 +288,7 @@ var _ = Describe("driver", func() {
 		})
 
 		Context("VM is running", func() {
-			FIt("Should return true", func() {
+			It("Should return true", func() {
 				sshClient := &ssh.SSH{}
 				err := driver.StartVM(vmName)
 				Expect(err).NotTo(HaveOccurred())

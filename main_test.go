@@ -142,7 +142,7 @@ var _ = Describe("pcfdev", func() {
 			pcfdevCommand = exec.Command("cf", "dev", "download")
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session).Should(gexec.Exit(0))
+			Eventually(session, "1m").Should(gexec.Exit(0))
 		})
 	})
 })

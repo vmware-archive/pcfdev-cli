@@ -46,22 +46,18 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 }
 
 func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string, timeout time.Duration) (*ssh.Client, error) {
-	successChan := make(chan *ssh.Client)
+	var client *ssh.Client
 	var err error
+	timeoutChan := time.After(timeout)
 
-	go func() {
-		var client *ssh.Client
-		for client, err = ssh.Dial("tcp", "127.0.0.1:"+port, config); err != nil; {
-			fmt.Println("SSH ERROR: %s", err)
-			time.Sleep(time.Second)
+	for {
+		select {
+		case <-timeoutChan:
+			return nil, fmt.Errorf("ssh connection timed out: %s", err)
+		default:
+			if client, err = ssh.Dial("tcp", "127.0.0.1:"+port, config); err == nil {
+				return client, nil
+			}
 		}
-		successChan <- client
-	}()
-
-	select {
-	case client := <-successChan:
-		return client, nil
-	case <-time.After(timeout):
-		return nil, fmt.Errorf("ssh connection timed out: %s", err)
 	}
 }

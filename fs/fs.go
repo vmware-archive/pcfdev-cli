@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
@@ -20,7 +19,7 @@ func (fs *FS) Exists(path string) (bool, error) {
 	return true, nil
 }
 
-func (fs *FS) Write(path string, contents io.ReadCloser) error {
+func (fs *FS) Write(path string, contents io.Reader) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %s", err)
@@ -42,10 +41,17 @@ func (fs *FS) RemoveFile(path string) error {
 }
 
 func (fs *FS) MD5(path string) (string, error) {
-	contents, err := ioutil.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("could not read %s: %s", path, err)
 	}
+	defer file.Close()
 
-	return fmt.Sprintf("%x", md5.Sum(contents)), nil
+	hash := md5.New()
+
+	if _, err = io.Copy(hash, file); err != nil {
+		return "", fmt.Errorf("could not read %s: %s", path, err)
+	}
+
+	return fmt.Sprintf("%x", hash.Sum([]byte{})), nil
 }

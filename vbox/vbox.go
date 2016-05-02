@@ -20,7 +20,7 @@ type Driver interface {
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
 type SSH interface {
-	GenerateAddress() (string, string, error)
+	GenerateAddress() (host string, port string, err error)
 	RunSSHCommand(string, string) error
 }
 

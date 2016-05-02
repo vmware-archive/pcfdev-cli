@@ -73,7 +73,7 @@ var _ = Describe("pcfdev", func() {
 			Expect(session).To(gbytes.Say("PCF Dev is now running"))
 			Expect(isVMRunning()).To(BeTrue())
 
-			// rerunning start has no effect
+			By("re-running 'cf dev start' with no effect")
 			restartCommand := exec.Command("cf", "dev", "start")
 			session, err = gexec.Start(restartCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())

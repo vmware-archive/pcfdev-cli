@@ -48,7 +48,7 @@ type VBox interface {
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin FS
 type FS interface {
 	Exists(string) (bool, error)
-	Write(string, io.ReadCloser) error
+	Write(string, io.Reader) error
 	CreateDir(string) error
 	RemoveFile(string) error
 	MD5(string) (string, error)
@@ -200,6 +200,7 @@ func (p *Plugin) downloadOVAFile() error {
 	if err != nil {
 		return err
 	}
+	defer ova.Close()
 
 	p.FS.Write(p.ovaPath(), ova)
 	p.UI.Say("Finished downloading VM")

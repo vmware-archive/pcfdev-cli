@@ -37,9 +37,9 @@ func (c *Client) request(method string, uri string, token string) (io.ReadCloser
 	}
 
 	switch resp.StatusCode {
-	case 200:
+	case http.StatusOK:
 		return resp.Body, nil
-	case 401:
+	case http.StatusUnauthorized:
 		return nil, fmt.Errorf("invalid Pivotal Network API token")
 	case 451:
 		return nil, fmt.Errorf("you must accept the EULA before you can download the PCF Dev image: %s/products/pcfdev#/releases/1622", c.Host)

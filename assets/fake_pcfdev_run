@@ -1,0 +1,3 @@
+#!/bin/sh
+
+service fake_pcfdev_server start

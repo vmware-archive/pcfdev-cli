@@ -18,6 +18,9 @@ type Plugin struct {
 	VBox         VBox
 	FS           FS
 	Config       Config
+
+	ExpectedMD5 string
+	VMName      string
 }
 
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
@@ -59,11 +62,6 @@ type Config interface {
 	GetToken() string
 }
 
-const (
-	vmName      = "pcfdev-2016-03-29_1728"
-	expectedMD5 = "d31706e2dea302d461a1a695a4558b2a"
-)
-
 func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
 		return
@@ -84,7 +82,7 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 			p.UI.Failed(err.Error())
 		}
 	case "status":
-		if status, err := p.VBox.Status(vmName); err != nil {
+		if status, err := p.VBox.Status(p.VMName); err != nil {
 			p.UI.Failed(err.Error())
 		} else {
 			p.UI.Say(status)
@@ -109,7 +107,7 @@ func (p *Plugin) start() error {
 		return err
 	}
 
-	status, err := p.VBox.Status(vmName)
+	status, err := p.VBox.Status(p.VMName)
 	if err != nil {
 		return fmt.Errorf("failed to get VM status: %s", err)
 	}
@@ -121,7 +119,7 @@ func (p *Plugin) start() error {
 
 	if status == vbox.StatusNotCreated {
 		p.UI.Say("Importing VM...")
-		err = p.VBox.ImportVM(p.ovaPath(), vmName)
+		err = p.VBox.ImportVM(p.ovaPath(), p.VMName)
 		if err != nil {
 			return fmt.Errorf("failed to import VM: %s", err)
 		}
@@ -129,7 +127,7 @@ func (p *Plugin) start() error {
 	}
 
 	p.UI.Say("Starting VM...")
-	vm, err := p.VBox.StartVM(vmName)
+	vm, err := p.VBox.StartVM(p.VMName)
 	if err != nil {
 		return fmt.Errorf("failed to start VM: %s", err)
 	}
@@ -144,7 +142,7 @@ func (p *Plugin) start() error {
 }
 
 func (p *Plugin) stop() error {
-	status, err := p.VBox.Status(vmName)
+	status, err := p.VBox.Status(p.VMName)
 	if err != nil {
 		return err
 	}
@@ -160,7 +158,7 @@ func (p *Plugin) stop() error {
 	}
 
 	p.UI.Say("Stopping VM...")
-	err = p.VBox.StopVM(vmName)
+	err = p.VBox.StopVM(p.VMName)
 	if err != nil {
 		return fmt.Errorf("failed to stop VM: %s", err)
 	}
@@ -169,7 +167,7 @@ func (p *Plugin) stop() error {
 }
 
 func (p *Plugin) destroy() error {
-	status, err := p.VBox.Status(vmName)
+	status, err := p.VBox.Status(p.VMName)
 	if err != nil {
 		return err
 	}
@@ -180,7 +178,7 @@ func (p *Plugin) destroy() error {
 	}
 
 	p.UI.Say("Destroying VM...")
-	err = p.VBox.DestroyVM(vmName)
+	err = p.VBox.DestroyVM(p.VMName)
 	if err != nil {
 		return fmt.Errorf("failed to destroy VM: %s", err)
 	}
@@ -235,12 +233,12 @@ func (p *Plugin) getOVAFile() error {
 		return fmt.Errorf("failed to compute checksum of %s", p.ovaPath())
 	}
 
-	if ovaMD5 == expectedMD5 {
+	if ovaMD5 == p.ExpectedMD5 {
 		p.UI.Say("VM already downloaded")
 		return nil
 	}
 
-	status, err := p.VBox.Status(vmName)
+	status, err := p.VBox.Status(p.VMName)
 	if err != nil {
 		return fmt.Errorf("failed to get VM status: %s", err)
 	}

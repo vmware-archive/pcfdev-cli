@@ -23,9 +23,9 @@ func (*SSH) GenerateAddress() (host string, port string, err error) {
 
 func (s *SSH) RunSSHCommand(command string, port string) error {
 	config := &ssh.ClientConfig{
-		User: "vagrant",
+		User: "vcap",
 		Auth: []ssh.AuthMethod{
-			ssh.Password("vagrant"),
+			ssh.Password("vcap"),
 		},
 		Timeout: 30 * time.Second,
 	}

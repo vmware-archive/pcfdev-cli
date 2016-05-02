@@ -48,6 +48,8 @@ var _ = Describe("Plugin", func() {
 			VBox:         mockVBox,
 			FS:           mockFS,
 			Config:       mockConfig,
+			VMName:       vmName,
+			ExpectedMD5:  expectedMD5,
 		}
 		vm = &vbox.VM{
 			IP:      "some-ip",

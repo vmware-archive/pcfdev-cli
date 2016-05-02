@@ -7,21 +7,13 @@ import (
 )
 
 type Client struct {
-	Host string
-}
-
-const (
-	releaseId     = "1622"
-	productFileId = "4149"
-	productSlug   = "pcfdev"
-)
-
-type ProductFile struct {
-	MD5 string `json:"md5"`
+	Host          string
+	ReleaseId     string
+	ProductFileId string
 }
 
 func (c *Client) DownloadOVA(token string) (io.ReadCloser, error) {
-	return c.request("POST", fmt.Sprintf("/api/v2/products/%s/releases/%s/product_files/%s/download", productSlug, releaseId, productFileId), token)
+	return c.request("POST", fmt.Sprintf("/api/v2/products/pcfdev/releases/%s/product_files/%s/download", c.ReleaseId, c.ProductFileId), token)
 }
 
 func (c *Client) request(method string, uri string, token string) (io.ReadCloser, error) {
@@ -42,7 +34,7 @@ func (c *Client) request(method string, uri string, token string) (io.ReadCloser
 	case http.StatusUnauthorized:
 		return nil, fmt.Errorf("invalid Pivotal Network API token")
 	case 451:
-		return nil, fmt.Errorf("you must accept the EULA before you can download the PCF Dev image: %s/products/pcfdev#/releases/1622", c.Host)
+		return nil, fmt.Errorf("you must accept the EULA before you can download the PCF Dev image: %s/products/pcfdev#/releases/%s", c.Host, c.ReleaseId)
 	default:
 		return nil, fmt.Errorf("Pivotal Network returned: %s", resp.Status)
 	}

@@ -1,12 +1,13 @@
 package main_test
 
 import (
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,9 +15,9 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var context struct {
-	cfHome string
-}
+const (
+	vmName = "pcfdev-test"
+)
 
 var _ = BeforeSuite(func() {
 	ifconfig := exec.Command("ifconfig")
@@ -29,8 +30,13 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session, "10s").Should(gexec.Exit())
 
-	pluginPath, err := gexec.Build("github.com/pivotal-cf/pcfdev-cli")
+	pluginPath, err := gexec.Build("github.com/pivotal-cf/pcfdev-cli", "-ldflags",
+		"-X main.vmName="+vmName+
+			" -X main.releaseId=1622"+
+			" -X main.productFileId=4448"+
+			" -X main.md5=af789b59e895f0ecc3ed81c1cd2b963e")
 	Expect(err).NotTo(HaveOccurred())
+
 	installCommand := exec.Command("cf", "install-plugin", "-f", pluginPath)
 	session, err = gexec.Start(installCommand, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
@@ -52,7 +58,7 @@ var _ = Describe("pcfdev", func() {
 		})
 
 		AfterEach(func() {
-			output, err := exec.Command("VBoxManage", "showvminfo", "pcfdev-2016-03-29_1728", "--machinereadable").Output()
+			output, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
 			if err != nil {
 				return
 			}
@@ -60,8 +66,8 @@ var _ = Describe("pcfdev", func() {
 			regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
 			vboxnet := regex.FindStringSubmatch(string(output))[1]
 
-			exec.Command("VBoxManage", "controlvm", "pcfdev-2016-03-29_1728", "poweroff").Run()
-			exec.Command("VBoxManage", "unregistervm", "pcfdev-2016-03-29_1728", "--delete").Run()
+			exec.Command("VBoxManage", "controlvm", vmName, "poweroff").Run()
+			exec.Command("VBoxManage", "unregistervm", vmName, "--delete").Run()
 			exec.Command("VBoxManage", "hostonlyif", "remove", vboxnet).Run()
 		})
 
@@ -69,7 +75,7 @@ var _ = Describe("pcfdev", func() {
 			pcfdevCommand := exec.Command("cf", "dev", "start")
 			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "1h").Should(gexec.Exit(0))
+			Eventually(session, "10m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("PCF Dev is now running"))
 			Expect(isVMRunning()).To(BeTrue())
 
@@ -77,43 +83,57 @@ var _ = Describe("pcfdev", func() {
 			restartCommand := exec.Command("cf", "dev", "start")
 			session, err = gexec.Start(restartCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "3m").Should(gexec.Exit(0))
+			Eventually(session, "2m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("PCF Dev is running"))
 			Expect(isVMRunning()).To(BeTrue())
 
-			Eventually(cf("login", "-a", "api.local.pcfdev.io", "-u", "admin", "-p", "admin", "--skip-ssl-validation"), 5*time.Second).Should(gexec.Exit(0))
-			Eventually(cf("push", "app", "-o", "cloudfoundry/lattice-app"), 2*time.Minute).Should(gexec.Exit(0))
+			req, err := http.NewRequest("GET", "http://api.local.pcfdev.io", nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := http.DefaultClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+
+			response, err := ioutil.ReadAll(resp.Body)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(response)).To(Equal("PCF Dev Test VM"))
 
 			pcfdevCommand = exec.Command("cf", "dev", "stop")
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "10m").Should(gexec.Exit(0))
+			Eventually(session, "2m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("PCF Dev is now stopped"))
 			Expect(isVMRunning()).NotTo(BeTrue())
 
 			pcfdevCommand = exec.Command("cf", "dev", "destroy")
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "10m").Should(gexec.Exit(0))
+			Eventually(session, "2m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("PCF Dev VM has been destroyed"))
 
 			// rerunning destroy has no effect
 			redestroyCommand := exec.Command("cf", "dev", "destroy")
 			session, err = gexec.Start(redestroyCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "10m").Should(gexec.Exit(0))
+			Eventually(session, "2m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("PCF Dev VM has not been created"))
 
-			// can start and push app after running destroy
+			// can start after running destroy
 			pcfdevCommand = exec.Command("cf", "dev", "start")
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "1h").Should(gexec.Exit(0))
+			Eventually(session, "10m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("PCF Dev is now running"))
 			Expect(isVMRunning()).To(BeTrue())
 
-			Eventually(cf("login", "-a", "api.local.pcfdev.io", "-u", "admin", "-p", "admin", "--skip-ssl-validation"), 5*time.Second).Should(gexec.Exit(0))
-			Eventually(cf("push", "app", "-o", "cloudfoundry/lattice-app"), 2*time.Minute).Should(gexec.Exit(0))
+			req, err = http.NewRequest("GET", "http://api.local.pcfdev.io", nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err = http.DefaultClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+
+			response, err = ioutil.ReadAll(resp.Body)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(response)).To(Equal("PCF Dev Test VM"))
 		})
 
 		It("should respond to pcfdev alias", func() {
@@ -137,7 +157,7 @@ var _ = Describe("pcfdev", func() {
 			session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))
-			Expect(session).NotTo(gbytes.Say("pcfdev-2016-03-29_1728"))
+			Expect(session).NotTo(gbytes.Say(vmName))
 
 			pcfdevCommand = exec.Command("cf", "dev", "download")
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
@@ -163,7 +183,7 @@ func cf(args ...string) *gexec.Session {
 }
 
 func isVMRunning() bool {
-	vmStatus, err := exec.Command("VBoxManage", "showvminfo", "pcfdev-2016-03-29_1728", "--machinereadable").Output()
+	vmStatus, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
 	return strings.Contains(string(vmStatus), `VMState="running"`)
 }

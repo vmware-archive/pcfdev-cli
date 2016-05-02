@@ -1,8 +1,6 @@
 package vbox
 
-import (
-	"fmt"
-)
+import "fmt"
 
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vbox Driver
 type Driver interface {
@@ -92,6 +90,7 @@ func (v *VBox) ImportVM(path string, name string) error {
 	if err != nil {
 		return err
 	}
+
 	err = v.Driver.ForwardPort(name, "ssh", "22", sshPort)
 	if err != nil {
 		return err

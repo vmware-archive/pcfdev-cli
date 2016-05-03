@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -87,15 +89,9 @@ var _ = Describe("pcfdev", func() {
 			Expect(session).To(gbytes.Say("PCF Dev is running"))
 			Expect(isVMRunning()).To(BeTrue())
 
-			req, err := http.NewRequest("GET", "http://api.local.pcfdev.io", nil)
+			response, err := getResponseFromFakeServer()
 			Expect(err).NotTo(HaveOccurred())
-
-			resp, err := http.DefaultClient.Do(req)
-			Expect(err).NotTo(HaveOccurred())
-
-			response, err := ioutil.ReadAll(resp.Body)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(response)).To(Equal("PCF Dev Test VM"))
+			Expect(response).To(Equal("PCF Dev Test VM"))
 
 			pcfdevCommand = exec.Command("cf", "dev", "stop")
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
@@ -110,14 +106,14 @@ var _ = Describe("pcfdev", func() {
 			Eventually(session, "2m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("PCF Dev VM has been destroyed"))
 
-			// rerunning destroy has no effect
+			By("re-running destroy with no effect")
 			redestroyCommand := exec.Command("cf", "dev", "destroy")
 			session, err = gexec.Start(redestroyCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "2m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("PCF Dev VM has not been created"))
 
-			// can start after running destroy
+			By("starting after running destroy")
 			pcfdevCommand = exec.Command("cf", "dev", "start")
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
@@ -125,15 +121,9 @@ var _ = Describe("pcfdev", func() {
 			Expect(session).To(gbytes.Say("PCF Dev is now running"))
 			Expect(isVMRunning()).To(BeTrue())
 
-			req, err = http.NewRequest("GET", "http://api.local.pcfdev.io", nil)
+			response, err = getResponseFromFakeServer()
 			Expect(err).NotTo(HaveOccurred())
-
-			resp, err = http.DefaultClient.Do(req)
-			Expect(err).NotTo(HaveOccurred())
-
-			response, err = ioutil.ReadAll(resp.Body)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(response)).To(Equal("PCF Dev Test VM"))
+			Expect(response).To(Equal("PCF Dev Test VM"))
 		})
 
 		It("should respond to pcfdev alias", func() {
@@ -186,4 +176,24 @@ func isVMRunning() bool {
 	vmStatus, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
 	return strings.Contains(string(vmStatus), `VMState="running"`)
+}
+
+func getResponseFromFakeServer() (response string, err error) {
+	timeoutChan := time.After(30 * time.Second)
+
+	for {
+		select {
+		case <-timeoutChan:
+			return "", fmt.Errorf("connection timed out: %s", err)
+		default:
+			response, err := http.Get("http://api.local.pcfdev.io")
+			if err != nil {
+				continue
+			}
+			defer response.Body.Close()
+
+			responseBody, err := ioutil.ReadAll(response.Body)
+			return string(responseBody), err
+		}
+	}
 }

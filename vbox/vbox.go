@@ -4,22 +4,22 @@ import "fmt"
 
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vbox Driver
 type Driver interface {
-	VBoxManage(arg ...string) ([]byte, error)
-	StopVM(string) error
-	StartVM(string) error
-	DestroyVM(string) error
-	CreateHostOnlyInterface(string) (string, error)
-	AttachNetworkInterface(string, string) error
-	ForwardPort(string, string, string, string) error
-	VMExists(string) (bool, error)
-	GetHostForwardPort(string, string) (string, error)
-	IsVMRunning(string) bool
+	VBoxManage(arg ...string) (output []byte, err error)
+	StartVM(vmName string) error
+	VMExists(vmName string) (exists bool, err error)
+	IsVMRunning(vmName string) bool
+	StopVM(vmName string) error
+	DestroyVM(vmName string) error
+	CreateHostOnlyInterface(ip string) (interfaceName string, err error)
+	AttachNetworkInterface(interfaceName string, vmName string) error
+	ForwardPort(vmName string, ruleName string, hostPort string, guestPort string) error
+	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
 type SSH interface {
 	GenerateAddress() (host string, port string, err error)
-	RunSSHCommand(string, string) error
+	RunSSHCommand(command string, port string) error
 }
 
 type VBox struct {
@@ -39,20 +39,19 @@ const (
 	StatusNotCreated = "Not created"
 )
 
-func (v *VBox) StartVM(name string) (*VM, error) {
-	var sshPort string
+func (v *VBox) StartVM(vmName string) (vm *VM, err error) {
 	ip := "192.168.11.11"
-	sshPort, err := v.Driver.GetHostForwardPort(name, "ssh")
+	sshPort, err := v.Driver.GetHostForwardPort(vmName, "ssh")
 	if err != nil {
 		return nil, err
 	}
-	vm := &VM{
+	vm = &VM{
 		SSHPort: sshPort,
-		Name:    name,
+		Name:    vmName,
 		IP:      ip,
 	}
 
-	err = v.Driver.StartVM(name)
+	err = v.Driver.StartVM(vmName)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +59,7 @@ func (v *VBox) StartVM(name string) (*VM, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = v.Driver.StopVM(name)
+	err = v.Driver.StopVM(vmName)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +71,7 @@ func (v *VBox) StartVM(name string) (*VM, error) {
 	return vm, nil
 }
 
-func (v *VBox) ImportVM(path string, name string) error {
-	var sshPort string
+func (v *VBox) ImportVM(path string, vmName string) error {
 	_, sshPort, err := v.SSH.GenerateAddress()
 	if err != nil {
 		return err
@@ -82,44 +80,44 @@ func (v *VBox) ImportVM(path string, name string) error {
 	if err != nil {
 		return err
 	}
-	vboxnet, err := v.Driver.CreateHostOnlyInterface("192.168.11.1")
+	interfaceName, err := v.Driver.CreateHostOnlyInterface("192.168.11.1")
 	if err != nil {
 		return err
 	}
-	err = v.Driver.AttachNetworkInterface(vboxnet, name)
+	err = v.Driver.AttachNetworkInterface(interfaceName, vmName)
 	if err != nil {
 		return err
 	}
 
-	err = v.Driver.ForwardPort(name, "ssh", "22", sshPort)
+	err = v.Driver.ForwardPort(vmName, "ssh", sshPort, "22")
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (v *VBox) DestroyVM(name string) error {
-	status, err := v.Status(name)
+func (v *VBox) DestroyVM(vmName string) error {
+	status, err := v.Status(vmName)
 	if err != nil {
 		return err
 	}
 
 	if status == StatusRunning {
-		err = v.StopVM(name)
+		err = v.StopVM(vmName)
 		if err != nil {
 			return err
 		}
 	}
 
-	return v.Driver.DestroyVM(name)
+	return v.Driver.DestroyVM(vmName)
 }
 
-func (v *VBox) StopVM(name string) error {
-	return v.Driver.StopVM(name)
+func (v *VBox) StopVM(vmName string) error {
+	return v.Driver.StopVM(vmName)
 }
 
-func (v *VBox) Status(name string) (string, error) {
-	exists, err := v.Driver.VMExists(name)
+func (v *VBox) Status(vmName string) (string, error) {
+	exists, err := v.Driver.VMExists(vmName)
 	if err != nil {
 		return "", err
 	}
@@ -128,7 +126,7 @@ func (v *VBox) Status(name string) (string, error) {
 		return StatusNotCreated, nil
 	}
 
-	if v.Driver.IsVMRunning(name) {
+	if v.Driver.IsVMRunning(vmName) {
 		return StatusRunning, nil
 	}
 

@@ -12,12 +12,9 @@ type Client struct {
 	ProductFileId string
 }
 
-func (c *Client) DownloadOVA(token string) (io.ReadCloser, error) {
-	return c.request("POST", fmt.Sprintf("/api/v2/products/pcfdev/releases/%s/product_files/%s/download", c.ReleaseId, c.ProductFileId), token)
-}
-
-func (c *Client) request(method string, uri string, token string) (io.ReadCloser, error) {
-	req, err := http.NewRequest(method, c.Host+uri, nil)
+func (c *Client) DownloadOVA(token string) (ova io.ReadCloser, err error) {
+	uri := fmt.Sprintf("%s/api/v2/products/pcfdev/releases/%s/product_files/%s/download", c.Host, c.ReleaseId, c.ProductFileId)
+	req, err := http.NewRequest("POST", uri, nil)
 	if err != nil {
 		return nil, err
 	}

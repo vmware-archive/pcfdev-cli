@@ -45,9 +45,9 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 	return session.Run(command)
 }
 
-func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string, timeout time.Duration) (*ssh.Client, error) {
-	var client *ssh.Client
-	var err error
+//TODO: make private
+
+func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string, timeout time.Duration) (client *ssh.Client, err error) {
 	timeoutChan := time.After(timeout)
 
 	for {

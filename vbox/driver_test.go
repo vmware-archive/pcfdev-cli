@@ -39,7 +39,7 @@ var _ = Describe("driver", func() {
 		}
 
 		tmpDir := os.Getenv("TMPDIR")
-		vmName = "Snappy-" + RandomName()
+		vmName = "Snappy-" + randomName()
 		_, err = driver.VBoxManage("import",
 			"../assets/snappy.ova",
 			"--vsys", "0",
@@ -75,7 +75,7 @@ var _ = Describe("driver", func() {
 			_, port, err := sshClient.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.ForwardPort(vmName, "some-rule-name", "22", port)
+			err = driver.ForwardPort(vmName, "some-rule-name", port, "22")
 			Expect(err).NotTo(HaveOccurred())
 
 			err = driver.StartVM(vmName)
@@ -107,21 +107,17 @@ var _ = Describe("driver", func() {
 		})
 
 		It("should destroy the VBox VM network interface", func() {
-			vboxnet, err := driver.CreateHostOnlyInterface("192.168.88.1")
+			interfaceName, err := driver.CreateHostOnlyInterface("192.168.88.1")
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.AttachNetworkInterface(vboxnet, vmName)
+			err = driver.AttachNetworkInterface(interfaceName, vmName)
 			Expect(err).NotTo(HaveOccurred())
 
 			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(func() string {
-				exists, err := driver.GetVBoxNetName(vmName)
-				Expect(err).NotTo(HaveOccurred())
-				return string(exists)
-			}).Should(ContainSubstring(vboxnet))
-			Expect(driver.VBoxManage("list", "hostonlyifs")).To(ContainSubstring(vboxnet))
+			Expect(driver.VBoxManage("showvminfo", vmName, "--machinereadable")).To(ContainSubstring(interfaceName))
+			Expect(driver.VBoxManage("list", "hostonlyifs")).To(ContainSubstring(interfaceName))
 
 			_, err = driver.VBoxManage("controlvm", vmName, "poweroff")
 			Expect(err).NotTo(HaveOccurred())
@@ -133,7 +129,16 @@ var _ = Describe("driver", func() {
 				exists, err := driver.VBoxManage("list", "hostonlyifs")
 				Expect(err).NotTo(HaveOccurred())
 				return string(exists)
-			}, 120*time.Second).ShouldNot(ContainSubstring(vboxnet))
+			}, 120*time.Second).ShouldNot(ContainSubstring(interfaceName))
+		})
+	})
+
+	Describe("#StartVM", func() {
+		Context("when VM with the given name does not exist", func() {
+			It("should return an error", func() {
+				err := driver.StartVM("some-bad-vm-name")
+				Expect(err).To(MatchError("failed to execute 'VBoxManage startvm some-bad-vm-name --type headless': exit status 1"))
+			})
 		})
 	})
 
@@ -155,11 +160,42 @@ var _ = Describe("driver", func() {
 		})
 	})
 
-	Describe("#StartVM", func() {
-		Context("when VM with the given name does not exist", func() {
-			It("should return an error", func() {
-				err := driver.StartVM("some-bad-vm-name")
-				Expect(err).To(MatchError("failed to execute 'VBoxManage startvm some-bad-vm-name --type headless': exit status 1"))
+	Describe("#IsVMRunning", func() {
+		Context("when VM does not exist", func() {
+			It("should return false", func() {
+				Expect(driver.IsVMRunning("some-bad-vm")).To(BeFalse())
+			})
+		})
+
+		Context("when VM is not running", func() {
+			It("should return false", func() {
+				Expect(driver.IsVMRunning(vmName)).To(BeFalse())
+			})
+		})
+
+		Context("when VM is running", func() {
+			It("should return true", func() {
+				sshClient := &ssh.SSH{}
+
+				_, port, err := sshClient.GenerateAddress()
+				Expect(err).NotTo(HaveOccurred())
+
+				err = driver.ForwardPort(vmName, "some-rule-name", port, "22")
+				Expect(err).NotTo(HaveOccurred())
+
+				err = driver.StartVM(vmName)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(driver.IsVMRunning(vmName)).To(BeTrue())
+
+				client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
+					User: "ubuntu",
+					Auth: []cssh.AuthMethod{
+						cssh.Password("ubuntu"),
+					},
+					Timeout: 30 * time.Second,
+				}, port, 5*time.Minute)
+				Expect(err).NotTo(HaveOccurred())
+				client.Close()
 			})
 		})
 	})
@@ -209,25 +245,6 @@ var _ = Describe("driver", func() {
 		})
 	})
 
-	Describe("#DestroyHostOnlyInterface", func() {
-		AfterEach(func() {
-			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet1").Run()
-		})
-
-		It("should destroy a hostonlyif", func() {
-			name, err := driver.CreateHostOnlyInterface("192.168.77.1")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = driver.DestroyHostOnlyInterface(name)
-			Expect(err).NotTo(HaveOccurred())
-			listCommand := exec.Command("VBoxManage", "list", "hostonlyifs")
-			session, err := gexec.Start(listCommand, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(session).Should(gexec.Exit(0))
-			Expect(session).NotTo(gbytes.Say(name))
-		})
-	})
-
 	Describe("#AttachInterface", func() {
 		BeforeEach(func() {
 			_, err := driver.CreateHostOnlyInterface("192.168.77.1")
@@ -259,29 +276,13 @@ var _ = Describe("driver", func() {
 		})
 	})
 
-	Describe("#GetHostForwardPort", func() {
-		It("should return the forwarded port on the host", func() {
-			sshClient := &ssh.SSH{}
-			_, expectedPort, err := sshClient.GenerateAddress()
-			Expect(err).NotTo(HaveOccurred())
-
-			err = driver.ForwardPort(vmName, "some-rule-name", "22", expectedPort)
-			Expect(err).NotTo(HaveOccurred())
-
-			port, err := driver.GetHostForwardPort(vmName, "some-rule-name")
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(port).To(Equal(expectedPort))
-		})
-	})
-
 	Describe("#ForwardPort", func() {
 		It("should forward guest port to the given host port", func() {
 			sshClient := &ssh.SSH{}
 			_, port, err := sshClient.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.ForwardPort(vmName, "some-rule-name", "22", port)
+			err = driver.ForwardPort(vmName, "some-rule-name", port, "22")
 			Expect(err).NotTo(HaveOccurred())
 			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
@@ -297,48 +298,24 @@ var _ = Describe("driver", func() {
 		})
 	})
 
-	Describe("#IsVMRunning", func() {
-		Context("when VM does not exist", func() {
-			It("should return false", func() {
-				Expect(driver.IsVMRunning("some-bad-vm")).To(BeFalse())
-			})
-		})
+	Describe("#GetHostForwardPort", func() {
+		It("should return the forwarded port on the host", func() {
+			sshClient := &ssh.SSH{}
+			_, expectedPort, err := sshClient.GenerateAddress()
+			Expect(err).NotTo(HaveOccurred())
 
-		Context("when VM is not running", func() {
-			It("should return false", func() {
-				Expect(driver.IsVMRunning(vmName)).To(BeFalse())
-			})
-		})
+			err = driver.ForwardPort(vmName, "some-rule-name", expectedPort, "22")
+			Expect(err).NotTo(HaveOccurred())
 
-		Context("when VM is running", func() {
-			It("should return true", func() {
-				sshClient := &ssh.SSH{}
+			port, err := driver.GetHostForwardPort(vmName, "some-rule-name")
+			Expect(err).NotTo(HaveOccurred())
 
-				_, port, err := sshClient.GenerateAddress()
-				Expect(err).NotTo(HaveOccurred())
-
-				err = driver.ForwardPort(vmName, "some-rule-name", "22", port)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = driver.StartVM(vmName)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(driver.IsVMRunning(vmName)).To(BeTrue())
-
-				client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
-					User: "ubuntu",
-					Auth: []cssh.AuthMethod{
-						cssh.Password("ubuntu"),
-					},
-					Timeout: 30 * time.Second,
-				}, port, 5*time.Minute)
-				Expect(err).NotTo(HaveOccurred())
-				client.Close()
-			})
+			Expect(port).To(Equal(expectedPort))
 		})
 	})
 })
 
-func RandomName() string {
+func randomName() string {
 	guid, err := uuid.NewV4()
 	if err != nil {
 		panic(err)

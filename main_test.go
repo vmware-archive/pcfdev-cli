@@ -64,11 +64,11 @@ var _ = Describe("pcfdev", func() {
 			}
 
 			regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
-			vboxnet := regex.FindStringSubmatch(string(output))[1]
+			interfaceName := regex.FindStringSubmatch(string(output))[1]
 
 			exec.Command("VBoxManage", "controlvm", vmName, "poweroff").Run()
 			exec.Command("VBoxManage", "unregistervm", vmName, "--delete").Run()
-			exec.Command("VBoxManage", "hostonlyif", "remove", vboxnet).Run()
+			exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName).Run()
 		})
 
 		It("should start, stop, and destroy a virtualbox instance", func() {

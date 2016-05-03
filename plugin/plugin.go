@@ -25,7 +25,7 @@ type Plugin struct {
 
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
 type Client interface {
-	DownloadOVA(string) (io.ReadCloser, error)
+	DownloadOVA(token string) (ova io.ReadCloser, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -41,20 +41,20 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
 type VBox interface {
-	StartVM(string) (*vbox.VM, error)
-	StopVM(string) error
-	DestroyVM(string) error
-	ImportVM(string, string) error
-	Status(string) (string, error)
+	StartVM(name string) (vm *vbox.VM, err error)
+	StopVM(name string) error
+	DestroyVM(name string) error
+	ImportVM(path string, name string) error
+	Status(name string) (status string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin FS
 type FS interface {
-	Exists(string) (bool, error)
-	Write(string, io.Reader) error
-	CreateDir(string) error
-	RemoveFile(string) error
-	MD5(string) (string, error)
+	Exists(path string) (exists bool, err error)
+	Write(path string, contents io.Reader) error
+	CreateDir(path string) error
+	RemoveFile(path string) error
+	MD5(path string) (md5 string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/plugin Config

@@ -1,7 +1,7 @@
 package fs
 
 import (
-	"crypto/md5"
+	cMD5 "crypto/md5"
 	"fmt"
 	"io"
 	"os"
@@ -9,7 +9,7 @@ import (
 
 type FS struct{}
 
-func (fs *FS) Exists(path string) (bool, error) {
+func (fs *FS) Exists(path string) (exists bool, err error) {
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
@@ -40,14 +40,14 @@ func (fs *FS) RemoveFile(path string) error {
 	return os.Remove(path)
 }
 
-func (fs *FS) MD5(path string) (string, error) {
+func (fs *FS) MD5(path string) (md5 string, err error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("could not read %s: %s", path, err)
 	}
 	defer file.Close()
 
-	hash := md5.New()
+	hash := cMD5.New()
 
 	if _, err = io.Copy(hash, file); err != nil {
 		return "", fmt.Errorf("could not read %s: %s", path, err)

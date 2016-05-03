@@ -1,6 +1,9 @@
 package vbox
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vbox Driver
 type Driver interface {
@@ -19,7 +22,7 @@ type Driver interface {
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
 type SSH interface {
 	GenerateAddress() (host string, port string, err error)
-	RunSSHCommand(command string, port string) error
+	RunSSHCommand(command string, port string, timeout time.Duration) (output []byte, err error)
 }
 
 type VBox struct {
@@ -55,7 +58,7 @@ func (v *VBox) StartVM(vmName string) (vm *VM, err error) {
 	if err != nil {
 		return nil, err
 	}
-	err = v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), sshPort)
+	_, err = v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), sshPort, 2*time.Minute)
 	if err != nil {
 		return nil, err
 	}

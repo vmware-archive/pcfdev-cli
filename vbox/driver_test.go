@@ -17,8 +17,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-
-	cssh "golang.org/x/crypto/ssh"
 )
 
 var _ = Describe("driver", func() {
@@ -82,15 +80,9 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(driver.IsVMRunning(vmName)).To(BeTrue())
 
-			client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
-				User: "ubuntu",
-				Auth: []cssh.AuthMethod{
-					cssh.Password("ubuntu"),
-				},
-				Timeout: 30 * time.Second,
-			}, port, 5*time.Minute)
+			output, err := sshClient.RunSSHCommand("hostname", port, 5*time.Minute)
 			Expect(err).NotTo(HaveOccurred())
-			defer client.Close()
+			Expect(string(output)).To(ContainSubstring("ubuntu-core-stable-15"))
 
 			err = driver.StopVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
@@ -187,15 +179,9 @@ var _ = Describe("driver", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(driver.IsVMRunning(vmName)).To(BeTrue())
 
-				client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
-					User: "ubuntu",
-					Auth: []cssh.AuthMethod{
-						cssh.Password("ubuntu"),
-					},
-					Timeout: 30 * time.Second,
-				}, port, 5*time.Minute)
+				output, err := sshClient.RunSSHCommand("hostname", port, 5*time.Minute)
 				Expect(err).NotTo(HaveOccurred())
-				client.Close()
+				Expect(string(output)).To(ContainSubstring("ubuntu-core-stable-15"))
 			})
 		})
 	})
@@ -286,15 +272,10 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
-			client, err := sshClient.WaitForSSH(&cssh.ClientConfig{
-				User: "ubuntu",
-				Auth: []cssh.AuthMethod{
-					cssh.Password("ubuntu"),
-				},
-				Timeout: 30 * time.Second,
-			}, port, 5*time.Minute)
+
+			output, err := sshClient.RunSSHCommand("hostname", port, 5*time.Minute)
 			Expect(err).NotTo(HaveOccurred())
-			client.Close()
+			Expect(string(output)).To(ContainSubstring("ubuntu-core-stable-15"))
 		})
 	})
 

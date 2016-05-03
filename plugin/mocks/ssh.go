@@ -5,6 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	time "time"
 )
 
 // Mock of SSH interface
@@ -28,12 +29,13 @@ func (_m *MockSSH) EXPECT() *_MockSSHRecorder {
 	return _m.recorder
 }
 
-func (_m *MockSSH) RunSSHCommand(_param0 string, _param1 string) error {
-	ret := _m.ctrl.Call(_m, "RunSSHCommand", _param0, _param1)
-	ret0, _ := ret[0].(error)
-	return ret0
+func (_m *MockSSH) RunSSHCommand(_param0 string, _param1 string, _param2 time.Duration) ([]byte, error) {
+	ret := _m.ctrl.Call(_m, "RunSSHCommand", _param0, _param1, _param2)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-func (_mr *_MockSSHRecorder) RunSSHCommand(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunSSHCommand", arg0, arg1)
+func (_mr *_MockSSHRecorder) RunSSHCommand(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunSSHCommand", arg0, arg1, arg2)
 }

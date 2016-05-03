@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/mocks"
@@ -195,7 +196,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port", 2*time.Minute),
 						mockUI.EXPECT().Say("PCF Dev is now running"),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -216,7 +217,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port", 2*time.Minute),
 						mockUI.EXPECT().Say("PCF Dev is now running"),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -239,7 +240,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port"),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port", 2*time.Minute),
 						mockUI.EXPECT().Say("PCF Dev is now running"),
 					)
 
@@ -333,7 +334,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port").Return(err),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip", "some-port", 2*time.Minute).Return(nil, err),
 						mockUI.EXPECT().Failed("failed to provision VM: some-error"),
 					)
 

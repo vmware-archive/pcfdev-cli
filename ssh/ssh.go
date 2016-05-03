@@ -21,7 +21,7 @@ func (*SSH) GenerateAddress() (host string, port string, err error) {
 	return address[0], address[1], nil
 }
 
-func (s *SSH) RunSSHCommand(command string, port string) error {
+func (s *SSH) RunSSHCommand(command string, port string, timeout time.Duration) (output []byte, err error) {
 	config := &ssh.ClientConfig{
 		User: "vcap",
 		Auth: []ssh.AuthMethod{
@@ -30,24 +30,22 @@ func (s *SSH) RunSSHCommand(command string, port string) error {
 		Timeout: 30 * time.Second,
 	}
 
-	client, err := s.WaitForSSH(config, port, 2*time.Minute)
+	client, err := s.waitForSSH(config, port, timeout)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer client.Close()
 
 	session, err := client.NewSession()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer session.Close()
 
-	return session.Run(command)
+	return session.Output(command)
 }
 
-//TODO: make private
-
-func (*SSH) WaitForSSH(config *ssh.ClientConfig, port string, timeout time.Duration) (client *ssh.Client, err error) {
+func (*SSH) waitForSSH(config *ssh.ClientConfig, port string, timeout time.Duration) (client *ssh.Client, err error) {
 	timeoutChan := time.After(timeout)
 
 	for {

@@ -2,6 +2,7 @@ package vbox_test
 
 import (
 	"errors"
+	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vbox/mocks"
@@ -112,7 +113,7 @@ var _ = Describe("vbox", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 					mockDriver.EXPECT().StartVM("some-vm"),
-					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port"),
+					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute),
 					mockDriver.EXPECT().StopVM("some-vm"),
 					mockDriver.EXPECT().StartVM("some-vm"),
 				)
@@ -149,7 +150,7 @@ var _ = Describe("vbox", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().StartVM("some-vm"),
-						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port").Return(errors.New("some-error")),
+						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute).Return(nil, errors.New("some-error")),
 					)
 					_, err := vbx.StartVM("some-vm")
 					Expect(err).To(MatchError("some-error"))
@@ -161,7 +162,7 @@ var _ = Describe("vbox", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().StartVM("some-vm"),
-						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port"),
+						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute),
 						mockDriver.EXPECT().StopVM("some-vm").Return(errors.New("some-error")),
 					)
 					_, err := vbx.StartVM("some-vm")

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/cloudfoundry/cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -30,7 +31,7 @@ type Client interface {
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
 type SSH interface {
-	RunSSHCommand(command string, port string) error
+	RunSSHCommand(command string, port string, timeout time.Duration) (output []byte, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/plugin UI
@@ -187,7 +188,8 @@ func (p *Plugin) destroy() error {
 }
 
 func (p *Plugin) provision(vm *vbox.VM) error {
-	return p.SSH.RunSSHCommand(fmt.Sprintf("sudo /var/pcfdev/run local.pcfdev.io %s", vm.IP), vm.SSHPort)
+	_, err := p.SSH.RunSSHCommand(fmt.Sprintf("sudo /var/pcfdev/run local.pcfdev.io %s", vm.IP), vm.SSHPort, 2*time.Minute)
+	return err
 }
 
 func (p *Plugin) downloadOVAFile() error {

@@ -298,8 +298,20 @@ var _ = Describe("driver", func() {
 		})
 	})
 
+	Describe("#VMs", func() {
+		It("should return a list of VMs", func() {
+			Expect(driver.VMs()).To(ContainElement(vmName))
+
+			Expect(driver.StartVM(vmName)).To(Succeed())
+
+			Expect(driver.VMs()).To(ContainElement(vmName))
+		})
+	})
+
 	Describe("#RunningVMs", func() {
 		It("should return a list of running VMs", func() {
+			Expect(driver.RunningVMs()).NotTo(ContainElement(vmName))
+
 			Expect(driver.StartVM(vmName)).To(Succeed())
 
 			Expect(driver.RunningVMs()).To(ContainElement(vmName))

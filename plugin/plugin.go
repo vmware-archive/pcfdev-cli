@@ -44,10 +44,11 @@ type UI interface {
 type VBox interface {
 	StartVM(name string) (vm *vbox.VM, err error)
 	StopVM(name string) error
-	DestroyVM(name string) error
+	DestroyVMs(name []string) error
 	ImportVM(path string, name string) error
 	Status(name string) (status string, err error)
 	ConflictingVMPresent(name string) (conflict bool, err error)
+	GetPCFDevVMs() (names []string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin FS
@@ -176,18 +177,18 @@ func (p *Plugin) stop() error {
 }
 
 func (p *Plugin) destroy() error {
-	status, err := p.VBox.Status(p.VMName)
+	vms, err := p.VBox.GetPCFDevVMs()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to query VM: %s", err)
 	}
 
-	if status == vbox.StatusNotCreated {
+	if len(vms) == 0 {
 		p.UI.Say("PCF Dev VM has not been created")
 		return nil
 	}
 
 	p.UI.Say("Destroying VM...")
-	err = p.VBox.DestroyVM(p.VMName)
+	err = p.VBox.DestroyVMs(vms)
 	if err != nil {
 		return fmt.Errorf("failed to destroy VM: %s", err)
 	}

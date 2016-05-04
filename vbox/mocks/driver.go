@@ -156,3 +156,14 @@ func (_m *MockDriver) VMExists(_param0 string) (bool, error) {
 func (_mr *_MockDriverRecorder) VMExists(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "VMExists", arg0)
 }
+
+func (_m *MockDriver) VMs() ([]string, error) {
+	ret := _m.ctrl.Call(_m, "VMs")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) VMs() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "VMs")
+}

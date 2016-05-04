@@ -123,6 +123,23 @@ func (d *VBoxDriver) GetHostForwardPort(vmName string, ruleName string) (port st
 	return "", errors.New("could not find forwarded port")
 }
 
+func (d *VBoxDriver) VMs() ([]string, error) {
+	output, err := d.VBoxManage("list", "vms")
+	if err != nil {
+		return []string{}, err
+	}
+
+	vms := []string{}
+	for _, line := range strings.Split(strings.Trim(string(output), "\n"), "\n") {
+		regex := regexp.MustCompile(`^"(.+)"\s`)
+		if matches := regex.FindStringSubmatch(string(line)); len(matches) > 1 {
+			vms = append(vms, matches[1])
+		}
+	}
+
+	return vms, nil
+}
+
 func (d *VBoxDriver) RunningVMs() (vms []string, err error) {
 	output, err := d.VBoxManage("list", "runningvms")
 	if err != nil {

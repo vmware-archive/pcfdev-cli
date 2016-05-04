@@ -215,52 +215,59 @@ var _ = Describe("vbox", func() {
 		})
 	})
 
-	Describe("DestroyVM", func() {
-		Context("VM is stopped", func() {
-			It("should stop the VM", func() {
+	Describe("DestroyVMs", func() {
+		Context("when the VM is stopped", func() {
+			It("should destroy the VM", func() {
 				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
 				mockDriver.EXPECT().IsVMRunning("some-vm").Return(false)
 				mockDriver.EXPECT().DestroyVM("some-vm")
 
-				err := vbx.DestroyVM("some-vm")
-				Expect(err).NotTo(HaveOccurred())
+				Expect(vbx.DestroyVMs([]string{"some-vm"})).To(Succeed())
 			})
 		})
 
-		Context("VM is running", func() {
-			It("should stop the VM", func() {
+		Context("when the VM is running", func() {
+			It("should power off and destroy the VM", func() {
 				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
 				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
 				mockDriver.EXPECT().PowerOffVM("some-vm")
 				mockDriver.EXPECT().DestroyVM("some-vm")
 
-				err := vbx.DestroyVM("some-vm")
-				Expect(err).NotTo(HaveOccurred())
+				Expect(vbx.DestroyVMs([]string{"some-vm"})).To(Succeed())
 			})
 		})
 
-		Context("Driver fails to stop VM", func() {
+		Context("when the driver fails to stop VM", func() {
 			It("should return the error", func() {
 				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
 				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
+				mockDriver.EXPECT().PowerOffVM("some-vm").Return(errors.New("some-error"))
 
-				expectedError := errors.New("some-error")
-				mockDriver.EXPECT().PowerOffVM("some-vm").Return(expectedError)
-				err := vbx.DestroyVM("some-vm")
-				Expect(err).To(MatchError(expectedError))
+				Expect(vbx.DestroyVMs([]string{"some-vm"})).To(MatchError("some-error"))
 			})
 		})
 
-		Context("Driver fails to destroy VM", func() {
+		Context("when the driver fails to destroy VM", func() {
 			It("should return the error", func() {
 				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
 				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
 				mockDriver.EXPECT().PowerOffVM("some-vm")
+				mockDriver.EXPECT().DestroyVM("some-vm").Return(errors.New("some-error"))
 
-				expectedError := errors.New("some-error")
-				mockDriver.EXPECT().DestroyVM("some-vm").Return(expectedError)
-				err := vbx.DestroyVM("some-vm")
-				Expect(err).To(MatchError(expectedError))
+				Expect(vbx.DestroyVMs([]string{"some-vm"})).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when multiple VMs are passed", func() {
+			It("should destroy all of the VMs", func() {
+				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
+				mockDriver.EXPECT().IsVMRunning("some-vm").Return(false)
+				mockDriver.EXPECT().DestroyVM("some-vm")
+				mockDriver.EXPECT().VMExists("some-other-vm").Return(true, nil)
+				mockDriver.EXPECT().IsVMRunning("some-other-vm").Return(false)
+				mockDriver.EXPECT().DestroyVM("some-other-vm")
+
+				Expect(vbx.DestroyVMs([]string{"some-vm", "some-other-vm"})).To(Succeed())
 			})
 		})
 	})
@@ -305,6 +312,23 @@ var _ = Describe("vbox", func() {
 
 				_, err := vbx.Status("some-vm")
 				Expect(err).To(MatchError(someError))
+			})
+		})
+	})
+
+	Describe("#GetPCFDevVMs", func() {
+		It("should return VM names that begin with pcfdev-", func() {
+			mockDriver.EXPECT().VMs().Return([]string{"pcfdev-0.0.0", "pcfdev-0.0.1", "some-bad-vm-name"}, nil)
+
+			Expect(vbx.GetPCFDevVMs()).To(Equal([]string{"pcfdev-0.0.0", "pcfdev-0.0.1"}))
+		})
+
+		Context("when getting VMs fails", func() {
+			It("should return an error", func() {
+				mockDriver.EXPECT().VMs().Return([]string{}, errors.New("some-error"))
+
+				_, err := vbx.GetPCFDevVMs()
+				Expect(err).To(MatchError("some-error"))
 			})
 		})
 	})

@@ -15,6 +15,7 @@ type Driver interface {
 	PowerOffVM(vmName string) error
 	StopVM(vmName string) error
 	DestroyVM(vmName string) error
+	VMs() (vms []string, err error)
 	RunningVMs() (vms []string, err error)
 	CreateHostOnlyInterface(ip string) (interfaceName string, err error)
 	AttachNetworkInterface(interfaceName string, vmName string) error
@@ -102,20 +103,27 @@ func (v *VBox) ImportVM(path string, vmName string) error {
 	return nil
 }
 
-func (v *VBox) DestroyVM(vmName string) error {
-	status, err := v.Status(vmName)
-	if err != nil {
-		return err
-	}
+func (v *VBox) DestroyVMs(vmNames []string) error {
+	for _, vmName := range vmNames {
+		status, err := v.Status(vmName)
+		if err != nil {
+			return err
+		}
 
-	if status == StatusRunning {
-		err = v.Driver.PowerOffVM(vmName)
+		if status == StatusRunning {
+			err = v.Driver.PowerOffVM(vmName)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = v.Driver.DestroyVM(vmName)
 		if err != nil {
 			return err
 		}
 	}
 
-	return v.Driver.DestroyVM(vmName)
+	return nil
 }
 
 func (v *VBox) ConflictingVMPresent(vmName string) (conflict bool, err error) {
@@ -151,4 +159,21 @@ func (v *VBox) Status(vmName string) (status string, err error) {
 	}
 
 	return StatusStopped, nil
+}
+
+func (v *VBox) GetPCFDevVMs() ([]string, error) {
+	vms, err := v.Driver.VMs()
+	if err != nil {
+		return []string{}, err
+	}
+
+	pcfdevVMs := []string{}
+
+	for _, vm := range vms {
+		if strings.HasPrefix(vm, "pcfdev-") {
+			pcfdevVMs = append(pcfdevVMs, vm)
+		}
+	}
+
+	return pcfdevVMs, nil
 }

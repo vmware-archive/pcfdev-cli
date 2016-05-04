@@ -40,14 +40,25 @@ func (_mr *_MockVBoxRecorder) ConflictingVMPresent(arg0 interface{}) *gomock.Cal
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ConflictingVMPresent", arg0)
 }
 
-func (_m *MockVBox) DestroyVM(_param0 string) error {
-	ret := _m.ctrl.Call(_m, "DestroyVM", _param0)
+func (_m *MockVBox) DestroyVMs(_param0 []string) error {
+	ret := _m.ctrl.Call(_m, "DestroyVMs", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockVBoxRecorder) DestroyVM(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "DestroyVM", arg0)
+func (_mr *_MockVBoxRecorder) DestroyVMs(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DestroyVMs", arg0)
+}
+
+func (_m *MockVBox) GetPCFDevVMs() ([]string, error) {
+	ret := _m.ctrl.Call(_m, "GetPCFDevVMs")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockVBoxRecorder) GetPCFDevVMs() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetPCFDevVMs")
 }
 
 func (_m *MockVBox) ImportVM(_param0 string, _param1 string) error {

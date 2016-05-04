@@ -518,22 +518,48 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("destroy", func() {
-			It("should destroy the vm", func() {
+			It("should destroy all PCF Dev VMs created by the CLI", func() {
+				vms := []string{"pcfdev-0.0.0", "pcfdev-0.0.1"}
 				gomock.InOrder(
-					mockVBox.EXPECT().Status(vmName).Return(vbox.StatusStopped, nil),
+					mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
 					mockUI.EXPECT().Say("Destroying VM..."),
-					mockVBox.EXPECT().DestroyVM(vmName).Return(nil),
+					mockVBox.EXPECT().DestroyVMs(vms).Return(nil),
 					mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
 			})
 
-			Context("there is no VM", func() {
+			Context("there are no PCF Dev VMs", func() {
 				It("should send an error message", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
+						mockVBox.EXPECT().GetPCFDevVMs().Return([]string{}, nil),
 						mockUI.EXPECT().Say("PCF Dev VM has not been created"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
+				})
+			})
+
+			Context("there is an error getting the PCFDev names", func() {
+				It("should send an error message", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().GetPCFDevVMs().Return([]string{}, errors.New("some-error")),
+						mockUI.EXPECT().Failed("failed to query VM: some-error"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
+				})
+			})
+
+			Context("there is an error destroying the VMs", func() {
+				It("should send an error message", func() {
+					vms := []string{"pcfdev-0.0.0", "pcfdev-0.0.1"}
+					gomock.InOrder(
+						mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
+						mockUI.EXPECT().Say("Destroying VM..."),
+						mockVBox.EXPECT().DestroyVMs(vms).Return(errors.New("some-error")),
+						mockUI.EXPECT().Failed("failed to destroy VM: some-error"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})

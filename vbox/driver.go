@@ -109,6 +109,23 @@ func (d *VBoxDriver) GetHostForwardPort(vmName string, ruleName string) (port st
 	return regex.FindStringSubmatch(string(output))[1], nil
 }
 
+func (d *VBoxDriver) RunningVMs() (vms []string, err error) {
+	output, err := d.VBoxManage("list", "runningvms")
+	if err != nil {
+		return []string{}, err
+	}
+
+	runningVMs := []string{}
+	for _, line := range strings.Split(strings.Trim(string(output), "\n"), "\n") {
+		regex := regexp.MustCompile(`^"(.+)"\s`)
+		if match := regex.FindStringSubmatch(string(line)); len(match) > 1 {
+			runningVMs = append(runningVMs, match[1])
+		}
+	}
+
+	return runningVMs, nil
+}
+
 func (d *VBoxDriver) getVBoxNetName(vmName string) (interfaceName string, err error) {
 	output, err := d.VBoxManage("showvminfo", vmName, "--machinereadable")
 	if err != nil {

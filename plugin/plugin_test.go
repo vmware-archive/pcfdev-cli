@@ -416,7 +416,7 @@ var _ = Describe("Plugin", func() {
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
 			})
 
-			Context("VM is running", func() {
+			Context("when VM is running", func() {
 				It("should stop the vm", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusRunning, nil),
@@ -436,6 +436,44 @@ var _ = Describe("Plugin", func() {
 							mockUI.EXPECT().Say("Stopping VM..."),
 							mockVBox.EXPECT().StopVM(vmName).Return(err),
 							mockUI.EXPECT().Failed("failed to stop VM: some-error"),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+					})
+				})
+			})
+
+			Context("when VM is not created", func() {
+				Context("when a conflicting VM is running", func() {
+					It("should print an error", func() {
+						gomock.InOrder(
+							mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
+							mockVBox.EXPECT().ConflictingVMPresent(vmName).Return(true, nil),
+							mockUI.EXPECT().Failed("Old version of PCF Dev detected. You must run `cf dev destroy` to continue."),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+					})
+				})
+
+				Context("when no conflicting VMs are running", func() {
+					It("should send an error message", func() {
+						gomock.InOrder(
+							mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
+							mockVBox.EXPECT().ConflictingVMPresent(vmName).Return(false, nil),
+							mockUI.EXPECT().Say("PCF Dev VM has not been created"),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+					})
+				})
+
+				Context("when checking for conflicting VMs fails", func() {
+					It("should print an error", func() {
+						gomock.InOrder(
+							mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
+							mockVBox.EXPECT().ConflictingVMPresent(vmName).Return(false, errors.New("some-error")),
+							mockUI.EXPECT().Failed("some-error"),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})

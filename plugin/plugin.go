@@ -47,6 +47,7 @@ type VBox interface {
 	DestroyVM(name string) error
 	ImportVM(path string, name string) error
 	Status(name string) (status string, err error)
+	ConflictingVMPresent(name string) (conflict bool, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin FS
@@ -149,6 +150,13 @@ func (p *Plugin) stop() error {
 	}
 
 	if status == vbox.StatusNotCreated {
+		conflict, err := p.VBox.ConflictingVMPresent(p.VMName)
+		if err != nil {
+			return err
+		}
+		if conflict {
+			return errors.New("Old version of PCF Dev detected. You must run `cf dev destroy` to continue.")
+		}
 		p.UI.Say("PCF Dev VM has not been created")
 		return nil
 	}

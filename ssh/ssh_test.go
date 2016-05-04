@@ -2,14 +2,10 @@ package ssh_test
 
 import (
 	"fmt"
-	"io"
-	"net/http"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
-	"github.com/nu7hatch/gouuid"
+	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	. "github.com/pivotal-cf/pcfdev-cli/ssh"
 
 	. "github.com/onsi/ginkgo"
@@ -38,27 +34,10 @@ var _ = Describe("ssh", func() {
 
 			BeforeEach(func() {
 				ssh = &SSH{}
-				_, err := os.Stat("../assets/snappy.ova")
-				if os.IsNotExist(err) {
-					By("Downloading ova...")
-					resp, err := http.Get("https://s3.amazonaws.com/pcfdev/ovas/snappy.ova")
-					Expect(err).NotTo(HaveOccurred())
-					ovaFile, err := os.Create("../assets/snappy.ova")
-					Expect(err).NotTo(HaveOccurred())
-					defer ovaFile.Close()
-					_, err = io.Copy(ovaFile, resp.Body)
-				}
 
-				tmpDir := os.Getenv("TMPDIR")
-				vmName = "Snappy-" + randomName()
-				command := exec.Command("VBoxManage",
-					"import",
-					"../assets/snappy.ova",
-					"--vsys", "0",
-					"--vmname", vmName,
-					"--unit", "6", "--disk", filepath.Join(tmpDir, vmName+"-disk1_4.vmdk"),
-					"--unit", "7", "--disk", filepath.Join(tmpDir, vmName+"-disk2.vmdk"))
-				Expect(command.Run()).To(Succeed())
+				var err error
+				vmName, err = helpers.ImportSnappy()
+				Expect(err).NotTo(HaveOccurred())
 
 				_, port, err = ssh.GenerateAddress()
 				Expect(err).NotTo(HaveOccurred())
@@ -74,7 +53,7 @@ var _ = Describe("ssh", func() {
 
 			Context("when the command succeeds", func() {
 				It("should return the output", func() {
-					output, err := ssh.RunSSHCommand("echo -n some-output", port, time.Minute)
+					output, err := ssh.RunSSHCommand("echo -n some-output", port, 5*time.Minute)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(string(output)).To(Equal("some-output"))
 				})
@@ -82,7 +61,7 @@ var _ = Describe("ssh", func() {
 
 			Context("when the command fails", func() {
 				It("should return an error", func() {
-					_, err := ssh.RunSSHCommand("false", port, time.Minute)
+					_, err := ssh.RunSSHCommand("false", port, 5*time.Minute)
 					Expect(err).To(MatchError(ContainSubstring("Process exited with: 1")))
 				})
 			})
@@ -96,12 +75,3 @@ var _ = Describe("ssh", func() {
 		})
 	})
 })
-
-func randomName() string {
-	guid, err := uuid.NewV4()
-	if err != nil {
-		panic(err)
-	}
-
-	return guid.String()
-}

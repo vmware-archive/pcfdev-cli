@@ -2,17 +2,13 @@ package vbox_test
 
 import (
 	"bytes"
-	"io"
-	"net/http"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
+	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 
-	uuid "github.com/nu7hatch/gouuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -25,25 +21,9 @@ var _ = Describe("driver", func() {
 
 	BeforeEach(func() {
 		driver = &vbox.VBoxDriver{}
-		_, err := os.Stat("../assets/snappy.ova")
-		if os.IsNotExist(err) {
-			By("Downloading ova...")
-			resp, err := http.Get("https://s3.amazonaws.com/pcfdev/ovas/snappy.ova")
-			Expect(err).NotTo(HaveOccurred())
-			ovaFile, err := os.Create("../assets/snappy.ova")
-			Expect(err).NotTo(HaveOccurred())
-			defer ovaFile.Close()
-			_, err = io.Copy(ovaFile, resp.Body)
-		}
 
-		tmpDir := os.Getenv("TMPDIR")
-		vmName = "Snappy-" + randomName()
-		_, err = driver.VBoxManage("import",
-			"../assets/snappy.ova",
-			"--vsys", "0",
-			"--vmname", vmName,
-			"--unit", "6", "--disk", filepath.Join(tmpDir, vmName+"-disk1_4.vmdk"),
-			"--unit", "7", "--disk", filepath.Join(tmpDir, vmName+"-disk2.vmdk"))
+		var err error
+		vmName, err = helpers.ImportSnappy()
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -294,13 +274,12 @@ var _ = Describe("driver", func() {
 			Expect(port).To(Equal(expectedPort))
 		})
 	})
+
+	Describe("#RunningVMs", func() {
+		It("should return a list of running VMs", func() {
+			Expect(driver.StartVM(vmName)).To(Succeed())
+
+			Expect(driver.RunningVMs()).To(ContainElement(vmName))
+		})
+	})
 })
-
-func randomName() string {
-	guid, err := uuid.NewV4()
-	if err != nil {
-		panic(err)
-	}
-
-	return guid.String()
-}

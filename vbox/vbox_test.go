@@ -191,6 +191,30 @@ var _ = Describe("vbox", func() {
 		})
 	})
 
+	Describe("ConflictingVMPresent", func() {
+		Context("when there are no conflicting VMs with the prefix pcfdev-", func() {
+			It("should return false", func() {
+				mockDriver.EXPECT().RunningVMs().Return([]string{"some-other-vm", "pcfdev-our-vm"}, nil)
+				Expect(vbx.ConflictingVMPresent("pcfdev-our-vm")).To(BeFalse())
+			})
+		})
+
+		Context("when there are conflicting VMs with the prefix pcfdev- running", func() {
+			It("should return true", func() {
+				mockDriver.EXPECT().RunningVMs().Return([]string{"pcfdev-conflicting-vm", "pcfdev-our-vm"}, nil)
+				Expect(vbx.ConflictingVMPresent("pcfdev-our-vm")).To(BeTrue())
+			})
+		})
+
+		Context("when getting running vms returns an error", func() {
+			It("should return an error", func() {
+				mockDriver.EXPECT().RunningVMs().Return(nil, errors.New("some-error"))
+				_, err := vbx.ConflictingVMPresent("pcfdev-our-vm")
+				Expect(err).To(MatchError("some-error"))
+			})
+		})
+	})
+
 	Describe("DestroyVM", func() {
 		Context("VM is stopped", func() {
 			It("should stop the VM", func() {

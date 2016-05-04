@@ -2,6 +2,7 @@ package vbox
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type Driver interface {
 	IsVMRunning(vmName string) bool
 	StopVM(vmName string) error
 	DestroyVM(vmName string) error
+	RunningVMs() (vms []string, err error)
 	CreateHostOnlyInterface(ip string) (interfaceName string, err error)
 	AttachNetworkInterface(interfaceName string, vmName string) error
 	ForwardPort(vmName string, ruleName string, hostPort string, guestPort string) error
@@ -115,11 +117,25 @@ func (v *VBox) DestroyVM(vmName string) error {
 	return v.Driver.DestroyVM(vmName)
 }
 
+func (v *VBox) ConflictingVMPresent(vmName string) (conflict bool, err error) {
+	vms, err := v.Driver.RunningVMs()
+	if err != nil {
+		return false, err
+	}
+
+	for _, vm := range vms {
+		if strings.HasPrefix(vm, "pcfdev-") && vm != vmName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (v *VBox) StopVM(vmName string) error {
 	return v.Driver.StopVM(vmName)
 }
 
-func (v *VBox) Status(vmName string) (string, error) {
+func (v *VBox) Status(vmName string) (status string, err error) {
 	exists, err := v.Driver.VMExists(vmName)
 	if err != nil {
 		return "", err

@@ -90,6 +90,17 @@ func (_mr *_MockDriverRecorder) IsVMRunning(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsVMRunning", arg0)
 }
 
+func (_m *MockDriver) RunningVMs() ([]string, error) {
+	ret := _m.ctrl.Call(_m, "RunningVMs")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) RunningVMs() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunningVMs")
+}
+
 func (_m *MockDriver) StartVM(_param0 string) error {
 	ret := _m.ctrl.Call(_m, "StartVM", _param0)
 	ret0, _ := ret[0].(error)

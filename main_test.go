@@ -21,11 +21,18 @@ const (
 	vmName = "pcfdev-test"
 )
 
+var cfHome string
+
 var _ = BeforeSuite(func() {
 	ifconfig := exec.Command("ifconfig")
 	session, err := gexec.Start(ifconfig, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(session.Wait().Out.Contents()).NotTo(ContainSubstring("192.168.11.1"))
+
+	cfHome, err = ioutil.TempDir("", "pcfdev")
+	Expect(err).NotTo(HaveOccurred())
+	os.Setenv("CF_HOME", cfHome)
+	os.Setenv("CF_PLUGIN_HOME", filepath.Join(cfHome, "plugins"))
 
 	uninstallCommand := exec.Command("cf", "uninstall-plugin", "pcfdev")
 	session, err = gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
@@ -33,10 +40,10 @@ var _ = BeforeSuite(func() {
 	Eventually(session, "10s").Should(gexec.Exit())
 
 	pluginPath, err := gexec.Build("github.com/pivotal-cf/pcfdev-cli", "-ldflags",
-	"-X main.vmName="+vmName+
-	" -X main.releaseId=1622"+
-	" -X main.productFileId=4448"+
-	" -X main.md5=af789b59e895f0ecc3ed81c1cd2b963e")
+		"-X main.vmName="+vmName+
+			" -X main.releaseId=1622"+
+			" -X main.productFileId=4448"+
+			" -X main.md5=af789b59e895f0ecc3ed81c1cd2b963e")
 	Expect(err).NotTo(HaveOccurred())
 
 	installCommand := exec.Command("cf", "install-plugin", "-f", pluginPath)
@@ -46,10 +53,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	uninstallCommand := exec.Command("cf", "uninstall-plugin", "pcfdev")
-	session, err := gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(session, "10s").Should(gexec.Exit(0))
+	Expect(os.RemoveAll(cfHome)).To(Succeed())
 })
 
 var _ = Describe("pcfdev", func() {

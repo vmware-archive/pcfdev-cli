@@ -231,7 +231,7 @@ var _ = Describe("vbox", func() {
 			It("should stop the VM", func() {
 				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
 				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
-				mockDriver.EXPECT().StopVM("some-vm")
+				mockDriver.EXPECT().PowerOffVM("some-vm")
 				mockDriver.EXPECT().DestroyVM("some-vm")
 
 				err := vbx.DestroyVM("some-vm")
@@ -245,7 +245,7 @@ var _ = Describe("vbox", func() {
 				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
 
 				expectedError := errors.New("some-error")
-				mockDriver.EXPECT().StopVM("some-vm").Return(expectedError)
+				mockDriver.EXPECT().PowerOffVM("some-vm").Return(expectedError)
 				err := vbx.DestroyVM("some-vm")
 				Expect(err).To(MatchError(expectedError))
 			})
@@ -255,7 +255,7 @@ var _ = Describe("vbox", func() {
 			It("should return the error", func() {
 				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
 				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
-				mockDriver.EXPECT().StopVM("some-vm")
+				mockDriver.EXPECT().PowerOffVM("some-vm")
 
 				expectedError := errors.New("some-error")
 				mockDriver.EXPECT().DestroyVM("some-vm").Return(expectedError)

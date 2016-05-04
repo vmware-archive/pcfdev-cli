@@ -12,6 +12,7 @@ type Driver interface {
 	StartVM(vmName string) error
 	VMExists(vmName string) (exists bool, err error)
 	IsVMRunning(vmName string) bool
+	PowerOffVM(vmName string) error
 	StopVM(vmName string) error
 	DestroyVM(vmName string) error
 	RunningVMs() (vms []string, err error)
@@ -108,7 +109,7 @@ func (v *VBox) DestroyVM(vmName string) error {
 	}
 
 	if status == StatusRunning {
-		err = v.StopVM(vmName)
+		err = v.Driver.PowerOffVM(vmName)
 		if err != nil {
 			return err
 		}

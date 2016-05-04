@@ -68,6 +68,12 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() bool { return driver.IsVMRunning(vmName) }, 120*time.Second).Should(BeFalse())
 
+			Expect(driver.StartVM(vmName)).To(Succeed())
+			Expect(driver.IsVMRunning(vmName)).To(BeTrue())
+
+			Expect(driver.PowerOffVM(vmName)).To(Succeed())
+			Expect(driver.IsVMRunning(vmName)).To(BeFalse())
+
 			err = driver.DestroyVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -175,6 +181,16 @@ var _ = Describe("driver", func() {
 		})
 	})
 
+	Describe("#PowerOffVM", func() {
+		Context("when VM with the given name does not exist", func() {
+			It("should return an error", func() {
+				Expect(driver.PowerOffVM("some-bad-vm-name")).To(
+					MatchError("failed to execute 'VBoxManage controlvm some-bad-vm-name poweroff': exit status 1"),
+				)
+			})
+		})
+	})
+
 	Describe("#DestroyVM", func() {
 		Context("when VM with the given name does not exist", func() {
 			It("should return an error", func() {
@@ -272,6 +288,13 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(port).To(Equal(expectedPort))
+		})
+
+		Context("when no port is forwarded", func() {
+			It("should return an error", func() {
+				_, err := driver.GetHostForwardPort(vmName, "some-bad-rule-name")
+				Expect(err).To(MatchError("could not find forwarded port"))
+			})
 		})
 	})
 

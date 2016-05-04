@@ -55,6 +55,11 @@ func (d *VBoxDriver) StopVM(vmName string) error {
 	return errors.New("timed out waiting for vm to stop")
 }
 
+func (d *VBoxDriver) PowerOffVM(vmName string) error {
+	_, err := d.VBoxManage("controlvm", vmName, "poweroff")
+	return err
+}
+
 func (d *VBoxDriver) DestroyVM(vmName string) error {
 	interfaceName, err := d.getVBoxNetName(vmName)
 	if err != nil {
@@ -80,7 +85,12 @@ func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (interfaceName string, e
 		return "", err
 	}
 	regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
-	interfaceName = regex.FindStringSubmatch(string(output))[1]
+	matches := regex.FindStringSubmatch(string(output))
+	if len(matches) <= 1 {
+		return "", errors.New("could not determine interface name")
+	}
+
+	interfaceName = matches[1]
 
 	_, err = d.VBoxManage("hostonlyif", "ipconfig", interfaceName, "--ip", ip, "--netmask", "255.255.255.0")
 	if err != nil {
@@ -106,7 +116,11 @@ func (d *VBoxDriver) GetHostForwardPort(vmName string, ruleName string) (port st
 	}
 
 	regex := regexp.MustCompile(`Forwarding\(\d+\)="` + ruleName + `,tcp,127.0.0.1,(.*),,22"`)
-	return regex.FindStringSubmatch(string(output))[1], nil
+	if matches := regex.FindStringSubmatch(string(output)); len(matches) > 1 {
+		return matches[1], nil
+	}
+
+	return "", errors.New("could not find forwarded port")
 }
 
 func (d *VBoxDriver) RunningVMs() (vms []string, err error) {
@@ -118,8 +132,8 @@ func (d *VBoxDriver) RunningVMs() (vms []string, err error) {
 	runningVMs := []string{}
 	for _, line := range strings.Split(strings.Trim(string(output), "\n"), "\n") {
 		regex := regexp.MustCompile(`^"(.+)"\s`)
-		if match := regex.FindStringSubmatch(string(line)); len(match) > 1 {
-			runningVMs = append(runningVMs, match[1])
+		if matches := regex.FindStringSubmatch(string(line)); len(matches) > 1 {
+			runningVMs = append(runningVMs, matches[1])
 		}
 	}
 
@@ -133,10 +147,9 @@ func (d *VBoxDriver) getVBoxNetName(vmName string) (interfaceName string, err er
 	}
 
 	regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
-	matches := regex.FindStringSubmatch(string(output))
-	if len(matches) > 1 {
+	if matches := regex.FindStringSubmatch(string(output)); len(matches) > 1 {
 		return matches[1], nil
-	} else {
-		return "", nil
 	}
+
+	return "", nil
 }

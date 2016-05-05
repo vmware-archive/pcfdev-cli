@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"time"
@@ -21,7 +22,7 @@ func (*SSH) GenerateAddress() (host string, port string, err error) {
 	return address[0], address[1], nil
 }
 
-func (s *SSH) RunSSHCommand(command string, port string, timeout time.Duration) (output []byte, err error) {
+func (s *SSH) RunSSHCommand(command string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) (err error) {
 	config := &ssh.ClientConfig{
 		User: "vcap",
 		Auth: []ssh.AuthMethod{
@@ -32,17 +33,29 @@ func (s *SSH) RunSSHCommand(command string, port string, timeout time.Duration) 
 
 	client, err := s.waitForSSH(config, port, timeout)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer client.Close()
 
 	session, err := client.NewSession()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer session.Close()
 
-	return session.Output(command)
+	sessionStdout, err := session.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	go io.Copy(stdout, sessionStdout)
+
+	sessionStderr, err := session.StderrPipe()
+	if err != nil {
+		return err
+	}
+	go io.Copy(stderr, sessionStderr)
+
+	return session.Run(command)
 }
 
 func (*SSH) waitForSSH(config *ssh.ClientConfig, port string, timeout time.Duration) (client *ssh.Client, err error) {

@@ -17,9 +17,9 @@ import (
 var productFileDownloadURI string
 var (
 	releaseId     = "1622"
-	productFileId = "4466"
-	md5           = "346f42ae096185b39403017f0c45ee37"
-	vmName        = "pcfdev-0.68.0"
+	productFileId = "4487"
+	md5           = "424a588f1d359905632a9221efad6097"
+	vmName        = "pcfdev-0.71.0"
 )
 
 func main() {

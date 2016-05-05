@@ -43,7 +43,7 @@ var _ = BeforeSuite(func() {
 		"-X main.vmName="+vmName+
 			" -X main.releaseId=1622"+
 			" -X main.productFileId=4448"+
-			" -X main.md5=af789b59e895f0ecc3ed81c1cd2b963e")
+			" -X main.md5=05761a420b00028ae5384c6bc460a6ba")
 	Expect(err).NotTo(HaveOccurred())
 
 	installCommand := exec.Command("cf", "install-plugin", "-f", pluginPath)
@@ -81,6 +81,8 @@ var _ = Describe("pcfdev", func() {
 		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Waiting for services to start..."))
+		Expect(session).To(gbytes.Say("Services started"))
 		Expect(session).To(gbytes.Say("PCF Dev is now running"))
 		Expect(isVMRunning()).To(BeTrue())
 

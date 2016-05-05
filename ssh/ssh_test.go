@@ -2,6 +2,7 @@ package ssh_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("ssh", func() {
@@ -30,12 +32,16 @@ var _ = Describe("ssh", func() {
 			var (
 				vmName string
 				port   string
+				stdout *gbytes.Buffer
+				stderr *gbytes.Buffer
 			)
 
 			BeforeEach(func() {
 				ssh = &SSH{}
 
 				var err error
+				stdout = gbytes.NewBuffer()
+				stderr = gbytes.NewBuffer()
 				vmName, err = helpers.ImportSnappy()
 				Expect(err).NotTo(HaveOccurred())
 
@@ -52,16 +58,22 @@ var _ = Describe("ssh", func() {
 			})
 
 			Context("when the command succeeds", func() {
-				It("should return the output", func() {
-					output, err := ssh.RunSSHCommand("echo -n some-output", port, 5*time.Minute)
+				It("should stream stdout to the terminal", func() {
+					err := ssh.RunSSHCommand("echo -n some-output", port, 5*time.Minute, stdout, stderr)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(string(output)).To(Equal("some-output"))
+					Expect(string(stdout.Contents())).To(Equal("some-output"))
+				})
+
+				It("should stream stderr to the terminal", func() {
+					err := ssh.RunSSHCommand(">&2 echo -n some-output", port, 5*time.Minute, stdout, stderr)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(stderr.Contents())).To(Equal("some-output"))
 				})
 			})
 
 			Context("when the command fails", func() {
 				It("should return an error", func() {
-					_, err := ssh.RunSSHCommand("false", port, 5*time.Minute)
+					err := ssh.RunSSHCommand("false", port, 5*time.Minute, stdout, stderr)
 					Expect(err).To(MatchError(ContainSubstring("Process exited with: 1")))
 				})
 			})
@@ -69,7 +81,7 @@ var _ = Describe("ssh", func() {
 
 		Context("when SSH connection times out", func() {
 			It("should return an error", func() {
-				_, err := ssh.RunSSHCommand("echo -n some-output", "some-bad-port", time.Second)
+				err := ssh.RunSSHCommand("echo -n some-output", "some-bad-port", time.Second, ioutil.Discard, ioutil.Discard)
 				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})

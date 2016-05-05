@@ -2,6 +2,7 @@ package vbox_test
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os/exec"
 	"time"
 
@@ -60,9 +61,10 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(driver.IsVMRunning(vmName)).To(BeTrue())
 
-			output, err := sshClient.RunSSHCommand("hostname", port, 5*time.Minute)
+			stdout := gbytes.NewBuffer()
+			err = sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(string(output)).To(ContainSubstring("ubuntu-core-stable-15"))
+			Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
 
 			err = driver.StopVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
@@ -165,9 +167,10 @@ var _ = Describe("driver", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(driver.IsVMRunning(vmName)).To(BeTrue())
 
-				output, err := sshClient.RunSSHCommand("hostname", port, 5*time.Minute)
+				stdout := gbytes.NewBuffer()
+				err = sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(string(output)).To(ContainSubstring("ubuntu-core-stable-15"))
+				Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
 			})
 		})
 	})
@@ -269,9 +272,10 @@ var _ = Describe("driver", func() {
 			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
 
-			output, err := sshClient.RunSSHCommand("hostname", port, 5*time.Minute)
+			stdout := gbytes.NewBuffer()
+			err = sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(string(output)).To(ContainSubstring("ubuntu-core-stable-15"))
+			Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
 		})
 	})
 

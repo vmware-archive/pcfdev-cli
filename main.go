@@ -17,7 +17,7 @@ import (
 var productFileDownloadURI string
 var (
 	releaseId     = "1622"
-	productFileId = "4487"
+	productFileId = "4546"
 	md5           = "424a588f1d359905632a9221efad6097"
 	vmName        = "pcfdev-0.71.0"
 )

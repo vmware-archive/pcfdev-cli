@@ -21,18 +21,28 @@ const (
 	vmName = "pcfdev-test"
 )
 
-var cfHome string
+var (
+	tempHome        string
+	oldCFHome       string
+	oldCFPluginHome string
+	oldPCFDevHome   string
+)
 
 var _ = BeforeSuite(func() {
+	oldCFHome = os.Getenv("CF_HOME")
+	oldCFPluginHome = os.Getenv("CF_PLUGIN_HOME")
+	oldPCFDevHome = os.Getenv("PCFDev_HOME")
+
 	ifconfig := exec.Command("ifconfig")
 	session, err := gexec.Start(ifconfig, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(session.Wait().Out.Contents()).NotTo(ContainSubstring("192.168.11.1"))
 
-	cfHome, err = ioutil.TempDir("", "pcfdev")
+	tempHome, err = ioutil.TempDir("", "pcfdev")
 	Expect(err).NotTo(HaveOccurred())
-	os.Setenv("CF_HOME", cfHome)
-	os.Setenv("CF_PLUGIN_HOME", filepath.Join(cfHome, "plugins"))
+	os.Setenv("CF_HOME", tempHome)
+	os.Setenv("CF_PLUGIN_HOME", filepath.Join(tempHome, "plugins"))
+	os.Setenv("PCFDEV_HOME", tempHome)
 
 	uninstallCommand := exec.Command("cf", "uninstall-plugin", "pcfdev")
 	session, err = gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
@@ -53,15 +63,13 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	Expect(os.RemoveAll(cfHome)).To(Succeed())
+	Expect(os.RemoveAll(tempHome)).To(Succeed())
+	os.Setenv("CF_HOME", oldCFHome)
+	os.Setenv("CF_PLUGIN_HOME", oldCFPluginHome)
+	os.Setenv("PCFDev_HOME", oldPCFDevHome)
 })
 
 var _ = Describe("pcfdev", func() {
-	BeforeEach(func() {
-		err := os.RemoveAll(filepath.Join(os.Getenv("HOME"), ".pcfdev"))
-		Expect(err).NotTo(HaveOccurred())
-	})
-
 	AfterEach(func() {
 		output, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
 		if err != nil {
@@ -145,7 +153,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "1h").Should(gexec.Exit(0))
 
-		_, err = os.Stat(filepath.Join(os.Getenv("HOME"), ".pcfdev", "pcfdev.ova"))
+		_, err = os.Stat(filepath.Join(os.Getenv("PCFDEV_HOME"), "pcfdev.ova"))
 		Expect(err).NotTo(HaveOccurred())
 
 		listVmsCommand := exec.Command("VBoxManage", "list", "vms")
@@ -182,21 +190,24 @@ func isVMRunning() bool {
 	return strings.Contains(string(vmStatus), `VMState="running"`)
 }
 
-func getResponseFromFakeServer() (response string, err error) {
+func getResponseFromFakeServer() (string, error) {
 	timeoutChan := time.After(30 * time.Second)
+	var response *http.Response
+	var responseBody []byte
+	var err error
 
 	for {
 		select {
 		case <-timeoutChan:
 			return "", fmt.Errorf("connection timed out: %s", err)
 		default:
-			response, err := http.Get("http://api.local.pcfdev.io")
+			response, err = http.Get("http://api.local.pcfdev.io")
 			if err != nil {
 				continue
 			}
 			defer response.Body.Close()
 
-			responseBody, err := ioutil.ReadAll(response.Body)
+			responseBody, err = ioutil.ReadAll(response.Body)
 			return string(responseBody), err
 		}
 	}

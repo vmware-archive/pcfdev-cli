@@ -99,6 +99,34 @@ var _ = Describe("Plugin", func() {
 				})
 			})
 
+			Context("when PCFDEV_HOME is set", func() {
+				var pcfdevHome string
+
+				BeforeEach(func() {
+					pcfdevHome = os.Getenv("PCFDEV_HOME")
+					os.Setenv("PCFDEV_HOME", "/some/other/dir")
+				})
+
+				AfterEach(func() {
+					os.Setenv("PCFDEV_HOME", pcfdevHome)
+				})
+
+				It("should download the ova to PCFDEV_HOME", func() {
+					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
+					gomock.InOrder(
+						mockFS.EXPECT().CreateDir("/some/other/dir").Return(nil),
+						mockFS.EXPECT().Exists("/some/other/dir/pcfdev.ova").Return(false, nil),
+						mockConfig.EXPECT().GetToken().Return("some-token"),
+						mockUI.EXPECT().Say("Downloading VM..."),
+						mockClient.EXPECT().DownloadOVA("some-token").Return(readCloser, nil),
+						mockFS.EXPECT().Write("/some/other/dir/pcfdev.ova", readCloser).Return(nil),
+						mockUI.EXPECT().Say("Finished downloading VM"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+				})
+			})
+
 			Context("when ova exists and is up to date", func() {
 				It("should not download the OVA", func() {
 					gomock.InOrder(

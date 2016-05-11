@@ -216,6 +216,10 @@ func (p *Plugin) downloadOVAFile() error {
 }
 
 func (p *Plugin) pcfdevDir() string {
+	if pcfdevHome := os.Getenv("PCFDEV_HOME"); pcfdevHome != "" {
+		return pcfdevHome
+	}
+
 	return filepath.Join(os.Getenv("HOME"), ".pcfdev")
 }
 

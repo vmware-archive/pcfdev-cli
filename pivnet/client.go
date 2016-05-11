@@ -2,8 +2,8 @@ package pivnet
 
 import (
 	"fmt"
-	"io"
 	"net/http"
+	"os"
 )
 
 type Client struct {
@@ -12,7 +12,7 @@ type Client struct {
 	ProductFileId string
 }
 
-func (c *Client) DownloadOVA(token string) (ova io.ReadCloser, err error) {
+func (c *Client) DownloadOVA(token string) (ova *DownloadReader, err error) {
 	uri := fmt.Sprintf("%s/api/v2/products/pcfdev/releases/%s/product_files/%s/download", c.Host, c.ReleaseId, c.ProductFileId)
 	req, err := http.NewRequest("POST", uri, nil)
 	if err != nil {
@@ -27,7 +27,7 @@ func (c *Client) DownloadOVA(token string) (ova io.ReadCloser, err error) {
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		return resp.Body, nil
+		return &DownloadReader{ReadCloser: resp.Body, Writer: os.Stdout, ContentLength: resp.ContentLength}, nil
 	case http.StatusUnauthorized:
 		return nil, fmt.Errorf("invalid Pivotal Network API token")
 	case 451:

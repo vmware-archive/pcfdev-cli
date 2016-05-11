@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/mocks"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -84,7 +85,7 @@ var _ = Describe("Plugin", func() {
 		Context("download", func() {
 			Context("when ova does not exist", func() {
 				It("should download the OVA", func() {
-					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
+					readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 					gomock.InOrder(
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
@@ -92,7 +93,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockClient.EXPECT().DownloadOVA("some-token").Return(readCloser, nil),
 						mockFS.EXPECT().Write("/some/dir/.pcfdev/pcfdev.ova", readCloser).Return(nil),
-						mockUI.EXPECT().Say("Finished downloading VM"),
+						mockUI.EXPECT().Say("\nFinished downloading VM"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -112,7 +113,7 @@ var _ = Describe("Plugin", func() {
 				})
 
 				It("should download the ova to PCFDEV_HOME", func() {
-					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
+					readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 					gomock.InOrder(
 						mockFS.EXPECT().CreateDir("/some/other/dir").Return(nil),
 						mockFS.EXPECT().Exists("/some/other/dir/pcfdev.ova").Return(false, nil),
@@ -120,7 +121,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockClient.EXPECT().DownloadOVA("some-token").Return(readCloser, nil),
 						mockFS.EXPECT().Write("/some/other/dir/pcfdev.ova", readCloser).Return(nil),
-						mockUI.EXPECT().Say("Finished downloading VM"),
+						mockUI.EXPECT().Say("\nFinished downloading VM"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -142,7 +143,7 @@ var _ = Describe("Plugin", func() {
 
 			Context("when ova exists and is old", func() {
 				It("should download the OVA", func() {
-					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
+					readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 					gomock.InOrder(
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
@@ -154,7 +155,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockClient.EXPECT().DownloadOVA("some-token").Return(readCloser, nil),
 						mockFS.EXPECT().Write("/some/dir/.pcfdev/pcfdev.ova", readCloser).Return(nil),
-						mockUI.EXPECT().Say("Finished downloading VM"),
+						mockUI.EXPECT().Say("\nFinished downloading VM"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -208,7 +209,7 @@ var _ = Describe("Plugin", func() {
 		Context("start", func() {
 			Context("VM has not been created and pcfdev.ova has not been downloaded", func() {
 				It("should start without downloading the ova", func() {
-					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
+					readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 					gomock.InOrder(
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
@@ -216,7 +217,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockClient.EXPECT().DownloadOVA("some-token").Return(readCloser, nil),
 						mockFS.EXPECT().Write("/some/dir/.pcfdev/pcfdev.ova", readCloser).Return(nil),
-						mockUI.EXPECT().Say("Finished downloading VM"),
+						mockUI.EXPECT().Say("\nFinished downloading VM"),
 						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusNotCreated, nil),
 						mockUI.EXPECT().Say("Importing VM..."),
 						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", vmName).Return(nil),
@@ -254,7 +255,7 @@ var _ = Describe("Plugin", func() {
 
 			Context("VM is stopped", func() {
 				It("should start and provision the VM", func() {
-					readCloser := ioutil.NopCloser(strings.NewReader("some-ova-contents"))
+					readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 					gomock.InOrder(
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
@@ -262,7 +263,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockClient.EXPECT().DownloadOVA("some-token").Return(readCloser, nil),
 						mockFS.EXPECT().Write("/some/dir/.pcfdev/pcfdev.ova", readCloser).Return(nil),
-						mockUI.EXPECT().Say("Finished downloading VM"),
+						mockUI.EXPECT().Say("\nFinished downloading VM"),
 
 						mockVBox.EXPECT().Status(vmName).Return(vbox.StatusStopped, nil),
 						mockUI.EXPECT().Say("Starting VM..."),

@@ -5,7 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	io "io"
+	pivnet "github.com/pivotal-cf/pcfdev-cli/pivnet"
 )
 
 // Mock of Client interface
@@ -29,9 +29,9 @@ func (_m *MockClient) EXPECT() *_MockClientRecorder {
 	return _m.recorder
 }
 
-func (_m *MockClient) DownloadOVA(_param0 string) (io.ReadCloser, error) {
+func (_m *MockClient) DownloadOVA(_param0 string) (*pivnet.DownloadReader, error) {
 	ret := _m.ctrl.Call(_m, "DownloadOVA", _param0)
-	ret0, _ := ret[0].(io.ReadCloser)
+	ret0, _ := ret[0].(*pivnet.DownloadReader)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

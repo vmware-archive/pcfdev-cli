@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/cli/plugin"
+	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
@@ -26,7 +27,7 @@ type Plugin struct {
 
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
 type Client interface {
-	DownloadOVA(token string) (ova io.ReadCloser, err error)
+	DownloadOVA(token string) (ova *pivnet.DownloadReader, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -211,7 +212,7 @@ func (p *Plugin) downloadOVAFile() error {
 	defer ova.Close()
 
 	p.FS.Write(p.ovaPath(), ova)
-	p.UI.Say("Finished downloading VM")
+	p.UI.Say("\nFinished downloading VM")
 	return nil
 }
 

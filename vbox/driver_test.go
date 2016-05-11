@@ -41,10 +41,10 @@ var _ = Describe("driver", func() {
 			Expect(string(stdout)).To(ContainSubstring("Oracle VM VirtualBox Command Line Management Interface"))
 		})
 
-		It("should return any errors", func() {
+		It("should return any errors with their output", func() {
 			stdout, err := driver.VBoxManage("some-bad-command")
 			Expect(err).To(HaveOccurred())
-			Expect(string(stdout)).To(BeEmpty())
+			Expect(string(stdout)).To(ContainSubstring("Syntax error: Invalid command 'some-bad-command'"))
 		})
 	})
 

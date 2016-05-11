@@ -12,7 +12,7 @@ import (
 type VBoxDriver struct{}
 
 func (*VBoxDriver) VBoxManage(arg ...string) (output []byte, err error) {
-	output, err = exec.Command("VBoxManage", arg...).Output()
+	output, err = exec.Command("VBoxManage", arg...).CombinedOutput()
 	if err != nil {
 		return output, fmt.Errorf("failed to execute 'VBoxManage %s': %s", strings.Join(arg, " "), err)
 	}

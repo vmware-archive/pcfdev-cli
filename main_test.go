@@ -31,7 +31,7 @@ var (
 var _ = BeforeSuite(func() {
 	oldCFHome = os.Getenv("CF_HOME")
 	oldCFPluginHome = os.Getenv("CF_PLUGIN_HOME")
-	oldPCFDevHome = os.Getenv("PCFDev_HOME")
+	oldPCFDevHome = os.Getenv("PCFDEV_HOME")
 
 	tempHome, err := ioutil.TempDir("", "pcfdev")
 
@@ -62,7 +62,7 @@ var _ = AfterSuite(func() {
 	Expect(os.RemoveAll(tempHome)).To(Succeed())
 	os.Setenv("CF_HOME", oldCFHome)
 	os.Setenv("CF_PLUGIN_HOME", oldCFPluginHome)
-	os.Setenv("PCFDev_HOME", oldPCFDevHome)
+	os.Setenv("PCFDEV_HOME", oldPCFDevHome)
 })
 
 var _ = Describe("pcfdev", func() {

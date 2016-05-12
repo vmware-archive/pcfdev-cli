@@ -36,11 +36,11 @@ var _ = Describe("network", func() {
 		})
 
 		It("should return the network interfaces", func() {
-			network := network.Network{}
-			interfaces, err := network.Interfaces()
+			net := network.Network{}
+			interfaces, err := net.Interfaces()
 			Expect(err).NotTo(HaveOccurred())
-			lastCreatedInterface := interfaces[len(interfaces)-1]
-			Expect(lastCreatedInterface.IP).To(Equal(expectedIP))
+			expectedInterface := &network.Interface{IP: expectedIP}
+			Expect(interfaces).To(ContainElement(expectedInterface))
 		})
 	})
 })

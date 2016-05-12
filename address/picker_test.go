@@ -28,7 +28,6 @@ var _ = Describe("Picker", func() {
 		picker = &address.Picker{
 			Pinger:  mockPinger,
 			Network: mockNetwork,
-			Address: &address.Address{},
 		}
 	})
 

@@ -2,8 +2,6 @@ package address
 
 import "fmt"
 
-type Address struct{}
-
 var AllowedSubnets = []string{
 	"192.168.11.1",
 	"192.168.22.1",
@@ -28,7 +26,7 @@ var AllowedAddresses = map[string]string{
 	"192.168.99.11": "local9.pcfdev.io",
 }
 
-func (a *Address) DomainForIP(ip string) (string, error) {
+func DomainForIP(ip string) (string, error) {
 	domain, ok := AllowedAddresses[ip]
 	if !ok {
 		return "", fmt.Errorf("%s is not one of the allowed pcfdev ips", ip)
@@ -37,7 +35,7 @@ func (a *Address) DomainForIP(ip string) (string, error) {
 	return domain, nil
 }
 
-func (a *Address) SubnetForIP(ip string) (string, error) {
+func SubnetForIP(ip string) (string, error) {
 	_, ok := AllowedAddresses[ip]
 	if !ok {
 		return "", fmt.Errorf("%s is not one of the allowed pcfdev ips", ip)
@@ -46,7 +44,7 @@ func (a *Address) SubnetForIP(ip string) (string, error) {
 	return ip[0 : len(ip)-1], nil
 }
 
-func (a *Address) IPForSubnet(subnet string) (string, error) {
+func IPForSubnet(subnet string) (string, error) {
 	ip := subnet + "1"
 	_, ok := AllowedAddresses[ip]
 	if !ok {

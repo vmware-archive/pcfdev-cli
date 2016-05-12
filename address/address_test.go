@@ -3,15 +3,10 @@ package address_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	addr "github.com/pivotal-cf/pcfdev-cli/address"
+	"github.com/pivotal-cf/pcfdev-cli/address"
 )
 
 var _ = Describe("Address", func() {
-	var address *addr.Address
-
-	BeforeEach(func() {
-		address = &addr.Address{}
-	})
 
 	Describe("#DomainForIP", func() {
 		It("should convert a passed in ip to the correct domain", func() {

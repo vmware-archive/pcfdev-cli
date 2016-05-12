@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 )
 
@@ -47,10 +48,9 @@ type Address interface {
 }
 
 type VBox struct {
-	Driver  Driver
-	SSH     SSH
-	Picker  NetworkPicker
-	Address Address
+	Driver Driver
+	SSH    SSH
+	Picker NetworkPicker
 }
 
 type VM struct {
@@ -75,7 +75,7 @@ func (v *VBox) StartVM(vmName string) (vm *VM, err error) {
 	if err != nil {
 		return nil, err
 	}
-	domain, err := v.Address.DomainForIP(ip)
+	domain, err := address.DomainForIP(ip)
 	if err != nil {
 		return nil, err
 	}

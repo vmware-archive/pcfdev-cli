@@ -36,13 +36,11 @@ func main() {
 			ProductFileId: productFileId,
 		},
 		VBox: &vbox.VBox{
-			SSH:     &ssh.SSH{},
-			Driver:  &vbox.VBoxDriver{},
-			Address: &address.Address{},
+			SSH:    &ssh.SSH{},
+			Driver: &vbox.VBoxDriver{},
 			Picker: &address.Picker{
 				Pinger:  &ping.Pinger{},
 				Network: &network.Network{},
-				Address: &address.Address{},
 			},
 		},
 		FS: &fs.FS{},

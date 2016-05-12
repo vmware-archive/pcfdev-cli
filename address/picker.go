@@ -19,7 +19,6 @@ type Pinger interface {
 type Picker struct {
 	Pinger  Pinger
 	Network Network
-	Address *Address
 }
 
 func (p *Picker) SelectAvailableNetworkInterface(candidates []*network.Interface) (selectedInterface *network.Interface, exists bool, err error) {
@@ -30,7 +29,7 @@ func (p *Picker) SelectAvailableNetworkInterface(candidates []*network.Interface
 
 	for _, subnetIP := range AllowedSubnets {
 		if vboxAddr := p.addrInSet(subnetIP, candidates); vboxAddr != nil {
-			vmIP, err := p.Address.IPForSubnet(subnetIP)
+			vmIP, err := IPForSubnet(subnetIP)
 			if err != nil {
 				return nil, false, err
 			}

@@ -41,7 +41,7 @@ var _ = BeforeSuite(func() {
 	os.Setenv("PCFDEV_HOME", tempHome)
 
 	uninstallCommand := exec.Command("cf", "uninstall-plugin", "pcfdev")
-	session, err := gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
+	session, err = gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session, "10s").Should(gexec.Exit())
 

@@ -3,8 +3,11 @@ package main
 import (
 	"os"
 
+	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
+	"github.com/pivotal-cf/pcfdev-cli/network"
+	"github.com/pivotal-cf/pcfdev-cli/ping"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
@@ -33,8 +36,14 @@ func main() {
 			ProductFileId: productFileId,
 		},
 		VBox: &vbox.VBox{
-			SSH:    &ssh.SSH{},
-			Driver: &vbox.VBoxDriver{},
+			SSH:     &ssh.SSH{},
+			Driver:  &vbox.VBoxDriver{},
+			Address: &address.Address{},
+			Picker: &address.Picker{
+				Pinger:  &ping.Pinger{},
+				Network: &network.Network{},
+				Address: &address.Address{},
+			},
 		},
 		FS: &fs.FS{},
 		Config: &config.Config{

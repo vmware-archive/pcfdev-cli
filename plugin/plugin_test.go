@@ -56,6 +56,7 @@ var _ = Describe("Plugin", func() {
 		vm = &vbox.VM{
 			IP:      "some-ip",
 			SSHPort: "some-port",
+			Domain:  "some-domain",
 		}
 	})
 
@@ -225,7 +226,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
 						mockUI.EXPECT().Say("PCF Dev is now running"),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -246,7 +247,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
 						mockUI.EXPECT().Say("PCF Dev is now running"),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -269,7 +270,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
 						mockUI.EXPECT().Say("PCF Dev is now running"),
 					)
 
@@ -363,7 +364,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM(vmName).Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run local.pcfdev.io some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr).Return(err),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr).Return(err),
 						mockUI.EXPECT().Failed("failed to provision VM: some-error"),
 					)
 

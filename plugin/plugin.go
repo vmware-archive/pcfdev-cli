@@ -198,7 +198,7 @@ func (p *Plugin) destroy() error {
 }
 
 func (p *Plugin) provision(vm *vbox.VM) error {
-	return p.SSH.RunSSHCommand(fmt.Sprintf("sudo /var/pcfdev/run local.pcfdev.io %s '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", vm.IP), vm.SSHPort, 2*time.Minute, os.Stdout, os.Stderr)
+	return p.SSH.RunSSHCommand(fmt.Sprintf("sudo /var/pcfdev/run %s %s '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", vm.Domain, vm.IP), vm.SSHPort, 2*time.Minute, os.Stdout, os.Stderr)
 }
 
 func (p *Plugin) downloadOVAFile() error {

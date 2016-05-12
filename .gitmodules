@@ -16,3 +16,6 @@
 [submodule "vendor/github.com/nu7hatch/gouuid"]
 	path = vendor/github.com/nu7hatch/gouuid
 	url = https://github.com/nu7hatch/gouuid.git
+[submodule "vendor/golang.org/x/net"]
+	path = vendor/golang.org/x/net
+	url = https://github.com/golang/net.git

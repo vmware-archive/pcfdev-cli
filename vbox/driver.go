@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/pivotal-cf/pcfdev-cli/network"
 )
 
 type VBoxDriver struct{}
@@ -61,22 +63,9 @@ func (d *VBoxDriver) PowerOffVM(vmName string) error {
 }
 
 func (d *VBoxDriver) DestroyVM(vmName string) error {
-	interfaceName, err := d.getVBoxNetName(vmName)
-	if err != nil {
-		return err
-	}
+	_, err := d.VBoxManage("unregistervm", vmName, "--delete")
 
-	if _, err := d.VBoxManage("unregistervm", vmName, "--delete"); err != nil {
-		return err
-	}
-
-	if interfaceName != "" {
-		if _, err := d.VBoxManage("hostonlyif", "remove", interfaceName); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return err
 }
 
 func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (interfaceName string, err error) {
@@ -97,6 +86,52 @@ func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (interfaceName string, e
 		return "", err
 	}
 	return interfaceName, nil
+}
+
+func (d *VBoxDriver) GetHostOnlyInterfaces() (interfaces []*network.Interface, err error) {
+	output, err := d.VBoxManage("list", "hostonlyifs")
+	if err != nil {
+		return []*network.Interface{}, err
+	}
+
+	nameRegex := regexp.MustCompile(`(?m:^Name:[\s]+(.*))`)
+	nameMatches := nameRegex.FindAllStringSubmatch(string(output), -1)
+
+	ipRegex := regexp.MustCompile(`(?m:^IPAddress:[\s]+(.*))`)
+	ipMatches := ipRegex.FindAllStringSubmatch(string(output), -1)
+
+	vboxnets := make([]*network.Interface, len(nameMatches))
+	for i := 0; i < len(nameMatches); i++ {
+		vboxnets[i] = &network.Interface{
+			Name: nameMatches[i][1],
+			IP:   ipMatches[i][1],
+		}
+	}
+
+	return vboxnets, nil
+}
+
+func (d *VBoxDriver) GetVMIP(vmName string) (string, error) {
+	vboxnetName, err := d.getVBoxNetName(vmName)
+	if err != nil {
+		return "", err
+	}
+	if vboxnetName == "" {
+		return "", fmt.Errorf("there is no attached hostonlyif for %s", vmName)
+	}
+
+	vboxnets, err := d.GetHostOnlyInterfaces()
+	if err != nil {
+		return "", err
+	}
+
+	for _, vboxnet := range vboxnets {
+		if vboxnet.Name == vboxnetName {
+			return d.getVMIPForSubnet(vboxnet.IP), nil
+		}
+	}
+
+	return "", fmt.Errorf("couldnt find %s in list of hostonlyifs", vboxnetName)
 }
 
 func (d *VBoxDriver) AttachNetworkInterface(interfaceName string, vmName string) error {
@@ -155,6 +190,10 @@ func (d *VBoxDriver) RunningVMs() (vms []string, err error) {
 	}
 
 	return runningVMs, nil
+}
+
+func (d *VBoxDriver) getVMIPForSubnet(subnetIP string) string {
+	return subnetIP + "1"
 }
 
 func (d *VBoxDriver) getVBoxNetName(vmName string) (interfaceName string, err error) {

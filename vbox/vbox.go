@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"strings"
 	"time"
+
+	"github.com/pivotal-cf/pcfdev-cli/network"
 )
 
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vbox Driver
@@ -23,6 +25,8 @@ type Driver interface {
 	AttachNetworkInterface(interfaceName string, vmName string) error
 	ForwardPort(vmName string, ruleName string, hostPort string, guestPort string) error
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
+	GetHostOnlyInterfaces() (interfaces []*network.Interface, err error)
+	GetVMIP(vmName string) (vmIP string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
@@ -31,15 +35,29 @@ type SSH interface {
 	RunSSHCommand(command string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
 }
 
+//go:generate mockgen -package mocks -destination mocks/picker.go github.com/pivotal-cf/pcfdev-cli/vbox NetworkPicker
+type NetworkPicker interface {
+	SelectAvailableNetworkInterface(candidates []*network.Interface) (selectedInterface *network.Interface, exists bool, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/address.go github.com/pivotal-cf/pcfdev-cli/vbox Address
+type Address interface {
+	DomainForIP(vmIP string) (domain string, err error)
+	SubnetForIP(vmIP string) (subnetIP string, err error)
+}
+
 type VBox struct {
-	Driver Driver
-	SSH    SSH
+	Driver  Driver
+	SSH     SSH
+	Picker  NetworkPicker
+	Address Address
 }
 
 type VM struct {
-	SSHPort string
-	Name    string
+	Domain  string
 	IP      string
+	Name    string
+	SSHPort string
 }
 
 const (
@@ -49,15 +67,24 @@ const (
 )
 
 func (v *VBox) StartVM(vmName string) (vm *VM, err error) {
-	ip := "192.168.11.11"
+	ip, err := v.Driver.GetVMIP(vmName)
+	if err != nil {
+		return nil, err
+	}
 	sshPort, err := v.Driver.GetHostForwardPort(vmName, "ssh")
 	if err != nil {
 		return nil, err
 	}
+	domain, err := v.Address.DomainForIP(ip)
+	if err != nil {
+		return nil, err
+	}
+
 	vm = &VM{
 		SSHPort: sshPort,
 		Name:    vmName,
 		IP:      ip,
+		Domain:  domain,
 	}
 
 	err = v.Driver.StartVM(vmName)
@@ -89,11 +116,24 @@ func (v *VBox) ImportVM(path string, vmName string) error {
 	if err != nil {
 		return err
 	}
-	interfaceName, err := v.Driver.CreateHostOnlyInterface("192.168.11.1")
+
+	vboxInterfaces, err := v.Driver.GetHostOnlyInterfaces()
 	if err != nil {
 		return err
 	}
-	err = v.Driver.AttachNetworkInterface(interfaceName, vmName)
+
+	selectedInterface, exists, err := v.Picker.SelectAvailableNetworkInterface(vboxInterfaces)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		selectedInterface.Name, err = v.Driver.CreateHostOnlyInterface(selectedInterface.IP)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = v.Driver.AttachNetworkInterface(selectedInterface.Name, vmName)
 	if err != nil {
 		return err
 	}

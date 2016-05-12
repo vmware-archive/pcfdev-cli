@@ -5,6 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	network "github.com/pivotal-cf/pcfdev-cli/network"
 )
 
 // Mock of Driver interface
@@ -78,6 +79,28 @@ func (_m *MockDriver) GetHostForwardPort(_param0 string, _param1 string) (string
 
 func (_mr *_MockDriverRecorder) GetHostForwardPort(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetHostForwardPort", arg0, arg1)
+}
+
+func (_m *MockDriver) GetHostOnlyInterfaces() ([]*network.Interface, error) {
+	ret := _m.ctrl.Call(_m, "GetHostOnlyInterfaces")
+	ret0, _ := ret[0].([]*network.Interface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) GetHostOnlyInterfaces() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetHostOnlyInterfaces")
+}
+
+func (_m *MockDriver) GetVMIP(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "GetVMIP", _param0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) GetVMIP(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVMIP", arg0)
 }
 
 func (_m *MockDriver) IsVMRunning(_param0 string) bool {

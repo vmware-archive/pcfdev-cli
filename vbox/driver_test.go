@@ -2,8 +2,10 @@ package vbox_test
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"regexp"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
@@ -48,6 +50,36 @@ var _ = Describe("driver", func() {
 		})
 	})
 
+	Describe("#GetVMIP", func() {
+		Context("when interface exists", func() {
+			var interfaceName string
+			BeforeEach(func() {
+				interfaceName, err := driver.CreateHostOnlyInterface("192.168.88.1")
+				Expect(err).NotTo(HaveOccurred())
+
+				err = driver.AttachNetworkInterface(interfaceName, vmName)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName).Run()
+			})
+
+			It("should return the ip of the vm", func() {
+				ip, err := driver.GetVMIP(vmName)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(ip).To(Equal("192.168.88.11"))
+			})
+		})
+
+		Context("when interface does not exist", func() {
+			It("should return the ip of the vm", func() {
+				_, err := driver.GetVMIP(vmName)
+				Expect(err).To(MatchError("there is no attached hostonlyif for " + vmName))
+			})
+		})
+	})
+
 	Describe("when starting and stopping and destroying the VM", func() {
 		It("should start, stop, and then destroy a VBox VM", func() {
 			sshClient := &ssh.SSH{}
@@ -84,32 +116,6 @@ var _ = Describe("driver", func() {
 				Expect(err).NotTo(HaveOccurred())
 				return exists
 			}, 120*time.Second).Should(BeFalse())
-		})
-
-		It("should destroy the VBox VM network interface", func() {
-			interfaceName, err := driver.CreateHostOnlyInterface("192.168.88.1")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = driver.AttachNetworkInterface(interfaceName, vmName)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = driver.StartVM(vmName)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(driver.VBoxManage("showvminfo", vmName, "--machinereadable")).To(ContainSubstring(interfaceName))
-			Expect(driver.VBoxManage("list", "hostonlyifs")).To(ContainSubstring(interfaceName))
-
-			_, err = driver.VBoxManage("controlvm", vmName, "poweroff")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = driver.DestroyVM(vmName)
-			Expect(err).NotTo(HaveOccurred())
-
-			Eventually(func() string {
-				exists, err := driver.VBoxManage("list", "hostonlyifs")
-				Expect(err).NotTo(HaveOccurred())
-				return string(exists)
-			}, 120*time.Second).ShouldNot(ContainSubstring(interfaceName))
 		})
 	})
 
@@ -198,7 +204,7 @@ var _ = Describe("driver", func() {
 		Context("when VM with the given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.DestroyVM("some-bad-vm-name")
-				Expect(err).To(MatchError("failed to execute 'VBoxManage showvminfo some-bad-vm-name --machinereadable': exit status 1"))
+				Expect(err).To(MatchError("failed to execute 'VBoxManage unregistervm some-bad-vm-name --delete': exit status 1"))
 			})
 		})
 	})
@@ -227,6 +233,44 @@ var _ = Describe("driver", func() {
 			Expect(output.String()).To(MatchRegexp(`Name:\s+` + name))
 			Expect(output.String()).To(MatchRegexp(`IPAddress:\s+192.168.77.1`))
 			Expect(output.String()).To(MatchRegexp(`NetworkMask:\s+255.255.255.0`))
+		})
+	})
+
+	Describe("#GetHostOnlyInterfaces", func() {
+		var expectedName string
+		var expectedIP string
+
+		BeforeEach(func() {
+			expectedIP = "192.168.55.55"
+			output, err := exec.Command("VBoxManage", "hostonlyif", "create").Output()
+			Expect(err).NotTo(HaveOccurred())
+			regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
+			matches := regex.FindStringSubmatch(string(output))
+			expectedName = matches[1]
+			assignIP := exec.Command("VBoxManage", "hostonlyif", "ipconfig", expectedName, "--ip", expectedIP, "--netmask", "255.255.255.0")
+			session, err := gexec.Start(assignIP, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session).Should(gexec.Exit(0))
+		})
+
+		AfterEach(func() {
+			assignIP := exec.Command("VBoxManage", "hostonlyif", "remove", expectedName)
+			session, err := gexec.Start(assignIP, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session).Should(gexec.Exit(0))
+		})
+
+		It("should return a slice of network.Interfaces representing the list of VBox nets", func() {
+			interfaces, err := driver.GetHostOnlyInterfaces()
+			Expect(err).NotTo(HaveOccurred())
+
+			for _, iface := range interfaces {
+				if iface.Name == expectedName {
+					Expect(iface.IP).To(Equal(expectedIP))
+					return
+				}
+			}
+			Fail(fmt.Sprintf("did not create interface with expected name %s", expectedName))
 		})
 	})
 

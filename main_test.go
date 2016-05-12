@@ -33,19 +33,15 @@ var _ = BeforeSuite(func() {
 	oldCFPluginHome = os.Getenv("CF_PLUGIN_HOME")
 	oldPCFDevHome = os.Getenv("PCFDev_HOME")
 
-	ifconfig := exec.Command("ifconfig")
-	session, err := gexec.Start(ifconfig, GinkgoWriter, GinkgoWriter)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(session.Wait().Out.Contents()).NotTo(ContainSubstring("192.168.11.1"))
+	tempHome, err := ioutil.TempDir("", "pcfdev")
 
-	tempHome, err = ioutil.TempDir("", "pcfdev")
 	Expect(err).NotTo(HaveOccurred())
 	os.Setenv("CF_HOME", tempHome)
 	os.Setenv("CF_PLUGIN_HOME", filepath.Join(tempHome, "plugins"))
 	os.Setenv("PCFDEV_HOME", tempHome)
 
 	uninstallCommand := exec.Command("cf", "uninstall-plugin", "pcfdev")
-	session, err = gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
+	session, err := gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session, "10s").Should(gexec.Exit())
 
@@ -102,7 +98,12 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("PCF Dev is running"))
 		Expect(isVMRunning()).To(BeTrue())
 
-		response, err := getResponseFromFakeServer()
+		output, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
+		Expect(err).NotTo(HaveOccurred())
+		regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
+		interfaceName := regex.FindStringSubmatch(string(output))[1]
+
+		response, err := getResponseFromFakeServer(interfaceName)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(response).To(Equal("PCF Dev Test VM"))
 
@@ -119,6 +120,11 @@ var _ = Describe("pcfdev", func() {
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("PCF Dev VM has been destroyed"))
 
+		By("leaving up hostonly interface after destroy")
+		vboxnets, err := exec.Command("VBoxManage", "list", "hostonlyifs").Output()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(vboxnets).To(ContainSubstring(interfaceName))
+
 		By("re-running destroy with no effect")
 		redestroyCommand := exec.Command("cf", "dev", "destroy")
 		session, err = gexec.Start(redestroyCommand, GinkgoWriter, GinkgoWriter)
@@ -134,7 +140,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("PCF Dev is now running"))
 		Expect(isVMRunning()).To(BeTrue())
 
-		response, err = getResponseFromFakeServer()
+		response, err = getResponseFromFakeServer(interfaceName)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(response).To(Equal("PCF Dev Test VM"))
 	})
@@ -190,24 +196,44 @@ func isVMRunning() bool {
 	return strings.Contains(string(vmStatus), `VMState="running"`)
 }
 
-func getResponseFromFakeServer() (string, error) {
+func getResponseFromFakeServer(vboxnetName string) (response string, err error) {
+	output, err := exec.Command("VBoxManage", "list", "hostonlyifs").Output()
+	Expect(err).NotTo(HaveOccurred())
+
+	nameRegex := regexp.MustCompile(`(?m:^Name:[\s]+(.*))`)
+	nameMatches := nameRegex.FindAllStringSubmatch(string(output), -1)
+
+	ipRegex := regexp.MustCompile(`(?m:^IPAddress:[\s]+(.*))`)
+	ipMatches := ipRegex.FindAllStringSubmatch(string(output), -1)
+
+	var hostname string
+	for i := 0; i < len(nameMatches); i++ {
+		if nameMatches[i][1] == vboxnetName {
+			ip := ipMatches[i][1]
+			ipRegex := regexp.MustCompile(`192.168.\d(\d).1`)
+			digit := ipRegex.FindStringSubmatch(string(ip))[1]
+
+			hostname = fmt.Sprintf("http://api.local%s.pcfdev.io", digit)
+			break
+		}
+	}
+
 	timeoutChan := time.After(30 * time.Second)
-	var response *http.Response
+	var httpResponse *http.Response
 	var responseBody []byte
-	var err error
 
 	for {
 		select {
 		case <-timeoutChan:
 			return "", fmt.Errorf("connection timed out: %s", err)
 		default:
-			response, err = http.Get("http://api.local.pcfdev.io")
+			httpResponse, err = http.Get(hostname)
 			if err != nil {
 				continue
 			}
-			defer response.Body.Close()
+			defer httpResponse.Body.Close()
 
-			responseBody, err = ioutil.ReadAll(response.Body)
+			responseBody, err = ioutil.ReadAll(httpResponse.Body)
 			return string(responseBody), err
 		}
 	}

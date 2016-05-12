@@ -11,6 +11,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
+	currentUser "github.com/pivotal-cf/pcfdev-cli/user"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
@@ -39,7 +40,9 @@ func main() {
 			SSH:    &ssh.SSH{},
 			Driver: &vbox.VBoxDriver{},
 			Picker: &address.Picker{
-				Pinger:  &ping.Pinger{},
+				Pinger: &ping.Pinger{
+					User: &currentUser.User{},
+				},
 				Network: &network.Network{},
 			},
 		},

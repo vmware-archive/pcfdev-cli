@@ -14,12 +14,13 @@ import (
 )
 
 type Plugin struct {
-	PivnetClient Client
-	SSH          SSH
-	UI           UI
-	VBox         VBox
-	FS           FS
-	Config       Config
+	PivnetClient        Client
+	SSH                 SSH
+	UI                  UI
+	VBox                VBox
+	FS                  FS
+	Config              Config
+	RequirementsChecker RequirementsChecker
 
 	ExpectedMD5 string
 	VMName      string
@@ -66,6 +67,11 @@ type Config interface {
 	GetToken() string
 }
 
+//go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/plugin RequirementsChecker
+type RequirementsChecker interface {
+	Check() error
+}
+
 func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
 		return
@@ -107,6 +113,10 @@ func (p *Plugin) downloadVM() error {
 }
 
 func (p *Plugin) start() error {
+	if err := p.RequirementsChecker.Check(); err != nil {
+		return fmt.Errorf("Could not start PCF Dev: %s", err)
+	}
+
 	if err := p.getOVAFile(); err != nil {
 		return err
 	}

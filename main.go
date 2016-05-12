@@ -10,6 +10,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/ping"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
+	"github.com/pivotal-cf/pcfdev-cli/requirements"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 
@@ -46,6 +47,11 @@ func main() {
 		FS: &fs.FS{},
 		Config: &config.Config{
 			UI: ui,
+		},
+		RequirementsChecker: &requirements.Checker{
+			MemoryChecker: &requirements.Memory{
+				MinimumFreeMemory: 3072,
+			},
 		},
 		ExpectedMD5: md5,
 		VMName:      vmName,

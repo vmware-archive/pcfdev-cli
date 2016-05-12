@@ -19,15 +19,16 @@ import (
 
 var _ = Describe("Plugin", func() {
 	var (
-		mockCtrl   *gomock.Controller
-		mockClient *mocks.MockClient
-		mockSSH    *mocks.MockSSH
-		mockUI     *mocks.MockUI
-		mockVBox   *mocks.MockVBox
-		mockFS     *mocks.MockFS
-		mockConfig *mocks.MockConfig
-		pcfdev     *plugin.Plugin
-		vm         *vbox.VM
+		mockCtrl                *gomock.Controller
+		mockClient              *mocks.MockClient
+		mockSSH                 *mocks.MockSSH
+		mockUI                  *mocks.MockUI
+		mockVBox                *mocks.MockVBox
+		mockFS                  *mocks.MockFS
+		mockConfig              *mocks.MockConfig
+		mockRequirementsChecker *mocks.MockRequirementsChecker
+		pcfdev                  *plugin.Plugin
+		vm                      *vbox.VM
 	)
 
 	const (
@@ -43,15 +44,17 @@ var _ = Describe("Plugin", func() {
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockConfig = mocks.NewMockConfig(mockCtrl)
+		mockRequirementsChecker = mocks.NewMockRequirementsChecker(mockCtrl)
 		pcfdev = &plugin.Plugin{
-			PivnetClient: mockClient,
-			SSH:          mockSSH,
-			UI:           mockUI,
-			VBox:         mockVBox,
-			FS:           mockFS,
-			Config:       mockConfig,
-			VMName:       vmName,
-			ExpectedMD5:  expectedMD5,
+			PivnetClient:        mockClient,
+			SSH:                 mockSSH,
+			UI:                  mockUI,
+			VBox:                mockVBox,
+			FS:                  mockFS,
+			Config:              mockConfig,
+			RequirementsChecker: mockRequirementsChecker,
+			VMName:              vmName,
+			ExpectedMD5:         expectedMD5,
 		}
 		vm = &vbox.VM{
 			IP:      "some-ip",
@@ -76,8 +79,8 @@ var _ = Describe("Plugin", func() {
 			os.Setenv("HOME", home)
 		})
 
-		Context("wrong number of arguments", func() {
-			It("prints the usage message", func() {
+		Context("when it is called with the wrong number of arguments", func() {
+			It("should print the usage message", func() {
 				mockUI.EXPECT().Failed("Usage: %s", "cf dev download|start|status|stop|destroy")
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev"})
 			})
@@ -212,6 +215,7 @@ var _ = Describe("Plugin", func() {
 				It("should start without downloading the ova", func() {
 					readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
 						mockConfig.EXPECT().GetToken().Return("some-token"),
@@ -236,6 +240,7 @@ var _ = Describe("Plugin", func() {
 			Context("VM has not been created and pcfdev.ova has been downloaded", func() {
 				It("should start without downloading the ova", func() {
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
 						mockFS.EXPECT().MD5("/some/dir/.pcfdev/pcfdev.ova").Return(expectedMD5, nil),
@@ -258,6 +263,7 @@ var _ = Describe("Plugin", func() {
 				It("should start and provision the VM", func() {
 					readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
 						mockConfig.EXPECT().GetToken().Return("some-token"),
@@ -281,6 +287,7 @@ var _ = Describe("Plugin", func() {
 			Context("VM is already running", func() {
 				It("prints a message and exits", func() {
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
 						mockFS.EXPECT().MD5("/some/dir/.pcfdev/pcfdev.ova").Return(expectedMD5, nil),
@@ -297,6 +304,7 @@ var _ = Describe("Plugin", func() {
 				It("prints an error", func() {
 					err := errors.New("some-error")
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(err),
 						mockUI.EXPECT().Failed("some-error"),
 					)
@@ -310,6 +318,7 @@ var _ = Describe("Plugin", func() {
 					err := errors.New("some-error")
 
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, err),
 						mockUI.EXPECT().Failed("some-error"),
@@ -323,6 +332,7 @@ var _ = Describe("Plugin", func() {
 				It("prints an error", func() {
 					err := errors.New("some-error")
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(false, nil),
 						mockConfig.EXPECT().GetToken().Return("some-token"),
@@ -338,6 +348,7 @@ var _ = Describe("Plugin", func() {
 			Context("VM fails to start", func() {
 				It("prints an error", func() {
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
 						mockFS.EXPECT().MD5("/some/dir/.pcfdev/pcfdev.ova").Return(expectedMD5, nil),
@@ -356,6 +367,7 @@ var _ = Describe("Plugin", func() {
 				It("should print an error", func() {
 					err := errors.New("some-error")
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
 						mockFS.EXPECT().MD5("/some/dir/.pcfdev/pcfdev.ova").Return(expectedMD5, nil),
@@ -376,6 +388,7 @@ var _ = Describe("Plugin", func() {
 				It("prints an error", func() {
 					expectedError := errors.New("some-error")
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
 						mockFS.EXPECT().MD5("/some/dir/.pcfdev/pcfdev.ova").Return(expectedMD5, nil),
@@ -392,6 +405,7 @@ var _ = Describe("Plugin", func() {
 				It("prints an error", func() {
 					expectedError := errors.New("some-error")
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
 						mockFS.EXPECT().MD5("/some/dir/.pcfdev/pcfdev.ova").Return(expectedMD5, nil),
@@ -410,6 +424,7 @@ var _ = Describe("Plugin", func() {
 			Context("when the vm exists and is old and is stopped", func() {
 				It("prints an error", func() {
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
 						mockFS.EXPECT().MD5("/some/dir/.pcfdev/pcfdev.ova").Return("some-bad-md5", nil),
@@ -424,6 +439,7 @@ var _ = Describe("Plugin", func() {
 			Context("when the vm exists and is old and there is an error querying for vm status", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockFS.EXPECT().CreateDir("/some/dir/.pcfdev").Return(nil),
 						mockFS.EXPECT().Exists("/some/dir/.pcfdev/pcfdev.ova").Return(true, nil),
 						mockFS.EXPECT().MD5("/some/dir/.pcfdev/pcfdev.ova").Return("some-bad-md5", nil),
@@ -431,6 +447,16 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Failed("failed to get VM status: some-error"),
 					)
 
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
+
+			Context("when the system does not meet requirements", func() {
+				It("should print an error message", func() {
+					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
+						mockUI.EXPECT().Failed("Could not start PCF Dev: some-message"),
+					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 				})
 			})

@@ -31,6 +31,10 @@ var _ = Describe("Picker", func() {
 		}
 	})
 
+	AfterEach(func() {
+		mockCtrl.Finish()
+	})
+
 	Describe("#SelectAvailableNetworkInterface", func() {
 		Context("when there is no available network interface", func() {
 			It("should return return 192.168.11.11 and false", func() {
@@ -96,7 +100,6 @@ var _ = Describe("Picker", func() {
 
 				gomock.InOrder(
 					mockNetwork.EXPECT().Interfaces().Return([]*network.Interface{netInterface}, nil),
-					mockPinger.EXPECT().TryIP("192.168.11.11").Return(true, nil),
 				)
 
 				selected, exists, err := picker.SelectAvailableNetworkInterface([]*network.Interface{})

@@ -11,7 +11,6 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
-//go:generate mockgen -package mocks -destination mocks/user.go github.com/pivotal-cf/pcfdev-cli/ping User
 type User interface {
 	IsPrivileged() (bool, error)
 }
@@ -20,45 +19,13 @@ type Pinger struct {
 	User User
 }
 
-func (p *Pinger) ICMPProtocol() (protocol string, err error) {
-	privilegedUser, err := p.User.IsPrivileged()
-	if err != nil {
-		return "", fmt.Errorf("failed to determine user privileges: %s", err)
-	}
-
-	if privilegedUser {
-		return "ip4:1", nil
-	}
-
-	return "udp4", nil
-}
-
-func (p *Pinger) ICMPAddr(ip string) (addr net.Addr, err error) {
-	privilegedUser, err := p.User.IsPrivileged()
-	if err != nil {
-		return nil, fmt.Errorf("failed to determine user privileges: %s", err)
-	}
-
-	if privilegedUser {
-		ipAddr := &net.IPAddr{
-			IP: net.ParseIP(ip),
-		}
-		return ipAddr, nil
-	}
-
-	udpAddr := &net.UDPAddr{
-		IP: net.ParseIP(ip),
-	}
-	return udpAddr, nil
-}
-
 func (p *Pinger) TryIP(ip string) (bool, error) {
-	icmpProtocol, err := p.ICMPProtocol()
+	icmpProtocol, err := p.icmpProtocol()
 	if err != nil {
 		return false, err
 	}
 
-	icmpAddr, err := p.ICMPAddr(ip)
+	icmpAddr, err := p.icmpAddr(ip)
 	if err != nil {
 		return false, err
 	}
@@ -103,4 +70,36 @@ func (p *Pinger) TryIP(ip string) (bool, error) {
 	default:
 		return false, errors.New("ping response did not have type 'echo reply'")
 	}
+}
+
+func (p *Pinger) icmpProtocol() (protocol string, err error) {
+	privilegedUser, err := p.User.IsPrivileged()
+	if err != nil {
+		return "", fmt.Errorf("failed to determine user privileges: %s", err)
+	}
+
+	if privilegedUser {
+		return "ip4:1", nil
+	}
+
+	return "udp4", nil
+}
+
+func (p *Pinger) icmpAddr(ip string) (addr net.Addr, err error) {
+	privilegedUser, err := p.User.IsPrivileged()
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine user privileges: %s", err)
+	}
+
+	if privilegedUser {
+		ipAddr := &net.IPAddr{
+			IP: net.ParseIP(ip),
+		}
+		return ipAddr, nil
+	}
+
+	udpAddr := &net.UDPAddr{
+		IP: net.ParseIP(ip),
+	}
+	return udpAddr, nil
 }

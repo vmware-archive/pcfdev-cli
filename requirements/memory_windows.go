@@ -2,8 +2,28 @@
 
 package requirements
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"os/exec"
+	"regexp"
+	"strconv"
+)
 
 func (m *Memory) freeMemory() (int, error) {
-	return 0, errors.New("getting free memory on windows is not yet implemented")
+	freeOutput, err := exec.Command("wmic", "OS", "get", "FreePhysicalMemory").Output()
+	if err != nil {
+		return 0, fmt.Errorf("could not get memory stats: %s", err)
+	}
+	regex := regexp.MustCompile(`FreePhysicalMemory\s+([\d]+)`)
+	matches := regex.FindStringSubmatch(string(freeOutput))
+	if len(matches) < 2 {
+		return 0, errors.New("FreePhysicalMemory output did not match expected format")
+	}
+	freeKB, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return 0, err
+	}
+	freeMB := freeKB / 1024
+	return freeMB, nil
 }

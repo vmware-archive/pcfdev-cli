@@ -3,10 +3,11 @@
 package requirements
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strconv"
-	"strings"
 )
 
 func (m *Memory) freeMemory() (int, error) {
@@ -15,19 +16,23 @@ func (m *Memory) freeMemory() (int, error) {
 		return 0, fmt.Errorf("could not get memory stats: %s", err)
 	}
 
-	memFields := strings.Fields(strings.Split(string(freeOutput), "\n")[1])
+	regex := regexp.MustCompile(`Mem:\s+\d+\s+\d+\s+(\d+)\s+\d+\s+(\d+)\s+(\d+)`)
+	matches := regex.FindStringSubmatch(string(freeOutput))
+	if len(matches) < 4 {
+		return 0, errors.New("`free` output did not match expected format")
+	}
 
-	freeMemory, err := strconv.Atoi(memFields[3])
+	freeMemory, err := strconv.Atoi(matches[1])
 	if err != nil {
 		return 0, err
 	}
 
-	buffCacheMemory, err := strconv.Atoi(memFields[5])
+	buffCacheMemory, err := strconv.Atoi(matches[2])
 	if err != nil {
 		return 0, err
 	}
 
-	availableMemory, err := strconv.Atoi(memFields[6])
+	availableMemory, err := strconv.Atoi(matches[3])
 	if err != nil {
 		return 0, err
 	}

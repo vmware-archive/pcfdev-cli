@@ -32,7 +32,7 @@ func (*Pinger) TryIP(ip string) (bool, error) {
 		return false, fmt.Errorf("failed to marshal icmp message: %s", err)
 	}
 
-	_, err = pingConn.WriteTo(messageData, &net.UDPAddr{IP: net.ParseIP(ip), Zone: "en0"})
+	_, err = pingConn.WriteTo(messageData, &net.UDPAddr{IP: net.ParseIP(ip)})
 	if err != nil {
 		return false, fmt.Errorf("failed to send icmp message: %s", err)
 	}

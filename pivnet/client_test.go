@@ -72,7 +72,7 @@ var _ = Describe("PivNet Client", func() {
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
 
 				_, err := client.DownloadOVA("some-token")
-				Expect(err).To(MatchError(MatchRegexp("you must accept the EULA before you can download the PCF Dev image: .*/products/pcfdev#/releases/some-release-id")))
+				Expect(err).To(MatchError(MatchRegexp("You must accept the EULA before you can download the PCF Dev image: .*/products/pcfdev#/releases/some-release-id")))
 			})
 		})
 
@@ -85,7 +85,7 @@ var _ = Describe("PivNet Client", func() {
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
 
 				_, err := client.DownloadOVA("some-token")
-				Expect(err).To(MatchError(MatchRegexp("invalid Pivotal Network API token")))
+				Expect(err).To(MatchError(MatchRegexp("Invalid Pivotal Network API token")))
 			})
 		})
 	})

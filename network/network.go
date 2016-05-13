@@ -15,8 +15,9 @@ type Interface struct {
 func (n *Network) Interfaces() (interfaces []*Interface, err error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
+
 	interfaces = make([]*Interface, len(addrs))
 	for i, addr := range addrs {
 		interfaces[i] = &Interface{

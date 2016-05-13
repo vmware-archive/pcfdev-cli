@@ -11,10 +11,59 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
-type Pinger struct{}
+//go:generate mockgen -package mocks -destination mocks/user.go github.com/pivotal-cf/pcfdev-cli/ping User
+type User interface {
+	IsPrivileged() (bool, error)
+}
 
-func (*Pinger) TryIP(ip string) (bool, error) {
-	pingConn, err := icmp.ListenPacket("udp4", "0.0.0.0")
+type Pinger struct {
+	User User
+}
+
+func (p *Pinger) ICMPProtocol() (protocol string, err error) {
+	privilegedUser, err := p.User.IsPrivileged()
+	if err != nil {
+		return "", fmt.Errorf("failed to determine user privileges: %s", err)
+	}
+
+	if privilegedUser {
+		return "ip4:1", nil
+	}
+
+	return "udp4", nil
+}
+
+func (p *Pinger) ICMPAddr(ip string) (addr net.Addr, err error) {
+	privilegedUser, err := p.User.IsPrivileged()
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine user privileges: %s", err)
+	}
+
+	if privilegedUser {
+		ipAddr := &net.IPAddr{
+			IP: net.ParseIP(ip),
+		}
+		return ipAddr, nil
+	}
+
+	udpAddr := &net.UDPAddr{
+		IP: net.ParseIP(ip),
+	}
+	return udpAddr, nil
+}
+
+func (p *Pinger) TryIP(ip string) (bool, error) {
+	icmpProtocol, err := p.ICMPProtocol()
+	if err != nil {
+		return false, err
+	}
+
+	icmpAddr, err := p.ICMPAddr(ip)
+	if err != nil {
+		return false, err
+	}
+
+	pingConn, err := icmp.ListenPacket(icmpProtocol, "0.0.0.0")
 	if err != nil {
 		return false, fmt.Errorf("failed to open connection: %s", err)
 	}
@@ -32,7 +81,7 @@ func (*Pinger) TryIP(ip string) (bool, error) {
 		return false, fmt.Errorf("failed to marshal icmp message: %s", err)
 	}
 
-	_, err = pingConn.WriteTo(messageData, &net.UDPAddr{IP: net.ParseIP(ip)})
+	_, err = pingConn.WriteTo(messageData, icmpAddr)
 	if err != nil {
 		return false, fmt.Errorf("failed to send icmp message: %s", err)
 	}

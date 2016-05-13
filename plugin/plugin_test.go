@@ -338,7 +338,7 @@ var _ = Describe("Plugin", func() {
 						mockConfig.EXPECT().GetToken().Return("some-token"),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockClient.EXPECT().DownloadOVA("some-token").Return(nil, err),
-						mockUI.EXPECT().Failed("some-error"),
+						mockUI.EXPECT().Failed("Error: some-error"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})

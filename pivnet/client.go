@@ -29,9 +29,9 @@ func (c *Client) DownloadOVA(token string) (ova *DownloadReader, err error) {
 	case http.StatusOK:
 		return &DownloadReader{ReadCloser: resp.Body, Writer: os.Stdout, ContentLength: resp.ContentLength}, nil
 	case http.StatusUnauthorized:
-		return nil, fmt.Errorf("Invalid Pivotal Network API token")
+		return nil, fmt.Errorf("invalid Pivotal Network API token")
 	case 451:
-		return nil, fmt.Errorf("You must accept the EULA before you can download the PCF Dev image: %s/products/pcfdev#/releases/%s", c.Host, c.ReleaseId)
+		return nil, fmt.Errorf("you must accept the EULA before you can download the PCF Dev image: %s/products/pcfdev#/releases/%s", c.Host, c.ReleaseId)
 	default:
 		return nil, fmt.Errorf("Pivotal Network returned: %s", resp.Status)
 	}

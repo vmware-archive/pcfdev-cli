@@ -217,7 +217,7 @@ func (p *Plugin) downloadOVAFile() error {
 	p.UI.Say("Downloading VM...")
 	ova, err := p.PivnetClient.DownloadOVA(token)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error: %s", err)
 	}
 	defer ova.Close()
 

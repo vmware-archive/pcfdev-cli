@@ -119,10 +119,6 @@ func (p *Plugin) start() error {
 		return fmt.Errorf("Could not start PCF Dev: %s", err)
 	}
 
-	if err := p.getOVAFile(); err != nil {
-		return err
-	}
-
 	status, err := p.VBox.Status(p.VMName)
 	if err != nil {
 		return fmt.Errorf("failed to get VM status: %s", err)
@@ -134,6 +130,10 @@ func (p *Plugin) start() error {
 	}
 
 	if status == vbox.StatusNotCreated {
+		if err := p.getOVAFile(); err != nil {
+			return err
+		}
+
 		p.UI.Say("Importing VM...")
 		err = p.VBox.ImportVM(p.ovaPath(), p.VMName)
 		if err != nil {

@@ -29,13 +29,13 @@ func (_m *MockClient) EXPECT() *_MockClientRecorder {
 	return _m.recorder
 }
 
-func (_m *MockClient) DownloadOVA(_param0 string) (*pivnet.DownloadReader, error) {
-	ret := _m.ctrl.Call(_m, "DownloadOVA", _param0)
+func (_m *MockClient) DownloadOVA(_param0 string, _param1 int64) (*pivnet.DownloadReader, error) {
+	ret := _m.ctrl.Call(_m, "DownloadOVA", _param0, _param1)
 	ret0, _ := ret[0].(*pivnet.DownloadReader)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockClientRecorder) DownloadOVA(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "DownloadOVA", arg0)
+func (_mr *_MockClientRecorder) DownloadOVA(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DownloadOVA", arg0, arg1)
 }

@@ -19,87 +19,96 @@ var _ = Describe("Filesystem", func() {
 	})
 
 	Describe("#Exists", func() {
-		Context("File exists", func() {
+		Context("when the file exists", func() {
 			BeforeEach(func() {
 				_, err := os.Create("../assets/some-file")
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			AfterEach(func() {
-				err := os.Remove("../assets/some-file")
-				Expect(err).NotTo(HaveOccurred())
+				os.Remove("../assets/some-file")
 			})
 
-			It("returns true", func() {
-				exists, err := fs.Exists("../assets/some-file")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(exists).To(BeTrue())
+			It("should return true", func() {
+				Expect(fs.Exists("../assets/some-file")).To(BeTrue())
 			})
 		})
 
-		Context("File does not exist", func() {
-			It("returns false", func() {
-				exists, err := fs.Exists("../assets/some-bad-file")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(exists).To(BeFalse())
+		Context("when the file does not exist", func() {
+			It("should return false", func() {
+				Expect(fs.Exists("../assets/some-bad-file")).To(BeFalse())
 			})
 		})
 	})
 
 	Describe("#Write", func() {
-		Context("path is valid", func() {
+		Context("when path is valid", func() {
 			AfterEach(func() {
-				os.Remove("../assets/some-other-file")
+				os.Remove("../assets/some-file")
 			})
 
-			It("Creates file with path and writes contents", func() {
+			It("should create a file with path and writes contents", func() {
 				readCloser := ioutil.NopCloser(strings.NewReader("some-contents"))
-				err := fs.Write("../assets/some-other-file", readCloser)
+				Expect(fs.Write("../assets/some-file", readCloser)).To(Succeed())
+				data, err := ioutil.ReadFile("../assets/some-file")
 				Expect(err).NotTo(HaveOccurred())
-				data, err := ioutil.ReadFile("../assets/some-other-file")
+				Expect(string(data)).To(Equal("some-contents"))
+			})
+		})
+
+		Context("when file exists already", func() {
+			BeforeEach(func() {
+				Expect(fs.Write("../assets/some-file", ioutil.NopCloser(strings.NewReader("some-")))).To(Succeed())
+			})
+
+			AfterEach(func() {
+				os.Remove("../assets/some-file")
+			})
+
+			It("should append to file", func() {
+				readCloser := ioutil.NopCloser(strings.NewReader("contents"))
+				Expect(fs.Write("../assets/some-file", readCloser)).To(Succeed())
+				data, err := ioutil.ReadFile("../assets/some-file")
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(string(data)).To(Equal("some-contents"))
 			})
 		})
 
-		Context("path is invalid", func() {
-			It("returns an error", func() {
+		Context("when path is invalid", func() {
+			It("should return an error", func() {
 				readCloser := ioutil.NopCloser(strings.NewReader("some-contents"))
 				err := fs.Write("../some-bad-dir/some-other-file", readCloser)
-				Expect(err.Error()).To(ContainSubstring("failed to create file:"))
+				Expect(err.Error()).To(ContainSubstring("failed to open file:"))
 			})
 		})
 	})
 
 	Describe("#CreateDir", func() {
-		Context("directory does not exist", func() {
+		Context("when the directory does not exist", func() {
 			AfterEach(func() {
 				os.Remove("../assets/some-dir")
 			})
 
-			It("creates the directory", func() {
-				err := fs.CreateDir("../assets/some-dir")
-				Expect(err).NotTo(HaveOccurred())
-				_, err = os.Stat("../assets/some-dir")
+			It("should create the directory", func() {
+				Expect(fs.CreateDir("../assets/some-dir")).To(Succeed())
+				_, err := os.Stat("../assets/some-dir")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
-		Context("directory already exists", func() {
+		Context("when the directory already exists", func() {
 			BeforeEach(func() {
-				err := os.Mkdir("../assets/some-dir", 0755)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(os.Mkdir("../assets/some-dir", 0755)).To(Succeed())
 			})
 
 			AfterEach(func() {
 				os.Remove("../assets/some-dir")
 			})
 
-			It("does nothing", func() {
-				err := fs.CreateDir("../assets/some-dir")
-				Expect(err).NotTo(HaveOccurred())
-				_, err = os.Stat("../assets/some-dir")
+			It("should do nothing", func() {
+				Expect(fs.CreateDir("../assets/some-dir")).To(Succeed())
+				_, err := os.Stat("../assets/some-dir")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -108,18 +117,14 @@ var _ = Describe("Filesystem", func() {
 	Describe("#MD5", func() {
 		Context("when the file exists", func() {
 			BeforeEach(func() {
-				err := ioutil.WriteFile("../assets/some-file", []byte("some-contents"), 0644)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(ioutil.WriteFile("../assets/some-file", []byte("some-contents"), 0644)).To(Succeed())
 			})
 
 			AfterEach(func() {
-				err := os.Remove("../assets/some-file")
-				Expect(err).NotTo(HaveOccurred())
+				os.Remove("../assets/some-file")
 			})
 			It("should return the md5 of the given file", func() {
-				md5, err := fs.MD5("../assets/some-file")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(md5).To(Equal("0b9791ad102b5f5f06ef68cef2aae26e"))
+				Expect(fs.MD5("../assets/some-file")).To(Equal("0b9791ad102b5f5f06ef68cef2aae26e"))
 			})
 		})
 
@@ -132,10 +137,32 @@ var _ = Describe("Filesystem", func() {
 		})
 	})
 
+	Describe("#Length", func() {
+		Context("when the file exists", func() {
+			BeforeEach(func() {
+				Expect(ioutil.WriteFile("../assets/some-file", []byte("some-contents"), 0644)).To(Succeed())
+			})
+
+			AfterEach(func() {
+				os.Remove("../assets/some-file")
+			})
+			It("should return the length of the given file in bytes", func() {
+				Expect(fs.Length("../assets/some-file")).To(Equal(int64(13)))
+			})
+		})
+
+		Context("when the file does not exist", func() {
+			It("should return an error", func() {
+				length, err := fs.Length("../assets/some-non-existent-file")
+				Expect(err).To(MatchError(ContainSubstring("could not read ../assets/some-non-existent-file:")))
+				Expect(length).To(Equal(int64(0)))
+			})
+		})
+	})
+
 	Describe("#RemoveFile", func() {
 		BeforeEach(func() {
-			err := ioutil.WriteFile("../assets/some-file", []byte("some-contents"), 0644)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(ioutil.WriteFile("../assets/some-file", []byte("some-contents"), 0644)).To(Succeed())
 		})
 
 		AfterEach(func() {
@@ -143,11 +170,56 @@ var _ = Describe("Filesystem", func() {
 		})
 
 		It("should remove the given file", func() {
-			err := fs.RemoveFile("../assets/some-file")
-			Expect(err).NotTo(HaveOccurred())
+			Expect(fs.RemoveFile("../assets/some-file")).To(Succeed())
 
-			_, err = os.Stat("../assets/some-file")
+			_, err := os.Stat("../assets/some-file")
 			Expect(os.IsNotExist(err)).To(BeTrue())
+		})
+	})
+
+	Describe("#Move", func() {
+		Context("when the source exists and destination does not exist", func() {
+			BeforeEach(func() {
+				Expect(ioutil.WriteFile("../assets/some-file", []byte("some-contents"), 0644)).To(Succeed())
+			})
+
+			AfterEach(func() {
+				os.Remove("../assets/some-file")
+				os.Remove("../assets/some-other-file")
+			})
+
+			It("should move the source to the destination", func() {
+				fs.Move("../assets/some-file", "../assets/some-other-file")
+				Expect(fs.Exists("../assets/some-file")).To(BeFalse())
+				data, err := ioutil.ReadFile("../assets/some-other-file")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(data)).To(Equal("some-contents"))
+			})
+		})
+
+		Context("when the source exists and destination exists", func() {
+			BeforeEach(func() {
+				Expect(ioutil.WriteFile("../assets/some-file", []byte("some-contents"), 0644)).To(Succeed())
+				Expect(ioutil.WriteFile("../assets/some-other-file", []byte("some-other-contents"), 0644)).To(Succeed())
+			})
+
+			AfterEach(func() {
+				os.Remove("../assets/some-other-file")
+			})
+
+			It("should replace the destination file", func() {
+				fs.Move("../assets/some-file", "../assets/some-other-file")
+				Expect(fs.Exists("../assets/some-file")).To(BeFalse())
+				data, err := ioutil.ReadFile("../assets/some-other-file")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(data)).To(Equal("some-contents"))
+			})
+		})
+
+		Context("when the source does not exist", func() {
+			It("should return an error", func() {
+				Expect(fs.Move("../assets/some-bad-file", "../assets/some-other-file")).NotTo(Succeed())
+			})
 		})
 	})
 })

@@ -13,11 +13,11 @@ import (
 )
 
 var _ = Describe("Download Reader", func() {
-	Describe("when using a passed in reader", func() {
+	Describe("#Read", func() {
 		var (
-			reader   *pivnet.DownloadReader
 			contents []byte
 			stdout   *gbytes.Buffer
+			file     io.ReadCloser
 		)
 
 		BeforeEach(func() {
@@ -28,14 +28,9 @@ var _ = Describe("Download Reader", func() {
 				ioutil.WriteFile("../assets/some-file", contents, 0644),
 			).To(Succeed())
 
-			file, err := os.Open("../assets/some-file")
+			var err error
+			file, err = os.Open("../assets/some-file")
 			Expect(err).NotTo(HaveOccurred())
-
-			reader = &pivnet.DownloadReader{
-				ReadCloser:    file,
-				Writer:        stdout,
-				ContentLength: int64(len(contents)),
-			}
 		})
 
 		AfterEach(func() {
@@ -47,11 +42,50 @@ var _ = Describe("Download Reader", func() {
 		})
 
 		It("should display progress of the read", func() {
+			reader := &pivnet.DownloadReader{
+				ReadCloser:     file,
+				Writer:         stdout,
+				ContentLength:  int64(len(contents)),
+				ExistingLength: 0,
+			}
+
 			_, err := io.Copy(ioutil.Discard, reader)
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(stdout).Should(gbytes.Say("\rProgress: |>                   | 0%"))
-			Eventually(stdout).Should(gbytes.Say("\rProgress: |===================>| 100%"))
+			Eventually(stdout).Should(gbytes.Say(`\rProgress: \|>                    \| 0%`))
+			Eventually(stdout).Should(gbytes.Say(`\rProgress: \|====================>\| 100%`))
+		})
+
+		Context("when an evenly divisible percentage of the file has been downloaded", func() {
+			It("should display progress before starting byte as +s", func() {
+				reader := &pivnet.DownloadReader{
+					ReadCloser:     file,
+					Writer:         stdout,
+					ContentLength:  int64(len(contents)),
+					ExistingLength: 13,
+				}
+				_, err := io.Copy(ioutil.Discard, reader)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(stdout).Should(gbytes.Say(`\r\QProgress: |++++++++++>          | 50%\E`))
+				Eventually(stdout).Should(gbytes.Say(`\r\QProgress: |++++++++++==========>| 100%\E`))
+			})
+		})
+
+		Context("when an unevenly divisible percentage of the file has been downloaded", func() {
+			It("should display progress before starting byte as +s", func() {
+				reader := &pivnet.DownloadReader{
+					ReadCloser:     file,
+					Writer:         stdout,
+					ContentLength:  int64(len(contents)),
+					ExistingLength: 20,
+				}
+				_, err := io.Copy(ioutil.Discard, reader)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(stdout).Should(gbytes.Say(`\r\QProgress: |+++++++++++++>       | 61%\E`))
+				Eventually(stdout).Should(gbytes.Say(`\r\QProgress: |+++++++++++++=======>| 100%\E`))
+			})
 		})
 	})
 })

@@ -28,7 +28,7 @@ type Plugin struct {
 
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
 type Client interface {
-	DownloadOVA(token string) (ova *pivnet.DownloadReader, err error)
+	DownloadOVA(token string, startAtByte int64) (ova *pivnet.DownloadReader, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -60,6 +60,8 @@ type FS interface {
 	CreateDir(path string) error
 	RemoveFile(path string) error
 	MD5(path string) (md5 string, err error)
+	Length(path string) (length int64, err error)
+	Move(source string, destination string) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/plugin Config
@@ -212,16 +214,43 @@ func (p *Plugin) provision(vm *vbox.VM) error {
 }
 
 func (p *Plugin) downloadOVAFile() error {
+	var startAtByte int64
+	exists, err := p.FS.Exists(p.partialOVAPath())
+	if err != nil {
+		return fmt.Errorf("failed to determine if previous download has completed: %s", err)
+	}
+	if exists {
+		startAtByte, err = p.FS.Length(p.partialOVAPath())
+		if err != nil {
+			return fmt.Errorf("failed to determine length of previous download: %s", err)
+		}
+	}
 	token := p.Config.GetToken()
 
 	p.UI.Say("Downloading VM...")
-	ova, err := p.PivnetClient.DownloadOVA(token)
+	ova, err := p.PivnetClient.DownloadOVA(token, startAtByte)
 	if err != nil {
-		return fmt.Errorf("Error: %s", err)
+		return fmt.Errorf("failed to complete download of ova: %s", err)
 	}
 	defer ova.Close()
 
-	p.FS.Write(p.ovaPath(), ova)
+	if err := p.FS.Write(p.partialOVAPath(), ova); err != nil {
+		return fmt.Errorf("failed to write ova: %s", err)
+	}
+
+	md5, err := p.FS.MD5(p.partialOVAPath())
+	if err != nil {
+		return fmt.Errorf("failed to compute checksum of %s: %s", p.partialOVAPath(), err)
+	}
+	if md5 != p.ExpectedMD5 {
+		return errors.New("download corrupted")
+	}
+
+	err = p.FS.Move(p.partialOVAPath(), p.ovaPath())
+	if err != nil {
+		return fmt.Errorf("failed to transfer completed ova to new location: %s", err)
+	}
+
 	p.UI.Say("\nFinished downloading VM")
 	return nil
 }
@@ -236,6 +265,10 @@ func (p *Plugin) pcfdevDir() string {
 
 func (p *Plugin) ovaPath() string {
 	return filepath.Join(p.pcfdevDir(), "pcfdev.ova")
+}
+
+func (p *Plugin) partialOVAPath() string {
+	return filepath.Join(p.pcfdevDir(), "pcfdev.ova.partial")
 }
 
 func (p *Plugin) getOVAFile() error {
@@ -279,7 +312,6 @@ func (p *Plugin) getOVAFile() error {
 	}
 
 	return p.downloadOVAFile()
-
 }
 
 func (*Plugin) GetMetadata() plugin.PluginMetadata {

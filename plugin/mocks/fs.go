@@ -50,6 +50,17 @@ func (_mr *_MockFSRecorder) Exists(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Exists", arg0)
 }
 
+func (_m *MockFS) Length(_param0 string) (int64, error) {
+	ret := _m.ctrl.Call(_m, "Length", _param0)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockFSRecorder) Length(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Length", arg0)
+}
+
 func (_m *MockFS) MD5(_param0 string) (string, error) {
 	ret := _m.ctrl.Call(_m, "MD5", _param0)
 	ret0, _ := ret[0].(string)
@@ -59,6 +70,16 @@ func (_m *MockFS) MD5(_param0 string) (string, error) {
 
 func (_mr *_MockFSRecorder) MD5(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "MD5", arg0)
+}
+
+func (_m *MockFS) Move(_param0 string, _param1 string) error {
+	ret := _m.ctrl.Call(_m, "Move", _param0, _param1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockFSRecorder) Move(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Move", arg0, arg1)
 }
 
 func (_m *MockFS) RemoveFile(_param0 string) error {

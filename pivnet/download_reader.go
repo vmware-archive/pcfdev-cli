@@ -12,9 +12,12 @@ type DownloadReader struct {
 	accumulatedLength int64
 	Writer            io.Writer
 	ContentLength     int64
+	ExistingLength    int64
 }
 
 func (dr *DownloadReader) Read(p []byte) (int, error) {
+	dr.displayProgress(dr.accumulatedLength)
+
 	length, err := dr.ReadCloser.Read(p)
 	dr.accumulatedLength += int64(length)
 
@@ -26,12 +29,20 @@ func (dr *DownloadReader) Read(p []byte) (int, error) {
 }
 
 func (dr *DownloadReader) displayProgress(length int64) {
-	percentage := float64(length) / float64(dr.ContentLength)
-	bars := int(math.Ceil(20 * percentage))
+	totalLength := float64(dr.ExistingLength + dr.ContentLength)
+	totalPercentage := float64(dr.ExistingLength+length) / totalLength
+	downloadedPercentage := float64(length) / totalLength
+	existingPercentage := float64(dr.ExistingLength) / totalLength
+
+	plusses := int(math.Ceil(20 * existingPercentage))
+	bars := int(math.Ceil(20 * downloadedPercentage))
+	bars = int(math.Min(float64(bars), float64(20-plusses)))
+	spaces := 20 - bars - plusses
 
 	fmt.Fprintf(dr.Writer,
-		"\rProgress: |%s>%s| %d%%",
+		"\rProgress: |%s%s>%s| %d%%",
+		strings.Repeat("+", plusses),
 		strings.Repeat("=", bars),
-		strings.Repeat(" ", 20-bars),
-		int(math.Ceil(percentage*100)))
+		strings.Repeat(" ", spaces),
+		int(math.Ceil(totalPercentage*100)))
 }

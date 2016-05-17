@@ -109,7 +109,7 @@ var _ = Describe("Plugin", func() {
 				It("should download the ova to PCFDEV_HOME", func() {
 					gomock.InOrder(
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/other/dir/some-vm-name.ova"),
+						mockDownloader.EXPECT().Download("/some/other/dir/.pcfdev/some-vm-name.ova"),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 					)
 
@@ -139,6 +139,40 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("PCF Dev is now running"),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+
+				Context("when PCFDEV_HOME is set", func() {
+					var pcfdevHome string
+
+					BeforeEach(func() {
+						pcfdevHome = os.Getenv("PCFDEV_HOME")
+						os.Setenv("PCFDEV_HOME", "/some/other/dir")
+					})
+
+					AfterEach(func() {
+						os.Setenv("PCFDEV_HOME", pcfdevHome)
+					})
+
+					It("should download and start the ova in PCFDEV_HOME", func() {
+						gomock.InOrder(
+							mockRequirementsChecker.EXPECT().Check().Return(nil),
+							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
+							mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
+							mockUI.EXPECT().Say("Downloading VM..."),
+							mockDownloader.EXPECT().Download("/some/other/dir/.pcfdev/some-vm-name.ova"),
+							mockUI.EXPECT().Say("\nVM downloaded"),
+
+							mockUI.EXPECT().Say("Importing VM..."),
+							mockVBox.EXPECT().ImportVM("/some/other/dir/.pcfdev/some-vm-name.ova", "some-vm-name").Return(nil),
+							mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
+							mockUI.EXPECT().Say("Starting VM..."),
+							mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
+							mockUI.EXPECT().Say("Provisioning VM..."),
+							mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+							mockUI.EXPECT().Say("PCF Dev is now running"),
+						)
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+					})
 				})
 			})
 

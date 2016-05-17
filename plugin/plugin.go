@@ -208,7 +208,7 @@ func (p *Plugin) provision(vm *vbox.VM) error {
 
 func (p *Plugin) pcfdevDir() string {
 	if pcfdevHome := os.Getenv("PCFDEV_HOME"); pcfdevHome != "" {
-		return pcfdevHome
+		return filepath.Join(pcfdevHome, ".pcfdev")
 	}
 
 	return filepath.Join(os.Getenv("HOME"), ".pcfdev")

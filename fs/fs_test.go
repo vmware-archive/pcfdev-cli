@@ -115,7 +115,7 @@ var _ = Describe("Filesystem", func() {
 		})
 	})
 
-	Describe("#DeleteFilesExcept", func() {
+	Describe("#DeleteAllExcept", func() {
 		Context("when the directory already exists", func() {
 			var tmpDir string
 			var err error
@@ -133,7 +133,7 @@ var _ = Describe("Filesystem", func() {
 			})
 
 			It("should delete files not matching the filenames", func() {
-				Expect(fs.DeleteFilesExcept(tmpDir, []string{"some-file-name"})).To(Succeed())
+				Expect(fs.DeleteAllExcept(tmpDir, []string{"some-file-name"})).To(Succeed())
 				_, err := os.Stat(filepath.Join(tmpDir, "not-some-file-name"))
 				Expect(os.IsNotExist(err)).To(BeTrue())
 				_, err = os.Stat(filepath.Join(tmpDir, "some-file-name"))
@@ -143,7 +143,7 @@ var _ = Describe("Filesystem", func() {
 
 		Context("when the directory does not exist", func() {
 			It("should return an error", func() {
-				Expect(fs.DeleteFilesExcept("some-bad-path", []string{})).To(MatchError(ContainSubstring("failed to list files:")))
+				Expect(fs.DeleteAllExcept("some-bad-path", []string{})).To(MatchError(ContainSubstring("failed to list files:")))
 			})
 		})
 	})

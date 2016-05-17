@@ -42,7 +42,7 @@ func (fs *FS) CreateDir(path string) error {
 	return nil
 }
 
-func (fs *FS) DeleteFilesExcept(path string, filenames []string) error {
+func (fs *FS) DeleteAllExcept(path string, filenames []string) error {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return fmt.Errorf("failed to list files: %s", err)

@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 
@@ -18,24 +19,28 @@ var _ = Describe("Download Reader", func() {
 			contents []byte
 			stdout   *gbytes.Buffer
 			file     io.ReadCloser
+			tmpDir   string
 		)
 
 		BeforeEach(func() {
-			stdout = gbytes.NewBuffer()
+			var err error
 
+			stdout = gbytes.NewBuffer()
 			contents = []byte("some-contents")
+			tmpDir, err = ioutil.TempDir("", "pcfdev-reader")
+			Expect(err).NotTo(HaveOccurred())
+
 			Expect(
-				ioutil.WriteFile("../assets/some-file", contents, 0644),
+				ioutil.WriteFile(filepath.Join(tmpDir, "some-file"), contents, 0644),
 			).To(Succeed())
 
-			var err error
-			file, err = os.Open("../assets/some-file")
+			file, err = os.Open(filepath.Join(tmpDir, "some-file"))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
 			Expect(
-				os.Remove("../assets/some-file"),
+				os.RemoveAll(tmpDir),
 			).To(Succeed())
 
 			stdout.Close()

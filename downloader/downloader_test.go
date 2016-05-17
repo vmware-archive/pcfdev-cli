@@ -40,10 +40,22 @@ var _ = Describe("Downloader", func() {
 	})
 
 	Describe("#Download", func() {
+		It("should clean up old files", func() {
+			gomock.InOrder(
+				mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+				mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
+				mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(true, nil),
+			)
+
+			Expect(downloader.Download(filepath.Join("some-path", "some-file.ova"))).To(Succeed())
+
+		})
+
 		Context("when the file exists", func() {
 			It("should not re-download the file", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(true, nil),
 				)
 
@@ -56,6 +68,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(false, nil),
 					mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
@@ -73,6 +86,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(true, nil),
 					mockFS.EXPECT().Length(filepath.Join("some-path", "some-file.ova.partial")).Return(int64(25), nil),
@@ -91,6 +105,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(true, nil),
 					mockFS.EXPECT().Length(filepath.Join("some-path", "some-file.ova.partial")).Return(int64(25), nil),
@@ -114,6 +129,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(true, nil),
 					mockFS.EXPECT().Length(filepath.Join("some-path", "some-file.ova.partial")).Return(int64(25), nil),
@@ -139,10 +155,22 @@ var _ = Describe("Downloader", func() {
 			})
 		})
 
+		Context("when deleting files fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(errors.New("some-error")),
+				)
+
+				Expect(downloader.Download(filepath.Join("some-path", "some-file.ova"))).To(MatchError("some-error"))
+			})
+		})
+
 		Context("when checking if the file exists", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, errors.New("some-error")),
 				)
 
@@ -154,6 +182,7 @@ var _ = Describe("Downloader", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(false, errors.New("some-error")),
 				)
@@ -166,6 +195,7 @@ var _ = Describe("Downloader", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(true, nil),
 					mockFS.EXPECT().Length(filepath.Join("some-path", "some-file.ova.partial")).Return(int64(0), errors.New("some-error")),
@@ -179,6 +209,7 @@ var _ = Describe("Downloader", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(false, nil),
 					mockClient.EXPECT().DownloadOVA(int64(0)).Return(nil, errors.New("some-error")),
@@ -193,6 +224,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(false, nil),
 					mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
@@ -208,6 +240,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(false, nil),
 					mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
@@ -224,6 +257,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(true, nil),
 					mockFS.EXPECT().Length(filepath.Join("some-path", "some-file.ova.partial")).Return(int64(25), nil),
@@ -242,6 +276,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(false, nil),
 					mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
@@ -258,6 +293,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(true, nil),
 					mockFS.EXPECT().Length(filepath.Join("some-path", "some-file.ova.partial")).Return(int64(25), nil),
@@ -277,6 +313,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(true, nil),
 					mockFS.EXPECT().Length(filepath.Join("some-path", "some-file.ova.partial")).Return(int64(25), nil),
@@ -297,6 +334,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(true, nil),
 					mockFS.EXPECT().Length(filepath.Join("some-path", "some-file.ova.partial")).Return(int64(25), nil),
@@ -318,6 +356,7 @@ var _ = Describe("Downloader", func() {
 				readCloser := &pivnet.DownloadReader{ReadCloser: ioutil.NopCloser(strings.NewReader("some-ova-contents"))}
 				gomock.InOrder(
 					mockFS.EXPECT().CreateDir(filepath.Join("some-path")).Return(nil),
+					mockFS.EXPECT().DeleteAllExcept("some-path", []string{"some-file.ova", "some-file.ova.partial"}).Return(nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova")).Return(false, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-path", "some-file.ova.partial")).Return(false, nil),
 					mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),

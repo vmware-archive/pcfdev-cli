@@ -4,7 +4,9 @@ import (
 	cMD5 "crypto/md5"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 type FS struct{}
@@ -35,6 +37,24 @@ func (fs *FS) Write(path string, contents io.Reader) error {
 func (fs *FS) CreateDir(path string) error {
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %s", path, err)
+	}
+
+	return nil
+}
+
+func (fs *FS) DeleteFilesExcept(path string, filenames []string) error {
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return fmt.Errorf("failed to list files: %s", err)
+	}
+
+	for _, file := range files {
+		if !fs.fileInSet(file.Name(), filenames) {
+			err := fs.RemoveFile(filepath.Join(path, file.Name()))
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -86,4 +106,13 @@ func (fs *FS) Move(source string, destination string) error {
 	}
 
 	return nil
+}
+
+func (fs *FS) fileInSet(filenameToFind string, filenames []string) bool {
+	for _, filename := range filenames {
+		if filenameToFind == filename {
+			return true
+		}
+	}
+	return false
 }

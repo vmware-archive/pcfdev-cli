@@ -3,6 +3,7 @@ package fs_test
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	pcfdevfs "github.com/pivotal-cf/pcfdev-cli/fs"
@@ -110,6 +111,39 @@ var _ = Describe("Filesystem", func() {
 				Expect(fs.CreateDir("../assets/some-dir")).To(Succeed())
 				_, err := os.Stat("../assets/some-dir")
 				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+	})
+
+	Describe("#DeleteFilesExcept", func() {
+		Context("when the directory already exists", func() {
+			var tmpDir string
+			var err error
+
+			BeforeEach(func() {
+				tmpDir, err = ioutil.TempDir("", "pcfdev-fs")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(ioutil.WriteFile(filepath.Join(tmpDir, "some-file-name"), []byte("some-contents"), 0644)).To(Succeed())
+				Expect(ioutil.WriteFile(filepath.Join(tmpDir, "not-some-file-name"), []byte("some-contents"), 0644)).To(Succeed())
+			})
+
+			AfterEach(func() {
+				os.RemoveAll(tmpDir)
+			})
+
+			It("should delete files not matching the filenames", func() {
+				Expect(fs.DeleteFilesExcept(tmpDir, []string{"some-file-name"})).To(Succeed())
+				_, err := os.Stat(filepath.Join(tmpDir, "not-some-file-name"))
+				Expect(os.IsNotExist(err)).To(BeTrue())
+				_, err = os.Stat(filepath.Join(tmpDir, "some-file-name"))
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when the directory does not exist", func() {
+			It("should return an error", func() {
+				Expect(fs.DeleteFilesExcept("some-bad-path", []string{})).To(MatchError(ContainSubstring("failed to list files:")))
 			})
 		})
 	})

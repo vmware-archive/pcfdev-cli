@@ -39,6 +39,16 @@ func (_mr *_MockFSRecorder) CreateDir(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateDir", arg0)
 }
 
+func (_m *MockFS) DeleteAllExcept(_param0 string, _param1 []string) error {
+	ret := _m.ctrl.Call(_m, "DeleteAllExcept", _param0, _param1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockFSRecorder) DeleteAllExcept(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DeleteAllExcept", arg0, arg1)
+}
+
 func (_m *MockFS) Exists(_param0 string) (bool, error) {
 	ret := _m.ctrl.Call(_m, "Exists", _param0)
 	ret0, _ := ret[0].(bool)

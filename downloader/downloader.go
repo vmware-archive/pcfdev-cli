@@ -22,6 +22,7 @@ type FS interface {
 	MD5(path string) (md5 string, err error)
 	Move(source string, destinationPath string) error
 	RemoveFile(path string) error
+	DeleteAllExcept(path string, filenames []string) error
 }
 
 type Downloader struct {
@@ -35,7 +36,13 @@ func (d *Downloader) partialFilePath(path string) string {
 }
 
 func (d *Downloader) Download(path string) error {
-	if err := d.FS.CreateDir(filepath.Dir(path)); err != nil {
+	dir := filepath.Dir(path)
+	filename := filepath.Base(path)
+	if err := d.FS.CreateDir(dir); err != nil {
+		return err
+	}
+
+	if err := d.FS.DeleteAllExcept(dir, []string{filename, d.partialFilePath(filename)}); err != nil {
 		return err
 	}
 

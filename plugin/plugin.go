@@ -207,11 +207,7 @@ func (p *Plugin) pcfdevDir() string {
 }
 
 func (p *Plugin) ovaPath() string {
-	return filepath.Join(p.pcfdevDir(), "pcfdev.ova")
-}
-
-func (p *Plugin) partialOVAPath() string {
-	return filepath.Join(p.pcfdevDir(), "pcfdev.ova.partial")
+	return filepath.Join(p.pcfdevDir(), p.VMName+".ova")
 }
 
 func (*Plugin) GetMetadata() plugin.PluginMetadata {

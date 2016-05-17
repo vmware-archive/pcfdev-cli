@@ -72,10 +72,10 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("download", func() {
-			It("should download the OVA", func() {
+			It("should cleanup old OVAs and download the new OVA", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Downloading VM..."),
-					mockDownloader.EXPECT().Download("/some/dir/.pcfdev/pcfdev.ova"),
+					mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova"),
 					mockUI.EXPECT().Say("\nVM downloaded"),
 				)
 
@@ -86,7 +86,7 @@ var _ = Describe("Plugin", func() {
 				It("should print an error", func() {
 					gomock.InOrder(
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/pcfdev.ova").Return(errors.New("some-error")),
+						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova").Return(errors.New("some-error")),
 						mockUI.EXPECT().Failed("Error: some-error"),
 					)
 
@@ -109,7 +109,7 @@ var _ = Describe("Plugin", func() {
 				It("should download the ova to PCFDEV_HOME", func() {
 					gomock.InOrder(
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/other/dir/pcfdev.ova"),
+						mockDownloader.EXPECT().Download("/some/other/dir/some-vm-name.ova"),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 					)
 
@@ -125,11 +125,11 @@ var _ = Describe("Plugin", func() {
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/pcfdev.ova"),
+						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova"),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 
 						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", "some-vm-name").Return(nil),
+						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/some-vm-name.ova", "some-vm-name").Return(nil),
 						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
@@ -175,7 +175,7 @@ var _ = Describe("Plugin", func() {
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/pcfdev.ova").Return(errors.New("some-error")),
+						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova").Return(errors.New("some-error")),
 						mockUI.EXPECT().Failed("Error: some-error"),
 					)
 
@@ -234,11 +234,11 @@ var _ = Describe("Plugin", func() {
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/pcfdev.ova"),
+						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova"),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 						mockUI.EXPECT().Say("Importing VM..."),
 
-						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/pcfdev.ova", "some-vm-name").Return(expectedError),
+						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/some-vm-name.ova", "some-vm-name").Return(expectedError),
 						mockUI.EXPECT().Failed("Error: failed to import VM: some-error"),
 					)
 
@@ -252,7 +252,7 @@ var _ = Describe("Plugin", func() {
 					gomock.InOrder(
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/pcfdev.ova"),
+						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova"),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusStopped, nil),
 						mockUI.EXPECT().Failed("Old version of PCF Dev detected. You must run `cf dev destroy` to continue."),

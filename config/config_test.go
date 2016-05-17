@@ -55,7 +55,7 @@ var _ = Describe("Config", func() {
 				mockCtrl.Finish()
 			})
 
-			It("should prompt the user to enter their PivNet token", func() {
+			It("should prompt the user to enter their Pivnet token", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Please retrieve your Pivotal Network API from:"),
 					mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile"),

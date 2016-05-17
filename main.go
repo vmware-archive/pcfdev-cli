@@ -5,6 +5,7 @@ import (
 
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/downloader"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/ping"
@@ -30,13 +31,20 @@ var (
 func main() {
 	ui := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 	cfplugin.Start(&plugin.Plugin{
+		Downloader: &downloader.Downloader{
+			PivnetClient: &pivnet.Client{
+				Config: &config.Config{
+					UI: ui,
+				},
+				Host:          "https://network.pivotal.io",
+				ReleaseId:     releaseId,
+				ProductFileId: productFileId,
+			},
+			FS:          &fs.FS{},
+			ExpectedMD5: md5,
+		},
 		UI:  ui,
 		SSH: &ssh.SSH{},
-		PivnetClient: &pivnet.Client{
-			Host:          "https://network.pivotal.io",
-			ReleaseId:     releaseId,
-			ProductFileId: productFileId,
-		},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},
 			Driver: &vbox.VBoxDriver{},
@@ -47,16 +55,11 @@ func main() {
 				Network: &network.Network{},
 			},
 		},
-		FS: &fs.FS{},
-		Config: &config.Config{
-			UI: ui,
-		},
 		RequirementsChecker: &requirements.Checker{
 			MemoryChecker: &requirements.Memory{
 				MinimumFreeMemory: 3072,
 			},
 		},
-		ExpectedMD5: md5,
-		VMName:      vmName,
+		VMName: vmName,
 	})
 }

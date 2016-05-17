@@ -9,26 +9,17 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/cli/plugin"
-	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
 type Plugin struct {
-	PivnetClient        Client
 	SSH                 SSH
 	UI                  UI
 	VBox                VBox
-	FS                  FS
-	Config              Config
 	RequirementsChecker RequirementsChecker
+	Downloader          Downloader
 
-	ExpectedMD5 string
-	VMName      string
-}
-
-//go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
-type Client interface {
-	DownloadOVA(token string, startAtByte int64) (ova *pivnet.DownloadReader, err error)
+	VMName string
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -53,25 +44,14 @@ type VBox interface {
 	GetPCFDevVMs() (names []string, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin FS
-type FS interface {
-	Exists(path string) (exists bool, err error)
-	Write(path string, contents io.Reader) error
-	CreateDir(path string) error
-	RemoveFile(path string) error
-	MD5(path string) (md5 string, err error)
-	Length(path string) (length int64, err error)
-	Move(source string, destination string) error
-}
-
-//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/plugin Config
-type Config interface {
-	GetToken() string
-}
-
 //go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/plugin RequirementsChecker
 type RequirementsChecker interface {
 	Check() error
+}
+
+//go:generate mockgen -package mocks -destination mocks/downloader.go github.com/pivotal-cf/pcfdev-cli/plugin Downloader
+type Downloader interface {
+	Download(path string) error
 }
 
 func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
@@ -87,36 +67,41 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	switch args[1] {
 	case "download":
 		if err := p.downloadVM(); err != nil {
-			p.UI.Failed(err.Error())
+			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
 		}
 	case "start":
 		if err := p.start(); err != nil {
-			p.UI.Failed(err.Error())
+			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
 		}
 	case "status":
 		if status, err := p.VBox.Status(p.VMName); err != nil {
-			p.UI.Failed(err.Error())
+			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
 		} else {
 			p.UI.Say(status)
 		}
 	case "stop":
 		if err := p.stop(); err != nil {
-			p.UI.Failed(err.Error())
+			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
 		}
 	case "destroy":
 		if err := p.destroy(); err != nil {
-			p.UI.Failed(err.Error())
+			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
 		}
 	}
 }
 
 func (p *Plugin) downloadVM() error {
-	return p.getOVAFile()
+	p.UI.Say("Downloading VM...")
+	if err := p.Downloader.Download(p.ovaPath()); err != nil {
+		return err
+	}
+	p.UI.Say("\nVM downloaded")
+	return nil
 }
 
 func (p *Plugin) start() error {
 	if err := p.RequirementsChecker.Check(); err != nil {
-		return fmt.Errorf("Could not start PCF Dev: %s", err)
+		return fmt.Errorf("could not start PCF Dev: %s", err)
 	}
 
 	status, err := p.VBox.Status(p.VMName)
@@ -130,7 +115,7 @@ func (p *Plugin) start() error {
 	}
 
 	if status == vbox.StatusNotCreated {
-		if err := p.getOVAFile(); err != nil {
+		if err := p.downloadVM(); err != nil {
 			return err
 		}
 
@@ -213,48 +198,6 @@ func (p *Plugin) provision(vm *vbox.VM) error {
 	return p.SSH.RunSSHCommand(fmt.Sprintf("sudo /var/pcfdev/run %s %s '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", vm.Domain, vm.IP), vm.SSHPort, 2*time.Minute, os.Stdout, os.Stderr)
 }
 
-func (p *Plugin) downloadOVAFile() error {
-	var startAtByte int64
-	exists, err := p.FS.Exists(p.partialOVAPath())
-	if err != nil {
-		return fmt.Errorf("failed to determine if previous download has completed: %s", err)
-	}
-	if exists {
-		startAtByte, err = p.FS.Length(p.partialOVAPath())
-		if err != nil {
-			return fmt.Errorf("failed to determine length of previous download: %s", err)
-		}
-	}
-	token := p.Config.GetToken()
-
-	p.UI.Say("Downloading VM...")
-	ova, err := p.PivnetClient.DownloadOVA(token, startAtByte)
-	if err != nil {
-		return fmt.Errorf("failed to complete download of ova: %s", err)
-	}
-	defer ova.Close()
-
-	if err := p.FS.Write(p.partialOVAPath(), ova); err != nil {
-		return fmt.Errorf("failed to write ova: %s", err)
-	}
-
-	md5, err := p.FS.MD5(p.partialOVAPath())
-	if err != nil {
-		return fmt.Errorf("failed to compute checksum of %s: %s", p.partialOVAPath(), err)
-	}
-	if md5 != p.ExpectedMD5 {
-		return errors.New("download corrupted")
-	}
-
-	err = p.FS.Move(p.partialOVAPath(), p.ovaPath())
-	if err != nil {
-		return fmt.Errorf("failed to transfer completed ova to new location: %s", err)
-	}
-
-	p.UI.Say("\nFinished downloading VM")
-	return nil
-}
-
 func (p *Plugin) pcfdevDir() string {
 	if pcfdevHome := os.Getenv("PCFDEV_HOME"); pcfdevHome != "" {
 		return pcfdevHome
@@ -269,49 +212,6 @@ func (p *Plugin) ovaPath() string {
 
 func (p *Plugin) partialOVAPath() string {
 	return filepath.Join(p.pcfdevDir(), "pcfdev.ova.partial")
-}
-
-func (p *Plugin) getOVAFile() error {
-	err := p.FS.CreateDir(p.pcfdevDir())
-	if err != nil {
-		return err
-	}
-
-	ovaExists, err := p.FS.Exists(p.ovaPath())
-	if err != nil {
-		return err
-	}
-
-	if !ovaExists {
-		return p.downloadOVAFile()
-	}
-
-	ovaMD5, err := p.FS.MD5(p.ovaPath())
-	if err != nil {
-		return fmt.Errorf("failed to compute checksum of %s", p.ovaPath())
-	}
-
-	if ovaMD5 == p.ExpectedMD5 {
-		p.UI.Say("VM already downloaded")
-		return nil
-	}
-
-	status, err := p.VBox.Status(p.VMName)
-	if err != nil {
-		return fmt.Errorf("failed to get VM status: %s", err)
-	}
-
-	if status != vbox.StatusNotCreated {
-		return errors.New("Old version of PCF Dev detected. You must run `cf dev destroy` to continue.")
-	}
-
-	p.UI.Say("Upgrading your locally stored version of PCF Dev...")
-	err = p.FS.RemoveFile(p.ovaPath())
-	if err != nil {
-		return fmt.Errorf("failed to remove old machine image %s", p.ovaPath())
-	}
-
-	return p.downloadOVAFile()
 }
 
 func (*Plugin) GetMetadata() plugin.PluginMetadata {

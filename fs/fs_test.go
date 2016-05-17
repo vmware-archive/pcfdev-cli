@@ -131,7 +131,7 @@ var _ = Describe("Filesystem", func() {
 		Context("when the file does not exist", func() {
 			It("should return an error", func() {
 				md5, err := fs.MD5("../assets/some-non-existent-file")
-				Expect(err).To(MatchError(ContainSubstring("could not read ../assets/some-non-existent-file:")))
+				Expect(err).To(MatchError(ContainSubstring("failed to open ../assets/some-non-existent-file:")))
 				Expect(md5).To(Equal(""))
 			})
 		})
@@ -154,7 +154,7 @@ var _ = Describe("Filesystem", func() {
 		Context("when the file does not exist", func() {
 			It("should return an error", func() {
 				length, err := fs.Length("../assets/some-non-existent-file")
-				Expect(err).To(MatchError(ContainSubstring("could not read ../assets/some-non-existent-file:")))
+				Expect(err).To(MatchError(ContainSubstring("failed to read ../assets/some-non-existent-file:")))
 				Expect(length).To(Equal(int64(0)))
 			})
 		})
@@ -174,6 +174,12 @@ var _ = Describe("Filesystem", func() {
 
 			_, err := os.Stat("../assets/some-file")
 			Expect(os.IsNotExist(err)).To(BeTrue())
+		})
+
+		Context("when removing a file fails", func() {
+			It("should return an error", func() {
+				Expect(fs.RemoveFile("../assets/some-bad-file")).To(MatchError(ContainSubstring("failed to remove file ../assets/some-bad-file:")))
+			})
 		})
 	})
 
@@ -218,7 +224,7 @@ var _ = Describe("Filesystem", func() {
 
 		Context("when the source does not exist", func() {
 			It("should return an error", func() {
-				Expect(fs.Move("../assets/some-bad-file", "../assets/some-other-file")).NotTo(Succeed())
+				Expect(fs.Move("../assets/some-bad-file", "../assets/some-other-file")).To(MatchError(ContainSubstring("failed to move ../assets/some-bad-file to ../assets/some-other-file:")))
 			})
 		})
 	})

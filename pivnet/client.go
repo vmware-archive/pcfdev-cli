@@ -10,17 +10,22 @@ type Client struct {
 	Host          string
 	ReleaseId     string
 	ProductFileId string
+	Config        Config
 }
 
-func (c *Client) DownloadOVA(token string, startAtByte int64) (ova *DownloadReader, err error) {
+//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/pivnet Config
+type Config interface {
+	GetToken() string
+}
+
+func (c *Client) DownloadOVA(startAtByte int64) (ova *DownloadReader, err error) {
 	uri := fmt.Sprintf("%s/api/v2/products/pcfdev/releases/%s/product_files/%s/download", c.Host, c.ReleaseId, c.ProductFileId)
 	req, err := http.NewRequest("POST", uri, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Token "+token)
-	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", startAtByte))
+	req.Header.Set("Authorization", "Token "+c.Config.GetToken())
 	client := http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			req.Header.Set("Range", fmt.Sprintf("bytes=%d-", startAtByte))

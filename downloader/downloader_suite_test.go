@@ -1,4 +1,4 @@
-package pivnet_test
+package downloader_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestPivnet(t *testing.T) {
+func TestDownloader(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "PCF Dev Pivnet Suite")
+	RunSpecs(t, "PCF Dev Downloader Suite")
 }

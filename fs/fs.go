@@ -33,24 +33,33 @@ func (fs *FS) Write(path string, contents io.Reader) error {
 }
 
 func (fs *FS) CreateDir(path string) error {
-	return os.MkdirAll(path, 0755)
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %s", path, err)
+	}
+
+	return nil
 }
 
 func (fs *FS) RemoveFile(path string) error {
-	return os.Remove(path)
+	err := os.Remove(path)
+	if err != nil {
+		return fmt.Errorf("failed to remove file %s: %s", path, err)
+	}
+
+	return nil
 }
 
 func (fs *FS) MD5(path string) (md5 string, err error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return "", fmt.Errorf("could not read %s: %s", path, err)
+		return "", fmt.Errorf("failed to open %s: %s", path, err)
 	}
 	defer file.Close()
 
 	hash := cMD5.New()
 
 	if _, err = io.Copy(hash, file); err != nil {
-		return "", fmt.Errorf("could not read %s: %s", path, err)
+		return "", fmt.Errorf("failed to read %s: %s", path, err)
 	}
 
 	return fmt.Sprintf("%x", hash.Sum([]byte{})), nil
@@ -59,7 +68,7 @@ func (fs *FS) MD5(path string) (md5 string, err error) {
 func (fs *FS) Length(path string) (int64, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return 0, fmt.Errorf("could not read %s: %s", path, err)
+		return 0, fmt.Errorf("failed to read %s: %s", path, err)
 	}
 	defer file.Close()
 
@@ -72,5 +81,9 @@ func (fs *FS) Length(path string) (int64, error) {
 }
 
 func (fs *FS) Move(source string, destination string) error {
-	return os.Rename(source, destination)
+	if err := os.Rename(source, destination); err != nil {
+		return fmt.Errorf("failed to move %s to %s: %s", source, destination, err)
+	}
+
+	return nil
 }

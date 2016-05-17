@@ -124,6 +124,7 @@ var _ = Describe("Plugin", func() {
 					gomock.InOrder(
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
+						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova"),
 						mockUI.EXPECT().Say("\nVM downloaded"),
@@ -174,6 +175,7 @@ var _ = Describe("Plugin", func() {
 					gomock.InOrder(
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
+						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova").Return(errors.New("some-error")),
 						mockUI.EXPECT().Failed("Error: some-error"),
@@ -233,6 +235,7 @@ var _ = Describe("Plugin", func() {
 					gomock.InOrder(
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
+						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova"),
 						mockUI.EXPECT().Say("\nVM downloaded"),
@@ -246,16 +249,26 @@ var _ = Describe("Plugin", func() {
 				})
 			})
 
-			// the logic around the 'age' of the vm will change soon and this test will need to be overhauled
-			XContext("when the vm exists and is old and is stopped", func() {
+			Context("when the VM doesn't exist, but a conflicting VM is present", func() {
 				It("should print an error message", func() {
 					gomock.InOrder(
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova"),
-						mockUI.EXPECT().Say("\nVM downloaded"),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusStopped, nil),
-						mockUI.EXPECT().Failed("Old version of PCF Dev detected. You must run `cf dev destroy` to continue."),
+						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
+						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(true, nil),
+						mockUI.EXPECT().Failed("Error: old version of PCF Dev detected, you must run `cf dev destroy` to continue."),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
+
+			Context("when checking for conflicting VMs fails", func() {
+				It("should print an error message", func() {
+					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(nil),
+						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
+						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, errors.New("some-error")),
+						mockUI.EXPECT().Failed("Error: some-error"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})

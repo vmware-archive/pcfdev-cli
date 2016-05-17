@@ -115,6 +115,14 @@ func (p *Plugin) start() error {
 	}
 
 	if status == vbox.StatusNotCreated {
+		conflict, err := p.VBox.ConflictingVMPresent(p.VMName)
+		if err != nil {
+			return err
+		}
+		if conflict {
+			return errors.New("old version of PCF Dev detected, you must run `cf dev destroy` to continue.")
+		}
+
 		if err := p.downloadVM(); err != nil {
 			return err
 		}

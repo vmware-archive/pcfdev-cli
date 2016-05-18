@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -109,6 +110,12 @@ func (d *VBoxDriver) GetHostOnlyInterfaces() (interfaces []*network.Interface, e
 	}
 
 	return vboxnets, nil
+}
+
+func (d *VBoxDriver) SetMemory(vmName string, memory uint64) error {
+	_, err := d.VBoxManage("modifyvm", vmName, "--memory", strconv.Itoa(int(memory)))
+
+	return err
 }
 
 func (d *VBoxDriver) GetVMIP(vmName string) (string, error) {

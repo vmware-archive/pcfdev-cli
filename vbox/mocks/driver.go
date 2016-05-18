@@ -134,6 +134,16 @@ func (_mr *_MockDriverRecorder) RunningVMs() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunningVMs")
 }
 
+func (_m *MockDriver) SetMemory(_param0 string, _param1 uint64) error {
+	ret := _m.ctrl.Call(_m, "SetMemory", _param0, _param1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) SetMemory(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetMemory", arg0, arg1)
+}
+
 func (_m *MockDriver) StartVM(_param0 string) error {
 	ret := _m.ctrl.Call(_m, "StartVM", _param0)
 	ret0, _ := ret[0].(error)

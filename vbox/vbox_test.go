@@ -21,6 +21,8 @@ var _ = Describe("vbox", func() {
 		mockDriver *mocks.MockDriver
 		mockSSH    *mocks.MockSSH
 		mockPicker *mocks.MockNetworkPicker
+		mockSystem *mocks.MockSystem
+		mockConfig *mocks.MockConfig
 		vbx        *vbox.VBox
 	)
 
@@ -29,10 +31,15 @@ var _ = Describe("vbox", func() {
 		mockDriver = mocks.NewMockDriver(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
 		mockPicker = mocks.NewMockNetworkPicker(mockCtrl)
+		mockSystem = mocks.NewMockSystem(mockCtrl)
+		mockConfig = mocks.NewMockConfig(mockCtrl)
+
 		vbx = &vbox.VBox{
 			Driver: mockDriver,
 			SSH:    mockSSH,
 			Picker: mockPicker,
+			System: mockSystem,
+			Config: mockConfig,
 		}
 	})
 
@@ -54,6 +61,8 @@ var _ = Describe("vbox", func() {
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
+					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(2000), nil),
+					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
 				err := vbx.ImportVM("some-path", "some-vm")
 				Expect(err).NotTo(HaveOccurred())
@@ -75,9 +84,165 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().CreateHostOnlyInterface(ip).Return("some-interface", nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
+					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(2000), nil),
+					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
 				err := vbx.ImportVM("some-path", "some-vm")
 				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when the system has more than the maximum amount of free memory", func() {
+			It("should give the VM the maximum amount of memory", func() {
+				iface := &network.Interface{
+					Name: "some-interface",
+				}
+				vboxnets := []*network.Interface{iface}
+				gomock.InOrder(
+					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
+					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
+					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
+					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
+					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(0), nil),
+					mockConfig.EXPECT().GetMaxMemory().Return(uint64(1000)),
+					mockConfig.EXPECT().GetMinMemory().Return(uint64(1000)),
+					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil),
+					mockDriver.EXPECT().SetMemory("some-vm", uint64(1000)),
+				)
+				err := vbx.ImportVM("some-path", "some-vm")
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when the system has more than the minimum amount of free memory but less than the maximum", func() {
+			It("should give the VM all the free memory", func() {
+				iface := &network.Interface{
+					Name: "some-interface",
+				}
+				vboxnets := []*network.Interface{iface}
+				gomock.InOrder(
+					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
+					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
+					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
+					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
+					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(0), nil),
+					mockConfig.EXPECT().GetMaxMemory().Return(uint64(2000)),
+					mockConfig.EXPECT().GetMinMemory().Return(uint64(1000)),
+					mockSystem.EXPECT().FreeMemory().Return(uint64(1300), nil),
+					mockDriver.EXPECT().SetMemory("some-vm", uint64(1300)),
+				)
+				err := vbx.ImportVM("some-path", "some-vm")
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when the system has less than the minimum amount of free memory", func() {
+			It("should give the VM the minimum amount of memory", func() {
+				iface := &network.Interface{
+					Name: "some-interface",
+				}
+				vboxnets := []*network.Interface{iface}
+				gomock.InOrder(
+					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
+					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
+					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
+					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
+					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(0), nil),
+					mockConfig.EXPECT().GetMaxMemory().Return(uint64(2000)),
+					mockConfig.EXPECT().GetMinMemory().Return(uint64(1000)),
+					mockSystem.EXPECT().FreeMemory().Return(uint64(500), nil),
+					mockDriver.EXPECT().SetMemory("some-vm", uint64(1000)),
+				)
+				err := vbx.ImportVM("some-path", "some-vm")
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when the user has set the memory explicitly", func() {
+			It("should give the VM the desired amount of memory", func() {
+				iface := &network.Interface{
+					Name: "some-interface",
+				}
+				vboxnets := []*network.Interface{iface}
+				gomock.InOrder(
+					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
+					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
+					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
+					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
+					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(2000), nil),
+					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
+				)
+				err := vbx.ImportVM("some-path", "some-vm")
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when getting free memory returns an error", func() {
+			It("should return an error", func() {
+				iface := &network.Interface{
+					Name: "some-interface",
+				}
+				vboxnets := []*network.Interface{iface}
+				gomock.InOrder(
+					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
+					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
+					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
+					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
+					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(0), nil),
+					mockConfig.EXPECT().GetMaxMemory().Return(uint64(2000)),
+					mockConfig.EXPECT().GetMinMemory().Return(uint64(1000)),
+					mockSystem.EXPECT().FreeMemory().Return(uint64(0), errors.New("some-error")),
+				)
+				Expect(vbx.ImportVM("some-path", "some-vm")).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when getting desired memory returns an error", func() {
+			It("should return an error", func() {
+				iface := &network.Interface{
+					Name: "some-interface",
+				}
+				vboxnets := []*network.Interface{iface}
+				gomock.InOrder(
+					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
+					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
+					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
+					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
+					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(0), errors.New("some-error")),
+				)
+				Expect(vbx.ImportVM("some-path", "some-vm")).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when setting the memory returns an error", func() {
+			It("should return an error", func() {
+				iface := &network.Interface{
+					Name: "some-interface",
+				}
+				vboxnets := []*network.Interface{iface}
+				gomock.InOrder(
+					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
+					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
+					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
+					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
+					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(2000), nil),
+					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)).Return(errors.New("some-error")),
+				)
+				Expect(vbx.ImportVM("some-path", "some-vm")).To(MatchError("some-error"))
 			})
 		})
 

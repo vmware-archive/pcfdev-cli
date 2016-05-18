@@ -16,15 +16,17 @@ var _ = Describe("Checker", func() {
 		checker    *requirements.Checker
 		mockCtrl   *gomock.Controller
 		mockSystem *mocks.MockSystem
+		mockConfig *mocks.MockConfig
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockSystem = mocks.NewMockSystem(mockCtrl)
+		mockConfig = mocks.NewMockConfig(mockCtrl)
 
 		checker = &requirements.Checker{
-			MinimumFreeMemory: 1,
-			System:            mockSystem,
+			System: mockSystem,
+			Config: mockConfig,
 		}
 	})
 
@@ -36,6 +38,7 @@ var _ = Describe("Checker", func() {
 		Context("when the free memory is greater than or equal to the minimum memory requirement", func() {
 			It("should not return an error", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(1048576), nil)
+				mockConfig.EXPECT().GetMinMemory().Return(uint64(1))
 
 				Expect(checker.Check()).To(Succeed())
 			})
@@ -44,6 +47,7 @@ var _ = Describe("Checker", func() {
 		Context("when the free memory is less than the minimum memory requirement", func() {
 			It("should return an error", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(1048575), nil)
+				mockConfig.EXPECT().GetMinMemory().Return(uint64(1))
 
 				Expect(checker.Check()).To(MatchError("PCF Dev requires 1MB of free memory, this host has 0MB"))
 			})

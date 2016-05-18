@@ -28,6 +28,7 @@ type Driver interface {
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 	GetHostOnlyInterfaces() (interfaces []*network.Interface, err error)
 	GetVMIP(vmName string) (vmIP string, err error)
+	SetMemory(vmName string, memory uint64) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
@@ -47,10 +48,24 @@ type Address interface {
 	SubnetForIP(vmIP string) (subnetIP string, err error)
 }
 
+//go:generate mockgen -package mocks -destination mocks/system.go github.com/pivotal-cf/pcfdev-cli/vbox System
+type System interface {
+	FreeMemory() (memory uint64, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/vbox Config
+type Config interface {
+	GetMaxMemory() (memory uint64)
+	GetMinMemory() (memory uint64)
+	GetDesiredMemory() (memory uint64, err error)
+}
+
 type VBox struct {
 	Driver Driver
 	SSH    SSH
 	Picker NetworkPicker
+	System System
+	Config Config
 }
 
 type VM struct {
@@ -142,7 +157,42 @@ func (v *VBox) ImportVM(path string, vmName string) error {
 	if err != nil {
 		return err
 	}
+
+	memory, err := v.computeMemory()
+	if err != nil {
+		return err
+	}
+	if err := v.Driver.SetMemory(vmName, memory); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (v *VBox) computeMemory() (uint64, error) {
+	var memory uint64
+	desiredMemory, err := v.Config.GetDesiredMemory()
+	if err != nil {
+		return uint64(0), err
+	}
+	if desiredMemory != 0 {
+		memory = desiredMemory
+	} else {
+		maxMemory := v.Config.GetMaxMemory()
+		minMemory := v.Config.GetMinMemory()
+		freeMemory, err := v.System.FreeMemory()
+		if err != nil {
+			return uint64(0), err
+		}
+		if freeMemory <= minMemory {
+			memory = minMemory
+		} else if freeMemory >= maxMemory {
+			memory = maxMemory
+		} else {
+			memory = freeMemory
+		}
+	}
+	return memory, nil
 }
 
 func (v *VBox) DestroyVMs(vmNames []string) error {

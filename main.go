@@ -31,12 +31,16 @@ var (
 
 func main() {
 	ui := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
+	config := &config.Config{
+		UI:        ui,
+		MinMemory: 3072,
+		MaxMemory: 4096,
+	}
+	system := &system.System{}
 	cfplugin.Start(&plugin.Plugin{
 		Downloader: &downloader.Downloader{
 			PivnetClient: &pivnet.Client{
-				Config: &config.Config{
-					UI: ui,
-				},
+				Config:        config,
 				Host:          "https://network.pivotal.io",
 				ReleaseId:     releaseId,
 				ProductFileId: productFileId,
@@ -55,10 +59,12 @@ func main() {
 				},
 				Network: &network.Network{},
 			},
+			Config: config,
+			System: system,
 		},
 		RequirementsChecker: &requirements.Checker{
-			MinimumFreeMemory: 3072,
-			System:            &system.System{},
+			System: system,
+			Config: config,
 		},
 		VMName: vmName,
 	})

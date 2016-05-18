@@ -78,4 +78,61 @@ var _ = Describe("Config", func() {
 			})
 		})
 	})
+
+	Context("#GetMinMemory", func() {
+		It("should return MinMemory", func() {
+			cfg := &config.Config{
+				MinMemory: uint64(1024),
+			}
+			Expect(cfg.GetMinMemory()).To(Equal(uint64(1024)))
+		})
+	})
+
+	Context("#GetMaxMemory", func() {
+		It("should return MaxMemory", func() {
+			cfg := &config.Config{
+				MaxMemory: uint64(1024),
+			}
+			Expect(cfg.GetMaxMemory()).To(Equal(uint64(1024)))
+		})
+	})
+
+	Context("#GetDesiredMemory", func() {
+		var (
+			cfg           *config.Config
+			savedVMMemory string
+		)
+
+		BeforeEach(func() {
+			cfg = &config.Config{}
+			savedVMMemory = os.Getenv("VM_MEMORY")
+		})
+
+		AfterEach(func() {
+			os.Setenv("VM_MEMORY", savedVMMemory)
+		})
+
+		Context("when VM_MEMORY env var is set", func() {
+			It("should return VM_MEMORY", func() {
+				os.Setenv("VM_MEMORY", "1024")
+				Expect(cfg.GetDesiredMemory()).To(Equal(uint64(1024)))
+			})
+
+		})
+
+		Context("when VM_MEMORY is not an integer", func() {
+			It("should return an error", func() {
+				os.Setenv("VM_MEMORY", "some-string")
+				_, err := cfg.GetDesiredMemory()
+				Expect(err).To(MatchError(ContainSubstring("could not convert VM_MEMORY \"some-string\" to integer:")))
+			})
+		})
+
+		Context("when VM_MEMORY env var is not set", func() {
+			It("should return VM_MEMORY", func() {
+				os.Setenv("VM_MEMORY", "")
+				Expect(cfg.GetDesiredMemory()).To(Equal(uint64(0)))
+			})
+		})
+	})
 })

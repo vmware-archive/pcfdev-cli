@@ -346,6 +346,24 @@ var _ = Describe("driver", func() {
 		})
 	})
 
+	Describe("#SetMemory", func() {
+		It("should set vm memory in mb", func() {
+			Expect(driver.SetMemory(vmName, uint64(2048))).To(Succeed())
+
+			showvmInfoCommand := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable")
+			session, err := gexec.Start(showvmInfoCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session).Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say(`memory=2048`))
+		})
+
+		Context("when setting memory fails", func() {
+			It("should set vm memory in mb", func() {
+				Expect(driver.SetMemory(vmName, uint64(0))).To(MatchError(ContainSubstring("failed to execute")))
+			})
+		})
+	})
+
 	Describe("#VMs", func() {
 		It("should return a list of VMs", func() {
 			Expect(driver.VMs()).To(ContainElement(vmName))

@@ -13,17 +13,18 @@ import (
 
 var _ = Describe("Checker", func() {
 	var (
-		checker           *requirements.Checker
-		mockCtrl          *gomock.Controller
-		mockMemoryChecker *mocks.MockMemoryChecker
+		checker    *requirements.Checker
+		mockCtrl   *gomock.Controller
+		mockSystem *mocks.MockSystem
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
-		mockMemoryChecker = mocks.NewMockMemoryChecker(mockCtrl)
+		mockSystem = mocks.NewMockSystem(mockCtrl)
 
 		checker = &requirements.Checker{
-			MemoryChecker: mockMemoryChecker,
+			MinimumFreeMemory: 1,
+			System:            mockSystem,
 		}
 	})
 
@@ -32,17 +33,25 @@ var _ = Describe("Checker", func() {
 	})
 
 	Describe("Check", func() {
-		Context("when the MemoryChecker does not return an error", func() {
+		Context("when the free memory is greater than or equal to the minimum memory requirement", func() {
 			It("should not return an error", func() {
-				mockMemoryChecker.EXPECT().Check().Return(nil)
+				mockSystem.EXPECT().FreeMemory().Return(uint64(1048576), nil)
 
 				Expect(checker.Check()).To(Succeed())
 			})
 		})
 
-		Context("when the MemoryChecker returns an error", func() {
+		Context("when the free memory is less than the minimum memory requirement", func() {
 			It("should return an error", func() {
-				mockMemoryChecker.EXPECT().Check().Return(errors.New("some-error"))
+				mockSystem.EXPECT().FreeMemory().Return(uint64(1048575), nil)
+
+				Expect(checker.Check()).To(MatchError("PCF Dev requires 1MB of free memory, this host has 0MB"))
+			})
+		})
+
+		Context("when the fethcing free memory returns an error", func() {
+			It("should return an error", func() {
+				mockSystem.EXPECT().FreeMemory().Return(uint64(0), errors.New("some-error"))
 
 				Expect(checker.Check()).To(MatchError("some-error"))
 			})

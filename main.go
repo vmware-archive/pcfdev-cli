@@ -13,6 +13,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/requirements"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
+	"github.com/pivotal-cf/pcfdev-cli/system"
 	currentUser "github.com/pivotal-cf/pcfdev-cli/user"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 
@@ -56,9 +57,8 @@ func main() {
 			},
 		},
 		RequirementsChecker: &requirements.Checker{
-			MemoryChecker: &requirements.Memory{
-				MinimumFreeMemory: 3072,
-			},
+			MinimumFreeMemory: 3072,
+			System:            &system.System{},
 		},
 		VMName: vmName,
 	})

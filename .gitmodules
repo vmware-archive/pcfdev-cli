@@ -19,3 +19,6 @@
 [submodule "vendor/golang.org/x/net"]
 	path = vendor/golang.org/x/net
 	url = https://github.com/golang/net.git
+[submodule "vendor/github.com/cloudfoundry/gosigar"]
+	path = vendor/github.com/cloudfoundry/gosigar
+	url = https://github.com/cloudfoundry/gosigar

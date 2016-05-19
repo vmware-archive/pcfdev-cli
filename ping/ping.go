@@ -7,17 +7,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/pivotal-cf/pcfdev-cli/user"
+
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 )
 
-type User interface {
-	IsPrivileged() (bool, error)
-}
-
-type Pinger struct {
-	User User
-}
+type Pinger struct{}
 
 func (p *Pinger) TryIP(ip string) (bool, error) {
 	icmpProtocol, err := p.icmpProtocol()
@@ -73,7 +69,7 @@ func (p *Pinger) TryIP(ip string) (bool, error) {
 }
 
 func (p *Pinger) icmpProtocol() (protocol string, err error) {
-	privilegedUser, err := p.User.IsPrivileged()
+	privilegedUser, err := user.IsPrivileged()
 	if err != nil {
 		return "", fmt.Errorf("failed to determine user privileges: %s", err)
 	}
@@ -86,7 +82,7 @@ func (p *Pinger) icmpProtocol() (protocol string, err error) {
 }
 
 func (p *Pinger) icmpAddr(ip string) (addr net.Addr, err error) {
-	privilegedUser, err := p.User.IsPrivileged()
+	privilegedUser, err := user.IsPrivileged()
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine user privileges: %s", err)
 	}

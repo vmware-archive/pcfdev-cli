@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/cli/plugin"
+	"github.com/pivotal-cf/pcfdev-cli/user"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
@@ -91,8 +92,13 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 }
 
 func (p *Plugin) downloadVM() error {
+	ovaPath, err := p.ovaPath()
+	if err != nil {
+		return err
+	}
+
 	p.UI.Say("Downloading VM...")
-	if err := p.Downloader.Download(p.ovaPath()); err != nil {
+	if err := p.Downloader.Download(ovaPath); err != nil {
 		return err
 	}
 	p.UI.Say("\nVM downloaded")
@@ -127,8 +133,13 @@ func (p *Plugin) start() error {
 			return err
 		}
 
+		ovaPath, err := p.ovaPath()
+		if err != nil {
+			return err
+		}
+
 		p.UI.Say("Importing VM...")
-		err = p.VBox.ImportVM(p.ovaPath(), p.VMName)
+		err = p.VBox.ImportVM(ovaPath, p.VMName)
 		if err != nil {
 			return fmt.Errorf("failed to import VM: %s", err)
 		}
@@ -206,16 +217,26 @@ func (p *Plugin) provision(vm *vbox.VM) error {
 	return p.SSH.RunSSHCommand(fmt.Sprintf("sudo /var/pcfdev/run %s %s '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", vm.Domain, vm.IP), vm.SSHPort, 2*time.Minute, os.Stdout, os.Stderr)
 }
 
-func (p *Plugin) pcfdevDir() string {
+func (p *Plugin) pcfdevDir() (path string, err error) {
 	if pcfdevHome := os.Getenv("PCFDEV_HOME"); pcfdevHome != "" {
-		return filepath.Join(pcfdevHome, ".pcfdev")
+		return filepath.Join(pcfdevHome, ".pcfdev"), nil
 	}
 
-	return filepath.Join(os.Getenv("HOME"), ".pcfdev")
+	homeDir, err := user.GetHome()
+	if err != nil {
+		return "", fmt.Errorf("failed to find home directory: %s", err)
+	}
+
+	return filepath.Join(homeDir, ".pcfdev"), nil
 }
 
-func (p *Plugin) ovaPath() string {
-	return filepath.Join(p.pcfdevDir(), p.VMName+".ova")
+func (p *Plugin) ovaPath() (path string, err error) {
+	pcfdevDir, err := p.pcfdevDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(pcfdevDir, p.VMName+".ova"), nil
 }
 
 func (*Plugin) GetMetadata() plugin.PluginMetadata {

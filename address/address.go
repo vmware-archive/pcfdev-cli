@@ -2,7 +2,7 @@ package address
 
 import "fmt"
 
-var AllowedSubnets = []string{
+var allowedSubnets = []string{
 	"192.168.11.1",
 	"192.168.22.1",
 	"192.168.33.1",
@@ -14,7 +14,7 @@ var AllowedSubnets = []string{
 	"192.168.99.1",
 }
 
-var AllowedAddresses = map[string]string{
+var allowedAddresses = map[string]string{
 	"192.168.11.11": "local.pcfdev.io",
 	"192.168.22.11": "local2.pcfdev.io",
 	"192.168.33.11": "local3.pcfdev.io",
@@ -27,7 +27,7 @@ var AllowedAddresses = map[string]string{
 }
 
 func DomainForIP(ip string) (string, error) {
-	domain, ok := AllowedAddresses[ip]
+	domain, ok := allowedAddresses[ip]
 	if !ok {
 		return "", fmt.Errorf("%s is not one of the allowed pcfdev ips", ip)
 	}
@@ -36,7 +36,7 @@ func DomainForIP(ip string) (string, error) {
 }
 
 func SubnetForIP(ip string) (string, error) {
-	_, ok := AllowedAddresses[ip]
+	_, ok := allowedAddresses[ip]
 	if !ok {
 		return "", fmt.Errorf("%s is not one of the allowed pcfdev ips", ip)
 	}
@@ -46,7 +46,7 @@ func SubnetForIP(ip string) (string, error) {
 
 func IPForSubnet(subnet string) (string, error) {
 	ip := subnet + "1"
-	_, ok := AllowedAddresses[ip]
+	_, ok := allowedAddresses[ip]
 	if !ok {
 		return "", fmt.Errorf("%s is not one of the allowed pcfdev subnets", subnet)
 	}

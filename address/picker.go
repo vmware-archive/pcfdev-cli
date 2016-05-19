@@ -27,7 +27,7 @@ func (p *Picker) SelectAvailableNetworkInterface(candidates []*network.Interface
 		return nil, false, err
 	}
 
-	for _, subnetIP := range AllowedSubnets {
+	for _, subnetIP := range allowedSubnets {
 		if vboxAddr := p.addrInSet(subnetIP, candidates); vboxAddr != nil {
 			vmIP, err := IPForSubnet(subnetIP)
 			if err != nil {

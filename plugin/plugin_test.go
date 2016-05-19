@@ -3,15 +3,18 @@ package plugin_test
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/mocks"
+	"github.com/pivotal-cf/pcfdev-cli/user"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 
 	"github.com/cloudfoundry/cli/plugin/fakes"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Plugin", func() {
@@ -56,12 +59,9 @@ var _ = Describe("Plugin", func() {
 		var home string
 
 		BeforeEach(func() {
-			home = os.Getenv("HOME")
-			os.Setenv("HOME", "/some/dir")
-		})
-
-		AfterEach(func() {
-			os.Setenv("HOME", home)
+			var err error
+			home, err = user.GetHome()
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("when it is called with the wrong number of arguments", func() {
@@ -75,7 +75,7 @@ var _ = Describe("Plugin", func() {
 			It("should cleanup old OVAs and download the new OVA", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Downloading VM..."),
-					mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova"),
+					mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
 					mockUI.EXPECT().Say("\nVM downloaded"),
 				)
 
@@ -86,7 +86,7 @@ var _ = Describe("Plugin", func() {
 				It("should print an error", func() {
 					gomock.InOrder(
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova").Return(errors.New("some-error")),
+						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(errors.New("some-error")),
 						mockUI.EXPECT().Failed("Error: some-error"),
 					)
 
@@ -99,7 +99,7 @@ var _ = Describe("Plugin", func() {
 
 				BeforeEach(func() {
 					pcfdevHome = os.Getenv("PCFDEV_HOME")
-					os.Setenv("PCFDEV_HOME", "/some/other/dir")
+					os.Setenv("PCFDEV_HOME", filepath.Join("some", "other", "dir"))
 				})
 
 				AfterEach(func() {
@@ -109,7 +109,7 @@ var _ = Describe("Plugin", func() {
 				It("should download the ova to PCFDEV_HOME", func() {
 					gomock.InOrder(
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/other/dir/.pcfdev/some-vm-name.ova"),
+						mockDownloader.EXPECT().Download(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova")),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 					)
 
@@ -126,11 +126,11 @@ var _ = Describe("Plugin", func() {
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova"),
+						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 
 						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/some-vm-name.ova", "some-vm-name").Return(nil),
+						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(nil),
 						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
@@ -146,7 +146,7 @@ var _ = Describe("Plugin", func() {
 
 					BeforeEach(func() {
 						pcfdevHome = os.Getenv("PCFDEV_HOME")
-						os.Setenv("PCFDEV_HOME", "/some/other/dir")
+						os.Setenv("PCFDEV_HOME", filepath.Join("some", "other", "dir"))
 					})
 
 					AfterEach(func() {
@@ -159,11 +159,11 @@ var _ = Describe("Plugin", func() {
 							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 							mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
-							mockDownloader.EXPECT().Download("/some/other/dir/.pcfdev/some-vm-name.ova"),
+							mockDownloader.EXPECT().Download(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova")),
 							mockUI.EXPECT().Say("\nVM downloaded"),
 
 							mockUI.EXPECT().Say("Importing VM..."),
-							mockVBox.EXPECT().ImportVM("/some/other/dir/.pcfdev/some-vm-name.ova", "some-vm-name").Return(nil),
+							mockVBox.EXPECT().ImportVM(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(nil),
 							mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 							mockUI.EXPECT().Say("Starting VM..."),
 							mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
@@ -211,7 +211,7 @@ var _ = Describe("Plugin", func() {
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova").Return(errors.New("some-error")),
+						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(errors.New("some-error")),
 						mockUI.EXPECT().Failed("Error: some-error"),
 					)
 
@@ -271,11 +271,11 @@ var _ = Describe("Plugin", func() {
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download("/some/dir/.pcfdev/some-vm-name.ova"),
+						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 						mockUI.EXPECT().Say("Importing VM..."),
 
-						mockVBox.EXPECT().ImportVM("/some/dir/.pcfdev/some-vm-name.ova", "some-vm-name").Return(expectedError),
+						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(expectedError),
 						mockUI.EXPECT().Failed("Error: failed to import VM: some-error"),
 					)
 

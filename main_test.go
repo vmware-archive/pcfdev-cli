@@ -45,7 +45,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session, "10s").Should(gexec.Exit())
 
-	pluginPath, err := gexec.Build("github.com/pivotal-cf/pcfdev-cli", "-ldflags",
+	pluginPath, err := gexec.Build(filepath.Join("github.com", "pivotal-cf", "pcfdev-cli"), "-ldflags",
 		"-X main.vmName="+vmName+
 			" -X main.releaseId=1622"+
 			" -X main.productFileId=4448"+
@@ -200,16 +200,16 @@ func getResponseFromFakeServer(vboxnetName string) (response string, err error) 
 	output, err := exec.Command("VBoxManage", "list", "hostonlyifs").Output()
 	Expect(err).NotTo(HaveOccurred())
 
-	nameRegex := regexp.MustCompile(`(?m:^Name:[\s]+(.*))`)
+	nameRegex := regexp.MustCompile(`(?m:^Name:\s+(.*))`)
 	nameMatches := nameRegex.FindAllStringSubmatch(string(output), -1)
 
-	ipRegex := regexp.MustCompile(`(?m:^IPAddress:[\s]+(.*))`)
+	ipRegex := regexp.MustCompile(`(?m:^IPAddress:\s+(.*))`)
 	ipMatches := ipRegex.FindAllStringSubmatch(string(output), -1)
 
 	var hostname string
 	for i := 0; i < len(nameMatches); i++ {
-		if nameMatches[i][1] == vboxnetName {
-			ip := ipMatches[i][1]
+		if strings.TrimSpace(nameMatches[i][1]) == vboxnetName {
+			ip := strings.TrimSpace(ipMatches[i][1])
 			ipRegex := regexp.MustCompile(`192.168.\d(\d).1`)
 			digit := ipRegex.FindStringSubmatch(string(ip))[1]
 

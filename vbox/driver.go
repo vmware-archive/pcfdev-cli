@@ -95,17 +95,17 @@ func (d *VBoxDriver) GetHostOnlyInterfaces() (interfaces []*network.Interface, e
 		return []*network.Interface{}, err
 	}
 
-	nameRegex := regexp.MustCompile(`(?m:^Name:[\s]+(.*))`)
+	nameRegex := regexp.MustCompile(`(?m:^Name:\s+(.*))`)
 	nameMatches := nameRegex.FindAllStringSubmatch(string(output), -1)
 
-	ipRegex := regexp.MustCompile(`(?m:^IPAddress:[\s]+(.*))`)
+	ipRegex := regexp.MustCompile(`(?m:^IPAddress:\s+(.*))`)
 	ipMatches := ipRegex.FindAllStringSubmatch(string(output), -1)
 
 	vboxnets := make([]*network.Interface, len(nameMatches))
 	for i := 0; i < len(nameMatches); i++ {
 		vboxnets[i] = &network.Interface{
-			Name: nameMatches[i][1],
-			IP:   ipMatches[i][1],
+			Name: strings.TrimSpace(nameMatches[i][1]),
+			IP:   strings.TrimSpace(ipMatches[i][1]),
 		}
 	}
 

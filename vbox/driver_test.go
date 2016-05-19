@@ -33,7 +33,6 @@ var _ = Describe("driver", func() {
 	AfterEach(func() {
 		driver.VBoxManage("controlvm", vmName, "poweroff")
 		driver.VBoxManage("unregistervm", vmName, "--delete")
-		driver.VBoxManage("hostonlyif", "remove", "vboxnet0")
 	})
 
 	Describe("#VBoxManage", func() {
@@ -53,8 +52,10 @@ var _ = Describe("driver", func() {
 	Describe("#GetVMIP", func() {
 		Context("when interface exists", func() {
 			var interfaceName string
+
 			BeforeEach(func() {
-				interfaceName, err := driver.CreateHostOnlyInterface("192.168.88.1")
+				var err error
+				interfaceName, err = driver.CreateHostOnlyInterface("192.168.88.1")
 				Expect(err).NotTo(HaveOccurred())
 
 				err = driver.AttachNetworkInterface(interfaceName, vmName)
@@ -62,7 +63,10 @@ var _ = Describe("driver", func() {
 			})
 
 			AfterEach(func() {
-				exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName).Run()
+				command := exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName)
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			})
 
 			It("should return the ip of the vm", func() {
@@ -210,15 +214,21 @@ var _ = Describe("driver", func() {
 	})
 
 	Describe("#CreateHostOnlyInterface", func() {
+		var interfaceName string
+
 		AfterEach(func() {
-			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet1").Run()
+			command := exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName)
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should create a hostonlyif", func() {
-			name, err := driver.CreateHostOnlyInterface("192.168.77.1")
+			var err error
+			interfaceName, err = driver.CreateHostOnlyInterface("192.168.77.1")
 			Expect(err).NotTo(HaveOccurred())
 			listCommand := exec.Command("VBoxManage", "list", "hostonlyifs")
-			grepCommand := exec.Command("grep", name, "-A10")
+			grepCommand := exec.Command("grep", interfaceName, "-A10")
 			var output bytes.Buffer
 			grepCommand.Stdin, err = listCommand.StdoutPipe()
 			Expect(err).NotTo(HaveOccurred())
@@ -229,15 +239,14 @@ var _ = Describe("driver", func() {
 			err = grepCommand.Wait()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(name).To(ContainSubstring("vboxnet"))
-			Expect(output.String()).To(MatchRegexp(`Name:\s+` + name))
+			Expect(output.String()).To(MatchRegexp(`Name:\s+` + interfaceName))
 			Expect(output.String()).To(MatchRegexp(`IPAddress:\s+192.168.77.1`))
 			Expect(output.String()).To(MatchRegexp(`NetworkMask:\s+255.255.255.0`))
 		})
 	})
 
 	Describe("#GetHostOnlyInterfaces", func() {
-		var expectedName string
+		var interfaceName string
 		var expectedIP string
 
 		BeforeEach(func() {
@@ -246,18 +255,18 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
 			matches := regex.FindStringSubmatch(string(output))
-			expectedName = matches[1]
-			assignIP := exec.Command("VBoxManage", "hostonlyif", "ipconfig", expectedName, "--ip", expectedIP, "--netmask", "255.255.255.0")
+			interfaceName = matches[1]
+			assignIP := exec.Command("VBoxManage", "hostonlyif", "ipconfig", interfaceName, "--ip", expectedIP, "--netmask", "255.255.255.0")
 			session, err := gexec.Start(assignIP, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
-			assignIP := exec.Command("VBoxManage", "hostonlyif", "remove", expectedName)
-			session, err := gexec.Start(assignIP, GinkgoWriter, GinkgoWriter)
+			command := exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName)
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session).Should(gexec.Exit(0))
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should return a slice of network.Interfaces representing the list of VBox nets", func() {
@@ -265,42 +274,48 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, iface := range interfaces {
-				if iface.Name == expectedName {
+				if iface.Name == interfaceName {
 					Expect(iface.IP).To(Equal(expectedIP))
 					return
 				}
 			}
-			Fail(fmt.Sprintf("did not create interface with expected name %s", expectedName))
+			Fail(fmt.Sprintf("did not create interface with expected name %s", interfaceName))
 		})
 	})
 
 	Describe("#AttachInterface", func() {
+		var interfaceName string
+
 		BeforeEach(func() {
-			_, err := driver.CreateHostOnlyInterface("192.168.77.1")
+			var err error
+			interfaceName, err = driver.CreateHostOnlyInterface("192.168.77.1")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			exec.Command("VBoxManage", "hostonlyif", "remove", "vboxnet1").Run()
+			command := exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName)
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should attach a hostonlyif to the vm", func() {
-			err := driver.AttachNetworkInterface("vboxnet1", vmName)
+			err := driver.AttachNetworkInterface(interfaceName, vmName)
 			Expect(err).NotTo(HaveOccurred())
 
 			showvmInfoCommand := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable")
 			session, err := gexec.Start(showvmInfoCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))
-			Expect(session).To(gbytes.Say(`hostonlyadapter2="vboxnet1"`))
+			Expect(session).To(gbytes.Say(`hostonlyadapter2="` + interfaceName + `"`))
 			Expect(session).To(gbytes.Say(`nic2="hostonly"`))
 		})
 
 		Context("when attaching a hostonlyif fails", func() {
 			It("should return an error", func() {
 				name := "some-bad-vm"
-				err := driver.AttachNetworkInterface("vboxnet1", name)
-				Expect(err).To(MatchError("failed to execute 'VBoxManage modifyvm some-bad-vm --nic2 hostonly --hostonlyadapter2 vboxnet1': exit status 1"))
+				err := driver.AttachNetworkInterface(interfaceName, name)
+				Expect(err).To(MatchError(fmt.Sprintf("failed to execute 'VBoxManage modifyvm some-bad-vm --nic2 hostonly --hostonlyadapter2 %s': exit status 1", interfaceName)))
 			})
 		})
 	})

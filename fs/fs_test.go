@@ -78,7 +78,7 @@ var _ = Describe("Filesystem", func() {
 		Context("when path is invalid", func() {
 			It("should return an error", func() {
 				readCloser := ioutil.NopCloser(strings.NewReader("some-contents"))
-				err := fs.Write("../some-bad-dir/some-other-file", readCloser)
+				err := fs.Write(filepath.Join("some-bad-dir", "some-other-file"), readCloser)
 				Expect(err.Error()).To(ContainSubstring("failed to open file:"))
 			})
 		})
@@ -143,7 +143,7 @@ var _ = Describe("Filesystem", func() {
 		Context("when the file does not exist", func() {
 			It("should return an error", func() {
 				md5, err := fs.MD5(filepath.Join(tmpDir, "some-non-existent-file"))
-				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("failed to open %s/some-non-existent-file:", tmpDir))))
+				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("failed to open %s:", filepath.Join(tmpDir, "some-non-existent-file")))))
 				Expect(md5).To(Equal(""))
 			})
 		})
@@ -163,7 +163,7 @@ var _ = Describe("Filesystem", func() {
 		Context("when the file does not exist", func() {
 			It("should return an error", func() {
 				length, err := fs.Length(filepath.Join(tmpDir, "some-non-existent-file"))
-				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("failed to read %s/some-non-existent-file:", tmpDir))))
+				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("failed to read %s:", filepath.Join(tmpDir, "some-non-existent-file")))))
 				Expect(length).To(Equal(int64(0)))
 			})
 		})
@@ -183,7 +183,7 @@ var _ = Describe("Filesystem", func() {
 
 		Context("when removing a file fails", func() {
 			It("should return an error", func() {
-				Expect(fs.RemoveFile(filepath.Join(tmpDir, "some-bad-file"))).To(MatchError(ContainSubstring(fmt.Sprintf("failed to remove file %s/some-bad-file:", tmpDir))))
+				Expect(fs.RemoveFile(filepath.Join(tmpDir, "some-bad-file"))).To(MatchError(ContainSubstring(fmt.Sprintf("failed to remove file %s:", filepath.Join(tmpDir, "some-bad-file")))))
 			})
 		})
 	})
@@ -212,7 +212,7 @@ var _ = Describe("Filesystem", func() {
 			It("should replace the destination file", func() {
 				fs.Move(filepath.Join(tmpDir, "some-file"), filepath.Join(tmpDir, "some-other-file"))
 				Expect(fs.Exists(filepath.Join(tmpDir, "some-file"))).To(BeFalse())
-				data, err := ioutil.ReadFile(filepath.Join(tmpDir, "/some-other-file"))
+				data, err := ioutil.ReadFile(filepath.Join(tmpDir, "some-other-file"))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(data)).To(Equal("some-contents"))
 			})
@@ -220,7 +220,7 @@ var _ = Describe("Filesystem", func() {
 
 		Context("when the source does not exist", func() {
 			It("should return an error", func() {
-				Expect(fs.Move(filepath.Join(tmpDir, "some-bad-file"), filepath.Join(tmpDir, "some-other-file"))).To(MatchError(ContainSubstring(fmt.Sprintf("failed to move %s/some-bad-file to %s/some-other-file:", tmpDir, tmpDir))))
+				Expect(fs.Move(filepath.Join(tmpDir, "some-bad-file"), filepath.Join(tmpDir, "some-other-file"))).To(MatchError(ContainSubstring(fmt.Sprintf("failed to move %s to %s:", filepath.Join(tmpDir, "some-bad-file"), filepath.Join(tmpDir, "some-other-file")))))
 			})
 		})
 	})

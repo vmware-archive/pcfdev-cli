@@ -53,6 +53,7 @@ var _ = Describe("Download Reader", func() {
 				ContentLength:  int64(len(contents)),
 				ExistingLength: 0,
 			}
+			defer reader.Close()
 
 			_, err := io.Copy(ioutil.Discard, reader)
 			Expect(err).NotTo(HaveOccurred())
@@ -69,6 +70,8 @@ var _ = Describe("Download Reader", func() {
 					ContentLength:  int64(len(contents)),
 					ExistingLength: 13,
 				}
+				defer reader.Close()
+
 				_, err := io.Copy(ioutil.Discard, reader)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -85,6 +88,8 @@ var _ = Describe("Download Reader", func() {
 					ContentLength:  int64(len(contents)),
 					ExistingLength: 20,
 				}
+				defer reader.Close()
+
 				_, err := io.Copy(ioutil.Discard, reader)
 				Expect(err).NotTo(HaveOccurred())
 

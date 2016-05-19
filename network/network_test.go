@@ -25,14 +25,14 @@ var _ = Describe("network", func() {
 			assignIP := exec.Command("VBoxManage", "hostonlyif", "ipconfig", expectedName, "--ip", expectedIP, "--netmask", "255.255.255.0")
 			session, err := gexec.Start(assignIP, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session).Should(gexec.Exit(0))
+			Eventually(session, "10s").Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
 			assignIP := exec.Command("VBoxManage", "hostonlyif", "remove", expectedName)
 			session, err := gexec.Start(assignIP, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session).Should(gexec.Exit(0))
+			Eventually(session, "10s").Should(gexec.Exit(0))
 		})
 
 		It("should return the network interfaces", func() {

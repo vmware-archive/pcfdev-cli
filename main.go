@@ -14,7 +14,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/requirements"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/system"
-	currentUser "github.com/pivotal-cf/pcfdev-cli/user"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
@@ -24,9 +23,9 @@ import (
 var productFileDownloadURI string
 var (
 	releaseId     = "1622"
-	productFileId = "4546"
-	md5           = "424a588f1d359905632a9221efad6097"
-	vmName        = "pcfdev-0.71.0"
+	productFileId = "4693"
+	md5           = "7eed7a7314435a3cffc2c943e80606ad"
+	vmName        = "pcfdev-0.83.0"
 )
 
 func main() {
@@ -54,9 +53,7 @@ func main() {
 			SSH:    &ssh.SSH{},
 			Driver: &vbox.VBoxDriver{},
 			Picker: &address.Picker{
-				Pinger: &ping.Pinger{
-					User: &currentUser.User{},
-				},
+				Pinger:  &ping.Pinger{},
 				Network: &network.Network{},
 			},
 			Config: config,

@@ -1,32 +1,17 @@
 package ping_test
 
 import (
-	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/ping"
-	currentUser "github.com/pivotal-cf/pcfdev-cli/user"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ping", func() {
-
-	var (
-		mockCtrl *gomock.Controller
-		user     *currentUser.User
-		pinger   *ping.Pinger
-	)
+	var pinger *ping.Pinger
 
 	BeforeEach(func() {
-		mockCtrl = gomock.NewController(GinkgoT())
-		user = &currentUser.User{}
-		pinger = &ping.Pinger{
-			User: user,
-		}
-	})
-
-	AfterEach(func() {
-		mockCtrl.Finish()
+		pinger = &ping.Pinger{}
 	})
 
 	Context("#TryIP", func() {

@@ -2,9 +2,7 @@ package user
 
 import "os/user"
 
-type User struct{}
-
-func (*User) IsPrivileged() (bool, error) {
+func IsPrivileged() (bool, error) {
 	currentUser, err := user.Current()
 	if err != nil {
 		return false, err

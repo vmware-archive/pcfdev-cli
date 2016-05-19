@@ -1,7 +1,5 @@
 package user
 
-type User struct{}
-
-func (*User) IsPrivileged() (bool, error) {
+func IsPrivileged() (bool, error) {
 	return true, nil
 }

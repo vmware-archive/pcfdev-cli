@@ -28,6 +28,16 @@ func (_m *MockClient) EXPECT() *_MockClientRecorder {
 	return _m.recorder
 }
 
+func (_m *MockClient) AcceptEULA() error {
+	ret := _m.ctrl.Call(_m, "AcceptEULA")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockClientRecorder) AcceptEULA() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "AcceptEULA")
+}
+
 func (_m *MockClient) GetEULA() (string, error) {
 	ret := _m.ctrl.Call(_m, "GetEULA")
 	ret0, _ := ret[0].(string)

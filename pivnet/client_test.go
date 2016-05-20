@@ -121,6 +121,165 @@ var _ = Describe("Pivnet Client", func() {
 		})
 	})
 
+	Describe("AcceptEULA", func() {
+		It("should accept the EULA", func() {
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				defer GinkgoRecover()
+
+				switch r.URL.Path {
+				case "/api/v2/products/pcfdev/releases/some-release-id/product_files/some-product-file-id/download":
+					Expect(r.Method).To(Equal("POST"))
+					Expect(r.Header["Authorization"][0]).To(Equal("Token some-token"))
+					w.Header().Add("Location", "http://"+r.Host+"/some-path")
+					w.WriteHeader(451)
+					w.Write([]byte(`{"_links":{"eula_agreement":{"href":"http://` + r.Host + `/api/v2/products/some-product/releases/some-release/eula_acceptance"}}}`))
+				case "/api/v2/products/some-product/releases/some-release/eula_acceptance":
+					Expect(r.Method).To(Equal("POST"))
+					w.WriteHeader(200)
+				default:
+					Fail("unexpected server request")
+				}
+			}
+			client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+			mockConfig.EXPECT().GetToken().Return("some-token").Times(2)
+
+			Expect(client.AcceptEULA()).To(Succeed())
+		})
+
+		Context("when unmarshalling the EULA fails", func() {
+			It("should return the error", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+
+					switch r.URL.Path {
+					case "/api/v2/products/pcfdev/releases/some-release-id/product_files/some-product-file-id/download":
+						Expect(r.Method).To(Equal("POST"))
+						Expect(r.Header["Authorization"][0]).To(Equal("Token some-token"))
+						w.Header().Add("Location", "http://"+r.Host+"/some-path")
+						w.WriteHeader(451)
+						w.Write([]byte(`some-non-json-response`))
+					default:
+						Fail("unexpected server request")
+					}
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+				mockConfig.EXPECT().GetToken().Return("some-token")
+
+				Expect(client.AcceptEULA()).To(MatchError(ContainSubstring("failed to parse network response:")))
+			})
+		})
+
+		Context("when authentication to Pivotal Network fails", func() {
+			It("should return the error", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+					w.WriteHeader(401)
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+				mockConfig.EXPECT().GetToken().Return("some-bad-token")
+
+				Expect(client.AcceptEULA()).To(MatchError("invalid Pivotal Network API token"))
+			})
+		})
+
+		Context("when Pivotal Network returns something unexpected", func() {
+			It("should return the error", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+					w.WriteHeader(501)
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+				mockConfig.EXPECT().GetToken().Return("some-token")
+
+				Expect(client.AcceptEULA()).To(MatchError("Pivotal Network returned: 400 Bad Request"))
+			})
+		})
+
+		Context("when network request to request ova fails", func() {
+			It("should return the error", func() {
+				client.Host = "some-bad-host"
+				mockConfig.EXPECT().GetToken().Return("some-token")
+
+				Expect(client.AcceptEULA()).To(MatchError(ContainSubstring("failed to reach Pivotal Network:")))
+			})
+		})
+
+		Context("when network request to accept EULA fails", func() {
+			It("should return the error", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+
+					switch r.URL.Path {
+					case "/api/v2/products/pcfdev/releases/some-release-id/product_files/some-product-file-id/download":
+						Expect(r.Method).To(Equal("POST"))
+						Expect(r.Header["Authorization"][0]).To(Equal("Token some-token"))
+						w.Header().Add("Location", "http://"+r.Host+"/some-path")
+						w.WriteHeader(451)
+						w.Write([]byte(`{"_links":{"eula_agreement":{"href":"http://some-bad-host/api/v2/products/some-product/releases/some-release/eula_acceptance"}}}`))
+					default:
+						Fail("unexpected server request")
+					}
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+				mockConfig.EXPECT().GetToken().Return("some-token").Times(2)
+
+				Expect(client.AcceptEULA()).To(MatchError(ContainSubstring("failed to reach Pivotal Network:")))
+			})
+		})
+
+		Context("when authentication for EULA acceptance fails", func() {
+			It("should return an error", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+
+					switch r.URL.Path {
+					case "/api/v2/products/pcfdev/releases/some-release-id/product_files/some-product-file-id/download":
+						Expect(r.Method).To(Equal("POST"))
+						Expect(r.Header["Authorization"][0]).To(Equal("Token some-token"))
+						w.Header().Add("Location", "http://"+r.Host+"/some-path")
+						w.WriteHeader(451)
+						w.Write([]byte(`{"_links":{"eula_agreement":{"href":"http://` + r.Host + `/api/v2/products/some-product/releases/some-release/eula_acceptance"}}}`))
+					case "/api/v2/products/some-product/releases/some-release/eula_acceptance":
+						Expect(r.Method).To(Equal("POST"))
+						w.WriteHeader(401)
+					default:
+						Fail("unexpected server request")
+					}
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+				mockConfig.EXPECT().GetToken().Return("some-token").Times(2)
+
+				Expect(client.AcceptEULA()).To(MatchError("invalid Pivotal Network API token"))
+			})
+		})
+
+		Context("when Pivotal Network returns something unexpected for EULA acceptance", func() {
+			It("should return an error", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+
+					switch r.URL.Path {
+					case "/api/v2/products/pcfdev/releases/some-release-id/product_files/some-product-file-id/download":
+						Expect(r.Method).To(Equal("POST"))
+						Expect(r.Header["Authorization"][0]).To(Equal("Token some-token"))
+						w.Header().Add("Location", "http://"+r.Host+"/some-path")
+						w.WriteHeader(451)
+						w.Write([]byte(`{"_links":{"eula_agreement":{"href":"http://` + r.Host + `/api/v2/products/some-product/releases/some-release/eula_acceptance"}}}`))
+					case "/api/v2/products/some-product/releases/some-release/eula_acceptance":
+						Expect(r.Method).To(Equal("POST"))
+						w.WriteHeader(500)
+					default:
+						Fail("unexpected server request")
+					}
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+				mockConfig.EXPECT().GetToken().Return("some-token").Times(2)
+
+				Expect(client.AcceptEULA()).To(MatchError("Pivotal Network returned: 400 Bad Request"))
+			})
+		})
+	})
+
 	Describe("IsEULAAccepted", func() {
 		Context("when eula has been accepted", func() {
 			It("should return true", func() {

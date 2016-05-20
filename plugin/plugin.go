@@ -33,6 +33,7 @@ type SSH interface {
 type UI interface {
 	Failed(message string, args ...interface{})
 	Say(message string, args ...interface{})
+	Confirm(message string, args ...interface{}) bool
 }
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
@@ -58,6 +59,7 @@ type Downloader interface {
 
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
 type Client interface {
+	AcceptEULA() error
 	IsEULAAccepted() (bool, error)
 	GetEULA() (eula string, err error)
 }
@@ -111,6 +113,15 @@ func (p *Plugin) downloadVM() error {
 		}
 
 		p.UI.Say(eula)
+
+		accepted := p.UI.Confirm("Accept (yes/no):")
+		if !accepted {
+			return nil
+		}
+
+		if err := p.Client.AcceptEULA(); err != nil {
+			return err
+		}
 	}
 
 	p.UI.Say("Downloading VM...")

@@ -33,6 +33,14 @@ type ReleaseResponse struct {
 	} `json:"eula"`
 }
 
+type EULAAcceptanceResponse struct {
+	Links struct {
+		Agreement struct {
+			HREF string `json:"href"`
+		} `json:"eula_agreement"`
+	} `json:"_links"`
+}
+
 type EULAResponse struct {
 	Content string `json:"content"`
 }
@@ -126,6 +134,48 @@ func (c *Client) GetEULA() (eula string, err error) {
 	}
 
 	return sanitize.HTML(eulaResponse.Content), nil
+}
+
+func (c *Client) AcceptEULA() error {
+	resp, err := c.requestOva("bytes=0-0")
+	if err != nil {
+		return fmt.Errorf("failed to reach Pivotal Network: %s", err)
+	}
+
+	switch resp.StatusCode {
+	case http.StatusUnauthorized:
+		return errors.New("invalid Pivotal Network API token")
+	case 451, 200:
+		break
+	default:
+		return errors.New("Pivotal Network returned: 400 Bad Request")
+	}
+
+	eulaAcceptanceResponse := &EULAAcceptanceResponse{}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(data, eulaAcceptanceResponse); err != nil {
+		return fmt.Errorf("failed to parse network response: %s", err)
+	}
+
+	uri := fmt.Sprintf(eulaAcceptanceResponse.Links.Agreement.HREF)
+
+	resp, err = c.makeRequest(uri, "POST", http.DefaultClient)
+	if err != nil {
+		return fmt.Errorf("failed to reach Pivotal Network: %s", err)
+	}
+
+	switch resp.StatusCode {
+	case http.StatusUnauthorized:
+		return errors.New("invalid Pivotal Network API token")
+	case 200:
+		return nil
+	default:
+		return errors.New("Pivotal Network returned: 400 Bad Request")
+	}
 }
 
 func (c *Client) authError() error {

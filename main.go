@@ -35,17 +35,19 @@ func main() {
 		MinMemory: 3072,
 		MaxMemory: 4096,
 	}
+	client := &pivnet.Client{
+		Config:        config,
+		Host:          "https://network.pivotal.io",
+		ReleaseId:     releaseId,
+		ProductFileId: productFileId,
+	}
 	system := &system.System{}
 	cfplugin.Start(&plugin.Plugin{
+		Client: client,
 		Downloader: &downloader.Downloader{
-			PivnetClient: &pivnet.Client{
-				Config:        config,
-				Host:          "https://network.pivotal.io",
-				ReleaseId:     releaseId,
-				ProductFileId: productFileId,
-			},
-			FS:          &fs.FS{},
-			ExpectedMD5: md5,
+			PivnetClient: client,
+			FS:           &fs.FS{},
+			ExpectedMD5:  md5,
 		},
 		UI:  ui,
 		SSH: &ssh.SSH{},

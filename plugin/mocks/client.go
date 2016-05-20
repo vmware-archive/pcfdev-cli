@@ -5,7 +5,6 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	pivnet "github.com/pivotal-cf/pcfdev-cli/pivnet"
 )
 
 // Mock of Client interface
@@ -29,13 +28,24 @@ func (_m *MockClient) EXPECT() *_MockClientRecorder {
 	return _m.recorder
 }
 
-func (_m *MockClient) DownloadOVA(_param0 string, _param1 int64) (*pivnet.DownloadReader, error) {
-	ret := _m.ctrl.Call(_m, "DownloadOVA", _param0, _param1)
-	ret0, _ := ret[0].(*pivnet.DownloadReader)
+func (_m *MockClient) GetEULA() (string, error) {
+	ret := _m.ctrl.Call(_m, "GetEULA")
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockClientRecorder) DownloadOVA(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "DownloadOVA", arg0, arg1)
+func (_mr *_MockClientRecorder) GetEULA() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetEULA")
+}
+
+func (_m *MockClient) IsEULAAccepted() (bool, error) {
+	ret := _m.ctrl.Call(_m, "IsEULAAccepted")
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockClientRecorder) IsEULAAccepted() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsEULAAccepted")
 }

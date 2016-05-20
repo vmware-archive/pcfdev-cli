@@ -22,3 +22,6 @@
 [submodule "vendor/github.com/cloudfoundry/gosigar"]
 	path = vendor/github.com/cloudfoundry/gosigar
 	url = https://github.com/pcfdev-forks/gosigar
+[submodule "vendor/github.com/kennygrant/sanitize"]
+	path = vendor/github.com/kennygrant/sanitize
+	url = https://github.com/kennygrant/sanitize

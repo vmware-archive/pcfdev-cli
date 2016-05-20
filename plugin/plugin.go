@@ -18,6 +18,7 @@ type Plugin struct {
 	UI                  UI
 	VBox                VBox
 	RequirementsChecker RequirementsChecker
+	Client              Client
 	Downloader          Downloader
 
 	VMName string
@@ -53,6 +54,12 @@ type RequirementsChecker interface {
 //go:generate mockgen -package mocks -destination mocks/downloader.go github.com/pivotal-cf/pcfdev-cli/plugin Downloader
 type Downloader interface {
 	Download(path string) error
+}
+
+//go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
+type Client interface {
+	IsEULAAccepted() (bool, error)
+	GetEULA() (eula string, err error)
 }
 
 func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
@@ -92,12 +99,26 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 }
 
 func (p *Plugin) downloadVM() error {
+	accepted, err := p.Client.IsEULAAccepted()
+	if err != nil {
+		return err
+	}
+
+	if !accepted {
+		eula, err := p.Client.GetEULA()
+		if err != nil {
+			return err
+		}
+
+		p.UI.Say(eula)
+	}
+
+	p.UI.Say("Downloading VM...")
 	ovaPath, err := p.ovaPath()
 	if err != nil {
 		return err
 	}
 
-	p.UI.Say("Downloading VM...")
 	if err := p.Downloader.Download(ovaPath); err != nil {
 		return err
 	}

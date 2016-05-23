@@ -97,6 +97,8 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 		if err := p.destroy(); err != nil {
 			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
 		}
+	default:
+		p.UI.Failed("'%s' is not a registered command.\nUsage: %s", args[1], p.GetMetadata().Commands[0].UsageDetails.Usage)
 	}
 }
 

@@ -74,6 +74,13 @@ var _ = Describe("Plugin", func() {
 			})
 		})
 
+		Context("when it is called with an invalid argument", func() {
+			It("should print the usage message", func() {
+				mockUI.EXPECT().Failed("'%s' is not a registered command.\nUsage: %s", "invalid", "cf dev download|start|status|stop|destroy")
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "invalid"})
+			})
+		})
+
 		Context("download", func() {
 			It("should cleanup old OVAs and download the new OVA", func() {
 				gomock.InOrder(

@@ -2,7 +2,6 @@ package pivnet
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -54,10 +53,8 @@ func (c *Client) DownloadOVA(startAtByte int64) (ova *DownloadReader, err error)
 	switch resp.StatusCode {
 	case http.StatusPartialContent:
 		return &DownloadReader{ReadCloser: resp.Body, Writer: os.Stdout, ContentLength: resp.ContentLength, ExistingLength: startAtByte}, nil
-	case 451:
-		return nil, fmt.Errorf("you must accept the EULA before you can download the PCF Dev image: %s/products/pcfdev#/releases/%s", c.Host, c.ReleaseId)
 	case http.StatusUnauthorized:
-		return nil, c.authError()
+		return nil, &InvalidTokenError{}
 	default:
 		return nil, c.unexpectedResponseError(resp)
 	}
@@ -75,7 +72,7 @@ func (c *Client) IsEULAAccepted() (bool, error) {
 	case 451:
 		return false, nil
 	case http.StatusUnauthorized:
-		return false, c.authError()
+		return false, &InvalidTokenError{}
 	default:
 		return false, c.unexpectedResponseError(resp)
 	}
@@ -85,16 +82,16 @@ func (c *Client) GetEULA() (eula string, err error) {
 	uri := fmt.Sprintf("%s/api/v2/products/pcfdev/releases/%s", c.Host, c.ReleaseId)
 	resp, err := c.makeRequest(uri, "GET", http.DefaultClient)
 	if err != nil {
-		return "", fmt.Errorf("failed to reach Pivotal Network: %s", err)
+		return "", &PivNetUnreachableError{err}
 	}
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		return "", errors.New("invalid Pivotal Network API token")
+		return "", &InvalidTokenError{}
 	case 200:
 		break
 	default:
-		return "", errors.New("Pivotal Network returned: 400 Bad Request")
+		return "", c.unexpectedResponseError(resp)
 	}
 
 	releaseResponse := &ReleaseResponse{}
@@ -104,22 +101,22 @@ func (c *Client) GetEULA() (eula string, err error) {
 	}
 
 	if err := json.Unmarshal(data, releaseResponse); err != nil {
-		return "", fmt.Errorf("failed to parse network response: %s", err)
+		return "", &JSONUnmarshalError{err}
 	}
 
 	uri = fmt.Sprintf(releaseResponse.EULAS.Links.Self.HREF)
 	resp, err = c.makeRequest(uri, "GET", http.DefaultClient)
 	if err != nil {
-		return "", fmt.Errorf("failed to reach Pivotal Network: %s", err)
+		return "", &PivNetUnreachableError{err}
 	}
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		return "", errors.New("invalid Pivotal Network API token")
+		return "", &InvalidTokenError{}
 	case 200:
 		break
 	default:
-		return "", errors.New("Pivotal Network returned: 400 Bad Request")
+		return "", c.unexpectedResponseError(resp)
 	}
 
 	eulaResponse := &EULAResponse{}
@@ -130,7 +127,7 @@ func (c *Client) GetEULA() (eula string, err error) {
 	}
 
 	if err := json.Unmarshal(response, eulaResponse); err != nil {
-		return "", fmt.Errorf("failed to parse network response: %s", err)
+		return "", &JSONUnmarshalError{err}
 	}
 
 	return sanitize.HTML(eulaResponse.Content), nil
@@ -139,16 +136,16 @@ func (c *Client) GetEULA() (eula string, err error) {
 func (c *Client) AcceptEULA() error {
 	resp, err := c.requestOva("bytes=0-0")
 	if err != nil {
-		return fmt.Errorf("failed to reach Pivotal Network: %s", err)
+		return &PivNetUnreachableError{err}
 	}
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		return errors.New("invalid Pivotal Network API token")
+		return &InvalidTokenError{}
 	case 451, 200:
 		break
 	default:
-		return errors.New("Pivotal Network returned: 400 Bad Request")
+		return c.unexpectedResponseError(resp)
 	}
 
 	eulaAcceptanceResponse := &EULAAcceptanceResponse{}
@@ -158,32 +155,28 @@ func (c *Client) AcceptEULA() error {
 	}
 
 	if err := json.Unmarshal(data, eulaAcceptanceResponse); err != nil {
-		return fmt.Errorf("failed to parse network response: %s", err)
+		return &JSONUnmarshalError{err}
 	}
 
 	uri := fmt.Sprintf(eulaAcceptanceResponse.Links.Agreement.HREF)
 
 	resp, err = c.makeRequest(uri, "POST", http.DefaultClient)
 	if err != nil {
-		return fmt.Errorf("failed to reach Pivotal Network: %s", err)
+		return &PivNetUnreachableError{err}
 	}
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		return errors.New("invalid Pivotal Network API token")
+		return &InvalidTokenError{}
 	case 200:
 		return nil
 	default:
-		return errors.New("Pivotal Network returned: 400 Bad Request")
+		return c.unexpectedResponseError(resp)
 	}
 }
 
-func (c *Client) authError() error {
-	return fmt.Errorf("invalid Pivotal Network API token")
-}
-
 func (c *Client) unexpectedResponseError(resp *http.Response) error {
-	return fmt.Errorf("Pivotal Network returned: %s", resp.Status)
+	return &UnexpectedResponseError{fmt.Errorf("Pivotal Network returned: %s", resp.Status)}
 }
 
 func (c *Client) requestOva(byteRange string) (*http.Response, error) {
@@ -206,7 +199,7 @@ func (c *Client) makeRequest(uri string, method string, client *http.Client) (*h
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to reach Pivotal Network: %s", err)
+		return nil, &PivNetUnreachableError{err}
 	}
 	return resp, nil
 }

@@ -312,7 +312,7 @@ var _ = Describe("Plugin", func() {
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusStopped, nil),
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM("some-vm-name").Return(nil, errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: failed to start VM: some-error"),
+						mockUI.EXPECT().Failed("Failed to start PCF Dev VM."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -329,7 +329,7 @@ var _ = Describe("Plugin", func() {
 						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
 						mockUI.EXPECT().Say("Provisioning VM..."),
 						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr).Return(err),
-						mockUI.EXPECT().Failed("Error: failed to provision VM: some-error"),
+						mockUI.EXPECT().Failed("Failed to provision PCF Dev VM."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -342,7 +342,7 @@ var _ = Describe("Plugin", func() {
 					gomock.InOrder(
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return("", expectedError),
-						mockUI.EXPECT().Failed("Error: failed to get VM status: some-error"),
+						mockUI.EXPECT().Failed("Failed to start PCF Dev VM."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -363,7 +363,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Importing VM..."),
 
 						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(expectedError),
-						mockUI.EXPECT().Failed("Error: failed to import VM: some-error"),
+						mockUI.EXPECT().Failed("Failed to import PCF Dev VM."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -376,7 +376,7 @@ var _ = Describe("Plugin", func() {
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(true, nil),
-						mockUI.EXPECT().Failed("Error: old version of PCF Dev detected, you must run `cf dev destroy` to continue."),
+						mockUI.EXPECT().Failed("An old version of PCF Dev was detected. You must run 'cf dev destroy' to continue."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -389,7 +389,7 @@ var _ = Describe("Plugin", func() {
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
+						mockUI.EXPECT().Failed("Failed to start PCF Dev VM."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -431,7 +431,7 @@ var _ = Describe("Plugin", func() {
 					gomock.InOrder(
 						mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
 						mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(false),
-						mockUI.EXPECT().Failed("Error: could not start PCF Dev: some-message"),
+						mockUI.EXPECT().Say("Exiting..."),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 				})
@@ -496,7 +496,7 @@ var _ = Describe("Plugin", func() {
 							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusRunning, nil),
 							mockUI.EXPECT().Say("Stopping VM..."),
 							mockVBox.EXPECT().StopVM("some-vm-name").Return(err),
-							mockUI.EXPECT().Failed("Error: failed to stop VM: some-error"),
+							mockUI.EXPECT().Failed("Failed to stop PCF Dev VM."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
@@ -510,7 +510,7 @@ var _ = Describe("Plugin", func() {
 						gomock.InOrder(
 							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 							mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(true, nil),
-							mockUI.EXPECT().Failed("Error: Old version of PCF Dev detected. You must run `cf dev destroy` to continue."),
+							mockUI.EXPECT().Failed("An old version of PCF Dev was detected. You must run 'cf dev destroy' to continue."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
@@ -534,7 +534,7 @@ var _ = Describe("Plugin", func() {
 						gomock.InOrder(
 							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 							mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
+							mockUI.EXPECT().Failed("Failed to stop PCF Dev VM."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
@@ -606,7 +606,7 @@ var _ = Describe("Plugin", func() {
 				It("should send an error message", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetPCFDevVMs().Return([]string{}, errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: failed to query VM: some-error"),
+						mockUI.EXPECT().Failed("Failed to destroy PCF Dev VM."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
@@ -620,7 +620,7 @@ var _ = Describe("Plugin", func() {
 						mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
 						mockUI.EXPECT().Say("Destroying VM..."),
 						mockVBox.EXPECT().DestroyVMs(vms).Return(errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: failed to destroy VM: some-error"),
+						mockUI.EXPECT().Failed("Failed to destroy PCF Dev VM."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})

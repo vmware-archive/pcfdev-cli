@@ -88,21 +88,7 @@ var _ = Describe("Pivnet Client", func() {
 
 				mockConfig.EXPECT().GetToken().Return("some-token")
 				_, err := client.DownloadOVA(int64(0))
-				Expect(err).To(MatchError("Pivotal Network returned: 400 Bad Request"))
-			})
-		})
-
-		Context("when Pivnet returns status 451", func() {
-			It("should return an error telling user to agree to eula", func() {
-				handler := func(w http.ResponseWriter, r *http.Request) {
-					defer GinkgoRecover()
-					w.WriteHeader(451)
-				}
-				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
-
-				mockConfig.EXPECT().GetToken().Return("some-token")
-				_, err := client.DownloadOVA(int64(0))
-				Expect(err).To(MatchError(MatchRegexp("you must accept the EULA before you can download the PCF Dev image: .*/products/pcfdev#/releases/some-release-id")))
+				Expect(err).To(MatchError(ContainSubstring("Pivotal Network returned:")))
 			})
 		})
 
@@ -191,7 +177,7 @@ var _ = Describe("Pivnet Client", func() {
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
 				mockConfig.EXPECT().GetToken().Return("some-token")
 
-				Expect(client.AcceptEULA()).To(MatchError("Pivotal Network returned: 400 Bad Request"))
+				Expect(client.AcceptEULA()).To(MatchError("Pivotal Network returned: 501 Not Implemented"))
 			})
 		})
 
@@ -275,7 +261,7 @@ var _ = Describe("Pivnet Client", func() {
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
 				mockConfig.EXPECT().GetToken().Return("some-token").Times(2)
 
-				Expect(client.AcceptEULA()).To(MatchError("Pivotal Network returned: 400 Bad Request"))
+				Expect(client.AcceptEULA()).To(MatchError("Pivotal Network returned: 500 Internal Server Error"))
 			})
 		})
 	})

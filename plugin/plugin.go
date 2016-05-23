@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/cli/plugin"
+	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/user"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
@@ -107,6 +107,22 @@ func getErrorText(err error) string {
 	switch err.(type) {
 	case *EULARefusedError:
 		return "You must accept the end user license agreement to use PCF Dev."
+	case *pivnet.InvalidTokenError:
+		return "Invalid Pivotal Network API Token."
+	case *pivnet.PivNetUnreachableError:
+		return "Failed to reach Pivotal Network. Please try again later."
+	case *OldVMError:
+		return "An old version of PCF Dev was detected. You must run 'cf dev destroy' to continue."
+	case *StartError:
+		return "Failed to start PCF Dev VM."
+	case *ImportVMError:
+		return "Failed to import PCF Dev VM."
+	case *ProvisionVMError:
+		return "Failed to provision PCF Dev VM."
+	case *StopVMError:
+		return "Failed to stop PCF Dev VM."
+	case *DestroyVMError:
+		return "Failed to destroy PCF Dev VM."
 	default:
 		return fmt.Sprintf("Error: %s", err.Error())
 	}
@@ -150,15 +166,15 @@ func (p *Plugin) downloadVM() error {
 
 func (p *Plugin) start() error {
 	if err := p.RequirementsChecker.Check(); err != nil {
-		accepted := p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ")
-		if !accepted {
-			return fmt.Errorf("could not start PCF Dev: %s", err)
+		if accepted := p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): "); !accepted {
+			p.UI.Say("Exiting...")
+			return nil
 		}
 	}
 
 	status, err := p.VBox.Status(p.VMName)
 	if err != nil {
-		return fmt.Errorf("failed to get VM status: %s", err)
+		return &StartError{err}
 	}
 
 	if status == vbox.StatusRunning {
@@ -169,10 +185,10 @@ func (p *Plugin) start() error {
 	if status == vbox.StatusNotCreated {
 		conflict, err := p.VBox.ConflictingVMPresent(p.VMName)
 		if err != nil {
-			return err
+			return &StartError{err}
 		}
 		if conflict {
-			return errors.New("old version of PCF Dev detected, you must run `cf dev destroy` to continue.")
+			return &OldVMError{}
 		}
 
 		if err := p.downloadVM(); err != nil {
@@ -187,7 +203,7 @@ func (p *Plugin) start() error {
 		p.UI.Say("Importing VM...")
 		err = p.VBox.ImportVM(ovaPath, p.VMName)
 		if err != nil {
-			return fmt.Errorf("failed to import VM: %s", err)
+			return &ImportVMError{err}
 		}
 		p.UI.Say("PCF Dev is now imported to Virtualbox")
 	}
@@ -195,12 +211,12 @@ func (p *Plugin) start() error {
 	p.UI.Say("Starting VM...")
 	vm, err := p.VBox.StartVM(p.VMName)
 	if err != nil {
-		return fmt.Errorf("failed to start VM: %s", err)
+		return &StartError{err}
 	}
 	p.UI.Say("Provisioning VM...")
 	err = p.provision(vm)
 	if err != nil {
-		return fmt.Errorf("failed to provision VM: %s", err)
+		return &ProvisionVMError{err}
 	}
 
 	p.UI.Say("PCF Dev is now running")
@@ -210,16 +226,16 @@ func (p *Plugin) start() error {
 func (p *Plugin) stop() error {
 	status, err := p.VBox.Status(p.VMName)
 	if err != nil {
-		return err
+		return &StopVMError{err}
 	}
 
 	if status == vbox.StatusNotCreated {
 		conflict, err := p.VBox.ConflictingVMPresent(p.VMName)
 		if err != nil {
-			return err
+			return &StopVMError{err}
 		}
 		if conflict {
-			return errors.New("Old version of PCF Dev detected. You must run `cf dev destroy` to continue.")
+			return &OldVMError{}
 		}
 		p.UI.Say("PCF Dev VM has not been created")
 		return nil
@@ -233,7 +249,7 @@ func (p *Plugin) stop() error {
 	p.UI.Say("Stopping VM...")
 	err = p.VBox.StopVM(p.VMName)
 	if err != nil {
-		return fmt.Errorf("failed to stop VM: %s", err)
+		return &StopVMError{err}
 	}
 	p.UI.Say("PCF Dev is now stopped")
 	return nil
@@ -242,7 +258,7 @@ func (p *Plugin) stop() error {
 func (p *Plugin) destroy() error {
 	vms, err := p.VBox.GetPCFDevVMs()
 	if err != nil {
-		return fmt.Errorf("failed to query VM: %s", err)
+		return &DestroyVMError{err}
 	}
 
 	if len(vms) == 0 {
@@ -253,7 +269,7 @@ func (p *Plugin) destroy() error {
 	p.UI.Say("Destroying VM...")
 	err = p.VBox.DestroyVMs(vms)
 	if err != nil {
-		return fmt.Errorf("failed to destroy VM: %s", err)
+		return &DestroyVMError{err}
 	}
 	p.UI.Say("PCF Dev VM has been destroyed")
 	return nil

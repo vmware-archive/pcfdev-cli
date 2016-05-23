@@ -397,9 +397,40 @@ var _ = Describe("Plugin", func() {
 			})
 
 			Context("when the system does not meet requirements", func() {
-				It("should print an error message", func() {
+				It("should print a warning and prompt for response to continue", func() {
 					gomock.InOrder(
 						mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
+						mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
+						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
+						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
+						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
+						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
+						mockUI.EXPECT().Say("some-eula"),
+						mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
+						mockClient.EXPECT().AcceptEULA().Return(nil),
+
+						mockUI.EXPECT().Say("Downloading VM..."),
+						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
+						mockUI.EXPECT().Say("\nVM downloaded"),
+
+						mockUI.EXPECT().Say("Importing VM..."),
+						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(nil),
+						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
+						mockUI.EXPECT().Say("Starting VM..."),
+						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
+						mockUI.EXPECT().Say("Provisioning VM..."),
+						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+						mockUI.EXPECT().Say("PCF Dev is now running"),
+					)
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
+
+			Context("when the system does not meet requirements and the user declines to continue", func() {
+				It("should exit gracefully", func() {
+					gomock.InOrder(
+						mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
+						mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(false),
 						mockUI.EXPECT().Failed("Error: could not start PCF Dev: some-message"),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})

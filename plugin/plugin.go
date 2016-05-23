@@ -150,7 +150,10 @@ func (p *Plugin) downloadVM() error {
 
 func (p *Plugin) start() error {
 	if err := p.RequirementsChecker.Check(); err != nil {
-		return fmt.Errorf("could not start PCF Dev: %s", err)
+		accepted := p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ")
+		if !accepted {
+			return fmt.Errorf("could not start PCF Dev: %s", err)
+		}
 	}
 
 	status, err := p.VBox.Status(p.VMName)

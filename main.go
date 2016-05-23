@@ -29,9 +29,9 @@ var (
 )
 
 func main() {
-	ui := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
+	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 	config := &config.Config{
-		UI:        ui,
+		UI:        termUI,
 		MinMemory: 3072,
 		MaxMemory: 4096,
 	}
@@ -49,7 +49,7 @@ func main() {
 			FS:           &fs.FS{},
 			ExpectedMD5:  md5,
 		},
-		UI:  ui,
+		UI:  &plugin.NonTranslatingUI{termUI},
 		SSH: &ssh.SSH{},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},

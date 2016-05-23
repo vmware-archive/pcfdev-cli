@@ -34,6 +34,7 @@ type UI interface {
 	Failed(message string, args ...interface{})
 	Say(message string, args ...interface{})
 	Confirm(message string, args ...interface{}) bool
+	Ask(prompt string, args ...interface{}) (answer string)
 }
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
@@ -77,28 +78,37 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	switch args[1] {
 	case "download":
 		if err := p.downloadVM(); err != nil {
-			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
+			p.UI.Failed(getErrorText(err))
 		}
 	case "start":
 		if err := p.start(); err != nil {
-			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
+			p.UI.Failed(getErrorText(err))
 		}
 	case "status":
 		if status, err := p.VBox.Status(p.VMName); err != nil {
-			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
+			p.UI.Failed(getErrorText(err))
 		} else {
 			p.UI.Say(status)
 		}
 	case "stop":
 		if err := p.stop(); err != nil {
-			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
+			p.UI.Failed(getErrorText(err))
 		}
 	case "destroy":
 		if err := p.destroy(); err != nil {
-			p.UI.Failed(fmt.Sprintf("Error: %s", err.Error()))
+			p.UI.Failed(getErrorText(err))
 		}
 	default:
 		p.UI.Failed("'%s' is not a registered command.\nUsage: %s", args[1], p.GetMetadata().Commands[0].UsageDetails.Usage)
+	}
+}
+
+func getErrorText(err error) string {
+	switch err.(type) {
+	case *EULARefusedError:
+		return "You must accept the end user license agreement to use PCF Dev."
+	default:
+		return fmt.Sprintf("Error: %s", err.Error())
 	}
 }
 
@@ -116,9 +126,8 @@ func (p *Plugin) downloadVM() error {
 
 		p.UI.Say(eula)
 
-		accepted := p.UI.Confirm("Accept (yes/no):")
-		if !accepted {
-			return nil
+		if accepted := p.UI.Confirm("Accept (yes/no):"); !accepted {
+			return &EULARefusedError{}
 		}
 
 		if err := p.Client.AcceptEULA(); err != nil {

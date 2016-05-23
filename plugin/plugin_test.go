@@ -118,8 +118,8 @@ var _ = Describe("Plugin", func() {
 				})
 			})
 
-			Context("when EULA has not been accepted", func() {
-				It("should show the user the EULA", func() {
+			Context("when EULA has not been accepted and user accepts the EULA", func() {
+				It("should download the ova", func() {
 					gomock.InOrder(
 						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
@@ -127,8 +127,8 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
 						mockClient.EXPECT().AcceptEULA().Return(nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
+						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
+						mockUI.EXPECT().Say("\nVM downloaded"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -142,6 +142,7 @@ var _ = Describe("Plugin", func() {
 						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
 						mockUI.EXPECT().Say("some-eula"),
 						mockUI.EXPECT().Confirm("Accept (yes/no):").Return(false),
+						mockUI.EXPECT().Failed("You must accept the end user license agreement to use PCF Dev."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})

@@ -216,7 +216,7 @@ func (p *Plugin) start() error {
 		}
 
 		p.UI.Say("Importing VM...")
-		if err = p.VBox.ImportVM(ovaPath, p.VMName, pcfdevDir); err != nil {
+		if err := p.VBox.ImportVM(ovaPath, p.VMName, pcfdevDir); err != nil {
 			return &ImportVMError{err}
 		}
 		p.UI.Say("PCF Dev is now imported to Virtualbox")

@@ -33,7 +33,8 @@ var _ = BeforeSuite(func() {
 	oldCFPluginHome = os.Getenv("CF_PLUGIN_HOME")
 	oldPCFDevHome = os.Getenv("PCFDEV_HOME")
 
-	tempHome, err := ioutil.TempDir("", "pcfdev")
+	var err error
+	tempHome, err = ioutil.TempDir("", "pcfdev")
 
 	Expect(err).NotTo(HaveOccurred())
 	os.Setenv("CF_HOME", tempHome)
@@ -89,6 +90,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("Services started"))
 		Expect(session).To(gbytes.Say("PCF Dev is now running"))
 		Expect(isVMRunning()).To(BeTrue())
+		Expect(filepath.Join(tempHome, ".pcfdev", vmName+"-disk0.vmdk")).To(BeAnExistingFile())
 
 		By("re-running 'cf dev start' with no effect")
 		restartCommand := exec.Command("cf", "dev", "start")

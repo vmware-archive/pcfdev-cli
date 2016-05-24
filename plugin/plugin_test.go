@@ -233,7 +233,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("\nVM downloaded"),
 
 						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(nil),
+						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name", filepath.Join(home, ".pcfdev")).Return(nil),
 						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
@@ -265,7 +265,7 @@ var _ = Describe("Plugin", func() {
 							mockUI.EXPECT().Say("Using existing image"),
 
 							mockUI.EXPECT().Say("Importing VM..."),
-							mockVBox.EXPECT().ImportVM(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(nil),
+							mockVBox.EXPECT().ImportVM(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova"), "some-vm-name", filepath.Join("some", "other", "dir", ".pcfdev")).Return(nil),
 							mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 							mockUI.EXPECT().Say("Starting VM..."),
 							mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
@@ -378,7 +378,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Using existing image"),
 						mockUI.EXPECT().Say("Importing VM..."),
 
-						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(expectedError),
+						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name", filepath.Join(home, ".pcfdev")).Return(expectedError),
 						mockUI.EXPECT().Failed("Failed to import PCF Dev VM."),
 					)
 
@@ -423,7 +423,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Using existing image"),
 
 						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(nil),
+						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name", filepath.Join(home, ".pcfdev")).Return(nil),
 						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
@@ -464,7 +464,7 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("\nVM downloaded"),
 
 						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(nil),
+						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name", filepath.Join(home, ".pcfdev")).Return(nil),
 						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 						mockUI.EXPECT().Say("Starting VM..."),
 						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),

@@ -182,6 +182,28 @@ func (d *VBoxDriver) VMs() ([]string, error) {
 	return vms, nil
 }
 
+func (d *VBoxDriver) GetVirtualSystemNumbersOfHardDiskImages(ovaPath string) (virtualSystemNumbers []string, err error) {
+	output, err := d.VBoxManage("import", ovaPath, "-n")
+	if err != nil {
+		return nil, fmt.Errorf("could not determine hard disk image virtual system numbers of '%s': %s", ovaPath, err)
+	}
+
+	numbers := []string{}
+	for _, line := range strings.Split(strings.Trim(string(output), "\n"), "\n") {
+		regex := regexp.MustCompile(`(\d+):\s{1}Hard disk image:`)
+		if matches := regex.FindStringSubmatch(string(line)); len(matches) > 1 {
+			numbers = append(numbers, matches[1])
+		}
+	}
+
+	if len(numbers) == 0 {
+		return nil, fmt.Errorf("could not determine hard disk image virtual system numbers of '%s': %s", ovaPath, err)
+	}
+
+	return numbers, nil
+
+}
+
 func (d *VBoxDriver) RunningVMs() (vms []string, err error) {
 	output, err := d.VBoxManage("list", "runningvms")
 	if err != nil {

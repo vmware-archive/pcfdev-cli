@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/network"
@@ -47,7 +48,7 @@ var _ = Describe("vbox", func() {
 		mockCtrl.Finish()
 	})
 
-	Describe("ImportVM", func() {
+	Describe("#ImportVM", func() {
 		Context("when it selects an existing interface", func() {
 			It("should attach that interface", func() {
 				iface := &network.Interface{
@@ -56,7 +57,8 @@ var _ = Describe("vbox", func() {
 				vboxnets := []*network.Interface{iface}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
@@ -64,7 +66,7 @@ var _ = Describe("vbox", func() {
 					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(2000), nil),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -78,7 +80,8 @@ var _ = Describe("vbox", func() {
 				vboxnets := []*network.Interface{iface}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, false, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface(ip).Return("some-interface", nil),
@@ -87,7 +90,7 @@ var _ = Describe("vbox", func() {
 					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(2000), nil),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -100,7 +103,8 @@ var _ = Describe("vbox", func() {
 				vboxnets := []*network.Interface{iface}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
@@ -111,7 +115,7 @@ var _ = Describe("vbox", func() {
 					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(1000)),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -124,7 +128,8 @@ var _ = Describe("vbox", func() {
 				vboxnets := []*network.Interface{iface}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
@@ -135,7 +140,7 @@ var _ = Describe("vbox", func() {
 					mockSystem.EXPECT().FreeMemory().Return(uint64(1300), nil),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(1300)),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -148,7 +153,8 @@ var _ = Describe("vbox", func() {
 				vboxnets := []*network.Interface{iface}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
@@ -159,7 +165,7 @@ var _ = Describe("vbox", func() {
 					mockSystem.EXPECT().FreeMemory().Return(uint64(500), nil),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(1000)),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -172,7 +178,8 @@ var _ = Describe("vbox", func() {
 				vboxnets := []*network.Interface{iface}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
@@ -180,7 +187,7 @@ var _ = Describe("vbox", func() {
 					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(2000), nil),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -193,7 +200,8 @@ var _ = Describe("vbox", func() {
 				vboxnets := []*network.Interface{iface}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
@@ -203,7 +211,7 @@ var _ = Describe("vbox", func() {
 					mockConfig.EXPECT().GetMinMemory().Return(uint64(1000)),
 					mockSystem.EXPECT().FreeMemory().Return(uint64(0), errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-path", "some-vm")).To(MatchError("some-error"))
+				Expect(vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")).To(MatchError("some-error"))
 			})
 		})
 
@@ -215,14 +223,15 @@ var _ = Describe("vbox", func() {
 				vboxnets := []*network.Interface{iface}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
 					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(0), errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-path", "some-vm")).To(MatchError("some-error"))
+				Expect(vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")).To(MatchError("some-error"))
 			})
 		})
 
@@ -234,7 +243,8 @@ var _ = Describe("vbox", func() {
 				vboxnets := []*network.Interface{iface}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
@@ -242,7 +252,7 @@ var _ = Describe("vbox", func() {
 					mockConfig.EXPECT().GetDesiredMemory().Return(uint64(2000), nil),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)).Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-path", "some-vm")).To(MatchError("some-error"))
+				Expect(vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")).To(MatchError("some-error"))
 			})
 		})
 
@@ -250,10 +260,11 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return([]*network.Interface{}, errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -262,11 +273,12 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return([]*network.Interface{}, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface([]*network.Interface{}).Return(nil, false, errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -275,7 +287,7 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				mockSSH.EXPECT().GenerateAddress().Return("", "", errors.New("some-error"))
 
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -284,9 +296,10 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path").Return(nil, errors.New("some-error")),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")).Return(nil, errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -299,53 +312,67 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return([]*network.Interface{}, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface([]*network.Interface{}).Return(iface, false, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface(ip).Return("", errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
 
-		Context("fails to attach interface", func() {
+		Context("when attaching an interface fails", func() {
 			It("should return an error", func() {
 				iface := &network.Interface{
 					Name: "some-interface",
 				}
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return([]*network.Interface{}, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface([]*network.Interface{}).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm").Return(errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
 
-		Context("Port fowarding fails", func() {
+		Context("when retriving the virtual system numbers of hard disk images fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return(nil, errors.New("some-error")),
+				)
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
+				Expect(err).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when port fowarding fails", func() {
 			iface := &network.Interface{
 				Name: "some-interface",
 			}
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
-					mockDriver.EXPECT().VBoxManage("import", "some-path"),
+					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages("some-path").Return([]string{"1"}, nil),
+					mockDriver.EXPECT().VBoxManage("import", "some-path", "-vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-dir", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return([]*network.Interface{}, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface([]*network.Interface{}).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22").Return(errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-path", "some-vm")
+				err := vbx.ImportVM("some-path", "some-vm", "some-pcfdev-dir")
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
 	})
 
-	Describe("StartVM", func() {
+	Describe("#StartVM", func() {
 		Context("when VM is already imported", func() {
 			It("starts without reimporting", func() {
 				ip := "192.168.11.11"
@@ -441,7 +468,7 @@ var _ = Describe("vbox", func() {
 		})
 	})
 
-	Describe("StopVM", func() {
+	Describe("#StopVM", func() {
 		It("should stop the VM", func() {
 			mockDriver.EXPECT().StopVM("some-vm")
 
@@ -460,7 +487,7 @@ var _ = Describe("vbox", func() {
 		})
 	})
 
-	Describe("ConflictingVMPresent", func() {
+	Describe("#ConflictingVMPresent", func() {
 		Context("when there are no conflicting VMs with the prefix pcfdev-", func() {
 			It("should return false", func() {
 				mockDriver.EXPECT().RunningVMs().Return([]string{"some-other-vm", "pcfdev-our-vm"}, nil)
@@ -484,7 +511,7 @@ var _ = Describe("vbox", func() {
 		})
 	})
 
-	Describe("DestroyVMs", func() {
+	Describe("#DestroyVMs", func() {
 		Context("when the VM is stopped", func() {
 			It("should destroy the VM", func() {
 				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)

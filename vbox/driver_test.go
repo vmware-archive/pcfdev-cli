@@ -398,4 +398,19 @@ var _ = Describe("driver", func() {
 			Expect(driver.RunningVMs()).To(ContainElement(vmName))
 		})
 	})
+
+	Describe("#GetVirtualSystemNumberOfHardDiskImage", func() {
+		It("should the virtual system number of the hard disk image", func() {
+			ovaPath := "../assets/snappy.ova"
+			Expect(driver.GetVirtualSystemNumbersOfHardDiskImages(ovaPath)).To(ConsistOf([]string{"6", "7"}))
+		})
+
+		Context("when there is an error getting the virtual system number", func() {
+			It("should return an error", func() {
+				numbers, err := driver.GetVirtualSystemNumbersOfHardDiskImages("some-bad-ova-path")
+				Expect(err).To(MatchError(ContainSubstring("could not determine hard disk image virtual system numbers of 'some-bad-ova-path':")))
+				Expect(numbers).To(BeNil())
+			})
+		})
+	})
 })

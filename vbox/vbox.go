@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -29,6 +30,7 @@ type Driver interface {
 	GetHostOnlyInterfaces() (interfaces []*network.Interface, err error)
 	GetVMIP(vmName string) (vmIP string, err error)
 	SetMemory(vmName string, memory uint64) error
+	GetVirtualSystemNumbersOfHardDiskImages(ovaPath string) (virtualSystemNumbers []string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
@@ -122,13 +124,32 @@ func (v *VBox) StartVM(vmName string) (vm *VM, err error) {
 	return vm, nil
 }
 
-func (v *VBox) ImportVM(path string, vmName string) error {
+func (v *VBox) ImportVM(path string, vmName string, pcfdevDir string) error {
 	_, sshPort, err := v.SSH.GenerateAddress()
+
 	if err != nil {
 		return err
 	}
-	_, err = v.Driver.VBoxManage("import", path)
+
+	virtualSystemNumbers, err := v.Driver.GetVirtualSystemNumbersOfHardDiskImages(path)
 	if err != nil {
+		return err
+	}
+
+	importArguments := []string{
+		"import",
+		path,
+		"--vsys", "0",
+	}
+
+	for i, number := range virtualSystemNumbers {
+		importArguments = append(importArguments, "--unit")
+		importArguments = append(importArguments, number)
+		importArguments = append(importArguments, "--disk")
+		importArguments = append(importArguments, filepath.Join(pcfdevDir, fmt.Sprintf("%s-disk%d.vmdk", vmName, i)))
+	}
+
+	if _, err := v.Driver.VBoxManage(importArguments...); err != nil {
 		return err
 	}
 

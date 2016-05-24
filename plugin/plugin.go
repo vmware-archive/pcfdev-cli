@@ -42,7 +42,7 @@ type VBox interface {
 	StartVM(name string) (vm *vbox.VM, err error)
 	StopVM(name string) error
 	DestroyVMs(name []string) error
-	ImportVM(path string, name string) error
+	ImportVM(path string, name string, pcfdevDir string) error
 	Status(name string) (status string, err error)
 	ConflictingVMPresent(name string) (conflict bool, err error)
 	GetPCFDevVMs() (names []string, err error)
@@ -210,9 +210,13 @@ func (p *Plugin) start() error {
 			return err
 		}
 
-		p.UI.Say("Importing VM...")
-		err = p.VBox.ImportVM(ovaPath, p.VMName)
+		pcfdevDir, err := p.pcfdevDir()
 		if err != nil {
+			return err
+		}
+
+		p.UI.Say("Importing VM...")
+		if err = p.VBox.ImportVM(ovaPath, p.VMName, pcfdevDir); err != nil {
 			return &ImportVMError{err}
 		}
 		p.UI.Say("PCF Dev is now imported to Virtualbox")

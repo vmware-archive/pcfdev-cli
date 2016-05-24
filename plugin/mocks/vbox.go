@@ -61,14 +61,14 @@ func (_mr *_MockVBoxRecorder) GetPCFDevVMs() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetPCFDevVMs")
 }
 
-func (_m *MockVBox) ImportVM(_param0 string, _param1 string) error {
-	ret := _m.ctrl.Call(_m, "ImportVM", _param0, _param1)
+func (_m *MockVBox) ImportVM(_param0 string, _param1 string, _param2 string) error {
+	ret := _m.ctrl.Call(_m, "ImportVM", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockVBoxRecorder) ImportVM(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ImportVM", arg0, arg1)
+func (_mr *_MockVBoxRecorder) ImportVM(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ImportVM", arg0, arg1, arg2)
 }
 
 func (_m *MockVBox) StartVM(_param0 string) (*vbox.VM, error) {

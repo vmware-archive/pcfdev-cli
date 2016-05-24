@@ -375,13 +375,29 @@ var _ = Describe("vbox", func() {
 	Describe("#StartVM", func() {
 		Context("when VM is already imported", func() {
 			It("starts without reimporting", func() {
-				ip := "192.168.11.11"
-				domain := "local.pcfdev.io"
 				gomock.InOrder(
-					mockDriver.EXPECT().GetVMIP("some-vm").Return(ip, nil),
+					mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.22.11", nil),
 					mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 					mockDriver.EXPECT().StartVM("some-vm"),
-					mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.22.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockConfig.EXPECT().GetHTTPProxy().Return("some-http-proxy"),
+					mockConfig.EXPECT().GetHTTPSProxy().Return("some-https-proxy"),
+					mockConfig.EXPECT().GetNoProxy().Return("some-no-proxy"),
+					mockConfig.EXPECT().GetHTTPProxy().Return("some-http-proxy"),
+					mockConfig.EXPECT().GetHTTPSProxy().Return("some-https-proxy"),
+					mockConfig.EXPECT().GetNoProxy().Return("some-no-proxy"),
+					mockSSH.EXPECT().RunSSHCommand("echo -e \""+
+						"HTTP_PROXY=some-http-proxy\n"+
+						"HTTPS_PROXY=some-https-proxy\n"+
+						"NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy\n"+
+						"http_proxy=some-http-proxy\n"+
+						"https_proxy=some-https-proxy\n"+
+						"no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy\" "+
+						"| sudo tee -a /etc/environment",
+						"some-port",
+						2*time.Minute,
+						ioutil.Discard,
+						ioutil.Discard),
 					mockDriver.EXPECT().StopVM("some-vm"),
 					mockDriver.EXPECT().StartVM("some-vm"),
 				)
@@ -389,7 +405,7 @@ var _ = Describe("vbox", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(vm.Name).To(Equal("some-vm"))
 				Expect(vm.SSHPort).To(Equal("some-port"))
-				Expect(vm.Domain).To(Equal(domain))
+				Expect(vm.Domain).To(Equal("local2.pcfdev.io"))
 			})
 
 			Context("when fails so get forward port", func() {
@@ -439,6 +455,24 @@ var _ = Describe("vbox", func() {
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockConfig.EXPECT().GetHTTPProxy().Return("some-http-proxy"),
+						mockConfig.EXPECT().GetHTTPSProxy().Return("some-https-proxy"),
+						mockConfig.EXPECT().GetNoProxy().Return("some-no-proxy"),
+						mockConfig.EXPECT().GetHTTPProxy().Return("some-http-proxy"),
+						mockConfig.EXPECT().GetHTTPSProxy().Return("some-https-proxy"),
+						mockConfig.EXPECT().GetNoProxy().Return("some-no-proxy"),
+						mockSSH.EXPECT().RunSSHCommand("echo -e \""+
+							"HTTP_PROXY=some-http-proxy\n"+
+							"HTTPS_PROXY=some-https-proxy\n"+
+							"NO_PROXY=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,some-no-proxy\n"+
+							"http_proxy=some-http-proxy\n"+
+							"https_proxy=some-https-proxy\n"+
+							"no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,some-no-proxy\" "+
+							"| sudo tee -a /etc/environment",
+							"some-port",
+							2*time.Minute,
+							ioutil.Discard,
+							ioutil.Discard),
 						mockDriver.EXPECT().StopVM("some-vm").Return(errors.New("some-error")),
 					)
 					_, err := vbx.StartVM("some-vm")

@@ -39,6 +39,26 @@ func (_mr *_MockConfigRecorder) GetDesiredMemory() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetDesiredMemory")
 }
 
+func (_m *MockConfig) GetHTTPProxy() string {
+	ret := _m.ctrl.Call(_m, "GetHTTPProxy")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *_MockConfigRecorder) GetHTTPProxy() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetHTTPProxy")
+}
+
+func (_m *MockConfig) GetHTTPSProxy() string {
+	ret := _m.ctrl.Call(_m, "GetHTTPSProxy")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *_MockConfigRecorder) GetHTTPSProxy() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetHTTPSProxy")
+}
+
 func (_m *MockConfig) GetMaxMemory() uint64 {
 	ret := _m.ctrl.Call(_m, "GetMaxMemory")
 	ret0, _ := ret[0].(uint64)
@@ -57,4 +77,14 @@ func (_m *MockConfig) GetMinMemory() uint64 {
 
 func (_mr *_MockConfigRecorder) GetMinMemory() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetMinMemory")
+}
+
+func (_m *MockConfig) GetNoProxy() string {
+	ret := _m.ctrl.Call(_m, "GetNoProxy")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *_MockConfigRecorder) GetNoProxy() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetNoProxy")
 }

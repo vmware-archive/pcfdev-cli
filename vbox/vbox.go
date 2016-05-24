@@ -60,6 +60,9 @@ type Config interface {
 	GetMaxMemory() (memory uint64)
 	GetMinMemory() (memory uint64)
 	GetDesiredMemory() (memory uint64, err error)
+	GetHTTPProxy() (proxy string)
+	GetHTTPSProxy() (proxy string)
+	GetNoProxy() (proxy string)
 }
 
 type VBox struct {
@@ -108,10 +111,16 @@ func (v *VBox) StartVM(vmName string) (vm *VM, err error) {
 	if err != nil {
 		return nil, err
 	}
-	err = v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), sshPort, 2*time.Minute, ioutil.Discard, ioutil.Discard)
+
+	err = v.configureNetwork(vm.IP, vm.SSHPort)
 	if err != nil {
 		return nil, err
 	}
+	err = v.configureEnvironment(vm.IP, vm.SSHPort)
+	if err != nil {
+		return nil, err
+	}
+
 	err = v.Driver.StopVM(vmName)
 	if err != nil {
 		return nil, err
@@ -122,6 +131,47 @@ func (v *VBox) StartVM(vmName string) (vm *VM, err error) {
 	}
 
 	return vm, nil
+}
+
+func (v *VBox) configureNetwork(ip string, sshPort string) error {
+	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), sshPort, 2*time.Minute, ioutil.Discard, ioutil.Discard)
+}
+
+func (v *VBox) configureEnvironment(ip string, sshPort string) error {
+	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"%s\" | sudo tee -a /etc/environment", v.proxySettings(ip)), sshPort, 2*time.Minute, ioutil.Discard, ioutil.Discard)
+}
+
+func (v *VBox) proxySettings(ip string) string {
+	subnet, err := address.SubnetForIP(ip)
+	if err != nil {
+		panic(err)
+	}
+
+	domain, err := address.DomainForIP(ip)
+	if err != nil {
+		panic(err)
+	}
+
+	return strings.Join([]string{
+		fmt.Sprintf("HTTP_PROXY=" + v.Config.GetHTTPProxy()),
+		fmt.Sprintf("HTTPS_PROXY=" + v.Config.GetHTTPSProxy()),
+		fmt.Sprintf("NO_PROXY=" + strings.Join([]string{
+			"localhost",
+			"127.0.0.1",
+			subnet,
+			ip,
+			domain,
+			v.Config.GetNoProxy()}, ",")),
+		fmt.Sprintf("http_proxy=" + v.Config.GetHTTPProxy()),
+		fmt.Sprintf("https_proxy=" + v.Config.GetHTTPSProxy()),
+		fmt.Sprintf("no_proxy=" + strings.Join([]string{
+			"localhost",
+			"127.0.0.1",
+			subnet,
+			ip,
+			domain,
+			v.Config.GetNoProxy()}, ",")),
+	}, "\n")
 }
 
 func (v *VBox) ImportVM(path string, vmName string, pcfdevDir string) error {

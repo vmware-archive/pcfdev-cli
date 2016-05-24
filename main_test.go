@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
 )
 
 const (
@@ -26,12 +27,18 @@ var (
 	oldCFHome       string
 	oldCFPluginHome string
 	oldPCFDevHome   string
+	oldHTTPProxy    string
+	oldHTTPSProxy   string
+	oldNoProxy      string
 )
 
 var _ = BeforeSuite(func() {
 	oldCFHome = os.Getenv("CF_HOME")
 	oldCFPluginHome = os.Getenv("CF_PLUGIN_HOME")
 	oldPCFDevHome = os.Getenv("PCFDEV_HOME")
+	oldHTTPProxy = os.Getenv("HTTP_PROXY")
+	oldHTTPSProxy = os.Getenv("HTTPS_PROXY")
+	oldNoProxy = os.Getenv("NO_PROXY")
 
 	var err error
 	tempHome, err = ioutil.TempDir("", "pcfdev")
@@ -40,6 +47,8 @@ var _ = BeforeSuite(func() {
 	os.Setenv("CF_HOME", tempHome)
 	os.Setenv("CF_PLUGIN_HOME", filepath.Join(tempHome, "plugins"))
 	os.Setenv("PCFDEV_HOME", tempHome)
+	oldHTTPSProxy = os.Getenv("HTTPS_PROXY")
+	oldNoProxy = os.Getenv("NO_PROXY")
 
 	uninstallCommand := exec.Command("cf", "uninstall-plugin", "pcfdev")
 	session, err := gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
@@ -60,10 +69,15 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	os.Setenv("SKIPPCFDEVDOWNLOAD", "")
+
 	Expect(os.RemoveAll(tempHome)).To(Succeed())
 	os.Setenv("CF_HOME", oldCFHome)
 	os.Setenv("CF_PLUGIN_HOME", oldCFPluginHome)
 	os.Setenv("PCFDEV_HOME", oldPCFDevHome)
+	os.Setenv("HTTP_PROXY", oldHTTPProxy)
+	os.Setenv("HTTPS_PROXY", oldHTTPSProxy)
+	os.Setenv("NO_PROXY", oldNoProxy)
 })
 
 var _ = Describe("pcfdev", func() {
@@ -134,6 +148,11 @@ var _ = Describe("pcfdev", func() {
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("PCF Dev VM has not been created"))
 
+		By("setting proxy variables")
+		os.Setenv("HTTP_PROXY", "192.168.93.23")
+		os.Setenv("HTTPS_PROXY", "192.168.38.29")
+		os.Setenv("NO_PROXY", "192.168.98.98")
+
 		By("starting after running destroy")
 		pcfdevCommand = exec.Command("cf", "dev", "start")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
@@ -141,6 +160,16 @@ var _ = Describe("pcfdev", func() {
 		Eventually(session, "10m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("PCF Dev is now running"))
 		Expect(isVMRunning()).To(BeTrue())
+
+		stdout := gbytes.NewBuffer()
+		stderr := gbytes.NewBuffer()
+		sshClient := &ssh.SSH{}
+		sshClient.RunSSHCommand("echo $HTTP_PROXY", getForwardedPort(), 5*time.Second, stdout, stderr)
+		Eventually(stdout).Should(gbytes.Say("192.168.93.23"))
+		sshClient.RunSSHCommand("echo $HTTPS_PROXY", getForwardedPort(), 5*time.Second, stdout, stderr)
+		Eventually(stdout).Should(gbytes.Say("192.168.38.29"))
+		sshClient.RunSSHCommand("echo $NO_PROXY", getForwardedPort(), 5*time.Second, stdout, stderr)
+		Eventually(stdout).Should(gbytes.Say("192.168.98.98"))
 
 		response, err = getResponseFromFakeServer(interfaceName)
 		Expect(err).NotTo(HaveOccurred())
@@ -196,6 +225,14 @@ func isVMRunning() bool {
 	vmStatus, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
 	return strings.Contains(string(vmStatus), `VMState="running"`)
+}
+
+func getForwardedPort() string {
+	output, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
+	Expect(err).NotTo(HaveOccurred())
+
+	regex := regexp.MustCompile(`Forwarding\(\d+\)="ssh,tcp,127.0.0.1,(.*),,22"`)
+	return regex.FindStringSubmatch(string(output))[1]
 }
 
 func getResponseFromFakeServer(vboxnetName string) (response string, err error) {

@@ -12,7 +12,7 @@ import (
 )
 
 var _ = Describe("Config", func() {
-	Context("#GetToken", func() {
+	Describe("#GetToken", func() {
 		Context("when PIVNET_TOKEN env var is set", func() {
 			var savedToken string
 
@@ -79,7 +79,205 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Context("#GetMinMemory", func() {
+	Describe("#GetHTTPProxy", func() {
+		Context("when HTTP_PROXY is set", func() {
+			var (
+				savedProxy string
+			)
+
+			BeforeEach(func() {
+				savedProxy = os.Getenv("HTTP_PROXY")
+				os.Setenv("HTTP_PROXY", "some-http-proxy")
+			})
+
+			AfterEach(func() {
+				os.Setenv("HTTP_PROXY", savedProxy)
+			})
+
+			It("should return the HTTP_PROXY environment variable", func() {
+				cfg := &config.Config{}
+				Expect(cfg.GetHTTPProxy()).To(Equal("some-http-proxy"))
+			})
+		})
+
+		Context("when http_proxy is set", func() {
+			var (
+				savedProxy string
+			)
+
+			BeforeEach(func() {
+				savedProxy = os.Getenv("http_proxy")
+				os.Setenv("http_proxy", "some-http-proxy")
+			})
+
+			AfterEach(func() {
+				os.Setenv("http_proxy", savedProxy)
+			})
+
+			It("should return the http_proxy environment variable", func() {
+				cfg := &config.Config{}
+				Expect(cfg.GetHTTPProxy()).To(Equal("some-http-proxy"))
+			})
+		})
+
+		Context("when HTTP_PROXY and http_proxy are set", func() {
+			var (
+				savedProxyCaps  string
+				savedProxyLower string
+			)
+
+			BeforeEach(func() {
+				savedProxyCaps = os.Getenv("HTTP_PROXY")
+				savedProxyLower = os.Getenv("http_proxy")
+				os.Setenv("http_proxy", "some-http-proxy")
+				os.Setenv("HTTP_PROXY", "some-other-http-proxy")
+			})
+
+			AfterEach(func() {
+				os.Setenv("http_proxy", savedProxyLower)
+				os.Setenv("HTTP_PROXY", savedProxyCaps)
+			})
+
+			It("should return the HTTP_PROXY environment variable", func() {
+				cfg := &config.Config{}
+				Expect(cfg.GetHTTPProxy()).To(Equal("some-other-http-proxy"))
+			})
+		})
+	})
+
+	Describe("#GetHTTPSProxy", func() {
+		Context("when HTTPS_PROXY is set", func() {
+			var (
+				savedProxy string
+			)
+
+			BeforeEach(func() {
+				savedProxy = os.Getenv("HTTPS_PROXY")
+				os.Setenv("HTTPS_PROXY", "some-https-proxy")
+			})
+
+			AfterEach(func() {
+				os.Setenv("HTTPS_PROXY", savedProxy)
+			})
+
+			It("should return the HTTPS_PROXY environment variable", func() {
+				cfg := &config.Config{}
+				Expect(cfg.GetHTTPSProxy()).To(Equal("some-https-proxy"))
+			})
+		})
+
+		Context("when https_proxy is set", func() {
+			var (
+				savedProxy string
+			)
+
+			BeforeEach(func() {
+				savedProxy = os.Getenv("https_proxy")
+				os.Setenv("https_proxy", "some-https-proxy")
+			})
+
+			AfterEach(func() {
+				os.Setenv("https_proxy", savedProxy)
+			})
+
+			It("should return the https_proxy environment variable", func() {
+				cfg := &config.Config{}
+				Expect(cfg.GetHTTPSProxy()).To(Equal("some-https-proxy"))
+			})
+		})
+
+		Context("when HTTPS_PROXY and https_proxy are set", func() {
+			var (
+				savedProxyCaps  string
+				savedProxyLower string
+			)
+
+			BeforeEach(func() {
+				savedProxyCaps = os.Getenv("HTTPS_PROXY")
+				savedProxyLower = os.Getenv("https_proxy")
+				os.Setenv("https_proxy", "some-https-proxy")
+				os.Setenv("HTTPS_PROXY", "some-other-https-proxy")
+			})
+
+			AfterEach(func() {
+				os.Setenv("https_proxy", savedProxyLower)
+				os.Setenv("HTTPS_PROXY", savedProxyCaps)
+			})
+
+			It("should return the HTTPS_PROXY environment variable", func() {
+				cfg := &config.Config{}
+				Expect(cfg.GetHTTPSProxy()).To(Equal("some-other-https-proxy"))
+			})
+		})
+	})
+
+	Describe("#GetNoProxy", func() {
+		Context("when NO_PROXY is set", func() {
+			var (
+				savedProxy string
+			)
+
+			BeforeEach(func() {
+				savedProxy = os.Getenv("NO_PROXY")
+				os.Setenv("NO_PROXY", "some-no-proxy")
+			})
+
+			AfterEach(func() {
+				os.Setenv("NO_PROXY", savedProxy)
+			})
+
+			It("should return the NO_PROXY environment variable", func() {
+				cfg := &config.Config{}
+				Expect(cfg.GetNoProxy()).To(Equal("some-no-proxy"))
+			})
+		})
+
+		Context("when no_proxy is set", func() {
+			var (
+				savedProxy string
+			)
+
+			BeforeEach(func() {
+				savedProxy = os.Getenv("no_proxy")
+				os.Setenv("no_proxy", "some-no-proxy")
+			})
+
+			AfterEach(func() {
+				os.Setenv("no_proxy", savedProxy)
+			})
+
+			It("should return the no_proxy environment variable", func() {
+				cfg := &config.Config{}
+				Expect(cfg.GetNoProxy()).To(Equal("some-no-proxy"))
+			})
+		})
+
+		Context("when NO_PROXY and no_proxy are set", func() {
+			var (
+				savedProxyCaps  string
+				savedProxyLower string
+			)
+
+			BeforeEach(func() {
+				savedProxyCaps = os.Getenv("NO_PROXY")
+				savedProxyLower = os.Getenv("no_proxy")
+				os.Setenv("no_proxy", "some-no-proxy")
+				os.Setenv("NO_PROXY", "some-other-no-proxy")
+			})
+
+			AfterEach(func() {
+				os.Setenv("no_proxy", savedProxyLower)
+				os.Setenv("NO_PROXY", savedProxyCaps)
+			})
+
+			It("should return the NO_PROXY environment variable", func() {
+				cfg := &config.Config{}
+				Expect(cfg.GetNoProxy()).To(Equal("some-other-no-proxy"))
+			})
+		})
+	})
+
+	Describe("#GetMinMemory", func() {
 		It("should return MinMemory", func() {
 			cfg := &config.Config{
 				MinMemory: uint64(1024),
@@ -88,7 +286,7 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Context("#GetMaxMemory", func() {
+	Describe("#GetMaxMemory", func() {
 		It("should return MaxMemory", func() {
 			cfg := &config.Config{
 				MaxMemory: uint64(1024),
@@ -97,7 +295,7 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Context("#GetDesiredMemory", func() {
+	Describe("#GetDesiredMemory", func() {
 		var (
 			cfg           *config.Config
 			savedVMMemory string

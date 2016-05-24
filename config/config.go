@@ -34,6 +34,27 @@ func (c *Config) GetToken() string {
 	return c.token
 }
 
+func (c *Config) GetHTTPProxy() string {
+	if proxy := os.Getenv("HTTP_PROXY"); proxy != "" {
+		return proxy
+	}
+	return os.Getenv("http_proxy")
+}
+
+func (c *Config) GetHTTPSProxy() string {
+	if proxy := os.Getenv("HTTPS_PROXY"); proxy != "" {
+		return proxy
+	}
+	return os.Getenv("https_proxy")
+}
+
+func (c *Config) GetNoProxy() string {
+	if proxy := os.Getenv("NO_PROXY"); proxy != "" {
+		return proxy
+	}
+	return os.Getenv("no_proxy")
+}
+
 func (c *Config) GetMinMemory() uint64 {
 	return c.MinMemory
 }

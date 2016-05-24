@@ -56,6 +56,7 @@ type RequirementsChecker interface {
 //go:generate mockgen -package mocks -destination mocks/downloader.go github.com/pivotal-cf/pcfdev-cli/plugin Downloader
 type Downloader interface {
 	Download(path string) error
+	IsOVACurrent(path string) (bool, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
@@ -129,6 +130,19 @@ func getErrorText(err error) string {
 }
 
 func (p *Plugin) downloadVM() error {
+	ovaPath, err := p.ovaPath()
+	if err != nil {
+		return err
+	}
+	current, err := p.Downloader.IsOVACurrent(ovaPath)
+	if err != nil {
+		panic(err)
+	}
+	if current {
+		p.UI.Say("Using existing image")
+		return nil
+	}
+
 	accepted, err := p.Client.IsEULAAccepted()
 	if err != nil {
 		return err
@@ -152,10 +166,6 @@ func (p *Plugin) downloadVM() error {
 	}
 
 	p.UI.Say("Downloading VM...")
-	ovaPath, err := p.ovaPath()
-	if err != nil {
-		return err
-	}
 
 	if err := p.Downloader.Download(ovaPath); err != nil {
 		return err

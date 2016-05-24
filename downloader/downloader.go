@@ -35,6 +35,26 @@ func (d *Downloader) partialFilePath(path string) string {
 	return path + ".partial"
 }
 
+func (d *Downloader) IsOVACurrent(path string) (bool, error) {
+	fileExists, err := d.FS.Exists(path)
+	if err != nil {
+		return false, err
+	}
+	if !fileExists {
+		return false, nil
+	}
+
+	md5, err := d.FS.MD5(path)
+	if err != nil {
+		return false, err
+	}
+	if md5 != d.ExpectedMD5 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (d *Downloader) Download(path string) error {
 	dir := filepath.Dir(path)
 	filename := filepath.Base(path)
@@ -46,47 +66,23 @@ func (d *Downloader) Download(path string) error {
 		return err
 	}
 
-	fileExists, err := d.FS.Exists(path)
-	if err != nil {
-		return err
-	}
-	if fileExists {
-		return nil
-	}
-
 	partialFileExists, err := d.FS.Exists(d.partialFilePath(path))
 	if err != nil {
 		return err
 	}
 
-	var startAtByte int64
+	var md5 string
 	if partialFileExists {
-		startAtByte, err = d.FS.Length(d.partialFilePath(path))
-		if err != nil {
-			return err
-		}
+		md5, err = d.resumeDownload(path)
+	} else {
+		md5, err = d.download(path, 0)
 	}
-
-	md5, err := d.download(path, startAtByte)
 	if err != nil {
 		return err
 	}
-	if md5 != d.ExpectedMD5 {
-		if partialFileExists {
-			if err := d.FS.RemoveFile(d.partialFilePath(path)); err != nil {
-				return err
-			}
 
-			md5, err = d.download(path, 0)
-			if err != nil {
-				return err
-			}
-			if md5 != d.ExpectedMD5 {
-				return errors.New("download failed")
-			}
-		} else {
-			return errors.New("download failed")
-		}
+	if md5 != d.ExpectedMD5 {
+		return errors.New("download failed")
 	}
 
 	if err := d.FS.Move(d.partialFilePath(path), path); err != nil {
@@ -94,6 +90,22 @@ func (d *Downloader) Download(path string) error {
 	}
 
 	return nil
+}
+
+func (d *Downloader) resumeDownload(path string) (md5 string, err error) {
+	startAtByte, err := d.FS.Length(d.partialFilePath(path))
+	if err != nil {
+		return "", err
+	}
+
+	md5, err = d.download(path, startAtByte)
+	if md5 != d.ExpectedMD5 {
+		if err := d.FS.RemoveFile(d.partialFilePath(path)); err != nil {
+			return "", err
+		}
+		return d.download(path, 0)
+	}
+	return md5, nil
 }
 
 func (d *Downloader) download(path string, startAtBytes int64) (md5 string, err error) {

@@ -37,3 +37,14 @@ func (_m *MockDownloader) Download(_param0 string) error {
 func (_mr *_MockDownloaderRecorder) Download(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Download", arg0)
 }
+
+func (_m *MockDownloader) IsOVACurrent(_param0 string) (bool, error) {
+	ret := _m.ctrl.Call(_m, "IsOVACurrent", _param0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDownloaderRecorder) IsOVACurrent(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsOVACurrent", arg0)
+}

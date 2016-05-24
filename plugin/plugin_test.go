@@ -82,50 +82,11 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("download", func() {
-			It("should cleanup old OVAs and download the new OVA", func() {
-				gomock.InOrder(
-					mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
-					mockUI.EXPECT().Say("Downloading VM..."),
-					mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
-					mockUI.EXPECT().Say("\nVM downloaded"),
-				)
-
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
-			})
-
-			Context("when downloading the OVA fails", func() {
-				It("should print an error", func() {
+			Context("when OVA is not current", func() {
+				It("should download", func() {
 					gomock.InOrder(
+						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
-						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
-				})
-			})
-
-			Context("when EULA check fails", func() {
-				It("should print an error", func() {
-					gomock.InOrder(
-						mockClient.EXPECT().IsEULAAccepted().Return(false, errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
-
-				})
-			})
-
-			Context("when EULA has not been accepted and user accepts the EULA", func() {
-				It("should download the ova", func() {
-					gomock.InOrder(
-						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
-						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-						mockUI.EXPECT().Say("some-eula"),
-						mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
-						mockClient.EXPECT().AcceptEULA().Return(nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
 						mockUI.EXPECT().Say("\nVM downloaded"),
@@ -133,67 +94,124 @@ var _ = Describe("Plugin", func() {
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
 				})
-			})
+				Context("when downloading the OVA fails", func() {
+					It("should print an error", func() {
+						gomock.InOrder(
+							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
+							mockUI.EXPECT().Say("Downloading VM..."),
+							mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(errors.New("some-error")),
+							mockUI.EXPECT().Failed("Error: some-error"),
+						)
 
-			Context("when EULA has not been accepted and user denies the EULA", func() {
-				It("should not accept and fail gracefully", func() {
-					gomock.InOrder(
-						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
-						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-						mockUI.EXPECT().Say("some-eula"),
-						mockUI.EXPECT().Confirm("Accept (yes/no):").Return(false),
-						mockUI.EXPECT().Failed("You must accept the end user license agreement to use PCF Dev."),
-					)
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+					})
+				})
+				Context("when EULA check fails", func() {
+					It("should print an error", func() {
+						gomock.InOrder(
+							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(false, errors.New("some-error")),
+							mockUI.EXPECT().Failed("Error: some-error"),
+						)
 
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+
+					})
+				})
+
+				Context("when EULA has not been accepted and user accepts the EULA", func() {
+					It("should download the ova", func() {
+						gomock.InOrder(
+							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
+							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
+							mockUI.EXPECT().Say("some-eula"),
+							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
+							mockClient.EXPECT().AcceptEULA().Return(nil),
+							mockUI.EXPECT().Say("Downloading VM..."),
+							mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
+							mockUI.EXPECT().Say("\nVM downloaded"),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+					})
+				})
+
+				Context("when EULA has not been accepted and user denies the EULA", func() {
+					It("should not accept and fail gracefully", func() {
+						gomock.InOrder(
+							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
+							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
+							mockUI.EXPECT().Say("some-eula"),
+							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(false),
+							mockUI.EXPECT().Failed("You must accept the end user license agreement to use PCF Dev."),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+					})
+				})
+
+				Context("when EULA has not been accepted and it fails to accept the EULA", func() {
+					It("should return the error", func() {
+						gomock.InOrder(
+							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
+							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
+							mockUI.EXPECT().Say("some-eula"),
+							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
+							mockClient.EXPECT().AcceptEULA().Return(errors.New("some-error")),
+							mockUI.EXPECT().Failed("Error: some-error"),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+					})
+				})
+
+				Context("when EULA is not accepted and getting the EULA fails", func() {
+					It("should print an error", func() {
+						gomock.InOrder(
+							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
+							mockClient.EXPECT().GetEULA().Return("", errors.New("some-error")),
+							mockUI.EXPECT().Failed("Error: some-error"),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+					})
+				})
+				Context("when PCFDEV_HOME is set", func() {
+					var pcfdevHome string
+
+					BeforeEach(func() {
+						pcfdevHome = os.Getenv("PCFDEV_HOME")
+						os.Setenv("PCFDEV_HOME", filepath.Join("some", "other", "dir"))
+					})
+
+					AfterEach(func() {
+						os.Setenv("PCFDEV_HOME", pcfdevHome)
+					})
+
+					It("should download the ova to PCFDEV_HOME", func() {
+						gomock.InOrder(
+							mockDownloader.EXPECT().IsOVACurrent(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
+							mockUI.EXPECT().Say("Downloading VM..."),
+							mockDownloader.EXPECT().Download(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova")),
+							mockUI.EXPECT().Say("\nVM downloaded"),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+					})
 				})
 			})
 
-			Context("when EULA has not been accepted and it fails to accept the EULA", func() {
-				It("should return the error", func() {
+			Context("when OVA is current", func() {
+				It("should not download", func() {
 					gomock.InOrder(
-						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
-						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-						mockUI.EXPECT().Say("some-eula"),
-						mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
-						mockClient.EXPECT().AcceptEULA().Return(errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
-				})
-			})
-
-			Context("when EULA is not accepted and getting the EULA fails", func() {
-				It("should print an error", func() {
-					gomock.InOrder(
-						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
-						mockClient.EXPECT().GetEULA().Return("", errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
-				})
-			})
-
-			Context("when PCFDEV_HOME is set", func() {
-				var pcfdevHome string
-
-				BeforeEach(func() {
-					pcfdevHome = os.Getenv("PCFDEV_HOME")
-					os.Setenv("PCFDEV_HOME", filepath.Join("some", "other", "dir"))
-				})
-
-				AfterEach(func() {
-					os.Setenv("PCFDEV_HOME", pcfdevHome)
-				})
-
-				It("should download the ova to PCFDEV_HOME", func() {
-					gomock.InOrder(
-						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
-						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova")),
-						mockUI.EXPECT().Say("\nVM downloaded"),
+						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(true, nil),
+						mockUI.EXPECT().Say("Using existing image"),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -208,6 +226,7 @@ var _ = Describe("Plugin", func() {
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
+						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
@@ -242,10 +261,8 @@ var _ = Describe("Plugin", func() {
 							mockRequirementsChecker.EXPECT().Check().Return(nil),
 							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 							mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
-							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
-							mockUI.EXPECT().Say("Downloading VM..."),
-							mockDownloader.EXPECT().Download(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova")),
-							mockUI.EXPECT().Say("\nVM downloaded"),
+							mockDownloader.EXPECT().IsOVACurrent(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova")).Return(true, nil),
+							mockUI.EXPECT().Say("Using existing image"),
 
 							mockUI.EXPECT().Say("Importing VM..."),
 							mockVBox.EXPECT().ImportVM(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(nil),
@@ -295,6 +312,7 @@ var _ = Describe("Plugin", func() {
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
+						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(errors.New("some-error")),
@@ -356,10 +374,8 @@ var _ = Describe("Plugin", func() {
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
-						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
-						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
-						mockUI.EXPECT().Say("\nVM downloaded"),
+						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(true, nil),
+						mockUI.EXPECT().Say("Using existing image"),
 						mockUI.EXPECT().Say("Importing VM..."),
 
 						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(expectedError),
@@ -403,15 +419,8 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
-						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
-						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-						mockUI.EXPECT().Say("some-eula"),
-						mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
-						mockClient.EXPECT().AcceptEULA().Return(nil),
-
-						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
-						mockUI.EXPECT().Say("\nVM downloaded"),
+						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(true, nil),
+						mockUI.EXPECT().Say("Using existing image"),
 
 						mockUI.EXPECT().Say("Importing VM..."),
 						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name").Return(nil),
@@ -443,6 +452,7 @@ var _ = Describe("Plugin", func() {
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
+						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
 						mockUI.EXPECT().Say("some-eula"),

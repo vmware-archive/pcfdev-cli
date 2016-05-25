@@ -10,16 +10,16 @@ import (
 	"github.com/kennygrant/sanitize"
 )
 
+//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/pivnet Config
+type Config interface {
+	GetToken() (token string, err error)
+}
+
 type Client struct {
 	Host          string
 	ReleaseId     string
 	ProductFileId string
 	Config        Config
-}
-
-//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/pivnet Config
-type Config interface {
-	GetToken() string
 }
 
 type ReleaseResponse struct {
@@ -195,7 +195,13 @@ func (c *Client) makeRequest(uri string, method string, client *http.Client) (*h
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Token "+c.Config.GetToken())
+
+	token, err := c.Config.GetToken()
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Token "+token)
 
 	resp, err := client.Do(req)
 	if err != nil {

@@ -21,6 +21,10 @@ func (fs *FS) Exists(path string) (exists bool, err error) {
 	return true, nil
 }
 
+func (fs *FS) Read(path string) (contents []byte, err error) {
+	return ioutil.ReadFile(path)
+}
+
 func (fs *FS) Write(path string, contents io.Reader) error {
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {

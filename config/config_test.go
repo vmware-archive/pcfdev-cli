@@ -1,7 +1,11 @@
 package config_test
 
 import (
+	"errors"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -12,22 +16,70 @@ import (
 )
 
 var _ = Describe("Config", func() {
-	Describe("#GetToken", func() {
+	Context("#GetToken", func() {
+		var pcfdevHome string
+
+		BeforeEach(func() {
+			pcfdevHome = os.Getenv("PCFDEV_HOME")
+
+			os.Setenv("PCFDEV_HOME", "some-pcfdev-home")
+		})
+
+		AfterEach(func() {
+			os.Setenv("PCFDEV_HOME", pcfdevHome)
+		})
+
 		Context("when PIVNET_TOKEN env var is set", func() {
-			var savedToken string
+			var (
+				savedToken string
+				mockUI     *mocks.MockUI
+				mockCtrl   *gomock.Controller
+			)
 
 			BeforeEach(func() {
 				savedToken = os.Getenv("PIVNET_TOKEN")
+				mockCtrl = gomock.NewController(GinkgoT())
+				mockUI = mocks.NewMockUI(mockCtrl)
+
 				os.Setenv("PIVNET_TOKEN", "some-token")
 			})
 
 			AfterEach(func() {
 				os.Setenv("PIVNET_TOKEN", savedToken)
+				mockCtrl.Finish()
 			})
 
 			It("should return PIVNET_TOKEN env var", func() {
-				config := &config.Config{}
+				config := &config.Config{
+					UI: mockUI,
+				}
+
+				mockUI.EXPECT().Say("PIVNET_TOKEN set, ignored saved PivNet API token.")
 				Expect(config.GetToken()).To(Equal("some-token"))
+			})
+
+			Context("when a token exists at the token file path", func() {
+				var tempDir string
+
+				BeforeEach(func() {
+					var err error
+					tempDir, err = ioutil.TempDir("", "")
+					Expect(err).NotTo(HaveOccurred())
+					ioutil.WriteFile(filepath.Join(tempDir, "token"), []byte("some-different-token"), 0644)
+				})
+
+				AfterEach(func() {
+					os.RemoveAll(tempDir)
+				})
+
+				It("should return PIVNET_TOKEN env var", func() {
+					config := &config.Config{
+						UI: mockUI,
+					}
+
+					mockUI.EXPECT().Say("PIVNET_TOKEN set, ignored saved PivNet API token.")
+					Expect(config.GetToken()).To(Equal("some-token"))
+				})
 			})
 		})
 
@@ -35,6 +87,109 @@ var _ = Describe("Config", func() {
 			var (
 				savedToken string
 				mockUI     *mocks.MockUI
+				mockCtrl   *gomock.Controller
+				mockFS     *mocks.MockFS
+				cfg        *config.Config
+			)
+
+			BeforeEach(func() {
+				savedToken = os.Getenv("PIVNET_TOKEN")
+				os.Setenv("PIVNET_TOKEN", "")
+				mockCtrl = gomock.NewController(GinkgoT())
+				mockFS = mocks.NewMockFS(mockCtrl)
+				mockUI = mocks.NewMockUI(mockCtrl)
+
+				cfg = &config.Config{
+					UI: mockUI,
+					FS: mockFS,
+				}
+			})
+
+			AfterEach(func() {
+				os.Setenv("PIVNET_TOKEN", savedToken)
+				mockCtrl.Finish()
+			})
+
+			Context("when a token exists at the token file path", func() {
+				It("should return PIVNET_TOKEN env var", func() {
+					gomock.InOrder(
+						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(true, nil),
+						mockFS.EXPECT().Read(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return([]byte("some-saved-token"), nil),
+					)
+
+					Expect(cfg.GetToken()).To(Equal("some-saved-token"))
+				})
+			})
+
+			Context("when pivnet token has already been fetched", func() {
+				It("should return the same value", func() {
+					gomock.InOrder(
+						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Times(1),
+						mockUI.EXPECT().Say("Please retrieve your Pivotal Network API from:").Times(1),
+						mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile").Times(1),
+						mockUI.EXPECT().AskForPassword("API token").Return("some-user-provided-token").Times(1),
+					)
+					Expect(cfg.GetToken()).To(Equal("some-user-provided-token"))
+					Expect(cfg.GetToken()).To(Equal("some-user-provided-token"))
+				})
+			})
+
+			Context("when a token does not exist at the token file path", func() {
+				It("should prompt the user to enter their Pivnet token", func() {
+					gomock.InOrder(
+						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(false, nil),
+						mockUI.EXPECT().Say("Please retrieve your Pivotal Network API from:"),
+						mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile"),
+						mockUI.EXPECT().AskForPassword("API token").Return("some-user-provided-token"),
+					)
+
+					Expect(cfg.GetToken()).To(Equal("some-user-provided-token"))
+				})
+			})
+
+			Context("when call to determine whether a token's presence fails", func() {
+				It("should return PIVNET_TOKEN env var", func() {
+					gomock.InOrder(
+						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(false, errors.New("some-error")),
+					)
+
+					_, err := cfg.GetToken()
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
+
+			Context("when call to read token file fails", func() {
+				It("should return PIVNET_TOKEN env var", func() {
+					gomock.InOrder(
+						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(true, nil),
+						mockFS.EXPECT().Read(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(nil, errors.New("some-error")),
+					)
+
+					_, err := cfg.GetToken()
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
+		})
+	})
+
+	Context("#SaveToken", func() {
+		var pcfdevHome string
+
+		BeforeEach(func() {
+			pcfdevHome = os.Getenv("PCFDEV_HOME")
+
+			os.Setenv("PCFDEV_HOME", "some-pcfdev-home")
+		})
+
+		AfterEach(func() {
+			os.Setenv("PCFDEV_HOME", pcfdevHome)
+		})
+
+		Context("when PIVNET_TOKEN env var is not set", func() {
+			var (
+				savedToken string
+				mockUI     *mocks.MockUI
+				mockFS     *mocks.MockFS
 				mockCtrl   *gomock.Controller
 				cfg        *config.Config
 			)
@@ -44,8 +199,10 @@ var _ = Describe("Config", func() {
 				os.Setenv("PIVNET_TOKEN", "")
 				mockCtrl = gomock.NewController(GinkgoT())
 				mockUI = mocks.NewMockUI(mockCtrl)
+				mockFS = mocks.NewMockFS(mockCtrl)
 
 				cfg = &config.Config{
+					FS: mockFS,
 					UI: mockUI,
 				}
 			})
@@ -55,26 +212,70 @@ var _ = Describe("Config", func() {
 				mockCtrl.Finish()
 			})
 
-			It("should prompt the user to enter their Pivnet token", func() {
+			It("should save the token", func() {
 				gomock.InOrder(
-					mockUI.EXPECT().Say("Please retrieve your Pivotal Network API from:"),
-					mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile"),
-					mockUI.EXPECT().AskForPassword("API token").Return("some-user-provided-token"),
+					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return([]byte("some-user-provided-token"), nil),
+					mockFS.EXPECT().Write(filepath.Join("some-pcfdev-home", ".pcfdev", "token"), strings.NewReader("some-user-provided-token")),
 				)
 
-				Expect(cfg.GetToken()).To(Equal("some-user-provided-token"))
+				cfg.GetToken()
+				Expect(cfg.SaveToken()).To(Succeed())
+			})
+		})
+
+		Context("when PIVNET_TOKEN env var is set", func() {
+			var (
+				savedToken string
+				mockUI     *mocks.MockUI
+				mockFS     *mocks.MockFS
+				mockCtrl   *gomock.Controller
+				cfg        *config.Config
+			)
+
+			BeforeEach(func() {
+				savedToken = os.Getenv("PIVNET_TOKEN")
+				os.Setenv("PIVNET_TOKEN", "some-token")
+				mockCtrl = gomock.NewController(GinkgoT())
+				mockUI = mocks.NewMockUI(mockCtrl)
+				mockFS = mocks.NewMockFS(mockCtrl)
+
+				cfg = &config.Config{
+					FS: mockFS,
+					UI: mockUI,
+				}
 			})
 
-			Context("when pivnet token has already been fetched", func() {
-				It("should return the same value", func() {
-					gomock.InOrder(
-						mockUI.EXPECT().Say("Please retrieve your Pivotal Network API from:").Times(1),
-						mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile").Times(1),
-						mockUI.EXPECT().AskForPassword("API token").Return("some-user-provided-token").Times(1),
-					)
-					Expect(cfg.GetToken()).To(Equal("some-user-provided-token"))
-					Expect(cfg.GetToken()).To(Equal("some-user-provided-token"))
-				})
+			AfterEach(func() {
+				os.Setenv("PIVNET_TOKEN", savedToken)
+				mockCtrl.Finish()
+			})
+
+			It("should not save the token", func() {
+				mockUI.EXPECT().Say("PIVNET_TOKEN set, ignored saved PivNet API token.")
+
+				cfg.GetToken()
+				Expect(cfg.SaveToken()).To(Succeed())
+			})
+		})
+	})
+
+	Context("#PCFDevDir", func() {
+		Context("when the PCFDEV_HOME Environment variable is set", func() {
+			var pcfdevHome string
+
+			BeforeEach(func() {
+				pcfdevHome = os.Getenv("PCFDEV_HOME")
+			})
+
+			AfterEach(func() {
+				os.Setenv("PCFDEV_HOME", pcfdevHome)
+			})
+
+			It("should return the PCF Dev directory", func() {
+				os.Setenv("PCFDEV_HOME", "some-dir")
+				config := &config.Config{}
+				Expect(config.PCFDevDir()).To(Equal(filepath.Join("some-dir", ".pcfdev")))
 			})
 		})
 	})

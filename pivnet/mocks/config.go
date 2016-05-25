@@ -28,10 +28,11 @@ func (_m *MockConfig) EXPECT() *_MockConfigRecorder {
 	return _m.recorder
 }
 
-func (_m *MockConfig) GetToken() string {
+func (_m *MockConfig) GetToken() (string, error) {
 	ret := _m.ctrl.Call(_m, "GetToken")
 	ret0, _ := ret[0].(string)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 func (_mr *_MockConfigRecorder) GetToken() *gomock.Call {

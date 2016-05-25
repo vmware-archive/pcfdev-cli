@@ -29,8 +29,10 @@ var (
 )
 
 func main() {
+	fileSystem := &fs.FS{}
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 	config := &config.Config{
+		FS:        fileSystem,
 		UI:        termUI,
 		MinMemory: 3072,
 		MaxMemory: 4096,
@@ -46,11 +48,12 @@ func main() {
 		Client: client,
 		Downloader: &downloader.Downloader{
 			PivnetClient: client,
-			FS:           &fs.FS{},
+			FS:           fileSystem,
 			ExpectedMD5:  md5,
 		},
-		UI:  &plugin.NonTranslatingUI{termUI},
-		SSH: &ssh.SSH{},
+		UI:     &plugin.NonTranslatingUI{termUI},
+		Config: config,
+		SSH:    &ssh.SSH{},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},
 			Driver: &vbox.VBoxDriver{},

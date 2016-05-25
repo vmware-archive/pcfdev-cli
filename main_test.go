@@ -104,6 +104,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("Services started"))
 		Expect(session).To(gbytes.Say("PCF Dev is now running"))
 		Expect(isVMRunning()).To(BeTrue())
+		// Expect(ioutil.ReadFile(filepath.Join(tempHome, ".pcfdev", "token"))).NotTo(Equal(os.Getenv("PCFDEV_TOKEN")))
 		Expect(filepath.Join(tempHome, ".pcfdev", vmName+"-disk0.vmdk")).To(BeAnExistingFile())
 
 		By("re-running 'cf dev start' with no effect")

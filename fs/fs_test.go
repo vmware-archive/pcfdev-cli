@@ -30,6 +30,15 @@ var _ = Describe("Filesystem", func() {
 		os.RemoveAll(tmpDir)
 	})
 
+	Describe("#Read", func() {
+		Context("when the file exists", func() {
+			It("should return the contents the file", func() {
+				ioutil.WriteFile(filepath.Join(tmpDir, "some-file"), []byte("some-contents"), 0644)
+				Expect(fs.Read(filepath.Join(tmpDir, "some-file"))).To(Equal([]byte("some-contents")))
+			})
+		})
+	})
+
 	Describe("#Exists", func() {
 		Context("when the file exists", func() {
 			BeforeEach(func() {

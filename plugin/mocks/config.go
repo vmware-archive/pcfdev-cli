@@ -28,12 +28,12 @@ func (_m *MockConfig) EXPECT() *_MockConfigRecorder {
 	return _m.recorder
 }
 
-func (_m *MockConfig) GetToken() string {
-	ret := _m.ctrl.Call(_m, "GetToken")
-	ret0, _ := ret[0].(string)
+func (_m *MockConfig) SaveToken() error {
+	ret := _m.ctrl.Call(_m, "SaveToken")
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockConfigRecorder) GetToken() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetToken")
+func (_mr *_MockConfigRecorder) SaveToken() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SaveToken")
 }

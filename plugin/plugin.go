@@ -19,6 +19,7 @@ type Plugin struct {
 	VBox                VBox
 	RequirementsChecker RequirementsChecker
 	Client              Client
+	Config              Config
 	Downloader          Downloader
 
 	VMName string
@@ -64,6 +65,11 @@ type Client interface {
 	AcceptEULA() error
 	IsEULAAccepted() (bool, error)
 	GetEULA() (eula string, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/plugin Config
+type Config interface {
+	SaveToken() error
 }
 
 func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
@@ -136,7 +142,7 @@ func (p *Plugin) downloadVM() error {
 	}
 	current, err := p.Downloader.IsOVACurrent(ovaPath)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if current {
 		p.UI.Say("Using existing image")
@@ -170,6 +176,11 @@ func (p *Plugin) downloadVM() error {
 	if err := p.Downloader.Download(ovaPath); err != nil {
 		return err
 	}
+
+	if err := p.Config.SaveToken(); err != nil {
+		return err
+	}
+
 	p.UI.Say("\nVM downloaded")
 	return nil
 }

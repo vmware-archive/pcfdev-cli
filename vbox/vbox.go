@@ -152,25 +152,23 @@ func (v *VBox) proxySettings(ip string) string {
 		panic(err)
 	}
 
+	httpProxy := strings.Replace(v.Config.GetHTTPProxy(), "127.0.0.1", subnet, -1)
+	httpsProxy := strings.Replace(v.Config.GetHTTPSProxy(), "127.0.0.1", subnet, -1)
+	noProxy := strings.Join([]string{
+		"localhost",
+		"127.0.0.1",
+		subnet,
+		ip,
+		domain,
+		v.Config.GetNoProxy()}, ",")
+
 	return strings.Join([]string{
-		fmt.Sprintf("HTTP_PROXY=" + v.Config.GetHTTPProxy()),
-		fmt.Sprintf("HTTPS_PROXY=" + v.Config.GetHTTPSProxy()),
-		fmt.Sprintf("NO_PROXY=" + strings.Join([]string{
-			"localhost",
-			"127.0.0.1",
-			subnet,
-			ip,
-			domain,
-			v.Config.GetNoProxy()}, ",")),
-		fmt.Sprintf("http_proxy=" + v.Config.GetHTTPProxy()),
-		fmt.Sprintf("https_proxy=" + v.Config.GetHTTPSProxy()),
-		fmt.Sprintf("no_proxy=" + strings.Join([]string{
-			"localhost",
-			"127.0.0.1",
-			subnet,
-			ip,
-			domain,
-			v.Config.GetNoProxy()}, ",")),
+		"HTTP_PROXY=" + httpProxy,
+		"HTTPS_PROXY=" + httpsProxy,
+		"NO_PROXY=" + noProxy,
+		"http_proxy=" + httpProxy,
+		"https_proxy=" + httpsProxy,
+		"no_proxy=" + noProxy,
 	}, "\n")
 }
 

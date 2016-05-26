@@ -29,7 +29,7 @@ var allowedAddresses = map[string]string{
 func DomainForIP(ip string) (string, error) {
 	domain, ok := allowedAddresses[ip]
 	if !ok {
-		return "", fmt.Errorf("%s is not one of the allowed pcfdev ips", ip)
+		return "", fmt.Errorf("%s is not one of the allowed PCF Dev ips", ip)
 	}
 
 	return domain, nil
@@ -38,7 +38,7 @@ func DomainForIP(ip string) (string, error) {
 func SubnetForIP(ip string) (string, error) {
 	_, ok := allowedAddresses[ip]
 	if !ok {
-		return "", fmt.Errorf("%s is not one of the allowed pcfdev ips", ip)
+		return "", fmt.Errorf("%s is not one of the allowed PCF Dev ips", ip)
 	}
 
 	return ip[0 : len(ip)-1], nil
@@ -48,7 +48,7 @@ func IPForSubnet(subnet string) (string, error) {
 	ip := subnet + "1"
 	_, ok := allowedAddresses[ip]
 	if !ok {
-		return "", fmt.Errorf("%s is not one of the allowed pcfdev subnets", subnet)
+		return "", fmt.Errorf("%s is not one of the allowed PCF Dev subnets", subnet)
 	}
 	return ip, nil
 }

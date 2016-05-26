@@ -18,7 +18,7 @@ var _ = Describe("Address", func() {
 		Context("when the ip does not match any of the route53 records", func() {
 			It("should return an error", func() {
 				_, err := address.DomainForIP("192.168.41.81")
-				Expect(err).To(MatchError("192.168.41.81 is not one of the allowed pcfdev ips"))
+				Expect(err).To(MatchError("192.168.41.81 is not one of the allowed PCF Dev ips"))
 			})
 		})
 	})
@@ -33,7 +33,7 @@ var _ = Describe("Address", func() {
 		Context("when the ip does not match any of the route53 records", func() {
 			It("should return an error", func() {
 				_, err := address.SubnetForIP("192.168.41.81")
-				Expect(err).To(MatchError("192.168.41.81 is not one of the allowed pcfdev ips"))
+				Expect(err).To(MatchError("192.168.41.81 is not one of the allowed PCF Dev ips"))
 			})
 		})
 	})
@@ -48,7 +48,7 @@ var _ = Describe("Address", func() {
 		Context("when the ip does not match any of the route53 records", func() {
 			It("should return an error", func() {
 				_, err := address.IPForSubnet("192.168.41.1")
-				Expect(err).To(MatchError("192.168.41.1 is not one of the allowed pcfdev subnets"))
+				Expect(err).To(MatchError("192.168.41.1 is not one of the allowed PCF Dev subnets"))
 			})
 		})
 	})

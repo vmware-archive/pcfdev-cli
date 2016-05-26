@@ -521,7 +521,7 @@ var _ = Describe("vbox", func() {
 					)
 
 					_, err := vbx.StartVM("some-vm")
-					Expect(err).To(MatchError("some-bad-ip is not one of the allowed pcfdev ips"))
+					Expect(err).To(MatchError("some-bad-ip is not one of the allowed PCF Dev ips"))
 				})
 			})
 		})

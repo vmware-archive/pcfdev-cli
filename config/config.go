@@ -24,6 +24,7 @@ type FS interface {
 	Exists(path string) (bool, error)
 	Write(path string, contents io.Reader) error
 	Read(path string) (contents []byte, err error)
+	RemoveFile(path string) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/config UI
@@ -78,6 +79,26 @@ func (c *Config) SaveToken() error {
 	}
 
 	return c.FS.Write(filepath.Join(pcfdevDir, "token"), strings.NewReader(c.token))
+}
+
+func (c *Config) DestroyToken() error {
+	pcfdevDir, err := c.PCFDevDir()
+	if err != nil {
+		panic(err)
+	}
+
+	exists, err := c.FS.Exists(filepath.Join(pcfdevDir, "token"))
+	if err != nil {
+		panic(err)
+	}
+
+	if exists {
+		err := c.FS.RemoveFile(filepath.Join(pcfdevDir, "token"))
+		if err != nil {
+			panic(err)
+		}
+	}
+	return nil
 }
 
 func (c *Config) PCFDevDir() (dir string, err error) {

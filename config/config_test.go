@@ -260,6 +260,50 @@ var _ = Describe("Config", func() {
 		})
 	})
 
+	Context("#DestroyToken", func() {
+		var (
+			pcfdevHome string
+			mockFS     *mocks.MockFS
+			mockCtrl   *gomock.Controller
+			cfg        *config.Config
+		)
+
+		BeforeEach(func() {
+			mockCtrl = gomock.NewController(GinkgoT())
+			mockFS = mocks.NewMockFS(mockCtrl)
+
+			cfg = &config.Config{
+				FS: mockFS,
+			}
+
+			pcfdevHome = os.Getenv("PCFDEV_HOME")
+
+			os.Setenv("PCFDEV_HOME", "some-pcfdev-home")
+		})
+
+		AfterEach(func() {
+			os.Setenv("PCFDEV_HOME", pcfdevHome)
+			mockCtrl.Finish()
+		})
+
+		Context("when the token is saved to file", func() {
+			It("should delete the token file", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(true, nil),
+					mockFS.EXPECT().RemoveFile(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(nil),
+				)
+				Expect(cfg.DestroyToken()).To(Succeed())
+			})
+		})
+
+		Context("when the token is not saved to file", func() {
+			It("should not throw an error", func() {
+				mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(false, nil)
+				Expect(cfg.DestroyToken()).To(Succeed())
+			})
+		})
+	})
+
 	Context("#PCFDevDir", func() {
 		Context("when the PCFDEV_HOME Environment variable is set", func() {
 			var pcfdevHome string

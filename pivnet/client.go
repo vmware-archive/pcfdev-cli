@@ -13,6 +13,7 @@ import (
 //go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/pivnet Config
 type Config interface {
 	GetToken() (token string, err error)
+	DestroyToken() error
 }
 
 type Client struct {
@@ -54,6 +55,7 @@ func (c *Client) DownloadOVA(startAtByte int64) (ova *DownloadReader, err error)
 	case http.StatusPartialContent:
 		return &DownloadReader{ReadCloser: resp.Body, Writer: os.Stdout, ContentLength: resp.ContentLength, ExistingLength: startAtByte}, nil
 	case http.StatusUnauthorized:
+		c.Config.DestroyToken()
 		return nil, &InvalidTokenError{}
 	default:
 		return nil, c.unexpectedResponseError(resp)
@@ -72,6 +74,7 @@ func (c *Client) IsEULAAccepted() (bool, error) {
 	case 451:
 		return false, nil
 	case http.StatusUnauthorized:
+		c.Config.DestroyToken()
 		return false, &InvalidTokenError{}
 	default:
 		return false, c.unexpectedResponseError(resp)
@@ -87,6 +90,7 @@ func (c *Client) GetEULA() (eula string, err error) {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
+		c.Config.DestroyToken()
 		return "", &InvalidTokenError{}
 	case 200:
 		break
@@ -112,6 +116,7 @@ func (c *Client) GetEULA() (eula string, err error) {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
+		c.Config.DestroyToken()
 		return "", &InvalidTokenError{}
 	case 200:
 		break
@@ -141,6 +146,7 @@ func (c *Client) AcceptEULA() error {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
+		c.Config.DestroyToken()
 		return &InvalidTokenError{}
 	case 451, 200:
 		break
@@ -167,6 +173,7 @@ func (c *Client) AcceptEULA() error {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
+		c.Config.DestroyToken()
 		return &InvalidTokenError{}
 	case 200:
 		return nil

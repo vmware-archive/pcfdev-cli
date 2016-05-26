@@ -98,6 +98,7 @@ var _ = Describe("Pivnet Client", func() {
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
 
 				mockConfig.EXPECT().GetToken().Return("some-token", nil)
+
 				_, err := client.DownloadOVA(int64(0))
 				Expect(err).To(MatchError(ContainSubstring("Pivotal Network returned:")))
 			})
@@ -111,7 +112,10 @@ var _ = Describe("Pivnet Client", func() {
 				}
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
 
-				mockConfig.EXPECT().GetToken().Return("some-token", nil)
+				gomock.InOrder(
+					mockConfig.EXPECT().GetToken().Return("some-bad-token", nil),
+					mockConfig.EXPECT().DestroyToken().Return(nil),
+				)
 				_, err := client.DownloadOVA(int64(0))
 				Expect(err).To(MatchError(MatchRegexp("invalid Pivotal Network API token")))
 			})
@@ -148,6 +152,7 @@ var _ = Describe("Pivnet Client", func() {
 				client.Host = "some-bad-host"
 
 				mockConfig.EXPECT().GetToken().Return("some-token", errors.New("some-error"))
+
 				Expect(client.AcceptEULA()).To(MatchError(ContainSubstring("failed to reach Pivotal Network:")))
 			})
 		})
@@ -169,6 +174,7 @@ var _ = Describe("Pivnet Client", func() {
 					}
 				}
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+
 				mockConfig.EXPECT().GetToken().Return("some-token", nil)
 
 				Expect(client.AcceptEULA()).To(MatchError(ContainSubstring("failed to parse network response:")))
@@ -182,8 +188,11 @@ var _ = Describe("Pivnet Client", func() {
 					w.WriteHeader(401)
 				}
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
-				mockConfig.EXPECT().GetToken().Return("some-bad-token", nil)
 
+				gomock.InOrder(
+					mockConfig.EXPECT().GetToken().Return("some-bad-token", nil),
+					mockConfig.EXPECT().DestroyToken().Return(nil),
+				)
 				Expect(client.AcceptEULA()).To(MatchError("invalid Pivotal Network API token"))
 			})
 		})
@@ -253,8 +262,11 @@ var _ = Describe("Pivnet Client", func() {
 					}
 				}
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
-				mockConfig.EXPECT().GetToken().Return("some-token", nil).Times(2)
 
+				gomock.InOrder(
+					mockConfig.EXPECT().GetToken().Return("some-token", nil).Times(2),
+					mockConfig.EXPECT().DestroyToken().Return(nil),
+				)
 				Expect(client.AcceptEULA()).To(MatchError("invalid Pivotal Network API token"))
 			})
 		})
@@ -323,7 +335,22 @@ var _ = Describe("Pivnet Client", func() {
 			})
 		})
 
-		Context("when eula has not been accepted", func() {
+		Context("when getting the EULA returns an unauthorized error", func() {
+			It("should return the error and delete the token file", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+					w.WriteHeader(401)
+				}
+
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+				mockConfig.EXPECT().GetToken().Return("some-bad-token", nil)
+				mockConfig.EXPECT().DestroyToken().Return(nil)
+				_, err := client.IsEULAAccepted()
+				Expect(err).To(MatchError(&pivnet.InvalidTokenError{}))
+			})
+		})
+
+		Context("when EULA has not been accepted", func() {
 			It("should return false", func() {
 				handler := func(w http.ResponseWriter, r *http.Request) {
 					defer GinkgoRecover()
@@ -390,7 +417,11 @@ var _ = Describe("Pivnet Client", func() {
 					w.WriteHeader(401)
 				}
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
-				mockConfig.EXPECT().GetToken().Return("some-bad-token", nil)
+
+				gomock.InOrder(
+					mockConfig.EXPECT().GetToken().Return("some-bad-token", nil),
+					mockConfig.EXPECT().DestroyToken().Return(nil),
+				)
 				_, err := client.GetEULA()
 				Expect(err).To(MatchError(MatchRegexp("invalid Pivotal Network API token")))
 			})
@@ -457,7 +488,11 @@ var _ = Describe("Pivnet Client", func() {
 					}
 				}
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
-				mockConfig.EXPECT().GetToken().Return("some-token", nil).Times(2)
+
+				gomock.InOrder(
+					mockConfig.EXPECT().GetToken().Return("some-token", nil).Times(2),
+					mockConfig.EXPECT().DestroyToken().Return(nil),
+				)
 				_, err := client.GetEULA()
 				Expect(err).To(MatchError(MatchRegexp("invalid Pivotal Network API token")))
 			})

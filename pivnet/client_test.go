@@ -299,7 +299,7 @@ var _ = Describe("Pivnet Client", func() {
 	})
 
 	Describe("IsEULAAccepted", func() {
-		Context("when eula has been accepted", func() {
+		Context("when EULA has been accepted", func() {
 			It("should return true", func() {
 				handler := func(w http.ResponseWriter, r *http.Request) {
 					defer GinkgoRecover()
@@ -367,7 +367,7 @@ var _ = Describe("Pivnet Client", func() {
 	})
 
 	Describe("GetEULA", func() {
-		It("should return eula", func() {
+		It("should return EULA", func() {
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				defer GinkgoRecover()
 
@@ -454,7 +454,7 @@ var _ = Describe("Pivnet Client", func() {
 			})
 		})
 
-		Context("when it fails to query the eula", func() {
+		Context("when it fails to query the EULA", func() {
 			It("should return an auth error", func() {
 				handler := func(w http.ResponseWriter, r *http.Request) {
 					defer GinkgoRecover()
@@ -473,7 +473,7 @@ var _ = Describe("Pivnet Client", func() {
 			})
 		})
 
-		Context("when eula request returns 401", func() {
+		Context("when EULA request returns 401", func() {
 			It("should return an auth error", func() {
 				handler := func(w http.ResponseWriter, r *http.Request) {
 					defer GinkgoRecover()
@@ -498,7 +498,7 @@ var _ = Describe("Pivnet Client", func() {
 			})
 		})
 
-		Context("when it eula request does not return 200 or 451", func() {
+		Context("when it EULA request does not return 200 or 451", func() {
 			It("should return an error", func() {
 				handler := func(w http.ResponseWriter, r *http.Request) {
 					defer GinkgoRecover()
@@ -519,7 +519,7 @@ var _ = Describe("Pivnet Client", func() {
 			})
 		})
 
-		Context("when it fails to unmarshal eula", func() {
+		Context("when it fails to unmarshal EULA", func() {
 			It("should return an error", func() {
 				handler := func(w http.ResponseWriter, r *http.Request) {
 					defer GinkgoRecover()

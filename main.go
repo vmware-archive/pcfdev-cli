@@ -20,12 +20,11 @@ import (
 	cfplugin "github.com/cloudfoundry/cli/plugin"
 )
 
-var productFileDownloadURI string
 var (
-	releaseId     = "1622"
-	productFileId = "4693"
-	md5           = "7eed7a7314435a3cffc2c943e80606ad"
-	vmName        = "pcfdev-0.83.0"
+	releaseId     string
+	productFileId string
+	md5           string
+	vmName        string
 )
 
 func main() {

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -ex
+
+aws s3 cp s3://pcfdev/ci/pivnet-file-metadata .
+vm_name=pcfdev-$(jq -r .version pivnet-file-metadata)
+release_id=$(jq -r .release_id pivnet-file-metadata)
+product_file_id=$(jq -r .id pivnet-file-metadata)
+md5=$(jq -r .md5 pivnet-file-metadata)
+rm -f pivnet-file-metadata
+
+go build \
+  -ldflags \
+  "-X main.vmName=${vm_name}
+   -X main.releaseId=${release_id}
+   -X main.productFileId=${product_file_id}
+   -X main.md5=${md5}" \
+  github.com/pivotal-cf/pcfdev-cli

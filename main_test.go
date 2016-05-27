@@ -188,7 +188,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "1h").Should(gexec.Exit(0))
 
-		_, err = os.Stat(filepath.Join(os.Getenv("PCFDEV_HOME"), ".pcfdev", "pcfdev-test.ova"))
+		_, err = os.Stat(filepath.Join(os.Getenv("PCFDEV_HOME"), ".pcfdev", "ova", "pcfdev-test.ova"))
 		Expect(err).NotTo(HaveOccurred())
 
 		listVmsCommand := exec.Command("VBoxManage", "list", "vms")

@@ -336,12 +336,12 @@ var _ = Describe("Config", func() {
 				os.Setenv("PCFDEV_HOME", pcfdevHome)
 			})
 
-			It("should return the PCF Dev directory", func() {
+			It("should return the OVA path", func() {
 				os.Setenv("PCFDEV_HOME", "some-dir")
 				config := &config.Config{
 					VMName: "some-vm",
 				}
-				Expect(config.GetOVAPath()).To(Equal(filepath.Join("some-dir", ".pcfdev", "some-vm.ova")))
+				Expect(config.GetOVAPath()).To(Equal(filepath.Join("some-dir", ".pcfdev", "ova", "some-vm.ova")))
 			})
 		})
 	})

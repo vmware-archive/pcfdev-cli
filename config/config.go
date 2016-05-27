@@ -123,7 +123,7 @@ func (c *Config) GetOVAPath() (path string, err error) {
 		return "", err
 	}
 
-	return filepath.Join(pcfdevDir, c.VMName+".ova"), nil
+	return filepath.Join(pcfdevDir, "ova", c.VMName+".ova"), nil
 }
 
 func (c *Config) GetVMName() string {

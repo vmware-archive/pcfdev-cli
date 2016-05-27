@@ -77,7 +77,7 @@ func (d *Downloader) Download() error {
 		return err
 	}
 
-	if err := d.FS.DeleteAllExcept(dir, []string{filename, d.partialFilePath(filename), "token"}); err != nil {
+	if err := d.FS.DeleteAllExcept(dir, []string{filename, d.partialFilePath(filename)}); err != nil {
 		return err
 	}
 

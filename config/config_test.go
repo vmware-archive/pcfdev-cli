@@ -304,7 +304,7 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Context("#PCFDevDir", func() {
+	Context("#GetPCFDevDir", func() {
 		Context("when the PCFDEV_HOME Environment variable is set", func() {
 			var pcfdevHome string
 
@@ -319,8 +319,39 @@ var _ = Describe("Config", func() {
 			It("should return the PCF Dev directory", func() {
 				os.Setenv("PCFDEV_HOME", "some-dir")
 				config := &config.Config{}
-				Expect(config.PCFDevDir()).To(Equal(filepath.Join("some-dir", ".pcfdev")))
+				Expect(config.GetPCFDevDir()).To(Equal(filepath.Join("some-dir", ".pcfdev")))
 			})
+		})
+	})
+
+	Context("#GetOVAPath", func() {
+		Context("when the PCFDEV_HOME Environment variable is set", func() {
+			var pcfdevHome string
+
+			BeforeEach(func() {
+				pcfdevHome = os.Getenv("PCFDEV_HOME")
+			})
+
+			AfterEach(func() {
+				os.Setenv("PCFDEV_HOME", pcfdevHome)
+			})
+
+			It("should return the PCF Dev directory", func() {
+				os.Setenv("PCFDEV_HOME", "some-dir")
+				config := &config.Config{
+					VMName: "some-vm",
+				}
+				Expect(config.GetOVAPath()).To(Equal(filepath.Join("some-dir", ".pcfdev", "some-vm.ova")))
+			})
+		})
+	})
+
+	Context("#GetVMName", func() {
+		It("should return the VM Name", func() {
+			config := &config.Config{
+				VMName: "some-vm",
+			}
+			Expect(config.GetVMName()).To(Equal("some-vm"))
 		})
 	})
 

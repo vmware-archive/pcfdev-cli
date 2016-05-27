@@ -25,9 +25,14 @@ type FS interface {
 	DeleteAllExcept(path string, filenames []string) error
 }
 
+//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/downloader Config
+type Config interface {
+	GetOVAPath() (ovaPath string, err error)
+}
 type Downloader struct {
 	FS           FS
 	PivnetClient Client
+	Config       Config
 	ExpectedMD5  string
 }
 
@@ -35,7 +40,12 @@ func (d *Downloader) partialFilePath(path string) string {
 	return path + ".partial"
 }
 
-func (d *Downloader) IsOVACurrent(path string) (bool, error) {
+func (d *Downloader) IsOVACurrent() (bool, error) {
+	path, err := d.Config.GetOVAPath()
+	if err != nil {
+		return false, err
+	}
+
 	fileExists, err := d.FS.Exists(path)
 	if err != nil {
 		return false, err
@@ -55,7 +65,12 @@ func (d *Downloader) IsOVACurrent(path string) (bool, error) {
 	return true, nil
 }
 
-func (d *Downloader) Download(path string) error {
+func (d *Downloader) Download() error {
+	path, err := d.Config.GetOVAPath()
+	if err != nil {
+		return err
+	}
+
 	dir := filepath.Dir(path)
 	filename := filepath.Base(path)
 	if err := d.FS.CreateDir(dir); err != nil {

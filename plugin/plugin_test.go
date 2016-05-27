@@ -4,12 +4,10 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/mocks"
 	"github.com/pivotal-cf/pcfdev-cli/user"
-	"github.com/pivotal-cf/pcfdev-cli/vbox"
 
 	"github.com/cloudfoundry/cli/plugin/fakes"
 	"github.com/golang/mock/gomock"
@@ -27,8 +25,9 @@ var _ = Describe("Plugin", func() {
 		mockRequirementsChecker *mocks.MockRequirementsChecker
 		mockClient              *mocks.MockClient
 		mockConfig              *mocks.MockConfig
+		mockBuilder             *mocks.MockBuilder
+		mockVM                  *mocks.MockVM
 		pcfdev                  *plugin.Plugin
-		vm                      *vbox.VM
 	)
 
 	BeforeEach(func() {
@@ -39,6 +38,8 @@ var _ = Describe("Plugin", func() {
 		mockDownloader = mocks.NewMockDownloader(mockCtrl)
 		mockClient = mocks.NewMockClient(mockCtrl)
 		mockConfig = mocks.NewMockConfig(mockCtrl)
+		mockBuilder = mocks.NewMockBuilder(mockCtrl)
+		mockVM = mocks.NewMockVM(mockCtrl)
 		mockRequirementsChecker = mocks.NewMockRequirementsChecker(mockCtrl)
 		pcfdev = &plugin.Plugin{
 			SSH:                 mockSSH,
@@ -48,12 +49,7 @@ var _ = Describe("Plugin", func() {
 			RequirementsChecker: mockRequirementsChecker,
 			Client:              mockClient,
 			Config:              mockConfig,
-			VMName:              "some-vm-name",
-		}
-		vm = &vbox.VM{
-			IP:      "some-ip",
-			SSHPort: "some-port",
-			Domain:  "some-domain",
+			Builder:             mockBuilder,
 		}
 	})
 
@@ -88,10 +84,10 @@ var _ = Describe("Plugin", func() {
 			Context("when OVA is not current", func() {
 				It("should download and save the token", func() {
 					gomock.InOrder(
-						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
+						mockDownloader.EXPECT().Download(),
 						mockConfig.EXPECT().SaveToken().Return(nil),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 					)
@@ -102,7 +98,7 @@ var _ = Describe("Plugin", func() {
 				Context("when EULA check fails", func() {
 					It("should print an error", func() {
 						gomock.InOrder(
-							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error"),
 						)
@@ -115,10 +111,10 @@ var _ = Describe("Plugin", func() {
 				Context("when downloading the OVA fails", func() {
 					It("should print an error", func() {
 						gomock.InOrder(
-							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
-							mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(errors.New("some-error")),
+							mockDownloader.EXPECT().Download().Return(errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error"),
 						)
 
@@ -129,10 +125,10 @@ var _ = Describe("Plugin", func() {
 				Context("when saving the API token fails", func() {
 					It("should print an error", func() {
 						gomock.InOrder(
-							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
-							mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
+							mockDownloader.EXPECT().Download(),
 							mockConfig.EXPECT().SaveToken().Return(errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error"),
 						)
@@ -145,14 +141,14 @@ var _ = Describe("Plugin", func() {
 				Context("when EULA has not been accepted and user accepts the EULA", func() {
 					It("should download the ova", func() {
 						gomock.InOrder(
-							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
 							mockUI.EXPECT().Say("some-eula"),
 							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
 							mockClient.EXPECT().AcceptEULA().Return(nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
-							mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
+							mockDownloader.EXPECT().Download(),
 							mockConfig.EXPECT().SaveToken().Return(nil),
 							mockUI.EXPECT().Say("\nVM downloaded"),
 						)
@@ -164,7 +160,7 @@ var _ = Describe("Plugin", func() {
 				Context("when EULA has not been accepted and user denies the EULA", func() {
 					It("should not accept and fail gracefully", func() {
 						gomock.InOrder(
-							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
 							mockUI.EXPECT().Say("some-eula"),
@@ -179,7 +175,7 @@ var _ = Describe("Plugin", func() {
 				Context("when EULA has not been accepted and it fails to accept the EULA", func() {
 					It("should return the error", func() {
 						gomock.InOrder(
-							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
 							mockUI.EXPECT().Say("some-eula"),
@@ -195,7 +191,7 @@ var _ = Describe("Plugin", func() {
 				Context("when EULA is not accepted and getting the EULA fails", func() {
 					It("should print an error", func() {
 						gomock.InOrder(
-							mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("", errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error"),
@@ -218,10 +214,10 @@ var _ = Describe("Plugin", func() {
 
 					It("should download the ova to PCFDEV_HOME", func() {
 						gomock.InOrder(
-							mockDownloader.EXPECT().IsOVACurrent(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
-							mockDownloader.EXPECT().Download(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova")),
+							mockDownloader.EXPECT().Download(),
 							mockConfig.EXPECT().SaveToken().Return(nil),
 							mockUI.EXPECT().Say("\nVM downloaded"),
 						)
@@ -234,7 +230,7 @@ var _ = Describe("Plugin", func() {
 			Context("when OVA is current", func() {
 				It("should not download", func() {
 					gomock.InOrder(
-						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(true, nil),
+						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 						mockUI.EXPECT().Say("Using existing image"),
 					)
 
@@ -245,7 +241,7 @@ var _ = Describe("Plugin", func() {
 			Context("when calling IsOVACurrent fails", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
-						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, errors.New("some-error")),
+						mockDownloader.EXPECT().IsOVACurrent().Return(false, errors.New("some-error")),
 						mockUI.EXPECT().Failed("Error: some-error"),
 					)
 
@@ -255,31 +251,24 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Describe("start", func() {
-			Context("when the VM has not been created", func() {
+			Context("when ova is not current", func() {
 				It("should download and start the ova", func() {
 					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
-						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
+						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
+						mockDownloader.EXPECT().Download(),
 						mockConfig.EXPECT().SaveToken().Return(nil),
 						mockUI.EXPECT().Say("\nVM downloaded"),
-
-						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name", filepath.Join(home, ".pcfdev")).Return(nil),
-						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
-						mockUI.EXPECT().Say("Starting VM..."),
-						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
-						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
-						mockUI.EXPECT().Say("PCF Dev is now running"),
+						mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+						mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+						mockVM.EXPECT().Start(),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 				})
+			})
 
+			Context("when ova is current", func() {
 				Context("when PCFDEV_HOME is set", func() {
 					var pcfdevHome string
 
@@ -294,391 +283,169 @@ var _ = Describe("Plugin", func() {
 
 					It("should download and start the ova in PCFDEV_HOME", func() {
 						gomock.InOrder(
-							mockRequirementsChecker.EXPECT().Check().Return(nil),
-							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-							mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
-							mockDownloader.EXPECT().IsOVACurrent(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova")).Return(true, nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 							mockUI.EXPECT().Say("Using existing image"),
-
-							mockUI.EXPECT().Say("Importing VM..."),
-							mockVBox.EXPECT().ImportVM(filepath.Join("some", "other", "dir", ".pcfdev", "some-vm-name.ova"), "some-vm-name", filepath.Join("some", "other", "dir", ".pcfdev")).Return(nil),
-							mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
-							mockUI.EXPECT().Say("Starting VM..."),
-							mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
-							mockUI.EXPECT().Say("Provisioning VM..."),
-							mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
-							mockUI.EXPECT().Say("PCF Dev is now running"),
+							mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+							mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+							mockVM.EXPECT().Start(),
 						)
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 					})
 				})
-			})
-
-			Context("when the VM is stopped", func() {
-				It("should start and provision the VM", func() {
+				It("should start without downloading", func() {
 					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusStopped, nil),
-						mockUI.EXPECT().Say("Starting VM..."),
-						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
-						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
-						mockUI.EXPECT().Say("PCF Dev is now running"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when the VM is already running", func() {
-				It("should print a message and exit", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusRunning, nil),
-						mockUI.EXPECT().Say("PCF Dev is running"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when the OVA fails to download", func() {
-				It("should print an error message", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
-						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
-						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
-						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when the VM fails to start", func() {
-				It("should print an error message", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusStopped, nil),
-						mockUI.EXPECT().Say("Starting VM..."),
-						mockVBox.EXPECT().StartVM("some-vm-name").Return(nil, errors.New("some-error")),
-						mockUI.EXPECT().Failed("Failed to start PCF Dev VM."),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when the VM fails to provision", func() {
-				It("should print an error message", func() {
-					err := errors.New("some-error")
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusStopped, nil),
-						mockUI.EXPECT().Say("Starting VM..."),
-						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
-						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr).Return(err),
-						mockUI.EXPECT().Failed("Failed to provision PCF Dev VM."),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when the VM status query fails", func() {
-				It("should print an error message", func() {
-					expectedError := errors.New("some-error")
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return("", expectedError),
-						mockUI.EXPECT().Failed("Failed to start PCF Dev VM."),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when VM importing fails", func() {
-				It("should print an error message", func() {
-					expectedError := errors.New("some-error")
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
-						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(true, nil),
+						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 						mockUI.EXPECT().Say("Using existing image"),
-						mockUI.EXPECT().Say("Importing VM..."),
-
-						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name", filepath.Join(home, ".pcfdev")).Return(expectedError),
-						mockUI.EXPECT().Failed("Failed to import PCF Dev VM."),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when the VM doesn't exist, but a conflicting VM is present", func() {
-				It("should print an error message", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(true, nil),
-						mockUI.EXPECT().Failed("An old version of PCF Dev was detected. You must run 'cf dev destroy' to continue."),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when checking for conflicting VMs fails", func() {
-				It("should print an error message", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, errors.New("some-error")),
-						mockUI.EXPECT().Failed("Failed to start PCF Dev VM."),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when the system does not meet requirements", func() {
-				It("should print a warning and prompt for response to continue", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
-						mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
-						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(true, nil),
-						mockUI.EXPECT().Say("Using existing image"),
-
-						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name", filepath.Join(home, ".pcfdev")).Return(nil),
-						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
-						mockUI.EXPECT().Say("Starting VM..."),
-						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
-						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
-						mockUI.EXPECT().Say("PCF Dev is now running"),
+						mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+						mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+						mockVM.EXPECT().Start(),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
 
-			Context("when the system does not meet requirements and the user declines to continue", func() {
-				It("should exit gracefully", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
-						mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(false),
-						mockUI.EXPECT().Say("Exiting..."),
-					)
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when the EULA is not accepted", func() {
-				It("should print the EULA", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-						mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
-						mockDownloader.EXPECT().IsOVACurrent(filepath.Join(home, ".pcfdev", "some-vm-name.ova")).Return(false, nil),
-						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
-						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-						mockUI.EXPECT().Say("some-eula"),
-						mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
-						mockClient.EXPECT().AcceptEULA().Return(nil),
-
-						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download(filepath.Join(home, ".pcfdev", "some-vm-name.ova")),
-						mockConfig.EXPECT().SaveToken().Return(nil),
-						mockUI.EXPECT().Say("\nVM downloaded"),
-
-						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM(filepath.Join(home, ".pcfdev", "some-vm-name.ova"), "some-vm-name", filepath.Join(home, ".pcfdev")).Return(nil),
-						mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
-						mockUI.EXPECT().Say("Starting VM..."),
-						mockVBox.EXPECT().StartVM("some-vm-name").Return(vm, nil),
-						mockUI.EXPECT().Say("Provisioning VM..."),
-						mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
-						mockUI.EXPECT().Say("PCF Dev is now running"),
-					)
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 				})
 			})
 		})
 
-		Context("stop", func() {
-			It("should stop the vm", func() {
+		Context("when the OVA fails to download", func() {
+			It("should print an error message", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusStopped, nil),
-					mockUI.EXPECT().Say("PCF Dev is stopped"),
+					mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+					mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
+					mockUI.EXPECT().Say("Downloading VM..."),
+					mockDownloader.EXPECT().Download().Return(errors.New("some-error")),
+					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
-			})
-
-			Context("when VM is running", func() {
-				It("should stop the vm", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusRunning, nil),
-						mockUI.EXPECT().Say("Stopping VM..."),
-						mockVBox.EXPECT().StopVM("some-vm-name").Return(nil),
-						mockUI.EXPECT().Say("PCF Dev is now stopped"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
-				})
-
-				Context("Vbox fails to stop VM", func() {
-					It("should print an error", func() {
-						err := errors.New("some-error")
-						gomock.InOrder(
-							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusRunning, nil),
-							mockUI.EXPECT().Say("Stopping VM..."),
-							mockVBox.EXPECT().StopVM("some-vm-name").Return(err),
-							mockUI.EXPECT().Failed("Failed to stop PCF Dev VM."),
-						)
-
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
-					})
-				})
-			})
-
-			Context("when VM is not created", func() {
-				Context("when a conflicting VM is running", func() {
-					It("should print an error", func() {
-						gomock.InOrder(
-							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-							mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(true, nil),
-							mockUI.EXPECT().Failed("An old version of PCF Dev was detected. You must run 'cf dev destroy' to continue."),
-						)
-
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
-					})
-				})
-
-				Context("when no conflicting VMs are running", func() {
-					It("should send an error message", func() {
-						gomock.InOrder(
-							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-							mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, nil),
-							mockUI.EXPECT().Say("PCF Dev VM has not been created"),
-						)
-
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
-					})
-				})
-
-				Context("when checking for conflicting VMs fails", func() {
-					It("should print an error", func() {
-						gomock.InOrder(
-							mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-							mockVBox.EXPECT().ConflictingVMPresent("some-vm-name").Return(false, errors.New("some-error")),
-							mockUI.EXPECT().Failed("Failed to stop PCF Dev VM."),
-						)
-
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
-					})
-				})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 			})
 		})
 
-		Context("status", func() {
-			Context("VBox VM is running", func() {
-				It("should return the status Running", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusRunning, nil),
-						mockUI.EXPECT().Say("Running"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
-				})
-			})
-
-			Context("VBox VM is stopped", func() {
-				It("should return the status Stopped", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusStopped, nil),
-						mockUI.EXPECT().Say("Stopped"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
-				})
-			})
-
-			Context("VBox VM is not created (i.e. not imported to VBox)", func() {
-				It("should return the status Not created", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Status("some-vm-name").Return(vbox.StatusNotCreated, nil),
-						mockUI.EXPECT().Say("Not created"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
-				})
-			})
-		})
-
-		Context("destroy", func() {
-			It("should destroy all PCF Dev VMs created by the CLI", func() {
-				vms := []string{"pcfdev-0.0.0", "pcfdev-0.0.1"}
+		Context("when the system does not meet requirements", func() {
+			It("should print a warning and prompt for response to continue", func() {
+				Skip("pending")
 				gomock.InOrder(
-					mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
-					mockUI.EXPECT().Say("Destroying VM..."),
-					mockVBox.EXPECT().DestroyVMs(vms).Return(nil),
-					mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
+					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
+					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
+					mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
+					mockUI.EXPECT().Say("Using existing image"),
+				)
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+			})
+		})
+
+		Context("when the system does not meet requirements and the user declines to continue", func() {
+			It("should exit gracefully", func() {
+				Skip("pending")
+				gomock.InOrder(
+					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
+					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(false),
+					mockUI.EXPECT().Say("Exiting..."),
+				)
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+			})
+		})
+
+		Context("when the EULA is not accepted", func() {
+			It("should print the EULA", func() {
+				gomock.InOrder(
+					mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+					mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
+					mockClient.EXPECT().GetEULA().Return("some-eula", nil),
+					mockUI.EXPECT().Say("some-eula"),
+					mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
+					mockClient.EXPECT().AcceptEULA().Return(nil),
+
+					mockUI.EXPECT().Say("Downloading VM..."),
+					mockDownloader.EXPECT().Download(),
+					mockConfig.EXPECT().SaveToken().Return(nil),
+					mockUI.EXPECT().Say("\nVM downloaded"),
+
+					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Start(),
+				)
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+			})
+		})
+	})
+
+	Context("stop", func() {
+		It("should stop the vm", func() {
+			gomock.InOrder(
+				mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+				mockVM.EXPECT().Stop(),
+			)
+
+			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+		})
+	})
+
+	Context("status", func() {
+		It("should return the status", func() {
+			gomock.InOrder(
+				mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+				mockVM.EXPECT().Status(),
+			)
+
+			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
+		})
+	})
+
+	Context("destroy", func() {
+		It("should destroy all PCF Dev VMs created by the CLI", func() {
+			vms := []string{"pcfdev-0.0.0", "pcfdev-0.0.1"}
+			gomock.InOrder(
+				mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
+				mockUI.EXPECT().Say("Destroying VM..."),
+				mockVBox.EXPECT().DestroyVMs(vms).Return(nil),
+				mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
+			)
+
+			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
+		})
+
+		Context("there are no PCF Dev VMs", func() {
+			It("should send an error message", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetPCFDevVMs().Return([]string{}, nil),
+					mockUI.EXPECT().Say("PCF Dev VM has not been created"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
 			})
+		})
 
-			Context("there are no PCF Dev VMs", func() {
-				It("should send an error message", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().GetPCFDevVMs().Return([]string{}, nil),
-						mockUI.EXPECT().Say("PCF Dev VM has not been created"),
-					)
+		Context("there is an error getting the PCFDev names", func() {
+			It("should send an error message", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetPCFDevVMs().Return([]string{}, errors.New("some-error")),
+					mockUI.EXPECT().Failed("Failed to destroy PCF Dev VM."),
+				)
 
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
-				})
-			})
-
-			Context("there is an error getting the PCFDev names", func() {
-				It("should send an error message", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().GetPCFDevVMs().Return([]string{}, errors.New("some-error")),
-						mockUI.EXPECT().Failed("Failed to destroy PCF Dev VM."),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
-				})
-			})
-
-			Context("there is an error destroying the VMs", func() {
-				It("should send an error message", func() {
-					vms := []string{"pcfdev-0.0.0", "pcfdev-0.0.1"}
-					gomock.InOrder(
-						mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
-						mockUI.EXPECT().Say("Destroying VM..."),
-						mockVBox.EXPECT().DestroyVMs(vms).Return(errors.New("some-error")),
-						mockUI.EXPECT().Failed("Failed to destroy PCF Dev VM."),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
-				})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
 			})
 		})
 
-		Context("uninstalling plugin", func() {
-			It("returns immediately", func() {
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"CLI-MESSAGE-UNINSTALL"})
+		Context("there is an error destroying the VMs", func() {
+			It("should send an error message", func() {
+				vms := []string{"pcfdev-0.0.0", "pcfdev-0.0.1"}
+				gomock.InOrder(
+					mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
+					mockUI.EXPECT().Say("Destroying VM..."),
+					mockVBox.EXPECT().DestroyVMs(vms).Return(errors.New("some-error")),
+					mockUI.EXPECT().Failed("Failed to destroy PCF Dev VM."),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
 			})
+		})
+	})
+
+	Context("uninstalling plugin", func() {
+		It("returns immediately", func() {
+			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"CLI-MESSAGE-UNINSTALL"})
 		})
 	})
 })

@@ -3,14 +3,11 @@ package plugin
 import (
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/cloudfoundry/cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
-	"github.com/pivotal-cf/pcfdev-cli/user"
-	"github.com/pivotal-cf/pcfdev-cli/vbox"
+	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
 type Plugin struct {
@@ -21,8 +18,7 @@ type Plugin struct {
 	Client              Client
 	Config              Config
 	Downloader          Downloader
-
-	VMName string
+	Builder             Builder
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -40,12 +36,7 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
 type VBox interface {
-	StartVM(name string) (vm *vbox.VM, err error)
-	StopVM(name string) error
 	DestroyVMs(name []string) error
-	ImportVM(path string, name string, pcfdevDir string) error
-	Status(name string) (status string, err error)
-	ConflictingVMPresent(name string) (conflict bool, err error)
 	GetPCFDevVMs() (names []string, err error)
 }
 
@@ -56,8 +47,8 @@ type RequirementsChecker interface {
 
 //go:generate mockgen -package mocks -destination mocks/downloader.go github.com/pivotal-cf/pcfdev-cli/plugin Downloader
 type Downloader interface {
-	Download(path string) error
-	IsOVACurrent(path string) (bool, error)
+	Download() error
+	IsOVACurrent() (bool, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
@@ -69,8 +60,16 @@ type Client interface {
 
 //go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/plugin Config
 type Config interface {
+	GetVMName() string
 	SaveToken() error
 }
+
+//go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/plugin Builder
+type Builder interface {
+	VM(name string) (vm vm.VM, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM
 
 func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
@@ -88,17 +87,30 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 			p.UI.Failed(getErrorText(err))
 		}
 	case "start":
-		if err := p.start(); err != nil {
+		if err := p.downloadVM(); err != nil {
+			p.UI.Failed(getErrorText(err))
+			return
+		}
+		vm, err := p.Builder.VM(p.Config.GetVMName())
+		if err != nil {
+			panic(err)
+		}
+		if err := vm.Start(); err != nil {
 			p.UI.Failed(getErrorText(err))
 		}
 	case "status":
-		if status, err := p.VBox.Status(p.VMName); err != nil {
-			p.UI.Failed(getErrorText(err))
-		} else {
-			p.UI.Say(status)
+		vm, err := p.Builder.VM(p.Config.GetVMName())
+		if err != nil {
+			panic(err)
 		}
+
+		vm.Status()
 	case "stop":
-		if err := p.stop(); err != nil {
+		vm, err := p.Builder.VM(p.Config.GetVMName())
+		if err != nil {
+			panic(err)
+		}
+		if err := vm.Stop(); err != nil {
 			p.UI.Failed(getErrorText(err))
 		}
 	case "destroy":
@@ -118,15 +130,15 @@ func getErrorText(err error) string {
 		return "Invalid Pivotal Network API Token."
 	case *pivnet.PivNetUnreachableError:
 		return "Failed to reach Pivotal Network. Please try again later."
-	case *OldVMError:
+	case *vm.OldVMError:
 		return "An old version of PCF Dev was detected. You must run 'cf dev destroy' to continue."
-	case *StartError:
+	case *vm.StartVMError:
 		return "Failed to start PCF Dev VM."
-	case *ImportVMError:
+	case *vm.ImportVMError:
 		return "Failed to import PCF Dev VM."
-	case *ProvisionVMError:
+	case *vm.ProvisionVMError:
 		return "Failed to provision PCF Dev VM."
-	case *StopVMError:
+	case *vm.StopVMError:
 		return "Failed to stop PCF Dev VM."
 	case *DestroyVMError:
 		return "Failed to destroy PCF Dev VM."
@@ -136,11 +148,7 @@ func getErrorText(err error) string {
 }
 
 func (p *Plugin) downloadVM() error {
-	ovaPath, err := p.ovaPath()
-	if err != nil {
-		return err
-	}
-	current, err := p.Downloader.IsOVACurrent(ovaPath)
+	current, err := p.Downloader.IsOVACurrent()
 	if err != nil {
 		return err
 	}
@@ -173,7 +181,7 @@ func (p *Plugin) downloadVM() error {
 
 	p.UI.Say("Downloading VM...")
 
-	if err := p.Downloader.Download(ovaPath); err != nil {
+	if err := p.Downloader.Download(); err != nil {
 		return err
 	}
 
@@ -182,101 +190,6 @@ func (p *Plugin) downloadVM() error {
 	}
 
 	p.UI.Say("\nVM downloaded")
-	return nil
-}
-
-func (p *Plugin) start() error {
-	if err := p.RequirementsChecker.Check(); err != nil {
-		if accepted := p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): "); !accepted {
-			p.UI.Say("Exiting...")
-			return nil
-		}
-	}
-
-	status, err := p.VBox.Status(p.VMName)
-	if err != nil {
-		return &StartError{err}
-	}
-
-	if status == vbox.StatusRunning {
-		p.UI.Say("PCF Dev is running")
-		return nil
-	}
-
-	if status == vbox.StatusNotCreated {
-		conflict, err := p.VBox.ConflictingVMPresent(p.VMName)
-		if err != nil {
-			return &StartError{err}
-		}
-		if conflict {
-			return &OldVMError{}
-		}
-
-		if err := p.downloadVM(); err != nil {
-			return err
-		}
-
-		ovaPath, err := p.ovaPath()
-		if err != nil {
-			return err
-		}
-
-		pcfdevDir, err := p.pcfdevDir()
-		if err != nil {
-			return err
-		}
-
-		p.UI.Say("Importing VM...")
-		if err := p.VBox.ImportVM(ovaPath, p.VMName, pcfdevDir); err != nil {
-			return &ImportVMError{err}
-		}
-		p.UI.Say("PCF Dev is now imported to Virtualbox")
-	}
-
-	p.UI.Say("Starting VM...")
-	vm, err := p.VBox.StartVM(p.VMName)
-	if err != nil {
-		return &StartError{err}
-	}
-	p.UI.Say("Provisioning VM...")
-	err = p.provision(vm)
-	if err != nil {
-		return &ProvisionVMError{err}
-	}
-
-	p.UI.Say("PCF Dev is now running")
-	return nil
-}
-
-func (p *Plugin) stop() error {
-	status, err := p.VBox.Status(p.VMName)
-	if err != nil {
-		return &StopVMError{err}
-	}
-
-	if status == vbox.StatusNotCreated {
-		conflict, err := p.VBox.ConflictingVMPresent(p.VMName)
-		if err != nil {
-			return &StopVMError{err}
-		}
-		if conflict {
-			return &OldVMError{}
-		}
-		p.UI.Say("PCF Dev VM has not been created")
-		return nil
-	}
-
-	if status == vbox.StatusStopped {
-		p.UI.Say("PCF Dev is stopped")
-		return nil
-	}
-
-	p.UI.Say("Stopping VM...")
-	err = p.VBox.StopVM(p.VMName)
-	if err != nil {
-		return &StopVMError{err}
-	}
-	p.UI.Say("PCF Dev is now stopped")
 	return nil
 }
 
@@ -298,32 +211,6 @@ func (p *Plugin) destroy() error {
 	}
 	p.UI.Say("PCF Dev VM has been destroyed")
 	return nil
-}
-
-func (p *Plugin) provision(vm *vbox.VM) error {
-	return p.SSH.RunSSHCommand(fmt.Sprintf("sudo /var/pcfdev/run %s %s '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", vm.Domain, vm.IP), vm.SSHPort, 2*time.Minute, os.Stdout, os.Stderr)
-}
-
-func (p *Plugin) pcfdevDir() (path string, err error) {
-	if pcfdevHome := os.Getenv("PCFDEV_HOME"); pcfdevHome != "" {
-		return filepath.Join(pcfdevHome, ".pcfdev"), nil
-	}
-
-	homeDir, err := user.GetHome()
-	if err != nil {
-		return "", fmt.Errorf("failed to find home directory: %s", err)
-	}
-
-	return filepath.Join(homeDir, ".pcfdev"), nil
-}
-
-func (p *Plugin) ovaPath() (path string, err error) {
-	pcfdevDir, err := p.pcfdevDir()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(pcfdevDir, p.VMName+".ova"), nil
 }
 
 func (*Plugin) GetMetadata() plugin.PluginMetadata {

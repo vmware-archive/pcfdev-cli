@@ -12,10 +12,12 @@ import (
 )
 
 type Config struct {
-	UI        UI
-	FS        FS
+	UI UI
+	FS FS
+
 	MinMemory uint64
 	MaxMemory uint64
+	VMName    string
 	token     string
 }
 
@@ -38,14 +40,15 @@ func (c *Config) GetToken() (token string, err error) {
 		return c.token, nil
 	}
 
-	pcfdevDir, err := c.PCFDevDir()
+	pcfdevDir, err := c.GetPCFDevDir()
 	if err != nil {
 		return "", err
 	}
 
 	if envToken := os.Getenv("PIVNET_TOKEN"); envToken != "" {
 		c.UI.Say("PIVNET_TOKEN set, ignored saved PivNet API token.")
-		return envToken, nil
+		c.token = envToken
+		return c.token, nil
 	}
 
 	exists, err := c.FS.Exists(filepath.Join(pcfdevDir, "token"))
@@ -73,7 +76,7 @@ func (c *Config) SaveToken() error {
 		return nil
 	}
 
-	pcfdevDir, err := c.PCFDevDir()
+	pcfdevDir, err := c.GetPCFDevDir()
 	if err != nil {
 		return err
 	}
@@ -82,7 +85,7 @@ func (c *Config) SaveToken() error {
 }
 
 func (c *Config) DestroyToken() error {
-	pcfdevDir, err := c.PCFDevDir()
+	pcfdevDir, err := c.GetPCFDevDir()
 	if err != nil {
 		panic(err)
 	}
@@ -101,7 +104,7 @@ func (c *Config) DestroyToken() error {
 	return nil
 }
 
-func (c *Config) PCFDevDir() (dir string, err error) {
+func (c *Config) GetPCFDevDir() (dir string, err error) {
 	if pcfdevHome := os.Getenv("PCFDEV_HOME"); pcfdevHome != "" {
 		return filepath.Join(pcfdevHome, ".pcfdev"), nil
 	}
@@ -112,6 +115,19 @@ func (c *Config) PCFDevDir() (dir string, err error) {
 	}
 
 	return filepath.Join(homeDir, ".pcfdev"), nil
+}
+
+func (c *Config) GetOVAPath() (path string, err error) {
+	pcfdevDir, err := c.GetPCFDevDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(pcfdevDir, c.VMName+".ova"), nil
+}
+
+func (c *Config) GetVMName() string {
+	return c.VMName
 }
 
 func (c *Config) GetHTTPProxy() string {

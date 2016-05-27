@@ -88,3 +88,25 @@ func (_m *MockConfig) GetNoProxy() string {
 func (_mr *_MockConfigRecorder) GetNoProxy() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetNoProxy")
 }
+
+func (_m *MockConfig) GetOVAPath() (string, error) {
+	ret := _m.ctrl.Call(_m, "GetOVAPath")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockConfigRecorder) GetOVAPath() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetOVAPath")
+}
+
+func (_m *MockConfig) GetPCFDevDir() (string, error) {
+	ret := _m.ctrl.Call(_m, "GetPCFDevDir")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockConfigRecorder) GetPCFDevDir() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetPCFDevDir")
+}

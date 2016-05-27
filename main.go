@@ -15,6 +15,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/system"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
+	"github.com/pivotal-cf/pcfdev-cli/vm"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
 	cfplugin "github.com/cloudfoundry/cli/plugin"
@@ -35,6 +36,7 @@ func main() {
 		UI:        termUI,
 		MinMemory: 3072,
 		MaxMemory: 4096,
+		VMName:    vmName,
 	}
 	client := &pivnet.Client{
 		Config:        config,
@@ -49,10 +51,15 @@ func main() {
 			PivnetClient: client,
 			FS:           fileSystem,
 			ExpectedMD5:  md5,
+			Config:       config,
 		},
 		UI:     &plugin.NonTranslatingUI{termUI},
 		Config: config,
 		SSH:    &ssh.SSH{},
+		Builder: &vm.VBoxBuilder{
+			Driver: &vbox.VBoxDriver{},
+			Config: config,
+		},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},
 			Driver: &vbox.VBoxDriver{},
@@ -67,6 +74,5 @@ func main() {
 			System: system,
 			Config: config,
 		},
-		VMName: vmName,
 	})
 }

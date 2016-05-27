@@ -63,6 +63,8 @@ type Config interface {
 	GetHTTPProxy() (proxy string)
 	GetHTTPSProxy() (proxy string)
 	GetNoProxy() (proxy string)
+	GetOVAPath() (string, error)
+	GetPCFDevDir() (string, error)
 }
 
 type VBox struct {
@@ -125,11 +127,11 @@ func (v *VBox) StartVM(vmName string) (vm *VM, err error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = v.Driver.StartVM(vm.Name)
 	if err != nil {
 		return nil, err
 	}
-
 	return vm, nil
 }
 
@@ -172,21 +174,31 @@ func (v *VBox) proxySettings(ip string) string {
 	}, "\n")
 }
 
-func (v *VBox) ImportVM(path string, vmName string, pcfdevDir string) error {
+func (v *VBox) ImportVM(vmName string) error {
 	_, sshPort, err := v.SSH.GenerateAddress()
 
 	if err != nil {
 		return err
 	}
 
-	virtualSystemNumbers, err := v.Driver.GetVirtualSystemNumbersOfHardDiskImages(path)
+	ovaPath, err := v.Config.GetOVAPath()
+	if err != nil {
+		return err
+	}
+
+	pcfdevDir, err := v.Config.GetPCFDevDir()
+	if err != nil {
+		return err
+	}
+
+	virtualSystemNumbers, err := v.Driver.GetVirtualSystemNumbersOfHardDiskImages(ovaPath)
 	if err != nil {
 		return err
 	}
 
 	importArguments := []string{
 		"import",
-		path,
+		ovaPath,
 		"--vsys", "0",
 	}
 

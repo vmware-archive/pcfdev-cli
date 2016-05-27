@@ -40,3 +40,11 @@ type StopVMError struct {
 func (e *StopVMError) Error() string {
 	return fmt.Sprintf("failed to stop vm: %s", e.error)
 }
+
+type DestroyVMError struct {
+	error
+}
+
+func (e *DestroyVMError) Error() string {
+	return fmt.Sprintf("failed to destroy vm: %s", e.error)
+}

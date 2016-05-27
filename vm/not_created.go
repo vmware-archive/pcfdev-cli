@@ -1,7 +1,6 @@
 package vm
 
 type NotCreated struct {
-	VM
 	Name string
 
 	VBox    VBox
@@ -49,4 +48,8 @@ func (n *NotCreated) Start() error {
 
 func (n *NotCreated) Status() {
 	n.UI.Say("Not Created")
+}
+
+func (n *NotCreated) Destroy() error {
+	return nil
 }

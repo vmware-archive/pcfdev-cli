@@ -11,7 +11,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/ping"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
-	"github.com/pivotal-cf/pcfdev-cli/requirements"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/system"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -69,10 +68,6 @@ func main() {
 			},
 			Config: config,
 			System: system,
-		},
-		RequirementsChecker: &requirements.Checker{
-			System: system,
-			Config: config,
 		},
 	})
 }

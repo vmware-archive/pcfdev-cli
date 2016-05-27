@@ -13,9 +13,10 @@ import (
 
 var _ = Describe("Stopped", func() {
 	var (
-		mockCtrl  *gomock.Controller
-		mockUI    *mocks.MockUI
-		mockVBox  *mocks.MockVBox
+		mockCtrl    *gomock.Controller
+		mockUI      *mocks.MockUI
+		mockVBox    *mocks.MockVBox
+
 		runningVM vm.Running
 	)
 
@@ -30,8 +31,8 @@ var _ = Describe("Stopped", func() {
 			IP:      "some-ip",
 			SSHPort: "some-port",
 
-			VBox: mockVBox,
-			UI:   mockUI,
+			VBox:    mockVBox,
+			UI:      mockUI,
 		}
 	})
 
@@ -75,6 +76,36 @@ var _ = Describe("Stopped", func() {
 			mockUI.EXPECT().Say("Running")
 
 			runningVM.Status()
+		})
+	})
+
+	Describe("Destroy", func() {
+		It("should poweroff and destroy the vm", func() {
+			gomock.InOrder(
+				mockVBox.EXPECT().PowerOffVM("some-vm").Return(nil),
+				mockVBox.EXPECT().DestroyVM("some-vm").Return(nil),
+			)
+
+			Expect(runningVM.Destroy()).To(Succeed())
+		})
+
+		Context("when powering off the vm fails", func() {
+			It("should return an error", func() {
+				mockVBox.EXPECT().PowerOffVM("some-vm").Return(errors.New("some-error"))
+
+				Expect(runningVM.Destroy()).To(MatchError("failed to destroy vm: some-error"))
+			})
+		})
+
+		Context("when destroying the vm fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().PowerOffVM("some-vm").Return(nil),
+					mockVBox.EXPECT().DestroyVM("some-vm").Return(errors.New("some-error")),
+				)
+
+				Expect(runningVM.Destroy()).To(MatchError("failed to destroy vm: some-error"))
+			})
 		})
 	})
 })

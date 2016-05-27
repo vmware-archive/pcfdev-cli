@@ -11,14 +11,13 @@ import (
 )
 
 type Plugin struct {
-	SSH                 SSH
-	UI                  UI
-	VBox                VBox
-	RequirementsChecker RequirementsChecker
-	Client              Client
-	Config              Config
-	Downloader          Downloader
-	Builder             Builder
+	SSH        SSH
+	UI         UI
+	VBox       VBox
+	Client     Client
+	Config     Config
+	Downloader Downloader
+	Builder    Builder
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -36,13 +35,7 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
 type VBox interface {
-	DestroyVMs(name []string) error
 	GetPCFDevVMs() (names []string, err error)
-}
-
-//go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/plugin RequirementsChecker
-type RequirementsChecker interface {
-	Check() error
 }
 
 //go:generate mockgen -package mocks -destination mocks/downloader.go github.com/pivotal-cf/pcfdev-cli/plugin Downloader
@@ -83,34 +76,19 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 	switch args[1] {
 	case "download":
-		if err := p.downloadVM(); err != nil {
+		if err := p.download(); err != nil {
 			p.UI.Failed(getErrorText(err))
 		}
 	case "start":
-		if err := p.downloadVM(); err != nil {
-			p.UI.Failed(getErrorText(err))
-			return
-		}
-		vm, err := p.Builder.VM(p.Config.GetVMName())
-		if err != nil {
-			panic(err)
-		}
-		if err := vm.Start(); err != nil {
+		if err := p.start(); err != nil {
 			p.UI.Failed(getErrorText(err))
 		}
 	case "status":
-		vm, err := p.Builder.VM(p.Config.GetVMName())
-		if err != nil {
-			panic(err)
+		if err := p.status(); err != nil {
+			p.UI.Failed(getErrorText(err))
 		}
-
-		vm.Status()
 	case "stop":
-		vm, err := p.Builder.VM(p.Config.GetVMName())
-		if err != nil {
-			panic(err)
-		}
-		if err := vm.Stop(); err != nil {
+		if err := p.stop(); err != nil {
 			p.UI.Failed(getErrorText(err))
 		}
 	case "destroy":
@@ -147,7 +125,60 @@ func getErrorText(err error) string {
 	}
 }
 
-func (p *Plugin) downloadVM() error {
+func (p *Plugin) start() error {
+	if err := p.download(); err != nil {
+		return err
+	}
+	vm, err := p.Builder.VM(p.Config.GetVMName())
+	if err != nil {
+		return err
+	}
+	return vm.Start()
+}
+
+func (p *Plugin) status() error {
+	vm, err := p.Builder.VM(p.Config.GetVMName())
+	if err != nil {
+		return err
+	}
+	vm.Status()
+	return nil
+}
+
+func (p *Plugin) stop() error {
+	vm, err := p.Builder.VM(p.Config.GetVMName())
+	if err != nil {
+		return err
+	}
+	return vm.Stop()
+}
+
+func (p *Plugin) destroy() error {
+	vms, err := p.VBox.GetPCFDevVMs()
+	if err != nil {
+		return &DestroyVMError{err}
+	}
+
+	if len(vms) == 0 {
+		p.UI.Say("PCF Dev VM has not been created")
+		return nil
+	}
+
+	p.UI.Say("Destroying VM...")
+	for _, vmName := range vms {
+		vm, err := p.Builder.VM(vmName)
+		if err != nil {
+			return &DestroyVMError{err}
+		}
+		if err := vm.Destroy(); err != nil {
+			return &DestroyVMError{err}
+		}
+	}
+	p.UI.Say("PCF Dev VM has been destroyed")
+	return nil
+}
+
+func (p *Plugin) download() error {
 	current, err := p.Downloader.IsOVACurrent()
 	if err != nil {
 		return err
@@ -190,26 +221,6 @@ func (p *Plugin) downloadVM() error {
 	}
 
 	p.UI.Say("\nVM downloaded")
-	return nil
-}
-
-func (p *Plugin) destroy() error {
-	vms, err := p.VBox.GetPCFDevVMs()
-	if err != nil {
-		return &DestroyVMError{err}
-	}
-
-	if len(vms) == 0 {
-		p.UI.Say("PCF Dev VM has not been created")
-		return nil
-	}
-
-	p.UI.Say("Destroying VM...")
-	err = p.VBox.DestroyVMs(vms)
-	if err != nil {
-		return &DestroyVMError{err}
-	}
-	p.UI.Say("PCF Dev VM has been destroyed")
 	return nil
 }
 

@@ -5,7 +5,6 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	vbox "github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
 // Mock of VBox interface
@@ -40,6 +39,16 @@ func (_mr *_MockVBoxRecorder) ConflictingVMPresent(arg0 interface{}) *gomock.Cal
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ConflictingVMPresent", arg0)
 }
 
+func (_m *MockVBox) DestroyVM(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "DestroyVM", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockVBoxRecorder) DestroyVM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DestroyVM", arg0)
+}
+
 func (_m *MockVBox) ImportVM(_param0 string) error {
 	ret := _m.ctrl.Call(_m, "ImportVM", _param0)
 	ret0, _ := ret[0].(error)
@@ -50,15 +59,24 @@ func (_mr *_MockVBoxRecorder) ImportVM(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ImportVM", arg0)
 }
 
-func (_m *MockVBox) StartVM(_param0 string) (*vbox.VM, error) {
-	ret := _m.ctrl.Call(_m, "StartVM", _param0)
-	ret0, _ := ret[0].(*vbox.VM)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+func (_m *MockVBox) PowerOffVM(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "PowerOffVM", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-func (_mr *_MockVBoxRecorder) StartVM(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "StartVM", arg0)
+func (_mr *_MockVBoxRecorder) PowerOffVM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "PowerOffVM", arg0)
+}
+
+func (_m *MockVBox) StartVM(_param0 string, _param1 string, _param2 string, _param3 string) error {
+	ret := _m.ctrl.Call(_m, "StartVM", _param0, _param1, _param2, _param3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockVBoxRecorder) StartVM(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "StartVM", arg0, arg1, arg2, arg3)
 }
 
 func (_m *MockVBox) StopVM(_param0 string) error {

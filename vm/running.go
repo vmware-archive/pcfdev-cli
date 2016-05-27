@@ -28,3 +28,13 @@ func (r *Running) Start() error {
 func (r *Running) Status() {
 	r.UI.Say("Running")
 }
+
+func (r *Running) Destroy() error {
+	if err := r.VBox.PowerOffVM(r.Name); err != nil {
+		return &DestroyVMError{err}
+	}
+	if err := r.VBox.DestroyVM(r.Name); err != nil {
+		return &DestroyVMError{err}
+	}
+	return nil
+}

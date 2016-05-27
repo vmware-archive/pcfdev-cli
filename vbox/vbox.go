@@ -75,64 +75,29 @@ type VBox struct {
 	Config Config
 }
 
-type VM struct {
-	Domain  string
-	IP      string
-	Name    string
-	SSHPort string
-}
-
 const (
 	StatusRunning    = "Running"
 	StatusStopped    = "Stopped"
 	StatusNotCreated = "Not created"
 )
 
-func (v *VBox) StartVM(vmName string) (vm *VM, err error) {
-	ip, err := v.Driver.GetVMIP(vmName)
-	if err != nil {
-		return nil, err
-	}
-	sshPort, err := v.Driver.GetHostForwardPort(vmName, "ssh")
-	if err != nil {
-		return nil, err
-	}
-	domain, err := address.DomainForIP(ip)
-	if err != nil {
-		return nil, err
+func (v *VBox) StartVM(vmName string, ip string, sshPort string, domain string) error {
+	if err := v.Driver.StartVM(vmName); err != nil {
+		return err
 	}
 
-	vm = &VM{
-		SSHPort: sshPort,
-		Name:    vmName,
-		IP:      ip,
-		Domain:  domain,
+	if err := v.configureNetwork(ip, sshPort); err != nil {
+		return err
+	}
+	if err := v.configureEnvironment(ip, sshPort); err != nil {
+		return err
 	}
 
-	err = v.Driver.StartVM(vmName)
-	if err != nil {
-		return nil, err
+	if err := v.Driver.StopVM(vmName); err != nil {
+		return err
 	}
 
-	err = v.configureNetwork(vm.IP, vm.SSHPort)
-	if err != nil {
-		return nil, err
-	}
-	err = v.configureEnvironment(vm.IP, vm.SSHPort)
-	if err != nil {
-		return nil, err
-	}
-
-	err = v.Driver.StopVM(vmName)
-	if err != nil {
-		return nil, err
-	}
-
-	err = v.Driver.StartVM(vm.Name)
-	if err != nil {
-		return nil, err
-	}
-	return vm, nil
+	return v.Driver.StartVM(vmName)
 }
 
 func (v *VBox) configureNetwork(ip string, sshPort string) error {
@@ -276,27 +241,12 @@ func (v *VBox) computeMemory() (uint64, error) {
 	return memory, nil
 }
 
-func (v *VBox) DestroyVMs(vmNames []string) error {
-	for _, vmName := range vmNames {
-		status, err := v.Status(vmName)
-		if err != nil {
-			return err
-		}
+func (v *VBox) DestroyVM(vmName string) error {
+	return v.Driver.DestroyVM(vmName)
+}
 
-		if status == StatusRunning {
-			err = v.Driver.PowerOffVM(vmName)
-			if err != nil {
-				return err
-			}
-		}
-
-		err = v.Driver.DestroyVM(vmName)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+func (v *VBox) PowerOffVM(vmName string) error {
+	return v.Driver.PowerOffVM(vmName)
 }
 
 func (v *VBox) ConflictingVMPresent(vmName string) (conflict bool, err error) {
@@ -315,23 +265,6 @@ func (v *VBox) ConflictingVMPresent(vmName string) (conflict bool, err error) {
 
 func (v *VBox) StopVM(vmName string) error {
 	return v.Driver.StopVM(vmName)
-}
-
-func (v *VBox) Status(vmName string) (status string, err error) {
-	exists, err := v.Driver.VMExists(vmName)
-	if err != nil {
-		return "", err
-	}
-
-	if !exists {
-		return StatusNotCreated, nil
-	}
-
-	if v.Driver.IsVMRunning(vmName) {
-		return StatusRunning, nil
-	}
-
-	return StatusStopped, nil
 }
 
 func (v *VBox) GetPCFDevVMs() ([]string, error) {

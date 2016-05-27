@@ -28,6 +28,16 @@ func (_m *MockVM) EXPECT() *_MockVMRecorder {
 	return _m.recorder
 }
 
+func (_m *MockVM) Destroy() error {
+	ret := _m.ctrl.Call(_m, "Destroy")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockVMRecorder) Destroy() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Destroy")
+}
+
 func (_m *MockVM) Start() error {
 	ret := _m.ctrl.Call(_m, "Start")
 	ret0, _ := ret[0].(error)

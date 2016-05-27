@@ -70,6 +70,7 @@ var _ = Describe("Builder", func() {
 						Expect(u.SSH).NotTo(BeNil())
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
+						Expect(u.RequirementsChecker).NotTo(BeNil())
 					default:
 						Fail("wrong type")
 					}
@@ -101,7 +102,7 @@ var _ = Describe("Builder", func() {
 					)
 
 					_, err := builder.VM("some-vm")
-					Expect(err).To(MatchError("some-ip is not one of the allowed pcfdev ips"))
+					Expect(err).To(MatchError("some-ip is not one of the allowed PCF Dev ips"))
 				})
 			})
 			Context("when there is an error getting vm host forward port", func() {

@@ -3,14 +3,14 @@ package vm
 import (
 	"io"
 	"time"
-
-	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/vm VBox
 type VBox interface {
-	StartVM(name string) (vm *vbox.VM, err error)
+	StartVM(name string, ip string, sshPort string, domain string) error
 	StopVM(name string) error
+	DestroyVM(name string) error
+	PowerOffVM(name string) error
 	ImportVM(name string) error
 	ConflictingVMPresent(name string) (conflict bool, err error)
 }
@@ -33,9 +33,15 @@ type VM interface {
 	Start() error
 	Stop() error
 	Status()
+	Destroy() error
 }
 
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/vm Builder
 type Builder interface {
 	VM(name string) (vm VM, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/vm RequirementsChecker
+type RequirementsChecker interface {
+	Check() error
 }

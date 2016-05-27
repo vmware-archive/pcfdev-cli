@@ -432,8 +432,6 @@ var _ = Describe("vbox", func() {
 		Context("when VM is already imported", func() {
 			It("starts without reimporting", func() {
 				gomock.InOrder(
-					mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.22.11", nil),
-					mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 					mockDriver.EXPECT().StartVM("some-vm"),
 					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.22.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
 					mockConfig.EXPECT().GetHTTPProxy().Return("some-http-proxy"),
@@ -454,17 +452,12 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().StopVM("some-vm"),
 					mockDriver.EXPECT().StartVM("some-vm"),
 				)
-				vm, err := vbx.StartVM("some-vm")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(vm.Name).To(Equal("some-vm"))
-				Expect(vm.SSHPort).To(Equal("some-port"))
-				Expect(vm.Domain).To(Equal("local2.pcfdev.io"))
+
+				Expect(vbx.StartVM("some-vm", "192.168.22.11", "some-port", "some-domain")).To(Succeed())
 			})
 
 			It("translates 127.0.0.1 to subnetIP in proxy settings", func() {
 				gomock.InOrder(
-					mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.22.11", nil),
-					mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 					mockDriver.EXPECT().StartVM("some-vm"),
 					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.22.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
 					mockConfig.EXPECT().GetHTTPProxy().Return("127.0.0.1"),
@@ -485,49 +478,28 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().StopVM("some-vm"),
 					mockDriver.EXPECT().StartVM("some-vm"),
 				)
-				vm, err := vbx.StartVM("some-vm")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(vm.Name).To(Equal("some-vm"))
-				Expect(vm.SSHPort).To(Equal("some-port"))
-				Expect(vm.Domain).To(Equal("local2.pcfdev.io"))
-			})
 
-			Context("when fails so get forward port", func() {
-				It("should return an error", func() {
-					mockDriver.EXPECT().GetVMIP("some-vm").Return("some-ip", nil)
-					mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("", errors.New("some-error"))
-
-					vm, err := vbx.StartVM("some-vm")
-					Expect(vm).To(BeNil())
-					Expect(err).To(MatchError("some-error"))
-				})
+				Expect(vbx.StartVM("some-vm", "192.168.22.11", "some-port", "some-domain")).To(Succeed())
 			})
 
 			Context("when VM fails to start", func() {
 				It("should return an error", func() {
-					ip := "192.168.11.11"
 					gomock.InOrder(
-						mockDriver.EXPECT().GetVMIP("some-vm").Return(ip, nil),
-						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().StartVM("some-vm").Return(errors.New("some-error")),
 					)
 
-					_, err := vbx.StartVM("some-vm")
-					Expect(err).To(MatchError("some-error"))
+					Expect(vbx.StartVM("some-vm", "192.168.22.11", "some-port", "some-domain")).To(MatchError("some-error"))
 				})
 			})
 
 			Context("when SSH Command to set static ip fails", func() {
 				It("should return an error", func() {
-					ip := "192.168.11.11"
 					gomock.InOrder(
-						mockDriver.EXPECT().GetVMIP("some-vm").Return(ip, nil),
-						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().StartVM("some-vm"),
-						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
+						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces"), "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
 					)
-					_, err := vbx.StartVM("some-vm")
-					Expect(err).To(MatchError("some-error"))
+
+					Expect(vbx.StartVM("some-vm", "192.168.11.11", "some-port", "some-domain")).To(MatchError("some-error"))
 				})
 			})
 
@@ -535,8 +507,6 @@ var _ = Describe("vbox", func() {
 				It("should return an error", func() {
 					ip := "192.168.11.11"
 					gomock.InOrder(
-						mockDriver.EXPECT().GetVMIP("some-vm").Return(ip, nil),
-						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockConfig.EXPECT().GetHTTPProxy().Return("some-http-proxy"),
@@ -556,28 +526,8 @@ var _ = Describe("vbox", func() {
 							ioutil.Discard),
 						mockDriver.EXPECT().StopVM("some-vm").Return(errors.New("some-error")),
 					)
-					_, err := vbx.StartVM("some-vm")
-					Expect(err).To(MatchError("some-error"))
-				})
-			})
 
-			Context("when it fails to get vm ip", func() {
-				It("should return an error", func() {
-					mockDriver.EXPECT().GetVMIP("some-vm").Return("", errors.New("some-error"))
-					_, err := vbx.StartVM("some-vm")
-					Expect(err).To(MatchError("some-error"))
-				})
-			})
-
-			Context("when domain cannot be found for the ip", func() {
-				It("should return an error", func() {
-					gomock.InOrder(
-						mockDriver.EXPECT().GetVMIP("some-vm").Return("some-bad-ip", nil),
-						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
-					)
-
-					_, err := vbx.StartVM("some-vm")
-					Expect(err).To(MatchError("some-bad-ip is not one of the allowed PCF Dev ips"))
+					Expect(vbx.StartVM("some-vm", "192.168.11.11", "some-port", "some-domain")).To(MatchError("some-error"))
 				})
 			})
 		})
@@ -626,103 +576,34 @@ var _ = Describe("vbox", func() {
 		})
 	})
 
-	Describe("#DestroyVMs", func() {
-		Context("when the VM is stopped", func() {
-			It("should destroy the VM", func() {
-				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
-				mockDriver.EXPECT().IsVMRunning("some-vm").Return(false)
-				mockDriver.EXPECT().DestroyVM("some-vm")
+	Describe("#Destroy", func() {
+		It("should destroy the VM", func() {
+			mockDriver.EXPECT().DestroyVM("some-vm")
 
-				Expect(vbx.DestroyVMs([]string{"some-vm"})).To(Succeed())
-			})
-		})
-
-		Context("when the VM is running", func() {
-			It("should power off and destroy the VM", func() {
-				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
-				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
-				mockDriver.EXPECT().PowerOffVM("some-vm")
-				mockDriver.EXPECT().DestroyVM("some-vm")
-
-				Expect(vbx.DestroyVMs([]string{"some-vm"})).To(Succeed())
-			})
-		})
-
-		Context("when the driver fails to stop VM", func() {
-			It("should return the error", func() {
-				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
-				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
-				mockDriver.EXPECT().PowerOffVM("some-vm").Return(errors.New("some-error"))
-
-				Expect(vbx.DestroyVMs([]string{"some-vm"})).To(MatchError("some-error"))
-			})
+			Expect(vbx.DestroyVM("some-vm")).To(Succeed())
 		})
 
 		Context("when the driver fails to destroy VM", func() {
 			It("should return the error", func() {
-				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
-				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
-				mockDriver.EXPECT().PowerOffVM("some-vm")
 				mockDriver.EXPECT().DestroyVM("some-vm").Return(errors.New("some-error"))
 
-				Expect(vbx.DestroyVMs([]string{"some-vm"})).To(MatchError("some-error"))
-			})
-		})
-
-		Context("when multiple VMs are passed", func() {
-			It("should destroy all of the VMs", func() {
-				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
-				mockDriver.EXPECT().IsVMRunning("some-vm").Return(false)
-				mockDriver.EXPECT().DestroyVM("some-vm")
-				mockDriver.EXPECT().VMExists("some-other-vm").Return(true, nil)
-				mockDriver.EXPECT().IsVMRunning("some-other-vm").Return(false)
-				mockDriver.EXPECT().DestroyVM("some-other-vm")
-
-				Expect(vbx.DestroyVMs([]string{"some-vm", "some-other-vm"})).To(Succeed())
+				Expect(vbx.DestroyVM("some-vm")).To(MatchError("some-error"))
 			})
 		})
 	})
 
-	Describe("#Status", func() {
-		Context("VM is running", func() {
-			It("should return running", func() {
-				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
-				mockDriver.EXPECT().IsVMRunning("some-vm").Return(true)
+	Describe("#PowerOffVM", func() {
+		It("should power off the VM", func() {
+			mockDriver.EXPECT().PowerOffVM("some-vm")
 
-				status, err := vbx.Status("some-vm")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(status).To(Equal("Running"))
-			})
+			Expect(vbx.PowerOffVM("some-vm")).To(Succeed())
 		})
 
-		Context("VM is not created", func() {
-			It("should return not created", func() {
-				mockDriver.EXPECT().VMExists("some-vm").Return(false, nil)
+		Context("when the driver fails to power off the VM", func() {
+			It("should return the error", func() {
+				mockDriver.EXPECT().PowerOffVM("some-vm").Return(errors.New("some-error"))
 
-				status, err := vbx.Status("some-vm")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(status).To(Equal("Not created"))
-			})
-		})
-
-		Context("VM is stopped", func() {
-			It("should return stopped", func() {
-				mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
-				mockDriver.EXPECT().IsVMRunning("some-vm").Return(false)
-
-				status, err := vbx.Status("some-vm")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(status).To(Equal("Stopped"))
-			})
-		})
-
-		Context("An error checking the VM Status", func() {
-			It("should return an error", func() {
-				someError := errors.New("some-error")
-				mockDriver.EXPECT().VMExists("some-vm").Return(false, someError)
-
-				_, err := vbx.Status("some-vm")
-				Expect(err).To(MatchError(someError))
+				Expect(vbx.PowerOffVM("some-vm")).To(MatchError("some-error"))
 			})
 		})
 	})

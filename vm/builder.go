@@ -8,6 +8,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/ping"
+	"github.com/pivotal-cf/pcfdev-cli/requirements"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/system"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -83,6 +84,10 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		IP:      ip,
 		SSHPort: sshPort,
 		Domain:  domain,
+		RequirementsChecker: &requirements.Checker{
+			Config: b.Config,
+			System: system,
+		},
 
 		UI:   termUI,
 		SSH:  ssh,

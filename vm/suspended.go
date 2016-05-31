@@ -6,9 +6,8 @@ type Suspended struct {
 	IP      string
 	SSHPort string
 
-	VBox                VBox
-	UI                  UI
-	RequirementsChecker RequirementsChecker
+	VBox VBox
+	UI   UI
 }
 
 func (s *Suspended) Stop() error {
@@ -34,13 +33,6 @@ func (s *Suspended) Suspend() error {
 }
 
 func (s *Suspended) Resume() error {
-	if err := s.RequirementsChecker.Check(); err != nil {
-		if !s.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ") {
-			s.UI.Say("Exiting...")
-			return nil
-		}
-	}
-
 	s.UI.Say("Resuming VM...")
 	if err := s.VBox.ResumeVM(s.Name); err != nil {
 		return &ResumeVMError{err}

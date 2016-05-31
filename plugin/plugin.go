@@ -11,13 +11,14 @@ import (
 )
 
 type Plugin struct {
-	SSH        SSH
-	UI         UI
-	VBox       VBox
-	Client     Client
-	Config     Config
-	Downloader Downloader
-	Builder    Builder
+	SSH                 SSH
+	UI                  UI
+	VBox                VBox
+	Client              Client
+	Config              Config
+	Downloader          Downloader
+	Builder             Builder
+	RequirementsChecker RequirementsChecker
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -60,6 +61,11 @@ type Config interface {
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/plugin Builder
 type Builder interface {
 	VM(name string) (vm vm.VM, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/plugin RequirementsChecker
+type RequirementsChecker interface {
+	Check() error
 }
 
 //go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM
@@ -138,6 +144,13 @@ func getErrorText(err error) string {
 }
 
 func (p *Plugin) start() error {
+	if err := p.RequirementsChecker.Check(); err != nil {
+		if !p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ") {
+			p.UI.Say("Exiting...")
+			return nil
+		}
+	}
+
 	if err := p.download(); err != nil {
 		return err
 	}
@@ -175,6 +188,13 @@ func (p *Plugin) suspend() error {
 }
 
 func (p *Plugin) resume() error {
+	if err := p.RequirementsChecker.Check(); err != nil {
+		if !p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ") {
+			p.UI.Say("Exiting...")
+			return nil
+		}
+	}
+
 	vm, err := p.Builder.VM(p.Config.GetVMName())
 	if err != nil {
 		return err

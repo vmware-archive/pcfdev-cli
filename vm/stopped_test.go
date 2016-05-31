@@ -15,12 +15,11 @@ import (
 
 var _ = Describe("Stopped", func() {
 	var (
-		mockCtrl                *gomock.Controller
-		mockUI                  *mocks.MockUI
-		mockVBox                *mocks.MockVBox
-		mockSSH                 *mocks.MockSSH
-		mockRequirementsChecker *mocks.MockRequirementsChecker
-		stoppedVM               vm.Stopped
+		mockCtrl  *gomock.Controller
+		mockUI    *mocks.MockUI
+		mockVBox  *mocks.MockVBox
+		mockSSH   *mocks.MockSSH
+		stoppedVM vm.Stopped
 	)
 
 	BeforeEach(func() {
@@ -28,7 +27,6 @@ var _ = Describe("Stopped", func() {
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
-		mockRequirementsChecker = mocks.NewMockRequirementsChecker(mockCtrl)
 
 		stoppedVM = vm.Stopped{
 			Name:    "some-vm",
@@ -36,10 +34,9 @@ var _ = Describe("Stopped", func() {
 			IP:      "some-ip",
 			SSHPort: "some-port",
 
-			VBox:                mockVBox,
-			UI:                  mockUI,
-			SSH:                 mockSSH,
-			RequirementsChecker: mockRequirementsChecker,
+			VBox: mockVBox,
+			UI:   mockUI,
+			SSH:  mockSSH,
 		}
 	})
 
@@ -57,7 +54,6 @@ var _ = Describe("Stopped", func() {
 	Describe("Start", func() {
 		It("should start vm", func() {
 			gomock.InOrder(
-				mockRequirementsChecker.EXPECT().Check().Return(nil),
 				mockUI.EXPECT().Say("Starting VM..."),
 				mockVBox.EXPECT().StartVM("some-vm", "some-ip", "some-port", "some-domain").Return(nil),
 				mockUI.EXPECT().Say("Provisioning VM..."),
@@ -68,38 +64,9 @@ var _ = Describe("Stopped", func() {
 			stoppedVM.Start()
 		})
 
-		Context("when the system does not meet requirements and the user accepts to continue", func() {
-			It("should print a warning and prompt for the response to continue", func() {
-				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
-					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM("some-vm", "some-ip", "some-port", "some-domain").Return(nil),
-					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
-					mockUI.EXPECT().Say("PCF Dev is now running"),
-				)
-
-				Expect(stoppedVM.Start()).To(Succeed())
-			})
-		})
-
-		Context("when the system does not meet requirements and the user declines to continue", func() {
-			It("should print a warning and prompt for the response to continue", func() {
-				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
-					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(false),
-					mockUI.EXPECT().Say("Exiting..."),
-				)
-
-				Expect(stoppedVM.Start()).To(Succeed())
-			})
-		})
-
 		Context("when starting the vm fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(nil),
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM("some-vm", "some-ip", "some-port", "some-domain").Return(errors.New("some-error")),
 				)
@@ -111,7 +78,6 @@ var _ = Describe("Stopped", func() {
 		Context("when provisioning the vm fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(nil),
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM("some-vm", "some-ip", "some-port", "some-domain").Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),

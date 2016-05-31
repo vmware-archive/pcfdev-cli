@@ -12,10 +12,9 @@ type Stopped struct {
 	IP      string
 	SSHPort string
 
-	VBox                VBox
-	SSH                 SSH
-	UI                  UI
-	RequirementsChecker RequirementsChecker
+	VBox VBox
+	SSH  SSH
+	UI   UI
 }
 
 func (s *Stopped) Stop() error {
@@ -24,13 +23,6 @@ func (s *Stopped) Stop() error {
 }
 
 func (s *Stopped) Start() error {
-	if err := s.RequirementsChecker.Check(); err != nil {
-		if !s.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ") {
-			s.UI.Say("Exiting...")
-			return nil
-		}
-	}
-
 	s.UI.Say("Starting VM...")
 	if err := s.VBox.StartVM(s.Name, s.IP, s.SSHPort, s.Domain); err != nil {
 		return &StartVMError{err}

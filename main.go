@@ -11,6 +11,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/ping"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
+	"github.com/pivotal-cf/pcfdev-cli/requirements"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/system"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -44,6 +45,7 @@ func main() {
 		ProductFileId: productFileId,
 	}
 	system := &system.System{}
+
 	cfplugin.Start(&plugin.Plugin{
 		Client: client,
 		Downloader: &downloader.Downloader{
@@ -66,6 +68,10 @@ func main() {
 				Pinger:  &ping.Pinger{},
 				Network: &network.Network{},
 			},
+			Config: config,
+			System: system,
+		},
+		RequirementsChecker: &requirements.Checker{
 			Config: config,
 			System: system,
 		},

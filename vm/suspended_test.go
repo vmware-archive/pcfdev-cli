@@ -13,18 +13,16 @@ import (
 
 var _ = Describe("Suspended", func() {
 	var (
-		mockCtrl                *gomock.Controller
-		mockUI                  *mocks.MockUI
-		mockVBox                *mocks.MockVBox
-		mockRequirementsChecker *mocks.MockRequirementsChecker
-		suspendedVM             vm.Suspended
+		mockCtrl    *gomock.Controller
+		mockUI      *mocks.MockUI
+		mockVBox    *mocks.MockVBox
+		suspendedVM vm.Suspended
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
-		mockRequirementsChecker = mocks.NewMockRequirementsChecker(mockCtrl)
 
 		suspendedVM = vm.Suspended{
 			Name:    "some-vm",
@@ -32,9 +30,8 @@ var _ = Describe("Suspended", func() {
 			IP:      "some-ip",
 			SSHPort: "some-port",
 
-			VBox:                mockVBox,
-			UI:                  mockUI,
-			RequirementsChecker: mockRequirementsChecker,
+			VBox: mockVBox,
+			UI:   mockUI,
 		}
 	})
 
@@ -59,7 +56,6 @@ var _ = Describe("Suspended", func() {
 	Describe("Start", func() {
 		It("should start vm", func() {
 			gomock.InOrder(
-				mockRequirementsChecker.EXPECT().Check().Return(nil),
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumeVM("some-vm").Return(nil),
 				mockUI.EXPECT().Say("PCF Dev is now running"),
@@ -68,36 +64,9 @@ var _ = Describe("Suspended", func() {
 			Expect(suspendedVM.Start()).To(Succeed())
 		})
 
-		Context("when the system does not meet requirements and the user accepts to continue", func() {
-			It("should print a warning and prompt for the response to continue", func() {
-				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
-					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
-					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM("some-vm").Return(nil),
-					mockUI.EXPECT().Say("PCF Dev is now running"),
-				)
-
-				Expect(suspendedVM.Start()).To(Succeed())
-			})
-		})
-
-		Context("when the system does not meet requirements and the user declines to continue", func() {
-			It("should print a warning and prompt for the response to continue", func() {
-				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
-					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(false),
-					mockUI.EXPECT().Say("Exiting..."),
-				)
-
-				Expect(suspendedVM.Start()).To(Succeed())
-			})
-		})
-
 		Context("when starting the vm fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(nil),
 					mockUI.EXPECT().Say("Resuming VM..."),
 					mockVBox.EXPECT().ResumeVM("some-vm").Return(errors.New("some-error")),
 				)
@@ -110,7 +79,6 @@ var _ = Describe("Suspended", func() {
 	Describe("Resume", func() {
 		It("should start vm", func() {
 			gomock.InOrder(
-				mockRequirementsChecker.EXPECT().Check().Return(nil),
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumeVM("some-vm").Return(nil),
 				mockUI.EXPECT().Say("PCF Dev is now running"),
@@ -119,36 +87,9 @@ var _ = Describe("Suspended", func() {
 			Expect(suspendedVM.Resume()).To(Succeed())
 		})
 
-		Context("when the system does not meet requirements and the user accepts to continue", func() {
-			It("should print a warning and prompt for the response to continue", func() {
-				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
-					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
-					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM("some-vm").Return(nil),
-					mockUI.EXPECT().Say("PCF Dev is now running"),
-				)
-
-				Expect(suspendedVM.Resume()).To(Succeed())
-			})
-		})
-
-		Context("when the system does not meet requirements and the user declines to continue", func() {
-			It("should print a warning and prompt for the response to continue", func() {
-				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
-					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(false),
-					mockUI.EXPECT().Say("Exiting..."),
-				)
-
-				Expect(suspendedVM.Resume()).To(Succeed())
-			})
-		})
-
 		Context("when starting the vm fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(nil),
 					mockUI.EXPECT().Say("Resuming VM..."),
 					mockVBox.EXPECT().ResumeVM("some-vm").Return(errors.New("some-error")),
 				)

@@ -71,7 +71,6 @@ var _ = Describe("Builder", func() {
 						Expect(u.SSH).NotTo(BeNil())
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
-						Expect(u.RequirementsChecker).NotTo(BeNil())
 					default:
 						Fail("wrong type")
 					}

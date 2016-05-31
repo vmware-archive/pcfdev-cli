@@ -44,8 +44,3 @@ type VM interface {
 type Builder interface {
 	VM(name string) (vm VM, err error)
 }
-
-//go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/vm RequirementsChecker
-type RequirementsChecker interface {
-	Check() error
-}

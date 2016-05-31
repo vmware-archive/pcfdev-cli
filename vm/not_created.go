@@ -53,3 +53,13 @@ func (n *NotCreated) Status() {
 func (n *NotCreated) Destroy() error {
 	return nil
 }
+
+func (n *NotCreated) Suspend() error {
+	n.UI.Say("No VM running, cannot suspend.")
+	return nil
+}
+
+func (n *NotCreated) Resume() error {
+	n.UI.Say("No VM suspended, cannot resume.")
+	return nil
+}

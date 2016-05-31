@@ -13,9 +13,9 @@ import (
 
 var _ = Describe("Stopped", func() {
 	var (
-		mockCtrl    *gomock.Controller
-		mockUI      *mocks.MockUI
-		mockVBox    *mocks.MockVBox
+		mockCtrl *gomock.Controller
+		mockUI   *mocks.MockUI
+		mockVBox *mocks.MockVBox
 
 		runningVM vm.Running
 	)
@@ -31,8 +31,8 @@ var _ = Describe("Stopped", func() {
 			IP:      "some-ip",
 			SSHPort: "some-port",
 
-			VBox:    mockVBox,
-			UI:      mockUI,
+			VBox: mockVBox,
+			UI:   mockUI,
 		}
 	})
 
@@ -106,6 +106,33 @@ var _ = Describe("Stopped", func() {
 
 				Expect(runningVM.Destroy()).To(MatchError("failed to destroy vm: some-error"))
 			})
+		})
+	})
+
+	Describe("Suspend", func() {
+		It("should suspend the vm", func() {
+			mockUI.EXPECT().Say("Suspending VM...")
+			mockVBox.EXPECT().SuspendVM("some-vm").Return(nil)
+			mockUI.EXPECT().Say("PCF Dev is now suspended")
+
+			Expect(runningVM.Suspend()).To(Succeed())
+		})
+
+		Context("when suspending the vm fails", func() {
+			It("should return an error", func() {
+				mockUI.EXPECT().Say("Suspending VM...")
+				mockVBox.EXPECT().SuspendVM("some-vm").Return(errors.New("some-error"))
+
+				Expect(runningVM.Suspend()).To(MatchError("failed to suspend vm: some-error"))
+			})
+		})
+	})
+
+	Describe("Resume", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("PCF Dev is running")
+
+			Expect(runningVM.Resume()).To(Succeed())
 		})
 	})
 })

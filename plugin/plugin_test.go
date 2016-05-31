@@ -65,14 +65,14 @@ var _ = Describe("Plugin", func() {
 
 		Context("when it is called with the wrong number of arguments", func() {
 			It("should print the usage message", func() {
-				mockUI.EXPECT().Failed("Usage: %s", "cf dev download|start|status|stop|destroy")
+				mockUI.EXPECT().Failed("Usage: %s", "cf dev download|start|status|stop|suspend|resume|destroy")
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev"})
 			})
 		})
 
 		Context("when it is called with an invalid argument", func() {
 			It("should print the usage message", func() {
-				mockUI.EXPECT().Failed("'%s' is not a registered command.\nUsage: %s", "invalid", "cf dev download|start|status|stop|destroy")
+				mockUI.EXPECT().Failed("'%s' is not a registered command.\nUsage: %s", "invalid", "cf dev download|start|status|stop|suspend|resume|destroy")
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "invalid"})
 			})
 		})
@@ -405,6 +405,80 @@ var _ = Describe("Plugin", func() {
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+			})
+		})
+	})
+
+	Context("suspend", func() {
+		It("should suspend the VM", func() {
+			gomock.InOrder(
+				mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+				mockVM.EXPECT().Suspend(),
+			)
+
+			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
+		})
+
+		Context("when it fails to get VM", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
+					mockUI.EXPECT().Failed("Error: some-error"),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
+			})
+		})
+
+		Context("when it fails to suspend VM", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Suspend().Return(errors.New("some-error")),
+					mockUI.EXPECT().Failed("Error: some-error"),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
+			})
+		})
+	})
+
+	Context("resume", func() {
+		It("should resume the VM", func() {
+			gomock.InOrder(
+				mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+				mockVM.EXPECT().Resume(),
+			)
+
+			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
+		})
+
+		Context("when it fails to get VM", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
+					mockUI.EXPECT().Failed("Error: some-error"),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
+			})
+		})
+
+		Context("when it fails to resume VM", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
+					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Resume().Return(errors.New("some-error")),
+					mockUI.EXPECT().Failed("Error: some-error"),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
 			})
 		})
 	})

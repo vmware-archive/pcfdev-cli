@@ -10,6 +10,8 @@ type VBox interface {
 	StartVM(name string, ip string, sshPort string, domain string) error
 	StopVM(name string) error
 	DestroyVM(name string) error
+	ResumeVM(name string) error
+	SuspendVM(name string) error
 	PowerOffVM(name string) error
 	ImportVM(name string) error
 	ConflictingVMPresent(name string) (conflict bool, err error)
@@ -34,6 +36,8 @@ type VM interface {
 	Stop() error
 	Status()
 	Destroy() error
+	Suspend() error
+	Resume() error
 }
 
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/vm Builder

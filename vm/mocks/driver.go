@@ -50,16 +50,6 @@ func (_mr *_MockDriverRecorder) GetVMIP(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVMIP", arg0)
 }
 
-func (_m *MockDriver) IsVMRunning(_param0 string) bool {
-	ret := _m.ctrl.Call(_m, "IsVMRunning", _param0)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-func (_mr *_MockDriverRecorder) IsVMRunning(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsVMRunning", arg0)
-}
-
 func (_m *MockDriver) VMExists(_param0 string) (bool, error) {
 	ret := _m.ctrl.Call(_m, "VMExists", _param0)
 	ret0, _ := ret[0].(bool)
@@ -69,4 +59,15 @@ func (_m *MockDriver) VMExists(_param0 string) (bool, error) {
 
 func (_mr *_MockDriverRecorder) VMExists(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "VMExists", arg0)
+}
+
+func (_m *MockDriver) VMState(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "VMState", _param0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) VMState(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "VMState", arg0)
 }

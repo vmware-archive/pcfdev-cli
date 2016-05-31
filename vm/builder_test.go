@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang/mock/gomock"
+	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 
@@ -49,13 +50,13 @@ var _ = Describe("Builder", func() {
 		})
 
 		Context("when vm is created", func() {
-			Context("when vm is not running", func() {
+			Context("when vm is stopped", func() {
 				It("should return a stopped vm", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
-						mockDriver.EXPECT().IsVMRunning("some-vm").Return(false),
+						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateStopped, nil),
 					)
 
 					notCreatedVM, err := builder.VM("some-vm")
@@ -123,7 +124,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
-						mockDriver.EXPECT().IsVMRunning("some-vm").Return(true),
+						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil),
 					)
 
 					notCreatedVM, err := builder.VM("some-vm")
@@ -140,6 +141,45 @@ var _ = Describe("Builder", func() {
 					default:
 						Fail("wrong type")
 					}
+				})
+			})
+			Context("when vm is saved", func() {
+				It("should return a suspended vm", func() {
+					gomock.InOrder(
+						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
+						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
+						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateSaved, nil),
+					)
+
+					suspendedVM, err := builder.VM("some-vm")
+					Expect(err).NotTo(HaveOccurred())
+
+					switch u := suspendedVM.(type) {
+					case *vm.Suspended:
+						Expect(u.Name).To(Equal("some-vm"))
+						Expect(u.IP).To(Equal("192.168.11.11"))
+						Expect(u.SSHPort).To(Equal("some-port"))
+						Expect(u.Domain).To(Equal("local.pcfdev.io"))
+						Expect(u.VBox).NotTo(BeNil())
+						Expect(u.UI).NotTo(BeNil())
+					default:
+						Fail("wrong type")
+					}
+				})
+			})
+			Context("when vm state is something expected", func() {
+				It("should return an error", func() {
+					gomock.InOrder(
+						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
+						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
+						mockDriver.EXPECT().VMState("some-vm").Return("some-unexpected-state", nil),
+					)
+
+					vm, err := builder.VM("some-vm")
+					Expect(err).To(MatchError("failed to handle vm state 'some-unexpected-state'"))
+					Expect(vm).To(BeNil())
 				})
 			})
 		})

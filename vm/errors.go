@@ -10,6 +10,22 @@ func (e *StartVMError) Error() string {
 	return fmt.Sprintf("could not start PCF Dev: %s", e.error)
 }
 
+type SuspendVMError struct {
+	error
+}
+
+func (e *SuspendVMError) Error() string {
+	return fmt.Sprintf("failed to suspend vm: %s", e.error)
+}
+
+type ResumeVMError struct {
+	error
+}
+
+func (e *ResumeVMError) Error() string {
+	return fmt.Sprintf("could not resume PCF Dev: %s", e.error)
+}
+
 type OldVMError struct {
 }
 

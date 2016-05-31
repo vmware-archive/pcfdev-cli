@@ -91,6 +91,14 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 		if err := p.stop(); err != nil {
 			p.UI.Failed(getErrorText(err))
 		}
+	case "suspend":
+		if err := p.suspend(); err != nil {
+			p.UI.Failed(getErrorText(err))
+		}
+	case "resume":
+		if err := p.resume(); err != nil {
+			p.UI.Failed(getErrorText(err))
+		}
 	case "destroy":
 		if err := p.destroy(); err != nil {
 			p.UI.Failed(getErrorText(err))
@@ -118,6 +126,10 @@ func getErrorText(err error) string {
 		return "Failed to provision PCF Dev VM."
 	case *vm.StopVMError:
 		return "Failed to stop PCF Dev VM."
+	case *vm.SuspendVMError:
+		return "Failed to suspend PCF Dev VM."
+	case *vm.ResumeVMError:
+		return "Failed to resume PCF Dev VM."
 	case *DestroyVMError:
 		return "Failed to destroy PCF Dev VM."
 	default:
@@ -151,6 +163,24 @@ func (p *Plugin) stop() error {
 		return err
 	}
 	return vm.Stop()
+}
+
+func (p *Plugin) suspend() error {
+	vm, err := p.Builder.VM(p.Config.GetVMName())
+	if err != nil {
+		return err
+	}
+
+	return vm.Suspend()
+}
+
+func (p *Plugin) resume() error {
+	vm, err := p.Builder.VM(p.Config.GetVMName())
+	if err != nil {
+		return err
+	}
+
+	return vm.Resume()
 }
 
 func (p *Plugin) destroy() error {
@@ -232,7 +262,7 @@ func (*Plugin) GetMetadata() plugin.PluginMetadata {
 				Name:  "dev",
 				Alias: "pcfdev",
 				UsageDetails: plugin.Usage{
-					Usage: "cf dev download|start|status|stop|destroy",
+					Usage: "cf dev download|start|status|stop|suspend|resume|destroy",
 				},
 			},
 		},

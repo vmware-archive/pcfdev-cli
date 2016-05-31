@@ -158,4 +158,20 @@ var _ = Describe("Not Created", func() {
 			notCreatedVM.Status()
 		})
 	})
+
+	Describe("Suspend", func() {
+		It("should say message", func() {
+			mockUI.EXPECT().Say("No VM running, cannot suspend.")
+
+			Expect(notCreatedVM.Suspend()).To(Succeed())
+		})
+	})
+
+	Describe("Resume", func() {
+		It("should say message", func() {
+			mockUI.EXPECT().Say("No VM suspended, cannot resume.")
+
+			Expect(notCreatedVM.Resume()).To(Succeed())
+		})
+	})
 })

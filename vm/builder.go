@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
@@ -17,7 +18,7 @@ import (
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vm Driver
 type Driver interface {
 	VMExists(vmName string) (exists bool, err error)
-	IsVMRunning(vmName string) bool
+	VMState(vmName string) (state string, err error)
 	GetVMIP(vmName string) (vmIP string, err error)
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 }
@@ -31,7 +32,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 	ssh := &ssh.SSH{}
 	system := &system.System{}
-	vbox := &vbox.VBox{
+	vbx := &vbox.VBox{
 		SSH:    ssh,
 		Driver: &vbox.VBoxDriver{},
 		Picker: &address.Picker{
@@ -49,7 +50,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	if !exists {
 		return &NotCreated{
 			Name:    vmName,
-			VBox:    vbox,
+			VBox:    vbx,
 			UI:      termUI,
 			Builder: b,
 		}, nil
@@ -68,7 +69,11 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		return nil, err
 	}
 
-	if b.Driver.IsVMRunning(vmName) {
+	state, err := b.Driver.VMState(vmName)
+	if err != nil {
+		return nil, err
+	}
+	if state == vbox.StateRunning {
 		return &Running{
 			Name:    vmName,
 			IP:      ip,
@@ -76,21 +81,42 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			Domain:  domain,
 
 			UI:   termUI,
-			VBox: vbox,
+			VBox: vbx,
 		}, nil
 	}
-	return &Stopped{
-		Name:    vmName,
-		IP:      ip,
-		SSHPort: sshPort,
-		Domain:  domain,
-		RequirementsChecker: &requirements.Checker{
-			Config: b.Config,
-			System: system,
-		},
 
-		UI:   termUI,
-		SSH:  ssh,
-		VBox: vbox,
-	}, nil
+	if state == vbox.StateSaved {
+		return &Suspended{
+			Name:    vmName,
+			IP:      ip,
+			SSHPort: sshPort,
+			Domain:  domain,
+			RequirementsChecker: &requirements.Checker{
+				Config: b.Config,
+				System: system,
+			},
+
+			UI:   termUI,
+			VBox: vbx,
+		}, nil
+	}
+
+	if state == vbox.StateStopped {
+		return &Stopped{
+			Name:    vmName,
+			IP:      ip,
+			SSHPort: sshPort,
+			Domain:  domain,
+			RequirementsChecker: &requirements.Checker{
+				Config: b.Config,
+				System: system,
+			},
+
+			UI:   termUI,
+			SSH:  ssh,
+			VBox: vbx,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("failed to handle vm state '%s'", state)
 }

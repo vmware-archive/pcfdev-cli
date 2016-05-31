@@ -112,6 +112,24 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("PCF Dev is running"))
 		Expect(isVMRunning()).To(BeTrue())
 
+		By("running 'cf dev suspend' should suspend the vm")
+		suspendCommand := exec.Command("cf", "dev", "suspend")
+		session, err = gexec.Start(suspendCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "2m").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Suspending VM..."))
+		Expect(session).To(gbytes.Say("PCF Dev is now suspended"))
+		Expect(isVMRunning()).NotTo(BeTrue())
+
+		By("running 'cf dev resume' should resume the vm")
+		resumeCommand := exec.Command("cf", "dev", "resume")
+		session, err = gexec.Start(resumeCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "2m").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Resuming VM..."))
+		Expect(session).To(gbytes.Say("PCF Dev is now running"))
+		Expect(isVMRunning()).To(BeTrue())
+
 		output, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
 		Expect(err).NotTo(HaveOccurred())
 		regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
@@ -179,7 +197,7 @@ var _ = Describe("pcfdev", func() {
 		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session).Should(gexec.Exit(1))
-		Expect(session).To(gbytes.Say(`Usage: cf dev download\|start\|status\|stop\|destroy`))
+		Expect(session).To(gbytes.Say(`Usage: cf dev download\|start\|status\|stop\|suspend\|resume\|destroy`))
 	})
 
 	It("should download a VM without importing it", func() {
@@ -255,7 +273,7 @@ func getResponseFromFakeServer(vboxnetName string) (response string, err error) 
 		}
 	}
 
-	timeoutChan := time.After(30 * time.Second)
+	timeoutChan := time.After(2 * time.Minute)
 	var httpResponse *http.Response
 	var responseBody []byte
 

@@ -38,6 +38,16 @@ func (_mr *_MockVMRecorder) Destroy() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Destroy")
 }
 
+func (_m *MockVM) Resume() error {
+	ret := _m.ctrl.Call(_m, "Resume")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockVMRecorder) Resume() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Resume")
+}
+
 func (_m *MockVM) Start() error {
 	ret := _m.ctrl.Call(_m, "Start")
 	ret0, _ := ret[0].(error)
@@ -64,4 +74,14 @@ func (_m *MockVM) Stop() error {
 
 func (_mr *_MockVMRecorder) Stop() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Stop")
+}
+
+func (_m *MockVM) Suspend() error {
+	ret := _m.ctrl.Call(_m, "Suspend")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockVMRecorder) Suspend() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Suspend")
 }

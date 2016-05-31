@@ -95,7 +95,7 @@ var _ = Describe("driver", func() {
 
 			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(driver.IsVMRunning(vmName)).To(BeTrue())
+			Expect(driver.VMState(vmName)).To(Equal(vbox.StateRunning))
 
 			stdout := gbytes.NewBuffer()
 			err = sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)
@@ -104,13 +104,21 @@ var _ = Describe("driver", func() {
 
 			err = driver.StopVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() bool { return driver.IsVMRunning(vmName) }, 120*time.Second).Should(BeFalse())
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateStopped))
 
 			Expect(driver.StartVM(vmName)).To(Succeed())
-			Expect(driver.IsVMRunning(vmName)).To(BeTrue())
+			Expect(driver.VMState(vmName)).To(Equal(vbox.StateRunning))
+
+			err = driver.SuspendVM(vmName)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateSaved))
+
+			err = driver.ResumeVM(vmName)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.VMState(vmName)).To(Equal(vbox.StateRunning))
 
 			Expect(driver.PowerOffVM(vmName)).To(Succeed())
-			Expect(driver.IsVMRunning(vmName)).To(BeFalse())
+			Expect(driver.VMState(vmName)).To(Equal(vbox.StateStopped))
 
 			err = driver.DestroyVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
@@ -150,21 +158,9 @@ var _ = Describe("driver", func() {
 		})
 	})
 
-	Describe("#IsVMRunning", func() {
-		Context("when VM does not exist", func() {
-			It("should return false", func() {
-				Expect(driver.IsVMRunning("some-bad-vm")).To(BeFalse())
-			})
-		})
-
-		Context("when VM is not running", func() {
-			It("should return false", func() {
-				Expect(driver.IsVMRunning(vmName)).To(BeFalse())
-			})
-		})
-
-		Context("when VM is running", func() {
-			It("should return true", func() {
+	Describe("#VMState", func() {
+		Context("when the VM is running", func() {
+			It("should return StateRunning", func() {
 				sshClient := &ssh.SSH{}
 
 				_, port, err := sshClient.GenerateAddress()
@@ -175,12 +171,33 @@ var _ = Describe("driver", func() {
 
 				err = driver.StartVM(vmName)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(driver.IsVMRunning(vmName)).To(BeTrue())
-
-				stdout := gbytes.NewBuffer()
-				err = sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)
+				state, err := driver.VMState(vmName)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
+				Expect(state).To(Equal(vbox.StateRunning))
+			})
+		})
+
+		Context("when the VM is saved", func() {
+			It("should return StateSaved", func() {
+				sshClient := &ssh.SSH{}
+
+				_, port, err := sshClient.GenerateAddress()
+				Expect(err).NotTo(HaveOccurred())
+
+				err = driver.ForwardPort(vmName, "some-rule-name", port, "22")
+				Expect(err).NotTo(HaveOccurred())
+
+				err = driver.StartVM(vmName)
+				Expect(err).NotTo(HaveOccurred())
+				err = driver.SuspendVM(vmName)
+
+				Expect(driver.VMState(vmName)).To(Equal(vbox.StateSaved))
+			})
+		})
+
+		Context("when the VM is stopped", func() {
+			It("should return StateStopped", func() {
+				Expect(driver.VMState(vmName)).To(Equal(vbox.StateStopped))
 			})
 		})
 	})
@@ -190,6 +207,24 @@ var _ = Describe("driver", func() {
 			It("should return an error", func() {
 				err := driver.StopVM("some-bad-vm-name")
 				Expect(err).To(MatchError("failed to execute 'VBoxManage controlvm some-bad-vm-name acpipowerbutton': exit status 1"))
+			})
+		})
+	})
+
+	Describe("#SuspendVM", func() {
+		Context("when VM with the given name does not exist", func() {
+			It("should return an error", func() {
+				err := driver.SuspendVM("some-bad-vm-name")
+				Expect(err).To(MatchError("failed to execute 'VBoxManage controlvm some-bad-vm-name savestate': exit status 1"))
+			})
+		})
+	})
+
+	Describe("#ResumeVM", func() {
+		Context("when VM with the given name does not exist", func() {
+			It("should return an error", func() {
+				err := driver.ResumeVM("some-bad-vm-name")
+				Expect(err).To(MatchError("failed to execute 'VBoxManage startvm some-bad-vm-name --type headless': exit status 1"))
 			})
 		})
 	})

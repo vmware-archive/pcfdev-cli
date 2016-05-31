@@ -14,6 +14,12 @@ import (
 
 type VBoxDriver struct{}
 
+const (
+	StateRunning = "running"
+	StateSaved   = "saved"
+	StateStopped = "poweroff"
+)
+
 func (*VBoxDriver) VBoxManage(arg ...string) (output []byte, err error) {
 	output, err = exec.Command("VBoxManage", arg...).CombinedOutput()
 	if err != nil {
@@ -37,12 +43,19 @@ func (d *VBoxDriver) VMExists(vmName string) (exists bool, err error) {
 	return strings.Contains(string(output), `"`+vmName+`"`), nil
 }
 
-func (d *VBoxDriver) IsVMRunning(vmName string) bool {
+func (d *VBoxDriver) VMState(vmName string) (string, error) {
 	vmStatus, err := d.VBoxManage("showvminfo", vmName, "--machinereadable")
 	if err != nil {
-		return false
+		return "", err
 	}
-	return strings.Contains(string(vmStatus), `VMState="running"`)
+
+	regex := regexp.MustCompile(`VMState="(.*)"`)
+	matches := regex.FindStringSubmatch(string(vmStatus))
+	if len(matches) <= 1 {
+		return "", errors.New("no state identified for VM")
+	}
+
+	return matches[1], nil
 }
 
 func (d *VBoxDriver) StopVM(vmName string) error {
@@ -50,12 +63,37 @@ func (d *VBoxDriver) StopVM(vmName string) error {
 		return err
 	}
 	for attempts := 0; attempts < 100; attempts++ {
-		if !d.IsVMRunning(vmName) {
+		state, err := d.VMState(vmName)
+		if err != nil {
+			return err
+		}
+		if state == StateStopped {
 			return nil
 		}
 		time.Sleep(time.Second)
 	}
 	return errors.New("timed out waiting for vm to stop")
+}
+
+func (d *VBoxDriver) SuspendVM(vmName string) error {
+	if _, err := d.VBoxManage("controlvm", vmName, "savestate"); err != nil {
+		return err
+	}
+	for attempts := 0; attempts < 100; attempts++ {
+		state, err := d.VMState(vmName)
+		if err != nil {
+			return err
+		}
+		if state == StateSaved {
+			return nil
+		}
+		time.Sleep(time.Second)
+	}
+	return errors.New("timed out waiting for vm to suspend")
+}
+
+func (d *VBoxDriver) ResumeVM(vmName string) error {
+	return d.StartVM(vmName)
 }
 
 func (d *VBoxDriver) PowerOffVM(vmName string) error {

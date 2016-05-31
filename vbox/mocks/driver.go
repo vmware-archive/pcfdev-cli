@@ -114,16 +114,6 @@ func (_mr *_MockDriverRecorder) GetVirtualSystemNumbersOfHardDiskImages(arg0 int
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVirtualSystemNumbersOfHardDiskImages", arg0)
 }
 
-func (_m *MockDriver) IsVMRunning(_param0 string) bool {
-	ret := _m.ctrl.Call(_m, "IsVMRunning", _param0)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-func (_mr *_MockDriverRecorder) IsVMRunning(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsVMRunning", arg0)
-}
-
 func (_m *MockDriver) PowerOffVM(_param0 string) error {
 	ret := _m.ctrl.Call(_m, "PowerOffVM", _param0)
 	ret0, _ := ret[0].(error)
@@ -132,6 +122,16 @@ func (_m *MockDriver) PowerOffVM(_param0 string) error {
 
 func (_mr *_MockDriverRecorder) PowerOffVM(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "PowerOffVM", arg0)
+}
+
+func (_m *MockDriver) ResumeVM(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "ResumeVM", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) ResumeVM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ResumeVM", arg0)
 }
 
 func (_m *MockDriver) RunningVMs() ([]string, error) {
@@ -173,6 +173,16 @@ func (_m *MockDriver) StopVM(_param0 string) error {
 
 func (_mr *_MockDriverRecorder) StopVM(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "StopVM", arg0)
+}
+
+func (_m *MockDriver) SuspendVM(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "SuspendVM", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) SuspendVM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SuspendVM", arg0)
 }
 
 func (_m *MockDriver) VBoxManage(_param0 ...string) ([]byte, error) {

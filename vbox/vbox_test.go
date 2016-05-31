@@ -482,6 +482,17 @@ var _ = Describe("vbox", func() {
 				Expect(vbx.StartVM("some-vm", "192.168.22.11", "some-port", "some-domain")).To(Succeed())
 			})
 
+			Context("when a bad ip is passed to StartVM command", func() {
+				It("should return an error", func() {
+					gomock.InOrder(
+						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress some-bad-ip\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
+					)
+
+					Expect(vbx.StartVM("some-vm", "some-bad-ip", "some-port", "some-domain")).To(MatchError("some-bad-ip is not one of the allowed PCF Dev ips"))
+				})
+			})
+
 			Context("when VM fails to start", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
@@ -547,6 +558,44 @@ var _ = Describe("vbox", func() {
 
 				mockDriver.EXPECT().StopVM("some-vm").Return(expectedError)
 				err := vbx.StopVM("some-vm")
+				Expect(err).To(MatchError(expectedError))
+			})
+		})
+	})
+
+	Describe("#SuspendVM", func() {
+		It("should suspend the VM", func() {
+			mockDriver.EXPECT().SuspendVM("some-vm")
+
+			err := vbx.SuspendVM("some-vm")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		Context("when the Driver fails to suspend the VM", func() {
+			It("should return the error", func() {
+				expectedError := errors.New("some-error")
+
+				mockDriver.EXPECT().SuspendVM("some-vm").Return(expectedError)
+				err := vbx.SuspendVM("some-vm")
+				Expect(err).To(MatchError(expectedError))
+			})
+		})
+	})
+
+	Describe("#ResumeVM", func() {
+		It("should resume the VM", func() {
+			mockDriver.EXPECT().ResumeVM("some-vm")
+
+			err := vbx.ResumeVM("some-vm")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		Context("when the Driver fails to resume the VM", func() {
+			It("should return the error", func() {
+				expectedError := errors.New("some-error")
+
+				mockDriver.EXPECT().ResumeVM("some-vm").Return(expectedError)
+				err := vbx.ResumeVM("some-vm")
 				Expect(err).To(MatchError(expectedError))
 			})
 		})

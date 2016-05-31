@@ -17,9 +17,10 @@ type Driver interface {
 	VBoxManage(arg ...string) (output []byte, err error)
 	StartVM(vmName string) error
 	VMExists(vmName string) (exists bool, err error)
-	IsVMRunning(vmName string) bool
 	PowerOffVM(vmName string) error
 	StopVM(vmName string) error
+	SuspendVM(vmName string) error
+	ResumeVM(vmName string) error
 	DestroyVM(vmName string) error
 	VMs() (vms []string, err error)
 	RunningVMs() (vms []string, err error)
@@ -77,6 +78,7 @@ type VBox struct {
 
 const (
 	StatusRunning    = "Running"
+	StatusSuspended  = "Suspended"
 	StatusStopped    = "Stopped"
 	StatusNotCreated = "Not created"
 )
@@ -105,18 +107,23 @@ func (v *VBox) configureNetwork(ip string, sshPort string) error {
 }
 
 func (v *VBox) configureEnvironment(ip string, sshPort string) error {
-	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"%s\" | sudo tee -a /etc/environment", v.proxySettings(ip)), sshPort, 2*time.Minute, ioutil.Discard, ioutil.Discard)
+	proxySettings, err := v.proxySettings(ip)
+	if err != nil {
+		return err
+	}
+
+	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"%s\" | sudo tee -a /etc/environment", proxySettings), sshPort, 2*time.Minute, ioutil.Discard, ioutil.Discard)
 }
 
-func (v *VBox) proxySettings(ip string) string {
+func (v *VBox) proxySettings(ip string) (settings string, err error) {
 	subnet, err := address.SubnetForIP(ip)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	domain, err := address.DomainForIP(ip)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	httpProxy := strings.Replace(v.Config.GetHTTPProxy(), "127.0.0.1", subnet, -1)
@@ -136,7 +143,7 @@ func (v *VBox) proxySettings(ip string) string {
 		"http_proxy=" + httpProxy,
 		"https_proxy=" + httpsProxy,
 		"no_proxy=" + noProxy,
-	}, "\n")
+	}, "\n"), nil
 }
 
 func (v *VBox) ImportVM(vmName string) error {
@@ -265,6 +272,14 @@ func (v *VBox) ConflictingVMPresent(vmName string) (conflict bool, err error) {
 
 func (v *VBox) StopVM(vmName string) error {
 	return v.Driver.StopVM(vmName)
+}
+
+func (v *VBox) SuspendVM(vmName string) error {
+	return v.Driver.SuspendVM(vmName)
+}
+
+func (v *VBox) ResumeVM(vmName string) error {
+	return v.Driver.ResumeVM(vmName)
 }
 
 func (v *VBox) GetPCFDevVMs() ([]string, error) {

@@ -138,4 +138,20 @@ var _ = Describe("Stopped", func() {
 			Expect(stoppedVM.Destroy()).To(Succeed())
 		})
 	})
+
+	Describe("Suspend", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("Your VM is currently stopped and cannot be suspended.")
+
+			Expect(stoppedVM.Suspend()).To(Succeed())
+		})
+	})
+
+	Describe("Resume", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("Your VM is currently stopped. Only a suspended VM can be resumed.")
+
+			Expect(stoppedVM.Resume()).To(Succeed())
+		})
+	})
 })

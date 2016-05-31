@@ -38,3 +38,19 @@ func (r *Running) Destroy() error {
 	}
 	return nil
 }
+
+func (r *Running) Suspend() error {
+	r.UI.Say("Suspending VM...")
+	if err := r.VBox.SuspendVM(r.Name); err != nil {
+		return &SuspendVMError{err}
+	}
+
+	r.UI.Say("PCF Dev is now suspended")
+	return nil
+}
+
+func (r *Running) Resume() error {
+	r.UI.Say("PCF Dev is running")
+
+	return nil
+}

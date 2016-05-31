@@ -262,10 +262,11 @@ var _ = Describe("Config", func() {
 
 	Context("#DestroyToken", func() {
 		var (
-			pcfdevHome string
-			mockFS     *mocks.MockFS
-			mockCtrl   *gomock.Controller
-			cfg        *config.Config
+			pcfdevToken string
+			pcfdevHome  string
+			mockFS      *mocks.MockFS
+			mockCtrl    *gomock.Controller
+			cfg         *config.Config
 		)
 
 		BeforeEach(func() {
@@ -277,11 +278,14 @@ var _ = Describe("Config", func() {
 			}
 
 			pcfdevHome = os.Getenv("PCFDEV_HOME")
+			pcfdevToken = os.Getenv("PIVNET_TOKEN")
 
 			os.Setenv("PCFDEV_HOME", "some-pcfdev-home")
+			os.Setenv("PIVNET_TOKEN", "")
 		})
 
 		AfterEach(func() {
+			os.Setenv("PIVNET_TOKEN", pcfdevToken)
 			os.Setenv("PCFDEV_HOME", pcfdevHome)
 			mockCtrl.Finish()
 		})
@@ -299,6 +303,33 @@ var _ = Describe("Config", func() {
 		Context("when the token is not saved to file", func() {
 			It("should not throw an error", func() {
 				mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(false, nil)
+				Expect(cfg.DestroyToken()).To(Succeed())
+			})
+		})
+
+		Context("when there is an error seeing if token exists", func() {
+			It("should throw an error", func() {
+				mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(false, errors.New("some-error"))
+				Expect(cfg.DestroyToken()).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when there is an error removing the token", func() {
+			It("should throw an error", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(true, nil),
+					mockFS.EXPECT().RemoveFile(filepath.Join("some-pcfdev-home", ".pcfdev", "token")).Return(errors.New("some-error")),
+				)
+				Expect(cfg.DestroyToken()).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when PIVNET_TOKEN is set", func() {
+			BeforeEach(func() {
+				os.Setenv("PIVNET_TOKEN", "some-pivnet-token")
+			})
+
+			It("should not destroy the token", func() {
 				Expect(cfg.DestroyToken()).To(Succeed())
 			})
 		})

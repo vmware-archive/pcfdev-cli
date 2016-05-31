@@ -85,20 +85,24 @@ func (c *Config) SaveToken() error {
 }
 
 func (c *Config) DestroyToken() error {
+	if envToken := os.Getenv("PIVNET_TOKEN"); envToken != "" {
+		return nil
+	}
+
 	pcfdevDir, err := c.GetPCFDevDir()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	exists, err := c.FS.Exists(filepath.Join(pcfdevDir, "token"))
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if exists {
 		err := c.FS.RemoveFile(filepath.Join(pcfdevDir, "token"))
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 	return nil

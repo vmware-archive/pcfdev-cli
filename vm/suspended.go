@@ -38,6 +38,5 @@ func (s *Suspended) Resume() error {
 		return &ResumeVMError{err}
 	}
 
-	s.UI.Say("PCF Dev is now running")
 	return nil
 }

@@ -58,7 +58,6 @@ var _ = Describe("Suspended", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumeVM("some-vm").Return(nil),
-				mockUI.EXPECT().Say("PCF Dev is now running"),
 			)
 
 			Expect(suspendedVM.Start()).To(Succeed())
@@ -81,7 +80,6 @@ var _ = Describe("Suspended", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumeVM("some-vm").Return(nil),
-				mockUI.EXPECT().Say("PCF Dev is now running"),
 			)
 
 			Expect(suspendedVM.Resume()).To(Succeed())

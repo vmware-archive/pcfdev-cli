@@ -84,7 +84,6 @@ var _ = Describe("Not Created", func() {
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM("some-vm").Return(nil),
-					mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(),
 				)
@@ -127,7 +126,6 @@ var _ = Describe("Not Created", func() {
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM("some-vm").Return(nil),
-					mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
 
@@ -141,7 +139,6 @@ var _ = Describe("Not Created", func() {
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM("some-vm").Return(nil),
-					mockUI.EXPECT().Say("PCF Dev is now imported to Virtualbox"),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start().Return(errors.New("some-error")),
 				)

@@ -100,7 +100,6 @@ var _ = Describe("pcfdev", func() {
 		Eventually(session, "10m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("Waiting for services to start..."))
 		Expect(session).To(gbytes.Say("Services started"))
-		Expect(session).To(gbytes.Say("PCF Dev is now running"))
 		Expect(isVMRunning()).To(BeTrue())
 		Expect(filepath.Join(tempHome, ".pcfdev", vmName+"-disk0.vmdk")).To(BeAnExistingFile())
 
@@ -127,7 +126,6 @@ var _ = Describe("pcfdev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("Resuming VM..."))
-		Expect(session).To(gbytes.Say("PCF Dev is now running"))
 		Expect(isVMRunning()).To(BeTrue())
 
 		output, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
@@ -174,7 +172,8 @@ var _ = Describe("pcfdev", func() {
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
-		Expect(session).To(gbytes.Say("PCF Dev is now running"))
+		Expect(session).To(gbytes.Say("Waiting for services to start..."))
+		Expect(session).To(gbytes.Say("Services started"))
 		Expect(isVMRunning()).To(BeTrue())
 
 		stdout := gbytes.NewBuffer()

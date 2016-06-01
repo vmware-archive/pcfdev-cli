@@ -34,7 +34,6 @@ func (s *Stopped) Start() error {
 		return &ProvisionVMError{err}
 	}
 
-	s.UI.Say("PCF Dev is now running")
 	return nil
 }
 

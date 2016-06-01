@@ -34,7 +34,6 @@ func (n *NotCreated) Start() error {
 	if err := n.VBox.ImportVM(n.Name); err != nil {
 		return &StartVMError{err}
 	}
-	n.UI.Say("PCF Dev is now imported to Virtualbox")
 
 	stoppedVM, err := n.Builder.VM(n.Name)
 	if err != nil {

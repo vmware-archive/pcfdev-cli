@@ -54,7 +54,6 @@ type Client interface {
 //go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/plugin Config
 type Config interface {
 	GetVMName() string
-	SaveToken() error
 }
 
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/plugin Builder
@@ -240,10 +239,6 @@ func (p *Plugin) download() error {
 	p.UI.Say("Downloading VM...")
 
 	if err := p.Downloader.Download(); err != nil {
-		return err
-	}
-
-	if err := p.Config.SaveToken(); err != nil {
 		return err
 	}
 

@@ -28,6 +28,7 @@ type FS interface {
 //go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/downloader Config
 type Config interface {
 	GetOVAPath() (ovaPath string, err error)
+	SaveToken() error
 }
 type Downloader struct {
 	FS           FS
@@ -129,6 +130,10 @@ func (d *Downloader) download(path string, startAtBytes int64) (md5 string, err 
 		return "", err
 	}
 	defer ova.Close()
+
+	if err := d.Config.SaveToken(); err != nil {
+		return "", err
+	}
 
 	if err := d.FS.Write(d.partialFilePath(path), ova); err != nil {
 		return "", err

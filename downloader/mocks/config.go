@@ -38,3 +38,13 @@ func (_m *MockConfig) GetOVAPath() (string, error) {
 func (_mr *_MockConfigRecorder) GetOVAPath() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetOVAPath")
 }
+
+func (_m *MockConfig) SaveToken() error {
+	ret := _m.ctrl.Call(_m, "SaveToken")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockConfigRecorder) SaveToken() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SaveToken")
+}

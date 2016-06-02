@@ -117,13 +117,12 @@ var _ = Describe("Plugin", func() {
 
 		Context("download", func() {
 			Context("when OVA is not current", func() {
-				It("should download and save the token", func() {
+				It("should download the OVA", func() {
 					gomock.InOrder(
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(),
-						mockConfig.EXPECT().SaveToken().Return(nil),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 					)
 
@@ -157,22 +156,6 @@ var _ = Describe("Plugin", func() {
 					})
 				})
 
-				Context("when saving the API token fails", func() {
-					It("should print an error", func() {
-						gomock.InOrder(
-							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
-							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
-							mockUI.EXPECT().Say("Downloading VM..."),
-							mockDownloader.EXPECT().Download(),
-							mockConfig.EXPECT().SaveToken().Return(errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
-						)
-
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
-
-					})
-				})
-
 				Context("when EULA has not been accepted and user accepts the EULA", func() {
 					It("should download the ova", func() {
 						gomock.InOrder(
@@ -184,7 +167,6 @@ var _ = Describe("Plugin", func() {
 							mockClient.EXPECT().AcceptEULA().Return(nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
 							mockDownloader.EXPECT().Download(),
-							mockConfig.EXPECT().SaveToken().Return(nil),
 							mockUI.EXPECT().Say("\nVM downloaded"),
 						)
 
@@ -253,7 +235,6 @@ var _ = Describe("Plugin", func() {
 							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
 							mockDownloader.EXPECT().Download(),
-							mockConfig.EXPECT().SaveToken().Return(nil),
 							mockUI.EXPECT().Say("\nVM downloaded"),
 						)
 
@@ -294,7 +275,6 @@ var _ = Describe("Plugin", func() {
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(),
-						mockConfig.EXPECT().SaveToken().Return(nil),
 						mockUI.EXPECT().Say("\nVM downloaded"),
 						mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 						mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
@@ -405,7 +385,6 @@ var _ = Describe("Plugin", func() {
 
 					mockUI.EXPECT().Say("Downloading VM..."),
 					mockDownloader.EXPECT().Download(),
-					mockConfig.EXPECT().SaveToken().Return(nil),
 					mockUI.EXPECT().Say("\nVM downloaded"),
 
 					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),

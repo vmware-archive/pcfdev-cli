@@ -37,13 +37,3 @@ func (_m *MockConfig) GetVMName() string {
 func (_mr *_MockConfigRecorder) GetVMName() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVMName")
 }
-
-func (_m *MockConfig) SaveToken() error {
-	ret := _m.ctrl.Call(_m, "SaveToken")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-func (_mr *_MockConfigRecorder) SaveToken() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SaveToken")
-}

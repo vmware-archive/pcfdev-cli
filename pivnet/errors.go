@@ -9,25 +9,25 @@ func (e *InvalidTokenError) Error() string {
 }
 
 type UnexpectedResponseError struct {
-	error
+	Err error
 }
 
 func (e *UnexpectedResponseError) Error() string {
-	return e.error.Error()
+	return fmt.Sprintf("%s", e.Err)
 }
 
 type PivNetUnreachableError struct {
-	error
+	Err error
 }
 
 func (e *PivNetUnreachableError) Error() string {
-	return fmt.Sprintf("failed to reach Pivotal Network: %s", e.error.Error())
+	return fmt.Sprintf("failed to reach Pivotal Network: %s", e.Err)
 }
 
 type JSONUnmarshalError struct {
-	error
+	Err error
 }
 
 func (e *JSONUnmarshalError) Error() string {
-	return fmt.Sprintf("failed to parse network response: %s", e.error.Error())
+	return fmt.Sprintf("failed to parse network response: %s", e.Err)
 }

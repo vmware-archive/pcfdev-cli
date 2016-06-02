@@ -165,7 +165,7 @@ var _ = Describe("Plugin", func() {
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
 							mockUI.EXPECT().Say("some-eula"),
 							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(false),
-							mockUI.EXPECT().Failed("You must accept the end user license agreement to use PCF Dev."),
+							mockUI.EXPECT().Failed("Error: you must accept the end user license agreement to use PCF Dev"),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -611,7 +611,7 @@ var _ = Describe("Plugin", func() {
 			It("should send an error message", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetPCFDevVMs().Return([]string{}, errors.New("some-error")),
-					mockUI.EXPECT().Failed("Failed to destroy PCF Dev VM."),
+					mockUI.EXPECT().Failed("Error: failed to destroy VM: some-error"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
@@ -625,7 +625,7 @@ var _ = Describe("Plugin", func() {
 					mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
 					mockUI.EXPECT().Say("Destroying VM..."),
 					mockBuilder.EXPECT().VM("pcfdev-0.0.0").Return(nil, errors.New("some-error")),
-					mockUI.EXPECT().Failed("Failed to destroy PCF Dev VM."),
+					mockUI.EXPECT().Failed("Error: failed to destroy VM: some-error"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
@@ -640,7 +640,7 @@ var _ = Describe("Plugin", func() {
 					mockUI.EXPECT().Say("Destroying VM..."),
 					mockBuilder.EXPECT().VM("pcfdev-0.0.0").Return(mockVM, nil),
 					mockVM.EXPECT().Destroy().Return(errors.New("some-error")),
-					mockUI.EXPECT().Failed("Failed to destroy PCF Dev VM."),
+					mockUI.EXPECT().Failed("Error: failed to destroy VM: some-error"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})

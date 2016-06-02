@@ -32,7 +32,7 @@ func (n *NotCreated) Start() error {
 
 	n.UI.Say("Importing VM...")
 	if err := n.VBox.ImportVM(n.Name); err != nil {
-		return &StartVMError{err}
+		return &ImportVMError{err}
 	}
 
 	stoppedVM, err := n.Builder.VM(n.Name)

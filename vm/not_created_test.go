@@ -116,7 +116,7 @@ var _ = Describe("Not Created", func() {
 					mockVBox.EXPECT().ImportVM("some-vm").Return(errors.New("some-error")),
 				)
 
-				Expect(notCreatedVM.Start()).To(MatchError("failed to start VM: some-error"))
+				Expect(notCreatedVM.Start()).To(MatchError("failed to import VM: some-error"))
 			})
 		})
 

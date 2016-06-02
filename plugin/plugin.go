@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/cli/plugin"
-	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
@@ -115,32 +114,7 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 }
 
 func getErrorText(err error) string {
-	switch err.(type) {
-	case *EULARefusedError:
-		return "You must accept the end user license agreement to use PCF Dev."
-	case *pivnet.InvalidTokenError:
-		return "Invalid Pivotal Network API Token."
-	case *pivnet.PivNetUnreachableError:
-		return "Failed to reach Pivotal Network. Please try again later."
-	case *vm.OldVMError:
-		return "An old version of PCF Dev was detected. You must run 'cf dev destroy' to continue."
-	case *vm.StartVMError:
-		return "Failed to start PCF Dev VM."
-	case *vm.ImportVMError:
-		return "Failed to import PCF Dev VM."
-	case *vm.ProvisionVMError:
-		return "Failed to provision PCF Dev VM."
-	case *vm.StopVMError:
-		return "Failed to stop PCF Dev VM."
-	case *vm.SuspendVMError:
-		return "Failed to suspend PCF Dev VM."
-	case *vm.ResumeVMError:
-		return "Failed to resume PCF Dev VM."
-	case *DestroyVMError:
-		return "Failed to destroy PCF Dev VM."
-	default:
-		return fmt.Sprintf("Error: %s", err.Error())
-	}
+	return fmt.Sprintf("Error: %s", err.Error())
 }
 
 func (p *Plugin) start() error {

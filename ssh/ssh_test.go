@@ -14,6 +14,14 @@ import (
 	"github.com/onsi/gomega/gbytes"
 )
 
+var vBoxManagePath string
+
+var _ = BeforeSuite(func() {
+	var err error
+	vBoxManagePath, err = helpers.VBoxManagePath()
+	Expect(err).NotTo(HaveOccurred())
+})
+
 var _ = Describe("ssh", func() {
 	Describe("GenerateAddress", func() {
 		It("Should return a host and free port", func() {
@@ -48,13 +56,13 @@ var _ = Describe("ssh", func() {
 				_, port, err = ssh.GenerateAddress()
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(exec.Command("VBoxManage", "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
-				Expect(exec.Command("VBoxManage", "startvm", vmName, "--type", "headless").Run()).To(Succeed())
+				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
+				Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
 			})
 
 			AfterEach(func() {
-				Expect(exec.Command("VBoxManage", "controlvm", vmName, "poweroff").Run()).To(Succeed())
-				Expect(exec.Command("VBoxManage", "unregistervm", vmName, "--delete").Run()).To(Succeed())
+				Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
+				Expect(exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()).To(Succeed())
 			})
 
 			Context("when the command succeeds", func() {

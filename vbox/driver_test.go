@@ -18,6 +18,14 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
+var vBoxManagePath string
+
+var _ = BeforeSuite(func() {
+	var err error
+	vBoxManagePath, err = helpers.VBoxManagePath()
+	Expect(err).NotTo(HaveOccurred())
+})
+
 var _ = Describe("driver", func() {
 	var driver *vbox.VBoxDriver
 	var vmName string
@@ -63,7 +71,7 @@ var _ = Describe("driver", func() {
 			})
 
 			AfterEach(func() {
-				command := exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName)
+				command := exec.Command(vBoxManagePath, "hostonlyif", "remove", interfaceName)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
@@ -273,7 +281,7 @@ var _ = Describe("driver", func() {
 		var interfaceName string
 
 		AfterEach(func() {
-			command := exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName)
+			command := exec.Command(vBoxManagePath, "hostonlyif", "remove", interfaceName)
 			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
@@ -283,7 +291,7 @@ var _ = Describe("driver", func() {
 			var err error
 			interfaceName, err = driver.CreateHostOnlyInterface("192.168.77.1")
 			Expect(err).NotTo(HaveOccurred())
-			listCommand := exec.Command("VBoxManage", "list", "hostonlyifs")
+			listCommand := exec.Command(vBoxManagePath, "list", "hostonlyifs")
 			grepCommand := exec.Command("grep", interfaceName, "-A10")
 			var output bytes.Buffer
 			grepCommand.Stdin, err = listCommand.StdoutPipe()
@@ -307,19 +315,19 @@ var _ = Describe("driver", func() {
 
 		BeforeEach(func() {
 			expectedIP = "192.168.55.55"
-			output, err := exec.Command("VBoxManage", "hostonlyif", "create").Output()
+			output, err := exec.Command(vBoxManagePath, "hostonlyif", "create").Output()
 			Expect(err).NotTo(HaveOccurred())
 			regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
 			matches := regex.FindStringSubmatch(string(output))
 			interfaceName = matches[1]
-			assignIP := exec.Command("VBoxManage", "hostonlyif", "ipconfig", interfaceName, "--ip", expectedIP, "--netmask", "255.255.255.0")
+			assignIP := exec.Command(vBoxManagePath, "hostonlyif", "ipconfig", interfaceName, "--ip", expectedIP, "--netmask", "255.255.255.0")
 			session, err := gexec.Start(assignIP, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
-			command := exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName)
+			command := exec.Command(vBoxManagePath, "hostonlyif", "remove", interfaceName)
 			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
@@ -349,7 +357,7 @@ var _ = Describe("driver", func() {
 		})
 
 		AfterEach(func() {
-			command := exec.Command("VBoxManage", "hostonlyif", "remove", interfaceName)
+			command := exec.Command(vBoxManagePath, "hostonlyif", "remove", interfaceName)
 			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
@@ -359,7 +367,7 @@ var _ = Describe("driver", func() {
 			err := driver.AttachNetworkInterface(interfaceName, vmName)
 			Expect(err).NotTo(HaveOccurred())
 
-			showvmInfoCommand := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable")
+			showvmInfoCommand := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable")
 			session, err := gexec.Start(showvmInfoCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))
@@ -437,7 +445,7 @@ var _ = Describe("driver", func() {
 		It("should set vm memory in mb", func() {
 			Expect(driver.SetMemory(vmName, uint64(2048))).To(Succeed())
 
-			showvmInfoCommand := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable")
+			showvmInfoCommand := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable")
 			session, err := gexec.Start(showvmInfoCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))

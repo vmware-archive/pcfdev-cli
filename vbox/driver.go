@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 )
 
@@ -21,7 +22,12 @@ const (
 )
 
 func (*VBoxDriver) VBoxManage(arg ...string) (output []byte, err error) {
-	output, err = exec.Command("VBoxManage", arg...).CombinedOutput()
+	vBoxManagePath, err := helpers.VBoxManagePath()
+	if err != nil {
+		return nil, errors.New("could not find VBoxManage executable")
+	}
+
+	output, err = exec.Command(vBoxManagePath, arg...).CombinedOutput()
 	if err != nil {
 		return output, fmt.Errorf("failed to execute 'VBoxManage %s': %s: %s", strings.Join(arg, " "), err, output)
 	}

@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 )
 
@@ -30,6 +31,7 @@ var (
 	oldHTTPProxy    string
 	oldHTTPSProxy   string
 	oldNoProxy      string
+	vBoxManagePath  string
 )
 
 var _ = BeforeSuite(func() {
@@ -66,6 +68,9 @@ var _ = BeforeSuite(func() {
 	session, err = gexec.Start(installCommand, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session, "1m").Should(gexec.Exit(0))
+
+	vBoxManagePath, err = helpers.VBoxManagePath()
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
@@ -80,7 +85,7 @@ var _ = AfterSuite(func() {
 
 var _ = Describe("pcfdev", func() {
 	AfterEach(func() {
-		output, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
+		output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
 		if err != nil {
 			return
 		}
@@ -88,11 +93,11 @@ var _ = Describe("pcfdev", func() {
 		regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
 		matches := regex.FindStringSubmatch(string(output))
 
-		exec.Command("VBoxManage", "controlvm", vmName, "poweroff").Run()
-		exec.Command("VBoxManage", "unregistervm", vmName, "--delete").Run()
+		exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()
+		exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()
 
 		if len(matches) > 1 {
-			exec.Command("VBoxManage", "hostonlyif", "remove", matches[1]).Run()
+			exec.Command(vBoxManagePath, "hostonlyif", "remove", matches[1]).Run()
 		}
 	})
 
@@ -131,7 +136,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("Resuming VM..."))
 		Expect(isVMRunning()).To(BeTrue())
 
-		output, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
+		output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
 		Expect(err).NotTo(HaveOccurred())
 		regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
 		interfaceName := regex.FindStringSubmatch(string(output))[1]
@@ -154,7 +159,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("PCF Dev VM has been destroyed"))
 
 		By("leaving up hostonly interface after destroy")
-		vboxnets, err := exec.Command("VBoxManage", "list", "hostonlyifs").Output()
+		vboxnets, err := exec.Command(vBoxManagePath, "list", "hostonlyifs").Output()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(vboxnets).To(ContainSubstring(interfaceName))
 
@@ -211,7 +216,7 @@ var _ = Describe("pcfdev", func() {
 		_, err = os.Stat(filepath.Join(os.Getenv("PCFDEV_HOME"), ".pcfdev", "ova", "pcfdev-test.ova"))
 		Expect(err).NotTo(HaveOccurred())
 
-		listVmsCommand := exec.Command("VBoxManage", "list", "vms")
+		listVmsCommand := exec.Command(vBoxManagePath, "list", "vms")
 		session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session).Should(gexec.Exit(0))
@@ -240,13 +245,13 @@ func cf(args ...string) *gexec.Session {
 }
 
 func isVMRunning() bool {
-	vmStatus, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
+	vmStatus, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
 	return strings.Contains(string(vmStatus), `VMState="running"`)
 }
 
 func getForwardedPort() string {
-	output, err := exec.Command("VBoxManage", "showvminfo", vmName, "--machinereadable").Output()
+	output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
 
 	regex := regexp.MustCompile(`Forwarding\(\d+\)="ssh,tcp,127.0.0.1,(.*),,22"`)
@@ -254,7 +259,7 @@ func getForwardedPort() string {
 }
 
 func getResponseFromFakeServer(vboxnetName string) (response string, err error) {
-	output, err := exec.Command("VBoxManage", "list", "hostonlyifs").Output()
+	output, err := exec.Command(vBoxManagePath, "list", "hostonlyifs").Output()
 	Expect(err).NotTo(HaveOccurred())
 
 	nameRegex := regexp.MustCompile(`(?m:^Name:\s+(.*))`)

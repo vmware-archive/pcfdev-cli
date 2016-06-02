@@ -11,14 +11,14 @@ import (
 )
 
 func ImportSnappy() (vmName string, err error) {
-	_, err = os.Stat("../assets/snappy.ova")
+	_, err = os.Stat(filepath.Join("..", "assets", "snappy.ova"))
 	if os.IsNotExist(err) {
 		resp, err := http.Get("https://s3.amazonaws.com/pcfdev/ovas/snappy.ova")
 		if err != nil {
 			return "", err
 		}
 
-		ovaFile, err := os.Create("../assets/snappy.ova")
+		ovaFile, err := os.Create(filepath.Join("..", "assets", "snappy.ova"))
 		if err != nil {
 			return "", err
 		}
@@ -37,9 +37,14 @@ func ImportSnappy() (vmName string, err error) {
 	}
 	vmName = "Snappy-" + uuid.String()
 
-	command := exec.Command("VBoxManage",
+	vBoxManagePath, err := VBoxManagePath()
+	if err != nil {
+		return "", err
+	}
+
+	command := exec.Command(vBoxManagePath,
 		"import",
-		"../assets/snappy.ova",
+		filepath.Join("..", "assets", "snappy.ova"),
 		"--vsys", "0",
 		"--vmname", vmName,
 		"--unit", "6", "--disk", filepath.Join(tmpDir, vmName+"-disk1_4.vmdk"),

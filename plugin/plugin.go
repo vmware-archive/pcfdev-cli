@@ -74,12 +74,12 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 		return
 	}
 
-	if len(args) != 2 {
-		p.UI.Failed("Usage: %s", p.GetMetadata().Commands[0].UsageDetails.Usage)
-		return
+	var subcommand string
+	if len(args) > 1 {
+		subcommand = args[1]
 	}
 
-	switch args[1] {
+	switch subcommand {
 	case "download":
 		if err := p.download(); err != nil {
 			p.UI.Failed(getErrorText(err))
@@ -109,7 +109,10 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 			p.UI.Failed(getErrorText(err))
 		}
 	default:
-		p.UI.Failed("'%s' is not a registered command.\nUsage: %s", args[1], p.GetMetadata().Commands[0].UsageDetails.Usage)
+		_, err := cliConnection.CliCommand("help", "dev")
+		if err != nil {
+			p.UI.Failed(getErrorText(err))
+		}
 	}
 }
 
@@ -253,10 +256,20 @@ func (*Plugin) GetMetadata() plugin.PluginMetadata {
 		Name: "pcfdev",
 		Commands: []plugin.Command{
 			plugin.Command{
-				Name:  "dev",
-				Alias: "pcfdev",
+				Name:     "dev",
+				Alias:    "pcfdev",
+				HelpText: "Control PCF Dev VMs running on your workstation",
 				UsageDetails: plugin.Usage{
-					Usage: "cf dev download|start|status|stop|suspend|resume|destroy",
+					Usage: `cf dev SUBCOMMAND
+
+SUBCOMMANDS:
+   start                    Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.
+   stop                     Shutdown the PCF Dev VM. All data is preserved.
+   suspend                  Save the current state of the PCF Dev VM to disk and then stop the VM.
+   resume                   Resume PCF Dev VM from suspended state.
+   destroy                  Delete the PCF Dev VM. All data is destroyed.
+   status                   Query for the status of the PCF Dev VM.
+					`,
 				},
 			},
 		},

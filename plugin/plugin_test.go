@@ -27,6 +27,7 @@ var _ = Describe("Plugin", func() {
 		mockBuilder             *mocks.MockBuilder
 		mockVM                  *mocks.MockVM
 		mockRequirementsChecker *mocks.MockRequirementsChecker
+		fakeCliConnection       *fakes.FakeCliConnection
 		pcfdev                  *plugin.Plugin
 	)
 
@@ -41,6 +42,7 @@ var _ = Describe("Plugin", func() {
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
 		mockVM = mocks.NewMockVM(mockCtrl)
 		mockRequirementsChecker = mocks.NewMockRequirementsChecker(mockCtrl)
+		fakeCliConnection = &fakes.FakeCliConnection{}
 		pcfdev = &plugin.Plugin{
 			SSH:                 mockSSH,
 			UI:                  mockUI,
@@ -66,17 +68,50 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		Context("when it is called with the wrong number of arguments", func() {
-			It("should print the usage message", func() {
-				mockUI.EXPECT().Failed("Usage: %s", "cf dev download|start|status|stop|suspend|resume|destroy")
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev"})
-			})
-		})
+		Context("help", func() {
+			Context("when it is called with no subcommand", func() {
+				It("should print the usage message", func() {
+					pcfdev.Run(fakeCliConnection, []string{"dev"})
 
-		Context("when it is called with an invalid argument", func() {
-			It("should print the usage message", func() {
-				mockUI.EXPECT().Failed("'%s' is not a registered command.\nUsage: %s", "invalid", "cf dev download|start|status|stop|suspend|resume|destroy")
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "invalid"})
+					Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
+					Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
+				})
+			})
+
+			Context("when it is called with an invalid subcommand", func() {
+				It("should print the usage message", func() {
+					pcfdev.Run(fakeCliConnection, []string{"dev", "some-bad-subcommand"})
+
+					Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
+					Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
+				})
+			})
+
+			Context("when it is called with help", func() {
+				It("should print the usage message", func() {
+					pcfdev.Run(fakeCliConnection, []string{"dev", "help"})
+
+					Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
+					Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
+				})
+			})
+
+			Context("when it is called with --help", func() {
+				It("should print the usage message", func() {
+					pcfdev.Run(fakeCliConnection, []string{"dev", "--help"})
+
+					Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
+					Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
+				})
+			})
+
+			Context("when printing the help text fails", func() {
+				It("should print an error", func() {
+					fakeCliConnection.CliCommandReturns(nil, errors.New("some-error"))
+					mockUI.EXPECT().Failed("Error: some-error")
+
+					pcfdev.Run(fakeCliConnection, []string{"dev", "help"})
+				})
 			})
 		})
 

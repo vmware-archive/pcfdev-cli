@@ -192,11 +192,11 @@ var _ = Describe("pcfdev", func() {
 	})
 
 	It("should respond to pcfdev alias", func() {
-		pcfdevCommand := exec.Command("cf", "pcfdev")
+		pcfdevCommand := exec.Command("cf", "pcfdev", "help")
 		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(session).Should(gexec.Exit(1))
-		Expect(session).To(gbytes.Say(`Usage: cf dev download\|start\|status\|stop\|suspend\|resume\|destroy`))
+		Eventually(session).Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("cf dev SUBCOMMAND"))
 	})
 
 	It("should download a VM without importing it", func() {

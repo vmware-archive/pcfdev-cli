@@ -64,7 +64,7 @@ var _ = Describe("Not Created", func() {
 			It("should return an error", func() {
 				mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, errors.New("some-error"))
 
-				Expect(notCreatedVM.Stop()).To(MatchError("failed to stop vm: some-error"))
+				Expect(notCreatedVM.Stop()).To(MatchError("failed to stop VM: some-error"))
 			})
 		})
 	})
@@ -96,7 +96,7 @@ var _ = Describe("Not Created", func() {
 			It("should return an error", func() {
 				mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, errors.New("some-error"))
 
-				Expect(notCreatedVM.Start()).To(MatchError("could not start PCF Dev: some-error"))
+				Expect(notCreatedVM.Start()).To(MatchError("failed to start VM: some-error"))
 			})
 		})
 
@@ -116,7 +116,7 @@ var _ = Describe("Not Created", func() {
 					mockVBox.EXPECT().ImportVM("some-vm").Return(errors.New("some-error")),
 				)
 
-				Expect(notCreatedVM.Start()).To(MatchError("could not start PCF Dev: some-error"))
+				Expect(notCreatedVM.Start()).To(MatchError("failed to start VM: some-error"))
 			})
 		})
 
@@ -129,7 +129,7 @@ var _ = Describe("Not Created", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
 
-				Expect(notCreatedVM.Start()).To(MatchError("could not start PCF Dev: some-error"))
+				Expect(notCreatedVM.Start()).To(MatchError("failed to start VM: some-error"))
 			})
 		})
 
@@ -143,7 +143,7 @@ var _ = Describe("Not Created", func() {
 					mockStopped.EXPECT().Start().Return(errors.New("some-error")),
 				)
 
-				Expect(notCreatedVM.Start()).To(MatchError("could not start PCF Dev: some-error"))
+				Expect(notCreatedVM.Start()).To(MatchError("failed to start VM: some-error"))
 			})
 		})
 	})

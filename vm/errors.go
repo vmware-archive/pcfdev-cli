@@ -7,7 +7,7 @@ type StartVMError struct {
 }
 
 func (e *StartVMError) Error() string {
-	return fmt.Sprintf("could not start PCF Dev: %s", e.error)
+	return fmt.Sprintf("failed to start VM: %s", e.error)
 }
 
 type SuspendVMError struct {
@@ -15,7 +15,7 @@ type SuspendVMError struct {
 }
 
 func (e *SuspendVMError) Error() string {
-	return fmt.Sprintf("failed to suspend vm: %s", e.error)
+	return fmt.Sprintf("failed to suspend VM: %s", e.error)
 }
 
 type ResumeVMError struct {
@@ -23,7 +23,7 @@ type ResumeVMError struct {
 }
 
 func (e *ResumeVMError) Error() string {
-	return fmt.Sprintf("could not resume PCF Dev: %s", e.error)
+	return fmt.Sprintf("failed to resume VM: %s", e.error)
 }
 
 type OldVMError struct {
@@ -38,7 +38,7 @@ type ImportVMError struct {
 }
 
 func (e *ImportVMError) Error() string {
-	return fmt.Sprintf("failed to import vm: %s", e.error)
+	return fmt.Sprintf("failed to import VM: %s", e.error)
 }
 
 type ProvisionVMError struct {
@@ -46,7 +46,7 @@ type ProvisionVMError struct {
 }
 
 func (e *ProvisionVMError) Error() string {
-	return fmt.Sprintf("failed to provision vm: %s", e.error)
+	return fmt.Sprintf("failed to provision VM: %s", e.error)
 }
 
 type StopVMError struct {
@@ -54,7 +54,7 @@ type StopVMError struct {
 }
 
 func (e *StopVMError) Error() string {
-	return fmt.Sprintf("failed to stop vm: %s", e.error)
+	return fmt.Sprintf("failed to stop VM: %s", e.error)
 }
 
 type DestroyVMError struct {
@@ -62,5 +62,5 @@ type DestroyVMError struct {
 }
 
 func (e *DestroyVMError) Error() string {
-	return fmt.Sprintf("failed to destroy vm: %s", e.error)
+	return fmt.Sprintf("failed to destroy VM: %s", e.error)
 }

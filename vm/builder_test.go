@@ -177,7 +177,7 @@ var _ = Describe("Builder", func() {
 					)
 
 					vm, err := builder.VM("some-vm")
-					Expect(err).To(MatchError("failed to handle vm state 'some-unexpected-state'"))
+					Expect(err).To(MatchError("failed to handle VM state 'some-unexpected-state'"))
 					Expect(vm).To(BeNil())
 				})
 			})

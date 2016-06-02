@@ -58,7 +58,7 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StopVM("some-vm").Return(errors.New("some-error")),
 				)
 
-				Expect(runningVM.Stop()).To(MatchError("failed to stop vm: some-error"))
+				Expect(runningVM.Stop()).To(MatchError("failed to stop VM: some-error"))
 			})
 		})
 	})
@@ -93,7 +93,7 @@ var _ = Describe("Stopped", func() {
 			It("should return an error", func() {
 				mockVBox.EXPECT().PowerOffVM("some-vm").Return(errors.New("some-error"))
 
-				Expect(runningVM.Destroy()).To(MatchError("failed to destroy vm: some-error"))
+				Expect(runningVM.Destroy()).To(MatchError("failed to destroy VM: some-error"))
 			})
 		})
 
@@ -104,7 +104,7 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().DestroyVM("some-vm").Return(errors.New("some-error")),
 				)
 
-				Expect(runningVM.Destroy()).To(MatchError("failed to destroy vm: some-error"))
+				Expect(runningVM.Destroy()).To(MatchError("failed to destroy VM: some-error"))
 			})
 		})
 	})
@@ -123,7 +123,7 @@ var _ = Describe("Stopped", func() {
 				mockUI.EXPECT().Say("Suspending VM...")
 				mockVBox.EXPECT().SuspendVM("some-vm").Return(errors.New("some-error"))
 
-				Expect(runningVM.Suspend()).To(MatchError("failed to suspend vm: some-error"))
+				Expect(runningVM.Suspend()).To(MatchError("failed to suspend VM: some-error"))
 			})
 		})
 	})

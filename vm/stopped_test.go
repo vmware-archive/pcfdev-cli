@@ -70,7 +70,7 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM("some-vm", "some-ip", "some-port", "some-domain").Return(errors.New("some-error")),
 				)
 
-				Expect(stoppedVM.Start()).To(MatchError("could not start PCF Dev: some-error"))
+				Expect(stoppedVM.Start()).To(MatchError("failed to start VM: some-error"))
 			})
 		})
 
@@ -83,7 +83,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
-				Expect(stoppedVM.Start()).To(MatchError("failed to provision vm: some-error"))
+				Expect(stoppedVM.Start()).To(MatchError("failed to provision VM: some-error"))
 			})
 		})
 	})

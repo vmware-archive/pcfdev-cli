@@ -107,5 +107,5 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		}, nil
 	}
 
-	return nil, fmt.Errorf("failed to handle vm state '%s'", state)
+	return nil, fmt.Errorf("failed to handle VM state '%s'", state)
 }

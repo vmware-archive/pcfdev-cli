@@ -70,7 +70,7 @@ var _ = Describe("Suspended", func() {
 					mockVBox.EXPECT().ResumeVM("some-vm").Return(errors.New("some-error")),
 				)
 
-				Expect(suspendedVM.Start()).To(MatchError("could not resume PCF Dev: some-error"))
+				Expect(suspendedVM.Start()).To(MatchError("failed to resume VM: some-error"))
 			})
 		})
 	})
@@ -92,7 +92,7 @@ var _ = Describe("Suspended", func() {
 					mockVBox.EXPECT().ResumeVM("some-vm").Return(errors.New("some-error")),
 				)
 
-				Expect(suspendedVM.Resume()).To(MatchError("could not resume PCF Dev: some-error"))
+				Expect(suspendedVM.Resume()).To(MatchError("failed to resume VM: some-error"))
 			})
 		})
 	})

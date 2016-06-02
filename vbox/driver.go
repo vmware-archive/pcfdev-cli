@@ -23,7 +23,7 @@ const (
 func (*VBoxDriver) VBoxManage(arg ...string) (output []byte, err error) {
 	output, err = exec.Command("VBoxManage", arg...).CombinedOutput()
 	if err != nil {
-		return output, fmt.Errorf("failed to execute 'VBoxManage %s': %s", strings.Join(arg, " "), err)
+		return output, fmt.Errorf("failed to execute 'VBoxManage %s': %s: %s", strings.Join(arg, " "), err, output)
 	}
 	return output, nil
 }
@@ -35,7 +35,6 @@ func (d *VBoxDriver) StartVM(vmName string) error {
 
 func (d *VBoxDriver) VMExists(vmName string) (exists bool, err error) {
 	output, err := d.VBoxManage("list", "vms")
-
 	if err != nil {
 		return false, err
 	}
@@ -44,13 +43,13 @@ func (d *VBoxDriver) VMExists(vmName string) (exists bool, err error) {
 }
 
 func (d *VBoxDriver) VMState(vmName string) (string, error) {
-	vmStatus, err := d.VBoxManage("showvminfo", vmName, "--machinereadable")
+	output, err := d.VBoxManage("showvminfo", vmName, "--machinereadable")
 	if err != nil {
 		return "", err
 	}
 
 	regex := regexp.MustCompile(`VMState="(.*)"`)
-	matches := regex.FindStringSubmatch(string(vmStatus))
+	matches := regex.FindStringSubmatch(string(output))
 	if len(matches) <= 1 {
 		return "", errors.New("no state identified for VM")
 	}
@@ -62,6 +61,7 @@ func (d *VBoxDriver) StopVM(vmName string) error {
 	if _, err := d.VBoxManage("controlvm", vmName, "acpipowerbutton"); err != nil {
 		return err
 	}
+
 	for attempts := 0; attempts < 100; attempts++ {
 		state, err := d.VMState(vmName)
 		if err != nil {
@@ -79,6 +79,7 @@ func (d *VBoxDriver) SuspendVM(vmName string) error {
 	if _, err := d.VBoxManage("controlvm", vmName, "savestate"); err != nil {
 		return err
 	}
+
 	for attempts := 0; attempts < 100; attempts++ {
 		state, err := d.VMState(vmName)
 		if err != nil {
@@ -103,7 +104,6 @@ func (d *VBoxDriver) PowerOffVM(vmName string) error {
 
 func (d *VBoxDriver) DestroyVM(vmName string) error {
 	_, err := d.VBoxManage("unregistervm", vmName, "--delete")
-
 	return err
 }
 
@@ -112,6 +112,7 @@ func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (interfaceName string, e
 	if err != nil {
 		return "", err
 	}
+
 	regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
 	matches := regex.FindStringSubmatch(string(output))
 	if len(matches) <= 1 {
@@ -120,8 +121,7 @@ func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (interfaceName string, e
 
 	interfaceName = matches[1]
 
-	_, err = d.VBoxManage("hostonlyif", "ipconfig", interfaceName, "--ip", ip, "--netmask", "255.255.255.0")
-	if err != nil {
+	if _, err := d.VBoxManage("hostonlyif", "ipconfig", interfaceName, "--ip", ip, "--netmask", "255.255.255.0"); err != nil {
 		return "", err
 	}
 	return interfaceName, nil
@@ -130,7 +130,7 @@ func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (interfaceName string, e
 func (d *VBoxDriver) GetHostOnlyInterfaces() (interfaces []*network.Interface, err error) {
 	output, err := d.VBoxManage("list", "hostonlyifs")
 	if err != nil {
-		return []*network.Interface{}, err
+		return nil, err
 	}
 
 	nameRegex := regexp.MustCompile(`(?m:^Name:\s+(.*))`)
@@ -152,7 +152,6 @@ func (d *VBoxDriver) GetHostOnlyInterfaces() (interfaces []*network.Interface, e
 
 func (d *VBoxDriver) SetMemory(vmName string, memory uint64) error {
 	_, err := d.VBoxManage("modifyvm", vmName, "--memory", strconv.Itoa(int(memory)))
-
 	return err
 }
 
@@ -206,7 +205,7 @@ func (d *VBoxDriver) GetHostForwardPort(vmName string, ruleName string) (port st
 func (d *VBoxDriver) VMs() ([]string, error) {
 	output, err := d.VBoxManage("list", "vms")
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 
 	vms := []string{}
@@ -223,7 +222,7 @@ func (d *VBoxDriver) VMs() ([]string, error) {
 func (d *VBoxDriver) GetVirtualSystemNumbersOfHardDiskImages(ovaPath string) (virtualSystemNumbers []string, err error) {
 	output, err := d.VBoxManage("import", ovaPath, "-n")
 	if err != nil {
-		return nil, fmt.Errorf("could not determine hard disk image virtual system numbers of '%s': %s", ovaPath, err)
+		return nil, err
 	}
 
 	numbers := []string{}
@@ -245,7 +244,7 @@ func (d *VBoxDriver) GetVirtualSystemNumbersOfHardDiskImages(ovaPath string) (vi
 func (d *VBoxDriver) RunningVMs() (vms []string, err error) {
 	output, err := d.VBoxManage("list", "runningvms")
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 
 	runningVMs := []string{}

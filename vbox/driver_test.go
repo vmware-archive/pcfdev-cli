@@ -37,15 +37,15 @@ var _ = Describe("driver", func() {
 
 	Describe("#VBoxManage", func() {
 		It("should execute VBoxManage with given args", func() {
-			stdout, err := driver.VBoxManage("help")
+			output, err := driver.VBoxManage("help")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(string(stdout)).To(ContainSubstring("Oracle VM VirtualBox Command Line Management Interface"))
+			Expect(string(output)).To(ContainSubstring("Oracle VM VirtualBox Command Line Management Interface"))
 		})
 
 		It("should return any errors with their output", func() {
-			stdout, err := driver.VBoxManage("some-bad-command")
+			output, err := driver.VBoxManage("some-bad-command")
 			Expect(err).To(HaveOccurred())
-			Expect(string(stdout)).To(ContainSubstring("Syntax error: Invalid command 'some-bad-command'"))
+			Expect(string(output)).To(ContainSubstring("Syntax error: Invalid command 'some-bad-command'"))
 		})
 	})
 
@@ -77,15 +77,23 @@ var _ = Describe("driver", func() {
 		})
 
 		Context("when interface does not exist", func() {
-			It("should return the ip of the vm", func() {
+			It("should return an error message", func() {
 				_, err := driver.GetVMIP(vmName)
 				Expect(err).To(MatchError("there is no attached hostonlyif for " + vmName))
 			})
 		})
+
+		Context("when VBoxManage command fails", func() {
+			It("should return the output of the failed command", func() {
+				_, err := driver.GetVMIP("some-bad-vm-name")
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage showvminfo some-bad-vm-name --machinereadable': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
+			})
+		})
 	})
 
-	Describe("when starting and stopping and destroying the VM", func() {
-		It("should start, stop, and then destroy a VBox VM", func() {
+	Describe("when starting and stopping and suspending and resuming and destroying the VM", func() {
+		It("should start, stop, suspend, resume, and then destroy a VBox VM", func() {
 			sshClient := &ssh.SSH{}
 			_, port, err := sshClient.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
@@ -135,7 +143,8 @@ var _ = Describe("driver", func() {
 		Context("when VM with the given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.StartVM("some-bad-vm-name")
-				Expect(err).To(MatchError("failed to execute 'VBoxManage startvm some-bad-vm-name --type headless': exit status 1"))
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage startvm some-bad-vm-name --type headless': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
 			})
 		})
 	})
@@ -200,13 +209,22 @@ var _ = Describe("driver", func() {
 				Expect(driver.VMState(vmName)).To(Equal(vbox.StateStopped))
 			})
 		})
+
+		Context("when VBoxManage command fails", func() {
+			It("should return the output of the failed command", func() {
+				_, err := driver.VMState("some-bad-vm-name")
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage showvminfo some-bad-vm-name --machinereadable': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
+			})
+		})
 	})
 
 	Describe("#StopVM", func() {
 		Context("when VM with the given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.StopVM("some-bad-vm-name")
-				Expect(err).To(MatchError("failed to execute 'VBoxManage controlvm some-bad-vm-name acpipowerbutton': exit status 1"))
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage controlvm some-bad-vm-name acpipowerbutton': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
 			})
 		})
 	})
@@ -215,7 +233,8 @@ var _ = Describe("driver", func() {
 		Context("when VM with the given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.SuspendVM("some-bad-vm-name")
-				Expect(err).To(MatchError("failed to execute 'VBoxManage controlvm some-bad-vm-name savestate': exit status 1"))
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage controlvm some-bad-vm-name savestate': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
 			})
 		})
 	})
@@ -224,7 +243,8 @@ var _ = Describe("driver", func() {
 		Context("when VM with the given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.ResumeVM("some-bad-vm-name")
-				Expect(err).To(MatchError("failed to execute 'VBoxManage startvm some-bad-vm-name --type headless': exit status 1"))
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage startvm some-bad-vm-name --type headless': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
 			})
 		})
 	})
@@ -232,9 +252,9 @@ var _ = Describe("driver", func() {
 	Describe("#PowerOffVM", func() {
 		Context("when VM with the given name does not exist", func() {
 			It("should return an error", func() {
-				Expect(driver.PowerOffVM("some-bad-vm-name")).To(
-					MatchError("failed to execute 'VBoxManage controlvm some-bad-vm-name poweroff': exit status 1"),
-				)
+				err := driver.PowerOffVM("some-bad-vm-name")
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage controlvm some-bad-vm-name poweroff': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
 			})
 		})
 	})
@@ -243,7 +263,8 @@ var _ = Describe("driver", func() {
 		Context("when VM with the given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.DestroyVM("some-bad-vm-name")
-				Expect(err).To(MatchError("failed to execute 'VBoxManage unregistervm some-bad-vm-name --delete': exit status 1"))
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage unregistervm some-bad-vm-name --delete': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
 			})
 		})
 	})
@@ -348,9 +369,9 @@ var _ = Describe("driver", func() {
 
 		Context("when attaching a hostonlyif fails", func() {
 			It("should return an error", func() {
-				name := "some-bad-vm"
-				err := driver.AttachNetworkInterface(interfaceName, name)
-				Expect(err).To(MatchError(fmt.Sprintf("failed to execute 'VBoxManage modifyvm some-bad-vm --nic2 hostonly --hostonlyadapter2 %s': exit status 1", interfaceName)))
+				err := driver.AttachNetworkInterface("some-interface-name", "some-bad-vm-name")
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage modifyvm some-bad-vm-name --nic2 hostonly --hostonlyadapter2 some-interface-name': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
 			})
 		})
 	})
@@ -370,6 +391,14 @@ var _ = Describe("driver", func() {
 			err = sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
+		})
+
+		Context("when forwarding a port fails", func() {
+			It("should return an error", func() {
+				err := driver.ForwardPort("some-bad-vm-name", "some-rule-name", "some-host-port", "some-guest-port")
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage modifyvm some-bad-vm-name --natpf1 some-rule-name,tcp,127.0.0.1,some-host-port,,some-guest-port': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
+			})
 		})
 	})
 
@@ -394,6 +423,14 @@ var _ = Describe("driver", func() {
 				Expect(err).To(MatchError("could not find forwarded port"))
 			})
 		})
+
+		Context("when VM with the given name does not exist", func() {
+			It("should return an error", func() {
+				_, err := driver.GetHostForwardPort("some-bad-vm-name", "some-rule-name")
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage showvminfo some-bad-vm-name --machinereadable': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
+			})
+		})
 	})
 
 	Describe("#SetMemory", func() {
@@ -408,8 +445,10 @@ var _ = Describe("driver", func() {
 		})
 
 		Context("when setting memory fails", func() {
-			It("should set vm memory in mb", func() {
-				Expect(driver.SetMemory(vmName, uint64(0))).To(MatchError(ContainSubstring("failed to execute")))
+			It("should return an error", func() {
+				err := driver.SetMemory("some-bad-vm-name", uint64(0))
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage modifyvm some-bad-vm-name --memory 0': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
 			})
 		})
 	})
@@ -434,7 +473,7 @@ var _ = Describe("driver", func() {
 		})
 	})
 
-	Describe("#GetVirtualSystemNumberOfHardDiskImage", func() {
+	Describe("#GetVirtualSystemNumbersOfHardDiskImages", func() {
 		It("should the virtual system number of the hard disk image", func() {
 			ovaPath := "../assets/snappy.ova"
 			Expect(driver.GetVirtualSystemNumbersOfHardDiskImages(ovaPath)).To(ConsistOf([]string{"6", "7"}))
@@ -442,8 +481,9 @@ var _ = Describe("driver", func() {
 
 		Context("when there is an error getting the virtual system number", func() {
 			It("should return an error", func() {
-				numbers, err := driver.GetVirtualSystemNumbersOfHardDiskImages("some-bad-ova-path")
-				Expect(err).To(MatchError(ContainSubstring("could not determine hard disk image virtual system numbers of 'some-bad-ova-path':")))
+				numbers, err := driver.GetVirtualSystemNumbersOfHardDiskImages("some-bad-ova-path.ova")
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage import some-bad-ova-path.ova -n': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not open the OVA file")))
 				Expect(numbers).To(BeNil())
 			})
 		})

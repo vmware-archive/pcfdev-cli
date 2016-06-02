@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/pcfdev-cli/address"
+	"github.com/pivotal-cf/pcfdev-cli/address/mocks"
 	"github.com/pivotal-cf/pcfdev-cli/network"
-	"github.com/pivotal-cf/pcfdev-cli/vbox/mocks"
 )
 
 var _ = Describe("Picker", func() {

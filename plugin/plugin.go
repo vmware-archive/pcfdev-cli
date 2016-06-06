@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/cli/plugin"
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
@@ -14,7 +15,7 @@ type Plugin struct {
 	UI                  UI
 	VBox                VBox
 	Client              Client
-	Config              Config
+	Config              *config.Config
 	Downloader          Downloader
 	Builder             Builder
 	RequirementsChecker RequirementsChecker
@@ -49,11 +50,6 @@ type Client interface {
 	AcceptEULA() error
 	IsEULAAccepted() (bool, error)
 	GetEULA() (eula string, err error)
-}
-
-//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/plugin Config
-type Config interface {
-	GetVMName() string
 }
 
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/plugin Builder
@@ -130,7 +126,7 @@ func (p *Plugin) start() error {
 	if err := p.download(); err != nil {
 		return err
 	}
-	vm, err := p.Builder.VM(p.Config.GetVMName())
+	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
 	}
@@ -138,7 +134,7 @@ func (p *Plugin) start() error {
 }
 
 func (p *Plugin) status() error {
-	vm, err := p.Builder.VM(p.Config.GetVMName())
+	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
 	}
@@ -147,7 +143,7 @@ func (p *Plugin) status() error {
 }
 
 func (p *Plugin) stop() error {
-	vm, err := p.Builder.VM(p.Config.GetVMName())
+	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
 	}
@@ -155,7 +151,7 @@ func (p *Plugin) stop() error {
 }
 
 func (p *Plugin) suspend() error {
-	vm, err := p.Builder.VM(p.Config.GetVMName())
+	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
 	}
@@ -171,7 +167,7 @@ func (p *Plugin) resume() error {
 		}
 	}
 
-	vm, err := p.Builder.VM(p.Config.GetVMName())
+	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
 	}

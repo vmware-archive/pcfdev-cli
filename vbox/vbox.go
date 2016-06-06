@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/address"
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 )
 
@@ -56,24 +57,12 @@ type System interface {
 	FreeMemory() (memory uint64, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/vbox Config
-type Config interface {
-	GetMaxMemory() (memory uint64)
-	GetMinMemory() (memory uint64)
-	GetDesiredMemory() (memory uint64, err error)
-	GetHTTPProxy() (proxy string)
-	GetHTTPSProxy() (proxy string)
-	GetNoProxy() (proxy string)
-	GetOVAPath() (string, error)
-	GetPCFDevDir() (string, error)
-}
-
 type VBox struct {
 	Driver Driver
 	SSH    SSH
 	Picker NetworkPicker
 	System System
-	Config Config
+	Config *config.Config
 }
 
 const (
@@ -126,15 +115,15 @@ func (v *VBox) proxySettings(ip string) (settings string, err error) {
 		return "", err
 	}
 
-	httpProxy := strings.Replace(v.Config.GetHTTPProxy(), "127.0.0.1", subnet, -1)
-	httpsProxy := strings.Replace(v.Config.GetHTTPSProxy(), "127.0.0.1", subnet, -1)
+	httpProxy := strings.Replace(v.Config.HTTPProxy, "127.0.0.1", subnet, -1)
+	httpsProxy := strings.Replace(v.Config.HTTPSProxy, "127.0.0.1", subnet, -1)
 	noProxy := strings.Join([]string{
 		"localhost",
 		"127.0.0.1",
 		subnet,
 		ip,
 		domain,
-		v.Config.GetNoProxy()}, ",")
+		v.Config.NoProxy}, ",")
 
 	return strings.Join([]string{
 		"HTTP_PROXY=" + httpProxy,
@@ -153,15 +142,7 @@ func (v *VBox) ImportVM(vmName string) error {
 		return err
 	}
 
-	ovaPath, err := v.Config.GetOVAPath()
-	if err != nil {
-		return err
-	}
-
-	pcfdevDir, err := v.Config.GetPCFDevDir()
-	if err != nil {
-		return err
-	}
+	ovaPath := filepath.Join(v.Config.OVADir, vmName+".ova")
 
 	virtualSystemNumbers, err := v.Driver.GetVirtualSystemNumbersOfHardDiskImages(ovaPath)
 	if err != nil {
@@ -178,7 +159,7 @@ func (v *VBox) ImportVM(vmName string) error {
 		importArguments = append(importArguments, "--unit")
 		importArguments = append(importArguments, number)
 		importArguments = append(importArguments, "--disk")
-		importArguments = append(importArguments, filepath.Join(pcfdevDir, fmt.Sprintf("%s-disk%d.vmdk", vmName, i)))
+		importArguments = append(importArguments, filepath.Join(v.Config.PCFDevHome, fmt.Sprintf("%s-disk%d.vmdk", vmName, i)))
 	}
 
 	if _, err := v.Driver.VBoxManage(importArguments...); err != nil {
@@ -224,23 +205,17 @@ func (v *VBox) ImportVM(vmName string) error {
 
 func (v *VBox) computeMemory() (uint64, error) {
 	var memory uint64
-	desiredMemory, err := v.Config.GetDesiredMemory()
-	if err != nil {
-		return uint64(0), err
-	}
-	if desiredMemory != 0 {
-		memory = desiredMemory
+	if v.Config.DesiredMemory != 0 {
+		memory = v.Config.DesiredMemory
 	} else {
-		maxMemory := v.Config.GetMaxMemory()
-		minMemory := v.Config.GetMinMemory()
 		freeMemory, err := v.System.FreeMemory()
 		if err != nil {
 			return uint64(0), err
 		}
-		if freeMemory <= minMemory {
-			memory = minMemory
-		} else if freeMemory >= maxMemory {
-			memory = maxMemory
+		if freeMemory <= v.Config.MinMemory {
+			memory = v.Config.MinMemory
+		} else if freeMemory >= v.Config.MaxMemory {
+			memory = v.Config.MaxMemory
 		} else {
 			memory = freeMemory
 		}

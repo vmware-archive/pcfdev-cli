@@ -3,6 +3,7 @@ package pivnet
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -10,17 +11,32 @@ import (
 	"github.com/kennygrant/sanitize"
 )
 
-//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/pivnet Config
-type Config interface {
-	GetToken() (token string, err error)
-	DestroyToken() error
+//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/pivnet FS
+type FS interface {
+	Exists(path string) (bool, error)
+	Read(path string) (contents []byte, err error)
+	Write(path string, contents io.Reader) error
+	RemoveFile(path string) error
+}
+
+//go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/pivnet UI
+type UI interface {
+	AskForPassword(string, ...interface{}) string
+	Say(string, ...interface{})
+}
+
+//go:generate mockgen -package mocks -destination mocks/token.go github.com/pivotal-cf/pcfdev-cli/pivnet PivnetToken
+type PivnetToken interface {
+	Get() (token string, err error)
+	Save() error
+	Destroy() error
 }
 
 type Client struct {
 	Host          string
 	ReleaseId     string
 	ProductFileId string
-	Config        Config
+	Token         PivnetToken
 }
 
 type ReleaseResponse struct {
@@ -55,7 +71,7 @@ func (c *Client) DownloadOVA(startAtByte int64) (ova *DownloadReader, err error)
 	case http.StatusPartialContent:
 		return &DownloadReader{ReadCloser: resp.Body, Writer: os.Stdout, ContentLength: resp.ContentLength, ExistingLength: startAtByte}, nil
 	case http.StatusUnauthorized:
-		c.Config.DestroyToken()
+		c.Token.Destroy()
 		return nil, &InvalidTokenError{}
 	default:
 		return nil, c.unexpectedResponseError(resp)
@@ -74,7 +90,7 @@ func (c *Client) IsEULAAccepted() (bool, error) {
 	case 451:
 		return false, nil
 	case http.StatusUnauthorized:
-		c.Config.DestroyToken()
+		c.Token.Destroy()
 		return false, &InvalidTokenError{}
 	default:
 		return false, c.unexpectedResponseError(resp)
@@ -90,7 +106,7 @@ func (c *Client) GetEULA() (eula string, err error) {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		c.Config.DestroyToken()
+		c.Token.Destroy()
 		return "", &InvalidTokenError{}
 	case 200:
 		break
@@ -116,7 +132,7 @@ func (c *Client) GetEULA() (eula string, err error) {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		c.Config.DestroyToken()
+		c.Token.Destroy()
 		return "", &InvalidTokenError{}
 	case 200:
 		break
@@ -146,7 +162,7 @@ func (c *Client) AcceptEULA() error {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		c.Config.DestroyToken()
+		c.Token.Destroy()
 		return &InvalidTokenError{}
 	case 451, 200:
 		break
@@ -173,7 +189,7 @@ func (c *Client) AcceptEULA() error {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		c.Config.DestroyToken()
+		c.Token.Destroy()
 		return &InvalidTokenError{}
 	case 200:
 		return nil
@@ -203,7 +219,7 @@ func (c *Client) makeRequest(uri string, method string, client *http.Client) (*h
 		return nil, err
 	}
 
-	token, err := c.Config.GetToken()
+	token, err := c.Token.Get()
 	if err != nil {
 		return nil, err
 	}

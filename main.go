@@ -31,18 +31,20 @@ var (
 func main() {
 	fileSystem := &fs.FS{}
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
-	config := &config.Config{
-		FS:        fileSystem,
-		UI:        termUI,
-		MinMemory: 3072,
-		MaxMemory: 4096,
-		VMName:    vmName,
+	config, err := config.New(vmName, 3072, 4096)
+	if err != nil {
+		termUI.Failed("Error: %s", err)
+	}
+	token := &pivnet.Token{
+		Config: config,
+		FS:     fileSystem,
+		UI:     termUI,
 	}
 	client := &pivnet.Client{
-		Config:        config,
 		Host:          "https://network.pivotal.io",
 		ReleaseId:     releaseId,
 		ProductFileId: productFileId,
+		Token:         token,
 	}
 	system := &system.System{}
 
@@ -53,6 +55,7 @@ func main() {
 			FS:           fileSystem,
 			ExpectedMD5:  md5,
 			Config:       config,
+			Token:        token,
 		},
 		UI:     &plugin.NonTranslatingUI{termUI},
 		Config: config,

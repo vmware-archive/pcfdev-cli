@@ -109,7 +109,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("Waiting for services to start..."))
 		Expect(session).To(gbytes.Say("Services started"))
 		Expect(isVMRunning()).To(BeTrue())
-		Expect(filepath.Join(tempHome, ".pcfdev", vmName+"-disk0.vmdk")).To(BeAnExistingFile())
+		Expect(filepath.Join(tempHome, vmName+"-disk0.vmdk")).To(BeAnExistingFile())
 
 		By("re-running 'cf dev start' with no effect")
 		restartCommand := exec.Command("cf", "dev", "start")
@@ -213,7 +213,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "1h").Should(gexec.Exit(0))
 
-		_, err = os.Stat(filepath.Join(os.Getenv("PCFDEV_HOME"), ".pcfdev", "ova", "pcfdev-test.ova"))
+		_, err = os.Stat(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova"))
 		Expect(err).NotTo(HaveOccurred())
 
 		listVmsCommand := exec.Command(vBoxManagePath, "list", "vms")

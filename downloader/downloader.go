@@ -5,6 +5,7 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 )
 
@@ -25,27 +26,25 @@ type FS interface {
 	DeleteAllExcept(path string, filenames []string) error
 }
 
-//go:generate mockgen -package mocks -destination mocks/config.go github.com/pivotal-cf/pcfdev-cli/downloader Config
-type Config interface {
-	GetOVAPath() (ovaPath string, err error)
-	SaveToken() error
+//go:generate mockgen -package mocks -destination mocks/token.go github.com/pivotal-cf/pcfdev-cli/downloader Token
+type Token interface {
+	Save() error
 }
+
 type Downloader struct {
 	FS           FS
 	PivnetClient Client
-	Config       Config
+	Config       *config.Config
+	Token        Token
 	ExpectedMD5  string
 }
 
-func (d *Downloader) partialFilePath(path string) string {
+func (d *Downloader) partialFile(path string) string {
 	return path + ".partial"
 }
 
 func (d *Downloader) IsOVACurrent() (bool, error) {
-	path, err := d.Config.GetOVAPath()
-	if err != nil {
-		return false, err
-	}
+	path := filepath.Join(d.Config.OVADir, d.Config.DefaultVMName+".ova")
 
 	fileExists, err := d.FS.Exists(path)
 	if err != nil {
@@ -67,22 +66,21 @@ func (d *Downloader) IsOVACurrent() (bool, error) {
 }
 
 func (d *Downloader) Download() error {
-	path, err := d.Config.GetOVAPath()
-	if err != nil {
-		return err
-	}
+	dir := d.Config.OVADir
+	filename := d.Config.DefaultVMName + ".ova"
+	path := filepath.Join(dir, filename)
+	partial := d.partialFile(filename)
+	partialPath := d.partialFile(path)
 
-	dir := filepath.Dir(path)
-	filename := filepath.Base(path)
 	if err := d.FS.CreateDir(dir); err != nil {
 		return err
 	}
 
-	if err := d.FS.DeleteAllExcept(dir, []string{filename, d.partialFilePath(filename)}); err != nil {
+	if err := d.FS.DeleteAllExcept(dir, []string{filename, partial}); err != nil {
 		return err
 	}
 
-	partialFileExists, err := d.FS.Exists(d.partialFilePath(path))
+	partialFileExists, err := d.FS.Exists(partialPath)
 	if err != nil {
 		return err
 	}
@@ -101,7 +99,7 @@ func (d *Downloader) Download() error {
 		return errors.New("download failed")
 	}
 
-	if err := d.FS.Move(d.partialFilePath(path), path); err != nil {
+	if err := d.FS.Move(partialPath, path); err != nil {
 		return err
 	}
 
@@ -109,14 +107,14 @@ func (d *Downloader) Download() error {
 }
 
 func (d *Downloader) resumeDownload(path string) (md5 string, err error) {
-	startAtByte, err := d.FS.Length(d.partialFilePath(path))
+	startAtByte, err := d.FS.Length(d.partialFile(path))
 	if err != nil {
 		return "", err
 	}
 
 	md5, err = d.download(path, startAtByte)
 	if md5 != d.ExpectedMD5 {
-		if err := d.FS.RemoveFile(d.partialFilePath(path)); err != nil {
+		if err := d.FS.RemoveFile(d.partialFile(path)); err != nil {
 			return "", err
 		}
 		return d.download(path, 0)
@@ -131,13 +129,13 @@ func (d *Downloader) download(path string, startAtBytes int64) (md5 string, err 
 	}
 	defer ova.Close()
 
-	if err := d.Config.SaveToken(); err != nil {
+	if err := d.Token.Save(); err != nil {
 		return "", err
 	}
 
-	if err := d.FS.Write(d.partialFilePath(path), ova); err != nil {
+	if err := d.FS.Write(d.partialFile(path), ova); err != nil {
 		return "", err
 	}
 
-	return d.FS.MD5(d.partialFilePath(path))
+	return d.FS.MD5(d.partialFile(path))
 }

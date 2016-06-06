@@ -28,23 +28,13 @@ func (_m *MockConfig) EXPECT() *_MockConfigRecorder {
 	return _m.recorder
 }
 
-func (_m *MockConfig) DestroyToken() error {
-	ret := _m.ctrl.Call(_m, "DestroyToken")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-func (_mr *_MockConfigRecorder) DestroyToken() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "DestroyToken")
-}
-
-func (_m *MockConfig) GetToken() (string, error) {
-	ret := _m.ctrl.Call(_m, "GetToken")
+func (_m *MockConfig) GetPCFDevDir() (string, error) {
+	ret := _m.ctrl.Call(_m, "GetPCFDevDir")
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockConfigRecorder) GetToken() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetToken")
+func (_mr *_MockConfigRecorder) GetPCFDevDir() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetPCFDevDir")
 }

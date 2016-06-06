@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/mocks"
 	"github.com/pivotal-cf/pcfdev-cli/user"
@@ -23,7 +24,6 @@ var _ = Describe("Plugin", func() {
 		mockVBox                *mocks.MockVBox
 		mockDownloader          *mocks.MockDownloader
 		mockClient              *mocks.MockClient
-		mockConfig              *mocks.MockConfig
 		mockBuilder             *mocks.MockBuilder
 		mockVM                  *mocks.MockVM
 		mockRequirementsChecker *mocks.MockRequirementsChecker
@@ -38,18 +38,19 @@ var _ = Describe("Plugin", func() {
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockDownloader = mocks.NewMockDownloader(mockCtrl)
 		mockClient = mocks.NewMockClient(mockCtrl)
-		mockConfig = mocks.NewMockConfig(mockCtrl)
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
 		mockVM = mocks.NewMockVM(mockCtrl)
 		mockRequirementsChecker = mocks.NewMockRequirementsChecker(mockCtrl)
 		fakeCliConnection = &fakes.FakeCliConnection{}
 		pcfdev = &plugin.Plugin{
-			SSH:                 mockSSH,
-			UI:                  mockUI,
-			VBox:                mockVBox,
-			Downloader:          mockDownloader,
-			Client:              mockClient,
-			Config:              mockConfig,
+			SSH:        mockSSH,
+			UI:         mockUI,
+			VBox:       mockVBox,
+			Downloader: mockDownloader,
+			Client:     mockClient,
+			Config: &config.Config{
+				DefaultVMName: "some-vm-name",
+			},
 			Builder:             mockBuilder,
 			RequirementsChecker: mockRequirementsChecker,
 		}
@@ -276,7 +277,6 @@ var _ = Describe("Plugin", func() {
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(),
 						mockUI.EXPECT().Say("\nVM downloaded"),
-						mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 						mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 						mockVM.EXPECT().Start(),
 					)
@@ -302,7 +302,6 @@ var _ = Describe("Plugin", func() {
 							mockRequirementsChecker.EXPECT().Check().Return(nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 							mockUI.EXPECT().Say("Using existing image"),
-							mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 							mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 							mockVM.EXPECT().Start(),
 						)
@@ -315,7 +314,6 @@ var _ = Describe("Plugin", func() {
 						mockRequirementsChecker.EXPECT().Check().Return(nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 						mockUI.EXPECT().Say("Using existing image"),
-						mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 						mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 						mockVM.EXPECT().Start(),
 					)
@@ -329,7 +327,6 @@ var _ = Describe("Plugin", func() {
 							mockRequirementsChecker.EXPECT().Check().Return(nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 							mockUI.EXPECT().Say("Using existing image"),
-							mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 							mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error"),
 						)
@@ -344,7 +341,6 @@ var _ = Describe("Plugin", func() {
 							mockRequirementsChecker.EXPECT().Check().Return(nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 							mockUI.EXPECT().Say("Using existing image"),
-							mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 							mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 							mockVM.EXPECT().Start().Return(errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error"),
@@ -387,7 +383,6 @@ var _ = Describe("Plugin", func() {
 					mockDownloader.EXPECT().Download(),
 					mockUI.EXPECT().Say("\nVM downloaded"),
 
-					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Start(),
 				)
@@ -402,7 +397,6 @@ var _ = Describe("Plugin", func() {
 					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
 					mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 					mockUI.EXPECT().Say("Using existing image"),
-					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Start(),
 				)
@@ -427,7 +421,6 @@ var _ = Describe("Plugin", func() {
 	Context("stop", func() {
 		It("should stop the VM", func() {
 			gomock.InOrder(
-				mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 				mockVM.EXPECT().Stop(),
 			)
@@ -438,7 +431,6 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
@@ -450,7 +442,6 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to stop VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Stop().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
@@ -464,7 +455,6 @@ var _ = Describe("Plugin", func() {
 	Context("suspend", func() {
 		It("should suspend the VM", func() {
 			gomock.InOrder(
-				mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 				mockVM.EXPECT().Suspend(),
 			)
@@ -475,7 +465,6 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
@@ -487,7 +476,6 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to suspend VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Suspend().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
@@ -502,7 +490,6 @@ var _ = Describe("Plugin", func() {
 		It("should resume the VM", func() {
 			gomock.InOrder(
 				mockRequirementsChecker.EXPECT().Check().Return(nil),
-				mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 				mockVM.EXPECT().Resume(),
 			)
@@ -514,7 +501,6 @@ var _ = Describe("Plugin", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockRequirementsChecker.EXPECT().Check().Return(nil),
-					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
@@ -527,7 +513,6 @@ var _ = Describe("Plugin", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockRequirementsChecker.EXPECT().Check().Return(nil),
-					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Resume().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
@@ -542,7 +527,6 @@ var _ = Describe("Plugin", func() {
 				gomock.InOrder(
 					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
 					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
-					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Resume(),
 				)
@@ -567,7 +551,6 @@ var _ = Describe("Plugin", func() {
 	Context("status", func() {
 		It("should return the status", func() {
 			gomock.InOrder(
-				mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 				mockVM.EXPECT().Status(),
 			)
@@ -578,7 +561,6 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockConfig.EXPECT().GetVMName().Return("some-vm-name"),
 					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)

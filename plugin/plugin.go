@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/cli/plugin"
+	gflags "github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
@@ -54,27 +55,38 @@ type Client interface {
 
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/plugin Builder
 type Builder interface {
-	VM(name string) (vm vm.VM, err error)
+	VM(name string, vmConfig *config.VMConfig) (vm vm.VM, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/plugin RequirementsChecker
 type RequirementsChecker interface {
-	Check() error
+	Check(desiredMemory uint64) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM
+
+var (
+	opts struct {
+		Memory uint64 `short:"m" long:"memory" default:"3072" description:"<memory in MB>"`
+	}
+)
 
 func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
 		return
 	}
 
-	var subcommand string
-	if len(args) > 1 {
-		subcommand = args[1]
+	parsedArguments, err := gflags.ParseArgs(&opts, args)
+	if err != nil {
+		p.showUsageMessage(cliConnection)
 	}
 
-	switch subcommand {
+	if len(parsedArguments) < 2 {
+		p.showUsageMessage(cliConnection)
+		return
+	}
+
+	switch parsedArguments[1] {
 	case "download":
 		if err := p.download(); err != nil {
 			p.UI.Failed(getErrorText(err))
@@ -104,10 +116,14 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 			p.UI.Failed(getErrorText(err))
 		}
 	default:
-		_, err := cliConnection.CliCommand("help", "dev")
-		if err != nil {
-			p.UI.Failed(getErrorText(err))
-		}
+		p.showUsageMessage(cliConnection)
+	}
+}
+
+func (p *Plugin) showUsageMessage(cliConnection plugin.CliConnection) {
+	_, err := cliConnection.CliCommand("help", "dev")
+	if err != nil {
+		p.UI.Failed(getErrorText(err))
 	}
 }
 
@@ -116,7 +132,7 @@ func getErrorText(err error) string {
 }
 
 func (p *Plugin) start() error {
-	if err := p.RequirementsChecker.Check(); err != nil {
+	if err := p.RequirementsChecker.Check(opts.Memory); err != nil {
 		if !p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ") {
 			p.UI.Say("Exiting...")
 			return nil
@@ -126,7 +142,7 @@ func (p *Plugin) start() error {
 	if err := p.download(); err != nil {
 		return err
 	}
-	vm, err := p.Builder.VM(p.Config.DefaultVMName)
+	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{DesiredMemory: opts.Memory})
 	if err != nil {
 		return err
 	}
@@ -134,7 +150,7 @@ func (p *Plugin) start() error {
 }
 
 func (p *Plugin) status() error {
-	vm, err := p.Builder.VM(p.Config.DefaultVMName)
+	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
 	if err != nil {
 		return err
 	}
@@ -143,7 +159,7 @@ func (p *Plugin) status() error {
 }
 
 func (p *Plugin) stop() error {
-	vm, err := p.Builder.VM(p.Config.DefaultVMName)
+	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
 	if err != nil {
 		return err
 	}
@@ -151,7 +167,7 @@ func (p *Plugin) stop() error {
 }
 
 func (p *Plugin) suspend() error {
-	vm, err := p.Builder.VM(p.Config.DefaultVMName)
+	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
 	if err != nil {
 		return err
 	}
@@ -160,14 +176,16 @@ func (p *Plugin) suspend() error {
 }
 
 func (p *Plugin) resume() error {
-	if err := p.RequirementsChecker.Check(); err != nil {
-		if !p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ") {
-			p.UI.Say("Exiting...")
-			return nil
-		}
-	}
+	// TODO need to retreive memory allocated to already started VM
 
-	vm, err := p.Builder.VM(p.Config.DefaultVMName)
+	// if err := p.RequirementsChecker.Check(p.Config.MinMemory); err != nil {
+	// if !p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ") {
+	// p.UI.Say("Exiting...")
+	// return nil
+	// }
+	// }
+
+	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
 	if err != nil {
 		return err
 	}
@@ -188,7 +206,7 @@ func (p *Plugin) destroy() error {
 
 	p.UI.Say("Destroying VM...")
 	for _, vmName := range vms {
-		vm, err := p.Builder.VM(vmName)
+		vm, err := p.Builder.VM(vmName, &config.VMConfig{})
 		if err != nil {
 			return &DestroyVMError{err}
 		}
@@ -251,10 +269,10 @@ func (*Plugin) GetMetadata() plugin.PluginMetadata {
 				Alias:    "pcfdev",
 				HelpText: "Control PCF Dev VMs running on your workstation",
 				UsageDetails: plugin.Usage{
-					Usage: `cf dev SUBCOMMAND
-
+					Usage: `cf dev SUBCOMMAND 
 SUBCOMMANDS:
    start                    Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.
+	[-m memory-in-mb]     Memory to allocate for VM. Default: half of system memory, no more than 4 GB
    stop                     Shutdown the PCF Dev VM. All data is preserved.
    suspend                  Save the current state of the PCF Dev VM to disk and then stop the VM.
    resume                   Resume PCF Dev VM from suspended state.

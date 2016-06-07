@@ -1,11 +1,14 @@
 package vm
 
+import "github.com/pivotal-cf/pcfdev-cli/config"
+
 type NotCreated struct {
 	Name string
 
 	VBox    VBox
 	UI      UI
 	Builder Builder
+	Config  *config.VMConfig
 }
 
 func (n *NotCreated) Stop() error {
@@ -31,11 +34,11 @@ func (n *NotCreated) Start() error {
 	}
 
 	n.UI.Say("Importing VM...")
-	if err := n.VBox.ImportVM(n.Name); err != nil {
+	if err := n.VBox.ImportVM(n.Name, n.Config); err != nil {
 		return &ImportVMError{err}
 	}
 
-	stoppedVM, err := n.Builder.VM(n.Name)
+	stoppedVM, err := n.Builder.VM(n.Name, n.Config)
 	if err != nil {
 		return &StartVMError{err}
 	}

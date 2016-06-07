@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang/mock/gomock"
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/user"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
@@ -35,6 +36,7 @@ var _ = Describe("Not Created", func() {
 			VBox:    mockVBox,
 			UI:      mockUI,
 			Builder: mockBuilder,
+			Config:  &config.VMConfig{DesiredMemory: uint64(3072)},
 		}
 	})
 
@@ -83,8 +85,8 @@ var _ = Describe("Not Created", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm").Return(nil),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)}).Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(),
 				)
 
@@ -113,7 +115,7 @@ var _ = Describe("Not Created", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm").Return(errors.New("some-error")),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)}).Return(errors.New("some-error")),
 				)
 
 				Expect(notCreatedVM.Start()).To(MatchError("failed to import VM: some-error"))
@@ -125,8 +127,8 @@ var _ = Describe("Not Created", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm").Return(nil),
-					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)}).Return(nil, errors.New("some-error")),
 				)
 
 				Expect(notCreatedVM.Start()).To(MatchError("failed to start VM: some-error"))
@@ -138,8 +140,8 @@ var _ = Describe("Not Created", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm").Return(nil),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)}).Return(mockStopped, nil),
 					mockStopped.EXPECT().Start().Return(errors.New("some-error")),
 				)
 

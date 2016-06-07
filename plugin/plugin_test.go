@@ -29,6 +29,8 @@ var _ = Describe("Plugin", func() {
 		mockRequirementsChecker *mocks.MockRequirementsChecker
 		fakeCliConnection       *fakes.FakeCliConnection
 		pcfdev                  *plugin.Plugin
+
+		desiredMemory = uint64(3072)
 	)
 
 	BeforeEach(func() {
@@ -271,13 +273,13 @@ var _ = Describe("Plugin", func() {
 			Context("when ova is not current", func() {
 				It("should download and start the ova", func() {
 					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
+						mockRequirementsChecker.EXPECT().Check(desiredMemory).Return(nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(),
 						mockUI.EXPECT().Say("\nVM downloaded"),
-						mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+						mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: desiredMemory}).Return(mockVM, nil),
 						mockVM.EXPECT().Start(),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -299,10 +301,10 @@ var _ = Describe("Plugin", func() {
 
 					It("should download and start the ova in PCFDEV_HOME", func() {
 						gomock.InOrder(
-							mockRequirementsChecker.EXPECT().Check().Return(nil),
+							mockRequirementsChecker.EXPECT().Check(desiredMemory).Return(nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 							mockUI.EXPECT().Say("Using existing image"),
-							mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: desiredMemory}).Return(mockVM, nil),
 							mockVM.EXPECT().Start(),
 						)
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -311,10 +313,10 @@ var _ = Describe("Plugin", func() {
 
 				It("should start without downloading", func() {
 					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().Check().Return(nil),
+						mockRequirementsChecker.EXPECT().Check(desiredMemory).Return(nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 						mockUI.EXPECT().Say("Using existing image"),
-						mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+						mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: desiredMemory}).Return(mockVM, nil),
 						mockVM.EXPECT().Start(),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -324,10 +326,10 @@ var _ = Describe("Plugin", func() {
 				Context("when it fails to get VM", func() {
 					It("should return an error", func() {
 						gomock.InOrder(
-							mockRequirementsChecker.EXPECT().Check().Return(nil),
+							mockRequirementsChecker.EXPECT().Check(desiredMemory).Return(nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 							mockUI.EXPECT().Say("Using existing image"),
-							mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
+							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: desiredMemory}).Return(nil, errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error"),
 						)
 
@@ -338,10 +340,10 @@ var _ = Describe("Plugin", func() {
 				Context("when it fails to start VM", func() {
 					It("should return an error", func() {
 						gomock.InOrder(
-							mockRequirementsChecker.EXPECT().Check().Return(nil),
+							mockRequirementsChecker.EXPECT().Check(desiredMemory).Return(nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 							mockUI.EXPECT().Say("Using existing image"),
-							mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: desiredMemory}).Return(mockVM, nil),
 							mockVM.EXPECT().Start().Return(errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error"),
 						)
@@ -356,7 +358,7 @@ var _ = Describe("Plugin", func() {
 		Context("when the OVA fails to download", func() {
 			It("should print an error message", func() {
 				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(nil),
+					mockRequirementsChecker.EXPECT().Check(desiredMemory).Return(nil),
 					mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 					mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 					mockUI.EXPECT().Say("Downloading VM..."),
@@ -371,7 +373,7 @@ var _ = Describe("Plugin", func() {
 		Context("when the EULA is not accepted", func() {
 			It("should print the EULA", func() {
 				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(nil),
+					mockRequirementsChecker.EXPECT().Check(desiredMemory).Return(nil),
 					mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 					mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 					mockClient.EXPECT().GetEULA().Return("some-eula", nil),
@@ -383,7 +385,7 @@ var _ = Describe("Plugin", func() {
 					mockDownloader.EXPECT().Download(),
 					mockUI.EXPECT().Say("\nVM downloaded"),
 
-					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: desiredMemory}).Return(mockVM, nil),
 					mockVM.EXPECT().Start(),
 				)
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -393,11 +395,11 @@ var _ = Describe("Plugin", func() {
 		Context("when the system does not meet requirements and the user accepts to continue", func() {
 			It("should print a warning and prompt for the response to continue", func() {
 				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
+					mockRequirementsChecker.EXPECT().Check(desiredMemory).Return(errors.New("some-message")),
 					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
 					mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 					mockUI.EXPECT().Say("Using existing image"),
-					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: desiredMemory}).Return(mockVM, nil),
 					mockVM.EXPECT().Start(),
 				)
 
@@ -408,7 +410,7 @@ var _ = Describe("Plugin", func() {
 		Context("when the system does not meet requirements and the user declines to continue", func() {
 			It("should print a warning and prompt for the response to continue", func() {
 				gomock.InOrder(
-					mockRequirementsChecker.EXPECT().Check().Return(errors.New("some-message")),
+					mockRequirementsChecker.EXPECT().Check(desiredMemory).Return(errors.New("some-message")),
 					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(false),
 					mockUI.EXPECT().Say("Exiting..."),
 				)
@@ -421,7 +423,7 @@ var _ = Describe("Plugin", func() {
 	Context("stop", func() {
 		It("should stop the VM", func() {
 			gomock.InOrder(
-				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+				mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
 				mockVM.EXPECT().Stop(),
 			)
 
@@ -431,7 +433,7 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
+					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
@@ -442,7 +444,7 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to stop VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
 					mockVM.EXPECT().Stop().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
@@ -455,7 +457,7 @@ var _ = Describe("Plugin", func() {
 	Context("suspend", func() {
 		It("should suspend the VM", func() {
 			gomock.InOrder(
-				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+				mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
 				mockVM.EXPECT().Suspend(),
 			)
 
@@ -465,7 +467,7 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
+					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
@@ -476,7 +478,7 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to suspend VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
 					mockVM.EXPECT().Suspend().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
@@ -551,7 +553,7 @@ var _ = Describe("Plugin", func() {
 	Context("status", func() {
 		It("should return the status", func() {
 			gomock.InOrder(
-				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+				mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
 				mockVM.EXPECT().Status(),
 			)
 
@@ -561,7 +563,7 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
+					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
@@ -582,9 +584,9 @@ var _ = Describe("Plugin", func() {
 			gomock.InOrder(
 				mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
 				mockUI.EXPECT().Say("Destroying VM..."),
-				mockBuilder.EXPECT().VM("pcfdev-0.0.0").Return(mockVM, nil),
+				mockBuilder.EXPECT().VM("pcfdev-0.0.0", &config.VMConfig{}).Return(mockVM, nil),
 				mockVM.EXPECT().Destroy().Return(nil),
-				mockBuilder.EXPECT().VM("pcfdev-0.0.1").Return(mockVM2, nil),
+				mockBuilder.EXPECT().VM("pcfdev-0.0.1", &config.VMConfig{}).Return(mockVM2, nil),
 				mockVM2.EXPECT().Destroy().Return(nil),
 				mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
 			)
@@ -620,7 +622,7 @@ var _ = Describe("Plugin", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
 					mockUI.EXPECT().Say("Destroying VM..."),
-					mockBuilder.EXPECT().VM("pcfdev-0.0.0").Return(nil, errors.New("some-error")),
+					mockBuilder.EXPECT().VM("pcfdev-0.0.0", &config.VMConfig{}).Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: failed to destroy VM: some-error"),
 				)
 
@@ -634,7 +636,7 @@ var _ = Describe("Plugin", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
 					mockUI.EXPECT().Say("Destroying VM..."),
-					mockBuilder.EXPECT().VM("pcfdev-0.0.0").Return(mockVM, nil),
+					mockBuilder.EXPECT().VM("pcfdev-0.0.0", &config.VMConfig{}).Return(mockVM, nil),
 					mockVM.EXPECT().Destroy().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: failed to destroy VM: some-error"),
 				)

@@ -28,12 +28,12 @@ func (_m *MockRequirementsChecker) EXPECT() *_MockRequirementsCheckerRecorder {
 	return _m.recorder
 }
 
-func (_m *MockRequirementsChecker) Check() error {
-	ret := _m.ctrl.Call(_m, "Check")
+func (_m *MockRequirementsChecker) Check(_param0 uint64) error {
+	ret := _m.ctrl.Call(_m, "Check", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockRequirementsCheckerRecorder) Check() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Check")
+func (_mr *_MockRequirementsCheckerRecorder) Check(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Check", arg0)
 }

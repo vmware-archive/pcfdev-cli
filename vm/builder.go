@@ -27,7 +27,7 @@ type VBoxBuilder struct {
 	Driver Driver
 }
 
-func (b *VBoxBuilder) VM(vmName string) (VM, error) {
+func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 	ssh := &ssh.SSH{}
 	system := &system.System{}
@@ -52,6 +52,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			VBox:    vbx,
 			UI:      termUI,
 			Builder: b,
+			Config:  vmConfig,
 		}, nil
 	}
 

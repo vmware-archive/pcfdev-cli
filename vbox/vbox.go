@@ -135,7 +135,7 @@ func (v *VBox) proxySettings(ip string) (settings string, err error) {
 	}, "\n"), nil
 }
 
-func (v *VBox) ImportVM(vmName string) error {
+func (v *VBox) ImportVM(vmName string, vmConfig *config.VMConfig) error {
 	_, sshPort, err := v.SSH.GenerateAddress()
 
 	if err != nil {
@@ -192,11 +192,7 @@ func (v *VBox) ImportVM(vmName string) error {
 		return err
 	}
 
-	memory, err := v.computeMemory()
-	if err != nil {
-		return err
-	}
-	if err := v.Driver.SetMemory(vmName, memory); err != nil {
+	if err := v.Driver.SetMemory(vmName, vmConfig.DesiredMemory); err != nil {
 		return err
 	}
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang/mock/gomock"
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
@@ -37,7 +38,7 @@ var _ = Describe("Builder", func() {
 			It("should return a not created vm", func() {
 				mockDriver.EXPECT().VMExists("some-vm").Return(false, nil)
 
-				notCreatedVM, err := builder.VM("some-vm")
+				notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
 				Expect(err).NotTo(HaveOccurred())
 
 				switch u := notCreatedVM.(type) {
@@ -59,7 +60,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateStopped, nil),
 					)
 
-					notCreatedVM, err := builder.VM("some-vm")
+					notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
 					Expect(err).NotTo(HaveOccurred())
 
 					switch u := notCreatedVM.(type) {
@@ -79,7 +80,7 @@ var _ = Describe("Builder", func() {
 			Context("when there is an error seeing if vm exists", func() {
 				It("should return an error", func() {
 					mockDriver.EXPECT().VMExists("some-vm").Return(false, errors.New("some-error"))
-					_, err := builder.VM("some-vm")
+					_, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
 					Expect(err).To(MatchError("some-error"))
 				})
 			})
@@ -90,7 +91,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("", errors.New("some-error")),
 					)
 
-					_, err := builder.VM("some-vm")
+					_, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
 					Expect(err).To(MatchError("some-error"))
 				})
 			})
@@ -101,7 +102,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("some-ip", nil),
 					)
 
-					_, err := builder.VM("some-vm")
+					_, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
 					Expect(err).To(MatchError("some-ip is not one of the allowed PCF Dev ips"))
 				})
 			})
@@ -113,7 +114,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("", errors.New("some-error")),
 					)
 
-					_, err := builder.VM("some-vm")
+					_, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
 					Expect(err).To(MatchError("some-error"))
 				})
 			})
@@ -126,7 +127,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil),
 					)
 
-					notCreatedVM, err := builder.VM("some-vm")
+					notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
 					Expect(err).NotTo(HaveOccurred())
 
 					switch u := notCreatedVM.(type) {
@@ -151,7 +152,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateSaved, nil),
 					)
 
-					suspendedVM, err := builder.VM("some-vm")
+					suspendedVM, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
 					Expect(err).NotTo(HaveOccurred())
 
 					switch u := suspendedVM.(type) {
@@ -176,7 +177,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().VMState("some-vm").Return("some-unexpected-state", nil),
 					)
 
-					vm, err := builder.VM("some-vm")
+					vm, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
 					Expect(err).To(MatchError("failed to handle VM state 'some-unexpected-state'"))
 					Expect(vm).To(BeNil())
 				})

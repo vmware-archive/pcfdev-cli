@@ -26,7 +26,7 @@ var _ = Describe("Checker", func() {
 		checker = &requirements.Checker{
 			System: mockSystem,
 			Config: &config.Config{
-				MinMemory: uint64(1),
+				MinMemory: uint64(3),
 			},
 		}
 	})
@@ -36,19 +36,25 @@ var _ = Describe("Checker", func() {
 	})
 
 	Describe("Check", func() {
-		Context("when the free memory is greater than or equal to the minimum memory requirement", func() {
-			It("should not return an error", func() {
-				mockSystem.EXPECT().FreeMemory().Return(uint64(1048576), nil)
+		Context("when desired memory is less than free memory and greater than minumum memory", func() {
+			It("should return an error", func() {
+				mockSystem.EXPECT().FreeMemory().Return(uint64(10*1048576), nil)
 
-				Expect(checker.Check()).To(Succeed())
+				Expect(checker.Check(uint64(4))).To(Succeed())
 			})
 		})
 
-		Context("when the free memory is less than the minimum memory requirement", func() {
+		Context("when desired memory is less than minumum memory requirement", func() {
 			It("should return an error", func() {
-				mockSystem.EXPECT().FreeMemory().Return(uint64(1048575), nil)
+				Expect(checker.Check(uint64(1))).To(MatchError("PCF Dev requires at least 3MB of memory to run."))
+			})
+		})
 
-				Expect(checker.Check()).To(MatchError("PCF Dev requires 1MB of free memory, this host has 0MB"))
+		Context("when desired memory is greater than the free memory", func() {
+			It("should return an error", func() {
+				mockSystem.EXPECT().FreeMemory().Return(uint64(1*1048576), nil)
+
+				Expect(checker.Check(uint64(4))).To(MatchError("PCF Dev requires 3MB of free memory, this host has 1MB"))
 			})
 		})
 
@@ -56,8 +62,9 @@ var _ = Describe("Checker", func() {
 			It("should return an error", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(0), errors.New("some-error"))
 
-				Expect(checker.Check()).To(MatchError("some-error"))
+				Expect(checker.Check(uint64(3))).To(MatchError("some-error"))
 			})
 		})
+
 	})
 })

@@ -100,6 +100,27 @@ var _ = Describe("driver", func() {
 		})
 	})
 
+	Describe("#GetMemory", func() {
+		BeforeEach(func() {
+			err := exec.Command("vboxmanage", "modifyvm", vmName, "--memory", "4567").Run()
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should return the vm memory", func() {
+			memory, err := driver.GetMemory(vmName)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(memory).To(Equal(uint64(4567)))
+		})
+
+		Context("when VBoxManage command fails", func() {
+			It("should return the output of the failed command", func() {
+				_, err := driver.GetMemory("some-bad-vm-name")
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage showvminfo some-bad-vm-name --machinereadable': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
+			})
+		})
+	})
+
 	Describe("when starting and stopping and suspending and resuming and destroying the VM", func() {
 		It("should start, stop, suspend, resume, and then destroy a VBox VM", func() {
 			sshClient := &ssh.SSH{}

@@ -1,10 +1,13 @@
 package vm
 
+import "github.com/pivotal-cf/pcfdev-cli/config"
+
 type Running struct {
 	Name    string
 	Domain  string
 	IP      string
 	SSHPort string
+	Config  *config.VMConfig
 
 	VBox VBox
 	UI   UI
@@ -53,4 +56,8 @@ func (r *Running) Resume() error {
 	r.UI.Say("PCF Dev is running")
 
 	return nil
+}
+
+func (r *Running) GetConfig() *config.VMConfig {
+	return r.Config
 }

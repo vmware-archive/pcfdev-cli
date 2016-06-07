@@ -19,6 +19,7 @@ type Driver interface {
 	VMExists(vmName string) (exists bool, err error)
 	VMState(vmName string) (state string, err error)
 	GetVMIP(vmName string) (vmIP string, err error)
+	GetMemory(vmName string) (memory uint64, err error)
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 }
 
@@ -65,6 +66,10 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 	if err != nil {
 		return nil, err
 	}
+	memory, err := b.Driver.GetMemory(vmName)
+	if err != nil {
+		return nil, err
+	}
 	sshPort, err := b.Driver.GetHostForwardPort(vmName, "ssh")
 	if err != nil {
 		return nil, err
@@ -80,6 +85,9 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 			IP:      ip,
 			SSHPort: sshPort,
 			Domain:  domain,
+			Config: &config.VMConfig{
+				DesiredMemory: memory,
+			},
 
 			UI:   termUI,
 			VBox: vbx,
@@ -92,8 +100,12 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 			IP:      ip,
 			SSHPort: sshPort,
 			Domain:  domain,
-			UI:      termUI,
-			VBox:    vbx,
+			Config: &config.VMConfig{
+				DesiredMemory: memory,
+			},
+
+			UI:   termUI,
+			VBox: vbx,
 		}, nil
 	}
 
@@ -103,9 +115,13 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 			IP:      ip,
 			SSHPort: sshPort,
 			Domain:  domain,
-			UI:      termUI,
-			SSH:     ssh,
-			VBox:    vbx,
+			Config: &config.VMConfig{
+				DesiredMemory: memory,
+			},
+
+			UI:   termUI,
+			SSH:  ssh,
+			VBox: vbx,
 		}, nil
 	}
 

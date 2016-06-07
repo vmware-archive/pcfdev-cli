@@ -156,6 +156,20 @@ func (d *VBoxDriver) GetHostOnlyInterfaces() (interfaces []*network.Interface, e
 	return vboxnets, nil
 }
 
+func (d *VBoxDriver) GetMemory(vmName string) (uint64, error) {
+	output, err := d.VBoxManage("showvminfo", vmName, "--machinereadable")
+	if err != nil {
+		return uint64(0), err
+	}
+
+	regex := regexp.MustCompile(`memory=(\d+)`)
+	if matches := regex.FindStringSubmatch(string(output)); len(matches) > 1 {
+		return strconv.ParseUint(matches[1], 10, 64)
+	}
+
+	return uint64(0), fmt.Errorf("failed to determine VM memory for '%s'", vmName)
+}
+
 func (d *VBoxDriver) SetMemory(vmName string, memory uint64) error {
 	_, err := d.VBoxManage("modifyvm", vmName, "--memory", strconv.Itoa(int(memory)))
 	return err

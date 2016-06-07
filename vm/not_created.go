@@ -65,3 +65,7 @@ func (n *NotCreated) Resume() error {
 	n.UI.Say("No VM suspended, cannot resume.")
 	return nil
 }
+
+func (n *NotCreated) GetConfig() *config.VMConfig {
+	return n.Config
+}

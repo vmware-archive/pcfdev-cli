@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/pivotal-cf/pcfdev-cli/config"
 )
 
 type Stopped struct {
@@ -12,9 +14,10 @@ type Stopped struct {
 	IP      string
 	SSHPort string
 
-	VBox VBox
-	SSH  SSH
-	UI   UI
+	VBox   VBox
+	SSH    SSH
+	UI     UI
+	Config *config.VMConfig
 }
 
 func (s *Stopped) Stop() error {
@@ -53,4 +56,8 @@ func (s *Stopped) Suspend() error {
 func (s *Stopped) Resume() error {
 	s.UI.Say("Your VM is currently stopped. Only a suspended VM can be resumed.")
 	return nil
+}
+
+func (s *Stopped) GetConfig() *config.VMConfig {
+	return s.Config
 }

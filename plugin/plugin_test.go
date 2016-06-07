@@ -304,6 +304,23 @@ var _ = Describe("Plugin", func() {
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 					})
 				})
+
+				Context("when vm is already allocated with a certain memory", func() {
+					It("should start the vm with the same memory", func() {
+						gomock.InOrder(
+							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
+
+							mockRequirementsChecker.EXPECT().CheckMinMemory().Return(nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
+							mockUI.EXPECT().Say("Downloading VM..."),
+							mockDownloader.EXPECT().Download(),
+							mockUI.EXPECT().Say("\nVM downloaded"),
+							mockVM.EXPECT().Start(),
+						)
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+					})
+				})
 			})
 
 			Context("when ova is current", func() {
@@ -521,8 +538,11 @@ var _ = Describe("Plugin", func() {
 	Context("resume", func() {
 		It("should resume the VM", func() {
 			gomock.InOrder(
-				// mockRequirementsChecker.EXPECT().CheckMemory(desiredMemory).Return(nil),
 				mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
+				mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+					DesiredMemory: uint64(3072),
+				}),
+				mockRequirementsChecker.EXPECT().CheckMemory(uint64(3072)).Return(nil),
 				mockVM.EXPECT().Resume(),
 			)
 
@@ -532,7 +552,6 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					// mockRequirementsChecker.EXPECT().CheckMemory(desiredMemory).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
@@ -544,8 +563,11 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to resume VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					// mockRequirementsChecker.EXPECT().CheckMemory(desiredMemory).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
+					mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+						DesiredMemory: uint64(3072),
+					}),
+					mockRequirementsChecker.EXPECT().CheckMemory(uint64(3072)).Return(nil),
 					mockVM.EXPECT().Resume().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
@@ -554,12 +576,15 @@ var _ = Describe("Plugin", func() {
 			})
 		})
 
-		XContext("when the system does not meet requirements and the user accepts to continue", func() {
+		Context("when the system does not meet requirements and the user accepts to continue", func() {
 			It("should print a warning and prompt for the response to continue", func() {
 				gomock.InOrder(
-					// mockRequirementsChecker.EXPECT().CheckMemory(desiredMemory).Return(errors.New("some-message")),
-					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(true),
 					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
+					mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+						DesiredMemory: uint64(4000),
+					}),
+					mockRequirementsChecker.EXPECT().CheckMemory(uint64(4000)).Return(&requirements.NotEnoughMemoryError{DesiredMemory: uint64(4000)}),
+					mockUI.EXPECT().Confirm("Less than 4000 MB of memory detected, continue (y/N): ").Return(true),
 					mockVM.EXPECT().Resume(),
 				)
 
@@ -567,11 +592,15 @@ var _ = Describe("Plugin", func() {
 			})
 		})
 
-		XContext("when the system does not meet requirements and the user declines to continue", func() {
+		Context("when the system does not meet requirements and the user declines to continue", func() {
 			It("should print a warning and prompt for the response to continue", func() {
 				gomock.InOrder(
-					// mockRequirementsChecker.EXPECT().CheckMemory(desiredMemory).Return(errors.New("some-message")),
-					mockUI.EXPECT().Confirm("Less than 3 GB of memory detected, continue (y/N): ").Return(false),
+					mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
+					mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+						DesiredMemory: uint64(4000),
+					}),
+					mockRequirementsChecker.EXPECT().CheckMemory(uint64(4000)).Return(&requirements.NotEnoughMemoryError{DesiredMemory: uint64(4000)}),
+					mockUI.EXPECT().Confirm("Less than 4000 MB of memory detected, continue (y/N): ").Return(false),
 					mockUI.EXPECT().Say("Exiting..."),
 				)
 

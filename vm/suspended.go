@@ -1,10 +1,13 @@
 package vm
 
+import "github.com/pivotal-cf/pcfdev-cli/config"
+
 type Suspended struct {
 	Name    string
 	Domain  string
 	IP      string
 	SSHPort string
+	Config  *config.VMConfig
 
 	VBox VBox
 	UI   UI
@@ -39,4 +42,8 @@ func (s *Suspended) Resume() error {
 	}
 
 	return nil
+}
+
+func (s *Suspended) GetConfig() *config.VMConfig {
+	return s.Config
 }

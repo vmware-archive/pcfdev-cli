@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang/mock/gomock"
+	conf "github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 
@@ -17,18 +18,21 @@ var _ = Describe("Suspended", func() {
 		mockUI      *mocks.MockUI
 		mockVBox    *mocks.MockVBox
 		suspendedVM vm.Suspended
+		config      *conf.VMConfig
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
+		config = &conf.VMConfig{}
 
 		suspendedVM = vm.Suspended{
 			Name:    "some-vm",
 			Domain:  "some-domain",
 			IP:      "some-ip",
 			SSHPort: "some-port",
+			Config:  config,
 
 			VBox: mockVBox,
 			UI:   mockUI,
@@ -110,6 +114,12 @@ var _ = Describe("Suspended", func() {
 			mockVBox.EXPECT().DestroyVM("some-vm").Return(nil)
 
 			Expect(suspendedVM.Destroy()).To(Succeed())
+		})
+	})
+
+	Describe("Config", func() {
+		It("should return the config", func() {
+			Expect(suspendedVM.GetConfig()).To(BeIdenticalTo(config))
 		})
 	})
 })

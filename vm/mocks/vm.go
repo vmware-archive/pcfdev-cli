@@ -5,6 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	config "github.com/pivotal-cf/pcfdev-cli/config"
 )
 
 // Mock of VM interface
@@ -36,6 +37,16 @@ func (_m *MockVM) Destroy() error {
 
 func (_mr *_MockVMRecorder) Destroy() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Destroy")
+}
+
+func (_m *MockVM) GetConfig() *config.VMConfig {
+	ret := _m.ctrl.Call(_m, "GetConfig")
+	ret0, _ := ret[0].(*config.VMConfig)
+	return ret0
+}
+
+func (_mr *_MockVMRecorder) GetConfig() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetConfig")
 }
 
 func (_m *MockVM) Resume() error {

@@ -40,6 +40,7 @@ type VM interface {
 	Destroy() error
 	Suspend() error
 	Resume() error
+	GetConfig() *config.VMConfig
 }
 
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/vm Builder

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang/mock/gomock"
+	conf "github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 
@@ -18,18 +19,21 @@ var _ = Describe("Stopped", func() {
 		mockVBox *mocks.MockVBox
 
 		runningVM vm.Running
+		config    *conf.VMConfig
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
+		config = &conf.VMConfig{}
 
 		runningVM = vm.Running{
 			Name:    "some-vm",
 			Domain:  "some-domain",
 			IP:      "some-ip",
 			SSHPort: "some-port",
+			Config:  config,
 
 			VBox: mockVBox,
 			UI:   mockUI,
@@ -133,6 +137,12 @@ var _ = Describe("Stopped", func() {
 			mockUI.EXPECT().Say("PCF Dev is running")
 
 			Expect(runningVM.Resume()).To(Succeed())
+		})
+	})
+
+	Describe("Config", func() {
+		It("should return the config", func() {
+			Expect(runningVM.GetConfig()).To(BeIdenticalTo(config))
 		})
 	})
 })

@@ -51,7 +51,7 @@ var _ = Describe("Builder", func() {
 					switch u := notCreatedVM.(type) {
 					case *vm.NotCreated:
 						Expect(u.Name).To(Equal("some-vm"))
-						Expect(u.Config.DesiredMemory).To(Equal(uint64(3072)))
+						Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(3072)))
 					default:
 						Fail("wrong type")
 					}
@@ -71,7 +71,7 @@ var _ = Describe("Builder", func() {
 						switch u := notCreatedVM.(type) {
 						case *vm.NotCreated:
 							Expect(u.Name).To(Equal("some-vm"))
-							Expect(u.Config.DesiredMemory).To(Equal(uint64(150)))
+							Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(150)))
 						default:
 							Fail("wrong type")
 						}
@@ -91,7 +91,7 @@ var _ = Describe("Builder", func() {
 						switch u := notCreatedVM.(type) {
 						case *vm.NotCreated:
 							Expect(u.Name).To(Equal("some-vm"))
-							Expect(u.Config.DesiredMemory).To(Equal(uint64(100)))
+							Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(100)))
 						default:
 							Fail("wrong type")
 						}
@@ -110,7 +110,7 @@ var _ = Describe("Builder", func() {
 						switch u := notCreatedVM.(type) {
 						case *vm.NotCreated:
 							Expect(u.Name).To(Equal("some-vm"))
-							Expect(u.Config.DesiredMemory).To(Equal(uint64(200)))
+							Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(200)))
 						default:
 							Fail("wrong type")
 						}
@@ -137,6 +137,7 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
+						mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(3456), nil),
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateStopped, nil),
 					)
@@ -148,6 +149,7 @@ var _ = Describe("Builder", func() {
 					case *vm.Stopped:
 						Expect(u.Name).To(Equal("some-vm"))
 						Expect(u.IP).To(Equal("192.168.11.11"))
+						Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(3456)))
 						Expect(u.SSHPort).To(Equal("some-port"))
 						Expect(u.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.SSH).NotTo(BeNil())
@@ -192,6 +194,7 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
+						mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(3456), nil),
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("", errors.New("some-error")),
 					)
 
@@ -204,6 +207,7 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
+						mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(3456), nil),
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil),
 					)
@@ -215,6 +219,7 @@ var _ = Describe("Builder", func() {
 					case *vm.Running:
 						Expect(u.Name).To(Equal("some-vm"))
 						Expect(u.IP).To(Equal("192.168.11.11"))
+						Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(3456)))
 						Expect(u.SSHPort).To(Equal("some-port"))
 						Expect(u.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.VBox).NotTo(BeNil())
@@ -229,6 +234,7 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
+						mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(3456), nil),
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateSaved, nil),
 					)
@@ -240,6 +246,7 @@ var _ = Describe("Builder", func() {
 					case *vm.Suspended:
 						Expect(u.Name).To(Equal("some-vm"))
 						Expect(u.IP).To(Equal("192.168.11.11"))
+						Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(3456)))
 						Expect(u.SSHPort).To(Equal("some-port"))
 						Expect(u.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.VBox).NotTo(BeNil())
@@ -249,17 +256,31 @@ var _ = Describe("Builder", func() {
 					}
 				})
 			})
-			Context("when vm state is something expected", func() {
+			Context("when vm state is something unexpected", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
+						mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(3456), nil),
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().VMState("some-vm").Return("some-unexpected-state", nil),
 					)
 
 					vm, err := builder.VM("some-vm", &config.VMConfig{})
 					Expect(err).To(MatchError("failed to handle VM state 'some-unexpected-state'"))
+					Expect(vm).To(BeNil())
+				})
+			})
+			Context("when there is an error getting the vm memory", func() {
+				It("should return an error", func() {
+					gomock.InOrder(
+						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
+						mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(0), errors.New("some-error")),
+					)
+
+					vm, err := builder.VM("some-vm", &config.VMConfig{})
+					Expect(err).To(MatchError("some-error"))
 					Expect(vm).To(BeNil())
 				})
 			})

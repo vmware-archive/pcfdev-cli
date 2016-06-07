@@ -133,7 +133,12 @@ func (p *Plugin) start() error {
 	var err error
 	var vmConfig *config.VMConfig
 
-	if p.FlagContext.IsSet("m") {
+	vm, err := p.Builder.VM(p.Config.DefaultVMName, vmConfig)
+	if err != nil {
+		return err
+	}
+
+	else if p.FlagContext.IsSet("m") {
 		vmConfig = &config.VMConfig{DesiredMemory: uint64(p.FlagContext.Int("m"))}
 		err = p.RequirementsChecker.CheckMemory(vmConfig.DesiredMemory)
 	} else {
@@ -154,11 +159,6 @@ func (p *Plugin) start() error {
 	}
 
 	if err := p.download(); err != nil {
-		return err
-	}
-
-	vm, err := p.Builder.VM(p.Config.DefaultVMName, vmConfig)
-	if err != nil {
 		return err
 	}
 
@@ -192,18 +192,21 @@ func (p *Plugin) suspend() error {
 }
 
 func (p *Plugin) resume() error {
-	// TODO need to retreive memory allocated to already started VM
-
-	// if err := p.RequirementsChecker.Check(p.Config.MinMemory); err != nil {
-	// if !p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ") {
-	// p.UI.Say("Exiting...")
-	// return nil
-	// }
-	// }
-
 	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
 	if err != nil {
 		return err
+	}
+
+	if err := p.RequirementsChecker.CheckMemory(vm.GetConfig().DesiredMemory); err != nil {
+		switch u := err.(type) {
+		case *requirements.NotEnoughMemoryError:
+			if !p.UI.Confirm(fmt.Sprintf("Less than %d MB of memory detected, continue (y/N): ", u.DesiredMemory)) {
+				p.UI.Say("Exiting...")
+				return nil
+			}
+		default:
+			return err
+		}
 	}
 
 	return vm.Resume()

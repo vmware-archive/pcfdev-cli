@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	conf "github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 
@@ -20,6 +21,7 @@ var _ = Describe("Stopped", func() {
 		mockVBox  *mocks.MockVBox
 		mockSSH   *mocks.MockSSH
 		stoppedVM vm.Stopped
+		config    *conf.VMConfig
 	)
 
 	BeforeEach(func() {
@@ -27,12 +29,14 @@ var _ = Describe("Stopped", func() {
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
+		config = &conf.VMConfig{}
 
 		stoppedVM = vm.Stopped{
 			Name:    "some-vm",
 			Domain:  "some-domain",
 			IP:      "some-ip",
 			SSHPort: "some-port",
+			Config:  config,
 
 			VBox: mockVBox,
 			UI:   mockUI,
@@ -117,6 +121,12 @@ var _ = Describe("Stopped", func() {
 			mockUI.EXPECT().Say("Your VM is currently stopped. Only a suspended VM can be resumed.")
 
 			Expect(stoppedVM.Resume()).To(Succeed())
+		})
+	})
+
+	Describe("Config", func() {
+		It("should return the config", func() {
+			Expect(stoppedVM.GetConfig()).To(BeIdenticalTo(config))
 		})
 	})
 })

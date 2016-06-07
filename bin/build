@@ -3,12 +3,19 @@
 set -ex
 
 pcfdev_cli_path=$(cd `dirname $0` && cd .. && pwd)
-
-metadata=$(aws s3 cp s3://pcfdev/ci/pivnet-file-metadata -)
-vm_name=pcfdev-$(echo "$metadata" | jq -r .version)
-release_id=$(echo "$metadata" | jq -r .release_id)
-product_file_id=$(echo "$metadata" | jq -r .id)
-md5=$(echo "$metadata" | jq -r .md5)
+if [[ "$1" == "test" ]]
+then
+  vm_name="pcfdev-test"
+  release_id="1622"
+  product_file_id="4448"
+  md5="05761a420b00028ae5384c6bc460a6ba"
+else
+  metadata=$(aws s3 cp s3://pcfdev/ci/pivnet-file-metadata -)
+  vm_name=pcfdev-$(echo "$metadata" | jq -r .version)
+  release_id=$(echo "$metadata" | jq -r .release_id)
+  product_file_id=$(echo "$metadata" | jq -r .id)
+  md5=$(echo "$metadata" | jq -r .md5)
+fi
 
 pushd "$pcfdev_cli_path" >/dev/null
   go build \

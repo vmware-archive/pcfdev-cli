@@ -5,9 +5,10 @@ import (
 	"io"
 	"time"
 
+	"github.com/cloudfoundry/cli/flags"
 	"github.com/cloudfoundry/cli/plugin"
-	gflags "github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/requirements"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
@@ -20,6 +21,7 @@ type Plugin struct {
 	Downloader          Downloader
 	Builder             Builder
 	RequirementsChecker RequirementsChecker
+	FlagContext         flags.FlagContext
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -60,33 +62,29 @@ type Builder interface {
 
 //go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/plugin RequirementsChecker
 type RequirementsChecker interface {
-	Check(desiredMemory uint64) error
+	CheckMemory(desiredMemory uint64) error
+	CheckMinMemory() error
 }
 
 //go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM
-
-var (
-	opts struct {
-		Memory uint64 `short:"m" long:"memory" default:"3072" description:"<memory in MB>"`
-	}
-)
 
 func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
 		return
 	}
 
-	parsedArguments, err := gflags.ParseArgs(&opts, args)
-	if err != nil {
-		p.showUsageMessage(cliConnection)
-	}
-
-	if len(parsedArguments) < 2 {
+	p.FlagContext.NewIntFlag("memory", "m", "<memory in MB>")
+	if err := p.FlagContext.Parse(args...); err != nil {
 		p.showUsageMessage(cliConnection)
 		return
 	}
 
-	switch parsedArguments[1] {
+	var subcommand string
+	if len(args) > 1 {
+		subcommand = args[1]
+	}
+
+	switch subcommand {
 	case "download":
 		if err := p.download(); err != nil {
 			p.UI.Failed(getErrorText(err))
@@ -132,20 +130,38 @@ func getErrorText(err error) string {
 }
 
 func (p *Plugin) start() error {
-	if err := p.RequirementsChecker.Check(opts.Memory); err != nil {
-		if !p.UI.Confirm("Less than 3 GB of memory detected, continue (y/N): ") {
-			p.UI.Say("Exiting...")
-			return nil
+	var err error
+	var vmConfig *config.VMConfig
+
+	if p.FlagContext.IsSet("m") {
+		vmConfig = &config.VMConfig{DesiredMemory: uint64(p.FlagContext.Int("m"))}
+		err = p.RequirementsChecker.CheckMemory(vmConfig.DesiredMemory)
+	} else {
+		vmConfig = &config.VMConfig{}
+		err = p.RequirementsChecker.CheckMinMemory()
+	}
+
+	if err != nil {
+		switch u := err.(type) {
+		case *requirements.NotEnoughMemoryError:
+			if !p.UI.Confirm(fmt.Sprintf("Less than %d MB of memory detected, continue (y/N): ", u.DesiredMemory)) {
+				p.UI.Say("Exiting...")
+				return nil
+			}
+		default:
+			return err
 		}
 	}
 
 	if err := p.download(); err != nil {
 		return err
 	}
-	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{DesiredMemory: opts.Memory})
+
+	vm, err := p.Builder.VM(p.Config.DefaultVMName, vmConfig)
 	if err != nil {
 		return err
 	}
+
 	return vm.Start()
 }
 

@@ -25,6 +25,3 @@
 [submodule "vendor/github.com/kennygrant/sanitize"]
 	path = vendor/github.com/kennygrant/sanitize
 	url = https://github.com/kennygrant/sanitize
-[submodule "vendor/github.com/jessevdk/go-flags"]
-	path = vendor/github.com/jessevdk/go-flags
-	url = https://github.com/jessevdk/go-flags.git

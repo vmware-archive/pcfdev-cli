@@ -35,18 +35,18 @@ var _ = Describe("Checker", func() {
 		mockCtrl.Finish()
 	})
 
-	Describe("Check", func() {
+	Describe("CheckMemory", func() {
 		Context("when desired memory is less than free memory and greater than minumum memory", func() {
 			It("should return an error", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(10*1048576), nil)
 
-				Expect(checker.Check(uint64(4))).To(Succeed())
+				Expect(checker.CheckMemory(uint64(4))).To(Succeed())
 			})
 		})
 
 		Context("when desired memory is less than minumum memory requirement", func() {
 			It("should return an error", func() {
-				Expect(checker.Check(uint64(1))).To(MatchError("PCF Dev requires at least 3MB of memory to run."))
+				Expect(checker.CheckMemory(uint64(1))).To(MatchError("PCF Dev requires at least 3 MB of memory to run."))
 			})
 		})
 
@@ -54,17 +54,33 @@ var _ = Describe("Checker", func() {
 			It("should return an error", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(1*1048576), nil)
 
-				Expect(checker.Check(uint64(4))).To(MatchError("PCF Dev requires 3MB of free memory, this host has 1MB"))
+				Expect(checker.CheckMemory(uint64(4))).To(Equal(&requirements.NotEnoughMemoryError{
+					DesiredMemory: uint64(4),
+					FreeMemory:    uint64(1),
+				}))
 			})
 		})
 
-		Context("when the fethcing free memory returns an error", func() {
+		Context("when the fetching free memory returns an error", func() {
 			It("should return an error", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(0), errors.New("some-error"))
 
-				Expect(checker.Check(uint64(3))).To(MatchError("some-error"))
+				Expect(checker.CheckMemory(uint64(3))).To(MatchError("some-error"))
 			})
 		})
 
+	})
+
+	Describe("CheckMinMemory", func() {
+		Context("when minimum memory is less than free memory", func() {
+			It("should return an error", func() {
+				mockSystem.EXPECT().FreeMemory().Return(uint64(2*1048576), nil)
+
+				Expect(checker.CheckMinMemory()).To(Equal(&requirements.NotEnoughMemoryError{
+					DesiredMemory: uint64(3),
+					FreeMemory:    uint64(2),
+				}))
+			})
+		})
 	})
 })

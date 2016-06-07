@@ -18,15 +18,22 @@ var _ = Describe("Builder", func() {
 		var (
 			mockCtrl   *gomock.Controller
 			mockDriver *mocks.MockDriver
+			mockSystem *mocks.MockSystem
 			builder    vm.Builder
 		)
 
 		BeforeEach(func() {
 			mockCtrl = gomock.NewController(GinkgoT())
 			mockDriver = mocks.NewMockDriver(mockCtrl)
+			mockSystem = mocks.NewMockSystem(mockCtrl)
 
 			builder = &vm.VBoxBuilder{
 				Driver: mockDriver,
+				Config: &config.Config{
+					MinMemory: 100,
+					MaxMemory: 200,
+				},
+				System: mockSystem,
 			}
 		})
 
@@ -35,18 +42,92 @@ var _ = Describe("Builder", func() {
 		})
 
 		Context("when vm is not created", func() {
-			It("should return a not created vm", func() {
-				mockDriver.EXPECT().VMExists("some-vm").Return(false, nil)
+			Context("when desired memory is provided", func() {
+				It("should use the desired memory", func() {
+					mockDriver.EXPECT().VMExists("some-vm").Return(false, nil)
+					notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
+					Expect(err).NotTo(HaveOccurred())
 
-				notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
-				Expect(err).NotTo(HaveOccurred())
+					switch u := notCreatedVM.(type) {
+					case *vm.NotCreated:
+						Expect(u.Name).To(Equal("some-vm"))
+						Expect(u.Config.DesiredMemory).To(Equal(uint64(3072)))
+					default:
+						Fail("wrong type")
+					}
+				})
+			})
+			Context("when desired memory is not provided", func() {
+				Context("when the system has more than the minimum amount of free memory but less than the maximum", func() {
+					It("should give the VM all the free memory", func() {
+						gomock.InOrder(
+							mockDriver.EXPECT().VMExists("some-vm").Return(false, nil),
+							mockSystem.EXPECT().FreeMemory().Return(uint64(150), nil),
+						)
 
-				switch u := notCreatedVM.(type) {
-				case *vm.NotCreated:
-					Expect(u.Name).To(Equal("some-vm"))
-				default:
-					Fail("wrong type")
-				}
+						notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{})
+						Expect(err).NotTo(HaveOccurred())
+
+						switch u := notCreatedVM.(type) {
+						case *vm.NotCreated:
+							Expect(u.Name).To(Equal("some-vm"))
+							Expect(u.Config.DesiredMemory).To(Equal(uint64(150)))
+						default:
+							Fail("wrong type")
+						}
+					})
+
+				})
+				Context("when the system has less than the minimum amount of free memory", func() {
+					It("should give the VM the minimum amount of memory", func() {
+						gomock.InOrder(
+							mockDriver.EXPECT().VMExists("some-vm").Return(false, nil),
+							mockSystem.EXPECT().FreeMemory().Return(uint64(50), nil),
+						)
+
+						notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{})
+						Expect(err).NotTo(HaveOccurred())
+
+						switch u := notCreatedVM.(type) {
+						case *vm.NotCreated:
+							Expect(u.Name).To(Equal("some-vm"))
+							Expect(u.Config.DesiredMemory).To(Equal(uint64(100)))
+						default:
+							Fail("wrong type")
+						}
+					})
+				})
+				Context("when the system has more than the maximum amount of free memory", func() {
+					It("should give the VM the maximum amount of memory", func() {
+						gomock.InOrder(
+							mockDriver.EXPECT().VMExists("some-vm").Return(false, nil),
+							mockSystem.EXPECT().FreeMemory().Return(uint64(250), nil),
+						)
+
+						notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{})
+						Expect(err).NotTo(HaveOccurred())
+
+						switch u := notCreatedVM.(type) {
+						case *vm.NotCreated:
+							Expect(u.Name).To(Equal("some-vm"))
+							Expect(u.Config.DesiredMemory).To(Equal(uint64(200)))
+						default:
+							Fail("wrong type")
+						}
+					})
+				})
+				Context("when there is an error getting the amount of free memory", func() {
+					It("should return the error", func() {
+						gomock.InOrder(
+							mockDriver.EXPECT().VMExists("some-vm").Return(false, nil),
+							mockSystem.EXPECT().FreeMemory().Return(uint64(250), errors.New("some-error")),
+						)
+
+						notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{})
+						Expect(err).To(MatchError("some-error"))
+						Expect(notCreatedVM).To(BeNil())
+					})
+				})
 			})
 		})
 
@@ -60,7 +141,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateStopped, nil),
 					)
 
-					notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
+					notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{})
 					Expect(err).NotTo(HaveOccurred())
 
 					switch u := notCreatedVM.(type) {
@@ -80,7 +161,7 @@ var _ = Describe("Builder", func() {
 			Context("when there is an error seeing if vm exists", func() {
 				It("should return an error", func() {
 					mockDriver.EXPECT().VMExists("some-vm").Return(false, errors.New("some-error"))
-					_, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
+					_, err := builder.VM("some-vm", &config.VMConfig{})
 					Expect(err).To(MatchError("some-error"))
 				})
 			})
@@ -91,7 +172,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("", errors.New("some-error")),
 					)
 
-					_, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
+					_, err := builder.VM("some-vm", &config.VMConfig{})
 					Expect(err).To(MatchError("some-error"))
 				})
 			})
@@ -102,7 +183,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("some-ip", nil),
 					)
 
-					_, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
+					_, err := builder.VM("some-vm", &config.VMConfig{})
 					Expect(err).To(MatchError("some-ip is not one of the allowed PCF Dev ips"))
 				})
 			})
@@ -114,7 +195,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("", errors.New("some-error")),
 					)
 
-					_, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
+					_, err := builder.VM("some-vm", &config.VMConfig{})
 					Expect(err).To(MatchError("some-error"))
 				})
 			})
@@ -127,7 +208,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil),
 					)
 
-					notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
+					notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{})
 					Expect(err).NotTo(HaveOccurred())
 
 					switch u := notCreatedVM.(type) {
@@ -152,7 +233,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateSaved, nil),
 					)
 
-					suspendedVM, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
+					suspendedVM, err := builder.VM("some-vm", &config.VMConfig{})
 					Expect(err).NotTo(HaveOccurred())
 
 					switch u := suspendedVM.(type) {
@@ -177,7 +258,7 @@ var _ = Describe("Builder", func() {
 						mockDriver.EXPECT().VMState("some-vm").Return("some-unexpected-state", nil),
 					)
 
-					vm, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
+					vm, err := builder.VM("some-vm", &config.VMConfig{})
 					Expect(err).To(MatchError("failed to handle VM state 'some-unexpected-state'"))
 					Expect(vm).To(BeNil())
 				})

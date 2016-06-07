@@ -18,6 +18,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
+	"github.com/cloudfoundry/cli/flags"
 	cfplugin "github.com/cloudfoundry/cli/plugin"
 )
 
@@ -63,6 +64,7 @@ func main() {
 		Builder: &vm.VBoxBuilder{
 			Driver: &vbox.VBoxDriver{},
 			Config: config,
+			System: system,
 		},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},
@@ -78,5 +80,6 @@ func main() {
 			Config: config,
 			System: system,
 		},
+		FlagContext: flags.New(),
 	})
 }

@@ -1,10 +1,6 @@
 package requirements
 
-import (
-	"fmt"
-
-	"github.com/pivotal-cf/pcfdev-cli/config"
-)
+import "github.com/pivotal-cf/pcfdev-cli/config"
 
 type Checker struct {
 	System System
@@ -18,13 +14,12 @@ type System interface {
 	FreeMemory() (freeBytes uint64, err error)
 }
 
-func (c *Checker) Check(desiredMemory uint64) error {
-	return c.checkMemory(desiredMemory)
-}
-
-func (c *Checker) checkMemory(desiredMemory uint64) error {
+func (c *Checker) CheckMemory(desiredMemory uint64) error {
 	if desiredMemory < c.Config.MinMemory {
-		return fmt.Errorf("PCF Dev requires at least %dMB of memory to run.", c.Config.MinMemory)
+		return &RequestedMemoryTooLittleError{
+			DesiredMemory: desiredMemory,
+			MinMemory:     c.Config.MinMemory,
+		}
 	}
 
 	freeBytes, err := c.System.FreeMemory()
@@ -33,7 +28,14 @@ func (c *Checker) checkMemory(desiredMemory uint64) error {
 	}
 
 	if freeBytes < desiredMemory*BYTES_IN_MEGABYTE {
-		return fmt.Errorf("PCF Dev requires %dMB of free memory, this host has %dMB", c.Config.MinMemory, (freeBytes / BYTES_IN_MEGABYTE))
+		return &NotEnoughMemoryError{
+			FreeMemory:    (freeBytes / BYTES_IN_MEGABYTE),
+			DesiredMemory: desiredMemory,
+		}
 	}
 	return nil
+}
+
+func (c *Checker) CheckMinMemory() error {
+	return c.CheckMemory(c.Config.MinMemory)
 }

@@ -42,16 +42,18 @@ var _ = Describe("Builder", func() {
 		})
 
 		Context("when vm is not created", func() {
-			Context("when desired memory is provided", func() {
-				It("should use the desired memory", func() {
+			Context("when desired memory is provided and desired cores are provided", func() {
+				It("should use the desired config", func() {
 					mockDriver.EXPECT().VMExists("some-vm").Return(false, nil)
-					notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{DesiredMemory: uint64(3072)})
+					notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{
+						Memory: uint64(3072),
+					})
 					Expect(err).NotTo(HaveOccurred())
 
 					switch u := notCreatedVM.(type) {
 					case *vm.NotCreated:
 						Expect(u.Name).To(Equal("some-vm"))
-						Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(3072)))
+						Expect(u.GetConfig().Memory).To(Equal(uint64(3072)))
 					default:
 						Fail("wrong type")
 					}
@@ -72,7 +74,7 @@ var _ = Describe("Builder", func() {
 						switch u := notCreatedVM.(type) {
 						case *vm.NotCreated:
 							Expect(u.Name).To(Equal("some-vm"))
-							Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(150)))
+							Expect(u.GetConfig().Memory).To(Equal(uint64(150)))
 						default:
 							Fail("wrong type")
 						}
@@ -93,7 +95,7 @@ var _ = Describe("Builder", func() {
 						switch u := notCreatedVM.(type) {
 						case *vm.NotCreated:
 							Expect(u.Name).To(Equal("some-vm"))
-							Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(100)))
+							Expect(u.GetConfig().Memory).To(Equal(uint64(100)))
 						default:
 							Fail("wrong type")
 						}
@@ -113,7 +115,7 @@ var _ = Describe("Builder", func() {
 						switch u := notCreatedVM.(type) {
 						case *vm.NotCreated:
 							Expect(u.Name).To(Equal("some-vm"))
-							Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(200)))
+							Expect(u.GetConfig().Memory).To(Equal(uint64(200)))
 						default:
 							Fail("wrong type")
 						}
@@ -153,7 +155,7 @@ var _ = Describe("Builder", func() {
 					case *vm.Stopped:
 						Expect(u.Name).To(Equal("some-vm"))
 						Expect(u.IP).To(Equal("192.168.11.11"))
-						Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(3456)))
+						Expect(u.GetConfig().Memory).To(Equal(uint64(3456)))
 						Expect(u.SSHPort).To(Equal("some-port"))
 						Expect(u.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.SSH).NotTo(BeNil())
@@ -228,7 +230,7 @@ var _ = Describe("Builder", func() {
 					case *vm.Running:
 						Expect(u.Name).To(Equal("some-vm"))
 						Expect(u.IP).To(Equal("192.168.11.11"))
-						Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(3456)))
+						Expect(u.GetConfig().Memory).To(Equal(uint64(3456)))
 						Expect(u.SSHPort).To(Equal("some-port"))
 						Expect(u.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.VBox).NotTo(BeNil())
@@ -256,7 +258,7 @@ var _ = Describe("Builder", func() {
 					case *vm.Suspended:
 						Expect(u.Name).To(Equal("some-vm"))
 						Expect(u.IP).To(Equal("192.168.11.11"))
-						Expect(u.GetConfig().DesiredMemory).To(Equal(uint64(3456)))
+						Expect(u.GetConfig().Memory).To(Equal(uint64(3456)))
 						Expect(u.SSHPort).To(Equal("some-port"))
 						Expect(u.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.VBox).NotTo(BeNil())

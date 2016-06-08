@@ -17,7 +17,6 @@ type Config struct {
 	NoProxy       string
 	MinMemory     uint64
 	MaxMemory     uint64
-	DesiredMemory uint64
 }
 
 func New(defaultVMName string, minMemory uint64, maxMemory uint64) (*Config, error) {

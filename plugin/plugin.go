@@ -135,7 +135,7 @@ func (p *Plugin) start() error {
 	var vm vm.VM
 
 	if p.FlagContext.IsSet("m") {
-		vmConfig = &config.VMConfig{DesiredMemory: uint64(p.FlagContext.Int("m"))}
+		vmConfig = &config.VMConfig{Memory: uint64(p.FlagContext.Int("m"))}
 		vm, err = p.Builder.VM(p.Config.DefaultVMName, vmConfig)
 		if err != nil {
 			return err
@@ -151,7 +151,7 @@ func (p *Plugin) start() error {
 		}
 	}
 
-	err = p.RequirementsChecker.CheckMemory(vm.GetConfig().DesiredMemory)
+	err = p.RequirementsChecker.CheckMemory(vm.GetConfig().Memory)
 	if err != nil {
 		switch u := err.(type) {
 		case *requirements.NotEnoughMemoryError:
@@ -203,7 +203,7 @@ func (p *Plugin) resume() error {
 		return err
 	}
 
-	if err := p.RequirementsChecker.CheckMemory(vm.GetConfig().DesiredMemory); err != nil {
+	if err := p.RequirementsChecker.CheckMemory(vm.GetConfig().Memory); err != nil {
 		switch u := err.(type) {
 		case *requirements.NotEnoughMemoryError:
 			if !p.UI.Confirm(fmt.Sprintf("Less than %d MB of memory detected, continue (y/N): ", u.DesiredMemory)) {

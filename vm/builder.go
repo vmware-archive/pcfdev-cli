@@ -86,7 +86,7 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 			SSHPort: sshPort,
 			Domain:  domain,
 			Config: &config.VMConfig{
-				DesiredMemory: memory,
+				Memory: memory,
 			},
 
 			UI:   termUI,
@@ -101,7 +101,7 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 			SSHPort: sshPort,
 			Domain:  domain,
 			Config: &config.VMConfig{
-				DesiredMemory: memory,
+				Memory: memory,
 			},
 
 			UI:   termUI,
@@ -116,7 +116,7 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 			SSHPort: sshPort,
 			Domain:  domain,
 			Config: &config.VMConfig{
-				DesiredMemory: memory,
+				Memory: memory,
 			},
 
 			UI:   termUI,
@@ -132,10 +132,10 @@ func (b *VBoxBuilder) buildNotCreatedVM(vmName string, vmConfig *config.VMConfig
 	var desiredMemory uint64
 	var err error
 
-	if vmConfig.DesiredMemory != uint64(0) {
-		desiredMemory = vmConfig.DesiredMemory
+	if vmConfig.Memory != uint64(0) {
+		desiredMemory = vmConfig.Memory
 	} else {
-		desiredMemory, err = b.computeMemory(vmConfig.DesiredMemory)
+		desiredMemory, err = b.computeMemory()
 		if err != nil {
 			return nil, err
 		}
@@ -146,29 +146,22 @@ func (b *VBoxBuilder) buildNotCreatedVM(vmName string, vmConfig *config.VMConfig
 		VBox:    vbx,
 		UI:      termUI,
 		Builder: b,
-		Config:  &config.VMConfig{DesiredMemory: desiredMemory},
+		Config:  &config.VMConfig{Memory: desiredMemory},
 	}, nil
 }
 
-func (b *VBoxBuilder) computeMemory(desiredMemory uint64) (uint64, error) {
-	var memory uint64
-	if desiredMemory != 0 {
-		memory = desiredMemory
-	} else {
-		maxMemory := b.Config.MaxMemory
-		minMemory := b.Config.MinMemory
-		totalMemory, err := b.System.TotalMemory()
-		halfTotal := totalMemory / 2
-		if err != nil {
-			return uint64(0), err
-		}
-		if halfTotal <= minMemory {
-			memory = minMemory
-		} else if halfTotal >= maxMemory {
-			memory = maxMemory
-		} else {
-			memory = halfTotal
-		}
+func (b *VBoxBuilder) computeMemory() (uint64, error) {
+	maxMemory := b.Config.MaxMemory
+	minMemory := b.Config.MinMemory
+	totalMemory, err := b.System.TotalMemory()
+	halfTotal := totalMemory / 2
+	if err != nil {
+		return uint64(0), err
 	}
-	return memory, nil
+	if halfTotal <= minMemory {
+		return minMemory, nil
+	} else if halfTotal >= maxMemory {
+		return maxMemory, nil
+	}
+	return halfTotal, nil
 }

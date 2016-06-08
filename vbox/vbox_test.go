@@ -77,7 +77,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})
+				err := vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -101,7 +101,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})
+				err := vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -122,7 +122,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)).Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})).To(MatchError("some-error"))
+				Expect(vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})).To(MatchError("some-error"))
 			})
 		})
 
@@ -134,7 +134,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().VBoxManage("import", filepath.Join("some-ova-dir", "some-vm.ova"), "--vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-home", "some-vm-disk0.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return([]*network.Interface{}, errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})
+				err := vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -148,7 +148,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return([]*network.Interface{}, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface([]*network.Interface{}).Return(nil, false, errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})
+				err := vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -157,7 +157,7 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				mockSSH.EXPECT().GenerateAddress().Return("", "", errors.New("some-error"))
 
-				err := vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})
+				err := vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -169,7 +169,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages(filepath.Join("some-ova-dir", "some-vm.ova")).Return([]string{"1"}, nil),
 					mockDriver.EXPECT().VBoxManage("import", filepath.Join("some-ova-dir", "some-vm.ova"), "--vsys", "0", "--unit", "1", "--disk", filepath.Join("some-pcfdev-home", "some-vm-disk0.vmdk")).Return(nil, errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})
+				err := vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -188,7 +188,7 @@ var _ = Describe("vbox", func() {
 					mockPicker.EXPECT().SelectAvailableNetworkInterface([]*network.Interface{}).Return(iface, false, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface(ip).Return("", errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})
+				err := vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -206,7 +206,7 @@ var _ = Describe("vbox", func() {
 					mockPicker.EXPECT().SelectAvailableNetworkInterface([]*network.Interface{}).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm").Return(errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})
+				err := vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -217,7 +217,7 @@ var _ = Describe("vbox", func() {
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
 					mockDriver.EXPECT().GetVirtualSystemNumbersOfHardDiskImages(filepath.Join("some-ova-dir", "some-vm.ova")).Return(nil, errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})
+				err := vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -236,7 +236,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22").Return(errors.New("some-error")),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{DesiredMemory: uint64(2000)})
+				err := vbx.ImportVM("some-vm", &config.VMConfig{Memory: uint64(2000)})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})

@@ -1,5 +1,5 @@
 package config
 
 type VMConfig struct {
-	DesiredMemory uint64
+	Memory uint64
 }

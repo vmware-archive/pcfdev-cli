@@ -192,31 +192,11 @@ func (v *VBox) ImportVM(vmName string, vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	if err := v.Driver.SetMemory(vmName, vmConfig.DesiredMemory); err != nil {
+	if err := v.Driver.SetMemory(vmName, vmConfig.Memory); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (v *VBox) computeMemory() (uint64, error) {
-	var memory uint64
-	if v.Config.DesiredMemory != 0 {
-		memory = v.Config.DesiredMemory
-	} else {
-		freeMemory, err := v.System.FreeMemory()
-		if err != nil {
-			return uint64(0), err
-		}
-		if freeMemory <= v.Config.MinMemory {
-			memory = v.Config.MinMemory
-		} else if freeMemory >= v.Config.MaxMemory {
-			memory = v.Config.MaxMemory
-		} else {
-			memory = freeMemory
-		}
-	}
-	return memory, nil
 }
 
 func (v *VBox) DestroyVM(vmName string) error {

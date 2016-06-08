@@ -22,8 +22,8 @@ func (s *Suspended) Start() error {
 	return s.Resume()
 }
 
-func (s *Suspended) Status() {
-	s.UI.Say("Suspended")
+func (s *Suspended) Status() string {
+	return "Suspended"
 }
 
 func (s *Suspended) Destroy() error {

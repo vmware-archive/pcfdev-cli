@@ -57,12 +57,13 @@ var _ = Describe("Builder", func() {
 					}
 				})
 			})
+
 			Context("when desired memory is not provided", func() {
-				Context("when the system has more than the minimum amount of free memory but less than the maximum", func() {
-					It("should give the VM all the free memory", func() {
+				Context("when the system has total/2 memory more than the minimum amount but less than the maximum", func() {
+					It("should give the VM half the total memory", func() {
 						gomock.InOrder(
 							mockDriver.EXPECT().VMExists("some-vm").Return(false, nil),
-							mockSystem.EXPECT().FreeMemory().Return(uint64(150), nil),
+							mockSystem.EXPECT().TotalMemory().Return(uint64(300), nil),
 						)
 
 						notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{})
@@ -78,11 +79,12 @@ var _ = Describe("Builder", func() {
 					})
 
 				})
-				Context("when the system has less than the minimum amount of free memory", func() {
+
+				Context("when the system has total/2 memory less than the minimum amount", func() {
 					It("should give the VM the minimum amount of memory", func() {
 						gomock.InOrder(
 							mockDriver.EXPECT().VMExists("some-vm").Return(false, nil),
-							mockSystem.EXPECT().FreeMemory().Return(uint64(50), nil),
+							mockSystem.EXPECT().TotalMemory().Return(uint64(100), nil),
 						)
 
 						notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{})
@@ -97,11 +99,12 @@ var _ = Describe("Builder", func() {
 						}
 					})
 				})
-				Context("when the system has more than the maximum amount of free memory", func() {
+
+				Context("when the system has total/2 memory more than the maximum amount", func() {
 					It("should give the VM the maximum amount of memory", func() {
 						gomock.InOrder(
 							mockDriver.EXPECT().VMExists("some-vm").Return(false, nil),
-							mockSystem.EXPECT().FreeMemory().Return(uint64(250), nil),
+							mockSystem.EXPECT().TotalMemory().Return(uint64(500), nil),
 						)
 
 						notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{})
@@ -116,11 +119,12 @@ var _ = Describe("Builder", func() {
 						}
 					})
 				})
-				Context("when there is an error getting the amount of free memory", func() {
+
+				Context("when there is an error getting the amount of total memory", func() {
 					It("should return the error", func() {
 						gomock.InOrder(
 							mockDriver.EXPECT().VMExists("some-vm").Return(false, nil),
-							mockSystem.EXPECT().FreeMemory().Return(uint64(250), errors.New("some-error")),
+							mockSystem.EXPECT().TotalMemory().Return(uint64(250), errors.New("some-error")),
 						)
 
 						notCreatedVM, err := builder.VM("some-vm", &config.VMConfig{})
@@ -160,6 +164,7 @@ var _ = Describe("Builder", func() {
 					}
 				})
 			})
+
 			Context("when there is an error seeing if vm exists", func() {
 				It("should return an error", func() {
 					mockDriver.EXPECT().VMExists("some-vm").Return(false, errors.New("some-error"))
@@ -167,6 +172,7 @@ var _ = Describe("Builder", func() {
 					Expect(err).To(MatchError("some-error"))
 				})
 			})
+
 			Context("when there is an error getting the vm IP", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
@@ -178,6 +184,7 @@ var _ = Describe("Builder", func() {
 					Expect(err).To(MatchError("some-error"))
 				})
 			})
+
 			Context("when there is an error getting domain for vm ip", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
@@ -189,6 +196,7 @@ var _ = Describe("Builder", func() {
 					Expect(err).To(MatchError("some-ip is not one of the allowed PCF Dev ips"))
 				})
 			})
+
 			Context("when there is an error getting vm host forward port", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
@@ -202,6 +210,7 @@ var _ = Describe("Builder", func() {
 					Expect(err).To(MatchError("some-error"))
 				})
 			})
+
 			Context("when vm is running", func() {
 				It("should return a running vm", func() {
 					gomock.InOrder(
@@ -229,6 +238,7 @@ var _ = Describe("Builder", func() {
 					}
 				})
 			})
+
 			Context("when vm is saved", func() {
 				It("should return a suspended vm", func() {
 					gomock.InOrder(
@@ -256,6 +266,7 @@ var _ = Describe("Builder", func() {
 					}
 				})
 			})
+
 			Context("when vm state is something unexpected", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
@@ -271,6 +282,7 @@ var _ = Describe("Builder", func() {
 					Expect(vm).To(BeNil())
 				})
 			})
+
 			Context("when there is an error getting the vm memory", func() {
 				It("should return an error", func() {
 					gomock.InOrder(

@@ -28,8 +28,8 @@ func (r *Running) Start() error {
 	return nil
 }
 
-func (r *Running) Status() {
-	r.UI.Say("Running")
+func (r *Running) Status() string {
+	return "Running"
 }
 
 func (r *Running) Destroy() error {

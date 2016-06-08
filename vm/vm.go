@@ -36,7 +36,7 @@ type SSH interface {
 type VM interface {
 	Start() error
 	Stop() error
-	Status()
+	Status() string
 	Destroy() error
 	Suspend() error
 	Resume() error

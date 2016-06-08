@@ -93,10 +93,8 @@ var _ = Describe("Stopped", func() {
 	})
 
 	Describe("Status", func() {
-		It("should say Stopped", func() {
-			mockUI.EXPECT().Say("Stopped")
-
-			stoppedVM.Status()
+		It("should return 'Stopped'", func() {
+			Expect(stoppedVM.Status()).To(Equal("Stopped"))
 		})
 	})
 

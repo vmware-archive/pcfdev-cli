@@ -48,8 +48,8 @@ func (n *NotCreated) Start() error {
 	return nil
 }
 
-func (n *NotCreated) Status() {
-	n.UI.Say("Not Created")
+func (n *NotCreated) Status() string {
+	return "Not Created"
 }
 
 func (n *NotCreated) Destroy() error {

@@ -40,8 +40,8 @@ func (s *Stopped) Start() error {
 	return nil
 }
 
-func (s *Stopped) Status() {
-	s.UI.Say("Stopped")
+func (s *Stopped) Status() string {
+	return "Stopped"
 }
 
 func (s *Stopped) Destroy() error {

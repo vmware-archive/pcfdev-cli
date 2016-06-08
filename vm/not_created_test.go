@@ -153,10 +153,8 @@ var _ = Describe("Not Created", func() {
 	})
 
 	Describe("Status", func() {
-		It("should say Not Created", func() {
-			mockUI.EXPECT().Say("Not Created")
-
-			notCreatedVM.Status()
+		It("should return 'Not Created'", func() {
+			Expect(notCreatedVM.Status()).To(Equal("Not Created"))
 		})
 	})
 

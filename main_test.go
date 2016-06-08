@@ -176,13 +176,14 @@ var _ = Describe("pcfdev", func() {
 		os.Setenv("NO_PROXY", "192.168.98.98")
 
 		By("starting after running destroy")
-		pcfdevCommand = exec.Command("cf", "dev", "start")
+		pcfdevCommand = exec.Command("cf", "dev", "start", "-m", "3456")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("Waiting for services to start..."))
 		Expect(session).To(gbytes.Say("Services started"))
 		Expect(isVMRunning()).To(BeTrue())
+		Expect(vmMemory()).To(Equal("3456"))
 
 		stdout := gbytes.NewBuffer()
 		stderr := gbytes.NewBuffer()
@@ -248,6 +249,14 @@ func isVMRunning() bool {
 	vmStatus, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
 	return strings.Contains(string(vmStatus), `VMState="running"`)
+}
+
+func vmMemory() string {
+	output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
+	Expect(err).NotTo(HaveOccurred())
+
+	regex := regexp.MustCompile(`memory=(\d+)`)
+	return regex.FindStringSubmatch(string(output))[1]
 }
 
 func getForwardedPort() string {

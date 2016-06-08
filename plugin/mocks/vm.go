@@ -69,8 +69,10 @@ func (_mr *_MockVMRecorder) Start() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Start")
 }
 
-func (_m *MockVM) Status() {
-	_m.ctrl.Call(_m, "Status")
+func (_m *MockVM) Status() string {
+	ret := _m.ctrl.Call(_m, "Status")
+	ret0, _ := ret[0].(string)
+	return ret0
 }
 
 func (_mr *_MockVMRecorder) Status() *gomock.Call {

@@ -272,196 +272,225 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Describe("start", func() {
-			Context("when ova is not current", func() {
-				Context("when the user uses the allocated memory flag", func() {
+			Context("when the user uses the allocated memory flag", func() {
+				Context("when the vm is not created", func() {
 					It("should download and start the ova with the specified memory", func() {
 						gomock.InOrder(
+							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: uint64(3456)}).Return(mockVM, nil),
+							mockVM.EXPECT().Status().Return("Not Created"),
+							mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+								DesiredMemory: uint64(3456),
+							}),
 							mockRequirementsChecker.EXPECT().CheckMemory(uint64(3456)).Return(nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
 							mockDownloader.EXPECT().Download(),
 							mockUI.EXPECT().Say("\nVM downloaded"),
-							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: uint64(3456)}).Return(mockVM, nil),
 							mockVM.EXPECT().Start(),
 						)
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "3456"})
 					})
 				})
-
-				Context("when the user does not use the allocated memory flag", func() {
-					It("should download and start the ova with the builder specified memory", func() {
+				Context("when the vm is already created", func() {
+					It("should error and exit", func() {
 						gomock.InOrder(
-							mockRequirementsChecker.EXPECT().CheckMinMemory().Return(nil),
-							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
-							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
-							mockUI.EXPECT().Say("Downloading VM..."),
-							mockDownloader.EXPECT().Download(),
-							mockUI.EXPECT().Say("\nVM downloaded"),
-							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
-							mockVM.EXPECT().Start(),
+							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: uint64(3456)}).Return(mockVM, nil),
+							mockVM.EXPECT().Status().Return("Stopped"),
+							mockUI.EXPECT().Failed("The -m flag cannot be used if the VM has already been created."),
 						)
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "3456"})
 					})
 				})
 
-				Context("when vm is already allocated with a certain memory", func() {
-					It("should start the vm with the same memory", func() {
+				Context("when the system does not meet requirements and the user accepts to continue", func() {
+					It("should print a warning and prompt for the response to continue", func() {
 						gomock.InOrder(
-							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
-
-							mockRequirementsChecker.EXPECT().CheckMinMemory().Return(nil),
-							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
-							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
-							mockUI.EXPECT().Say("Downloading VM..."),
-							mockDownloader.EXPECT().Download(),
-							mockUI.EXPECT().Say("\nVM downloaded"),
+							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: uint64(4000)}).Return(mockVM, nil),
+							mockVM.EXPECT().Status().Return("Not Created"),
+							mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+								DesiredMemory: uint64(4000),
+							}),
+							mockRequirementsChecker.EXPECT().CheckMemory(uint64(4000)).Return(&requirements.NotEnoughMemoryError{DesiredMemory: uint64(4000)}),
+							mockUI.EXPECT().Confirm("Less than 4000 MB of memory detected, continue (y/N): ").Return(true),
+							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
+							mockUI.EXPECT().Say("Using existing image"),
 							mockVM.EXPECT().Start(),
 						)
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "4000"})
+					})
+				})
+
+				Context("when the system does not meet requirements and the user declines to continue", func() {
+					It("should print a warning and prompt for the response to continue", func() {
+						gomock.InOrder(
+							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: uint64(4000)}).Return(mockVM, nil),
+							mockVM.EXPECT().Status().Return("Not Created"),
+							mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+								DesiredMemory: uint64(4000),
+							}),
+							mockRequirementsChecker.EXPECT().CheckMemory(uint64(4000)).Return(&requirements.NotEnoughMemoryError{DesiredMemory: uint64(4000)}),
+							mockUI.EXPECT().Confirm("Less than 4000 MB of memory detected, continue (y/N): ").Return(false),
+							mockUI.EXPECT().Say("Exiting..."),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "4000"})
+					})
+				})
+
+				Context("when the system memory is too little", func() {
+					It("should print an error", func() {
+						gomock.InOrder(
+							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: uint64(2000)}).Return(mockVM, nil),
+							mockVM.EXPECT().Status().Return("Not Created"),
+							mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+								DesiredMemory: uint64(2000),
+							}),
+							mockRequirementsChecker.EXPECT().CheckMemory(uint64(2000)).Return(&requirements.RequestedMemoryTooLittleError{MinMemory: uint64(3000)}),
+							mockUI.EXPECT().Failed("Error: PCF Dev requires at least 3000 MB of memory to run."),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "2000"})
 					})
 				})
 			})
 
-			Context("when ova is current", func() {
-				Context("when PCFDEV_HOME is set", func() {
-					var pcfdevHome string
-
-					BeforeEach(func() {
-						pcfdevHome = os.Getenv("PCFDEV_HOME")
-						os.Setenv("PCFDEV_HOME", filepath.Join("some", "other", "dir"))
-					})
-
-					AfterEach(func() {
-						os.Setenv("PCFDEV_HOME", pcfdevHome)
-					})
-
-					It("should download and start the ova in PCFDEV_HOME", func() {
-						gomock.InOrder(
-							mockRequirementsChecker.EXPECT().CheckMinMemory().Return(nil),
-							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-							mockUI.EXPECT().Say("Using existing image"),
-							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
-							mockVM.EXPECT().Start(),
-						)
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-					})
-				})
-
-				It("should start without downloading", func() {
+			Context("when the user does not use the allocated memory flag", func() {
+				It("should download and start the ova with the builder specified memory", func() {
 					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().CheckMinMemory().Return(nil),
-						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-						mockUI.EXPECT().Say("Using existing image"),
 						mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
-						mockVM.EXPECT().Start(),
-					)
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-
-				})
-
-				Context("when it fails to get VM", func() {
-					It("should return an error", func() {
-						gomock.InOrder(
-							mockRequirementsChecker.EXPECT().CheckMinMemory().Return(nil),
-							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-							mockUI.EXPECT().Say("Using existing image"),
-							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(nil, errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
-						)
-
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-					})
-				})
-
-				Context("when it fails to start VM", func() {
-					It("should return an error", func() {
-						gomock.InOrder(
-							mockRequirementsChecker.EXPECT().CheckMinMemory().Return(nil),
-							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-							mockUI.EXPECT().Say("Using existing image"),
-							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
-							mockVM.EXPECT().Start().Return(errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
-						)
-
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-					})
-				})
-			})
-
-			Context("when the OVA fails to download", func() {
-				It("should print an error message", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().CheckMinMemory().Return(nil),
+						mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+							DesiredMemory: uint64(3456),
+						}),
+						mockRequirementsChecker.EXPECT().CheckMemory(uint64(3456)).Return(nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
-						mockDownloader.EXPECT().Download().Return(errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when the EULA is not accepted", func() {
-				It("should print the EULA", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().CheckMinMemory().Return(nil),
-						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
-						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
-						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-						mockUI.EXPECT().Say("some-eula"),
-						mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
-						mockClient.EXPECT().AcceptEULA().Return(nil),
-
-						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(),
 						mockUI.EXPECT().Say("\nVM downloaded"),
-
-						mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
 						mockVM.EXPECT().Start(),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 				})
-			})
 
-			Context("when the system does not meet requirements and the user accepts to continue", func() {
-				It("should print a warning and prompt for the response to continue", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().CheckMemory(uint64(4000)).Return(&requirements.NotEnoughMemoryError{DesiredMemory: uint64(4000)}),
-						mockUI.EXPECT().Confirm("Less than 4000 MB of memory detected, continue (y/N): ").Return(true),
-						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-						mockUI.EXPECT().Say("Using existing image"),
-						mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{DesiredMemory: uint64(4000)}).Return(mockVM, nil),
-						mockVM.EXPECT().Start(),
-					)
+				Context("when ova is current", func() {
+					Context("when PCFDEV_HOME is set", func() {
+						var pcfdevHome string
 
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "4000"})
+						BeforeEach(func() {
+							pcfdevHome = os.Getenv("PCFDEV_HOME")
+							os.Setenv("PCFDEV_HOME", filepath.Join("some", "other", "dir"))
+						})
+
+						AfterEach(func() {
+							os.Setenv("PCFDEV_HOME", pcfdevHome)
+						})
+
+						It("should download and start the ova in PCFDEV_HOME", func() {
+							gomock.InOrder(
+								mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
+								mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+									DesiredMemory: uint64(3456),
+								}),
+								mockRequirementsChecker.EXPECT().CheckMemory(uint64(3456)).Return(nil),
+								mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
+								mockUI.EXPECT().Say("Using existing image"),
+								mockVM.EXPECT().Start(),
+							)
+							pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+						})
+					})
+
+					It("should start without downloading", func() {
+						gomock.InOrder(
+							mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
+							mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+								DesiredMemory: uint64(3456),
+							}),
+							mockRequirementsChecker.EXPECT().CheckMemory(uint64(3456)).Return(nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
+							mockUI.EXPECT().Say("Using existing image"),
+							mockVM.EXPECT().Start(),
+						)
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+
+					})
+
+					Context("when it fails to get VM", func() {
+						It("should return an error", func() {
+							gomock.InOrder(
+								mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(nil, errors.New("some-error")),
+								mockUI.EXPECT().Failed("Error: some-error"),
+							)
+
+							pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+						})
+					})
+
+					Context("when it fails to start VM", func() {
+						It("should return an error", func() {
+							gomock.InOrder(
+								mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
+								mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+									DesiredMemory: uint64(3456),
+								}),
+								mockRequirementsChecker.EXPECT().CheckMemory(uint64(3456)).Return(nil),
+								mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
+								mockUI.EXPECT().Say("Using existing image"),
+								mockVM.EXPECT().Start().Return(errors.New("some-error")),
+								mockUI.EXPECT().Failed("Error: some-error"),
+							)
+
+							pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+						})
+					})
 				})
-			})
 
-			Context("when the system does not meet requirements and the user declines to continue", func() {
-				It("should print a warning and prompt for the response to continue", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().CheckMemory(uint64(4000)).Return(&requirements.NotEnoughMemoryError{DesiredMemory: uint64(4000)}),
-						mockUI.EXPECT().Confirm("Less than 4000 MB of memory detected, continue (y/N): ").Return(false),
-						mockUI.EXPECT().Say("Exiting..."),
-					)
+				Context("when ova is not current", func() {
+					Context("when the OVA fails to download", func() {
+						It("should print an error message", func() {
+							gomock.InOrder(
+								mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
+								mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+									DesiredMemory: uint64(3456),
+								}),
+								mockRequirementsChecker.EXPECT().CheckMemory(uint64(3456)).Return(nil),
+								mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+								mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
+								mockUI.EXPECT().Say("Downloading VM..."),
+								mockDownloader.EXPECT().Download().Return(errors.New("some-error")),
+								mockUI.EXPECT().Failed("Error: some-error"),
+							)
 
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "4000"})
-				})
-			})
+							pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+						})
+					})
 
-			Context("when the system memory is too little", func() {
-				It("should print an error", func() {
-					gomock.InOrder(
-						mockRequirementsChecker.EXPECT().CheckMemory(uint64(2000)).Return(&requirements.RequestedMemoryTooLittleError{MinMemory: uint64(3000)}),
-						mockUI.EXPECT().Failed("Error: PCF Dev requires at least 3000 MB of memory to run."),
-					)
+					Context("when the EULA is not already accepted", func() {
+						It("should print the EULA", func() {
+							gomock.InOrder(
+								mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
+								mockVM.EXPECT().GetConfig().Return(&config.VMConfig{
+									DesiredMemory: uint64(3456),
+								}),
+								mockRequirementsChecker.EXPECT().CheckMemory(uint64(3456)).Return(nil),
+								mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+								mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
+								mockClient.EXPECT().GetEULA().Return("some-eula", nil),
+								mockUI.EXPECT().Say("some-eula"),
+								mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
+								mockClient.EXPECT().AcceptEULA().Return(nil),
 
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "2000"})
+								mockUI.EXPECT().Say("Downloading VM..."),
+								mockDownloader.EXPECT().Download(),
+								mockUI.EXPECT().Say("\nVM downloaded"),
+
+								mockVM.EXPECT().Start(),
+							)
+							pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+						})
+					})
 				})
 			})
 		})
@@ -613,7 +642,8 @@ var _ = Describe("Plugin", func() {
 		It("should return the status", func() {
 			gomock.InOrder(
 				mockBuilder.EXPECT().VM("some-vm-name", &config.VMConfig{}).Return(mockVM, nil),
-				mockVM.EXPECT().Status(),
+				mockVM.EXPECT().Status().Return("some-status"),
+				mockUI.EXPECT().Say("some-status"),
 			)
 
 			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})

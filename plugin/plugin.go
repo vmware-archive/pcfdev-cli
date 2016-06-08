@@ -132,20 +132,26 @@ func getErrorText(err error) string {
 func (p *Plugin) start() error {
 	var err error
 	var vmConfig *config.VMConfig
+	var vm vm.VM
 
-	vm, err := p.Builder.VM(p.Config.DefaultVMName, vmConfig)
-	if err != nil {
-		return err
-	}
-
-	else if p.FlagContext.IsSet("m") {
+	if p.FlagContext.IsSet("m") {
 		vmConfig = &config.VMConfig{DesiredMemory: uint64(p.FlagContext.Int("m"))}
-		err = p.RequirementsChecker.CheckMemory(vmConfig.DesiredMemory)
+		vm, err = p.Builder.VM(p.Config.DefaultVMName, vmConfig)
+		if err != nil {
+			return err
+		}
+		if vm.Status() != "Not Created" {
+			p.UI.Failed("The -m flag cannot be used if the VM has already been created.")
+			return nil
+		}
 	} else {
-		vmConfig = &config.VMConfig{}
-		err = p.RequirementsChecker.CheckMinMemory()
+		vm, err = p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
+		if err != nil {
+			return err
+		}
 	}
 
+	err = p.RequirementsChecker.CheckMemory(vm.GetConfig().DesiredMemory)
 	if err != nil {
 		switch u := err.(type) {
 		case *requirements.NotEnoughMemoryError:
@@ -170,7 +176,7 @@ func (p *Plugin) status() error {
 	if err != nil {
 		return err
 	}
-	vm.Status()
+	p.UI.Say(vm.Status())
 	return nil
 }
 

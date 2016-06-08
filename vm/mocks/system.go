@@ -28,13 +28,13 @@ func (_m *MockSystem) EXPECT() *_MockSystemRecorder {
 	return _m.recorder
 }
 
-func (_m *MockSystem) FreeMemory() (uint64, error) {
-	ret := _m.ctrl.Call(_m, "FreeMemory")
+func (_m *MockSystem) TotalMemory() (uint64, error) {
+	ret := _m.ctrl.Call(_m, "TotalMemory")
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockSystemRecorder) FreeMemory() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "FreeMemory")
+func (_mr *_MockSystemRecorder) TotalMemory() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "TotalMemory")
 }

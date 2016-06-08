@@ -25,7 +25,7 @@ type Driver interface {
 
 //go:generate mockgen -package mocks -destination mocks/system.go github.com/pivotal-cf/pcfdev-cli/vm System
 type System interface {
-	FreeMemory() (memory uint64, err error)
+	TotalMemory() (memory uint64, err error)
 }
 
 type VBoxBuilder struct {
@@ -157,16 +157,17 @@ func (b *VBoxBuilder) computeMemory(desiredMemory uint64) (uint64, error) {
 	} else {
 		maxMemory := b.Config.MaxMemory
 		minMemory := b.Config.MinMemory
-		freeMemory, err := b.System.FreeMemory()
+		totalMemory, err := b.System.TotalMemory()
+		halfTotal := totalMemory / 2
 		if err != nil {
 			return uint64(0), err
 		}
-		if freeMemory <= minMemory {
+		if halfTotal <= minMemory {
 			memory = minMemory
-		} else if freeMemory >= maxMemory {
+		} else if halfTotal >= maxMemory {
 			memory = maxMemory
 		} else {
-			memory = freeMemory
+			memory = halfTotal
 		}
 	}
 	return memory, nil

@@ -1,13 +1,13 @@
 package vm
 
-import "github.com/pivotal-cf/pcfdev-cli/config"
+import "errors"
 
 type Running struct {
 	Name    string
 	Domain  string
 	IP      string
 	SSHPort string
-	Config  *config.VMConfig
+	Memory  uint64
 
 	VBox VBox
 	UI   UI
@@ -23,7 +23,14 @@ func (r *Running) Stop() error {
 	return nil
 }
 
-func (r *Running) Start() error {
+func (r *Running) VerifyStartOpts(opts *StartOpts) error {
+	if opts.Memory > uint64(0) {
+		return errors.New("memory cannot be changed once the vm has been created")
+	}
+	return nil
+}
+
+func (r *Running) Start(opts *StartOpts) error {
 	r.UI.Say("PCF Dev is running")
 	return nil
 }
@@ -56,8 +63,4 @@ func (r *Running) Resume() error {
 	r.UI.Say("PCF Dev is running")
 
 	return nil
-}
-
-func (r *Running) GetConfig() *config.VMConfig {
-	return r.Config
 }

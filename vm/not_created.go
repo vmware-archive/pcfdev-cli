@@ -1,6 +1,11 @@
 package vm
 
-import "github.com/pivotal-cf/pcfdev-cli/config"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/pivotal-cf/pcfdev-cli/config"
+)
 
 type NotCreated struct {
 	Name string
@@ -8,7 +13,7 @@ type NotCreated struct {
 	VBox    VBox
 	UI      UI
 	Builder Builder
-	Config  *config.VMConfig
+	Config  *config.Config
 }
 
 func (n *NotCreated) Stop() error {
@@ -24,7 +29,26 @@ func (n *NotCreated) Stop() error {
 	return nil
 }
 
-func (n *NotCreated) Start() error {
+func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
+	var memory uint64
+	if opts.Memory != uint64(0) {
+		if opts.Memory < n.Config.MinMemory {
+			return fmt.Errorf("PCF Dev requires at least %d MB of memory to run", n.Config.MinMemory)
+		}
+		memory = opts.Memory
+
+	} else {
+		memory = n.Config.DefaultMemory
+	}
+	if memory > n.Config.FreeMemory {
+		if !n.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", memory)) {
+			return errors.New("user declined to continue, exiting")
+		}
+	}
+	return nil
+}
+
+func (n *NotCreated) Start(opts *StartOpts) error {
 	conflict, err := n.VBox.ConflictingVMPresent(n.Name)
 	if err != nil {
 		return &StartVMError{err}
@@ -33,16 +57,24 @@ func (n *NotCreated) Start() error {
 		return &OldVMError{}
 	}
 
+	var memory uint64
 	n.UI.Say("Importing VM...")
-	if err := n.VBox.ImportVM(n.Name, n.Config); err != nil {
+	if opts.Memory != uint64(0) {
+		memory = opts.Memory
+	} else {
+		memory = n.Config.DefaultMemory
+	}
+	if err := n.VBox.ImportVM(n.Name, &config.VMConfig{
+		Memory: memory,
+	}); err != nil {
 		return &ImportVMError{err}
 	}
 
-	stoppedVM, err := n.Builder.VM(n.Name, n.Config)
+	stoppedVM, err := n.Builder.VM(n.Name)
 	if err != nil {
 		return &StartVMError{err}
 	}
-	if err := stoppedVM.Start(); err != nil {
+	if err := stoppedVM.Start(&StartOpts{}); err != nil {
 		return &StartVMError{err}
 	}
 	return nil
@@ -64,8 +96,4 @@ func (n *NotCreated) Suspend() error {
 func (n *NotCreated) Resume() error {
 	n.UI.Say("No VM suspended, cannot resume.")
 	return nil
-}
-
-func (n *NotCreated) GetConfig() *config.VMConfig {
-	return n.Config
 }

@@ -1,10 +1,13 @@
 package config_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 
+	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/config/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,6 +21,8 @@ var _ = Describe("Config", func() {
 			savedHTTPSProxy string
 			savedNoProxy    string
 			savedVMMemory   string
+			mockCtrl        *gomock.Controller
+			mockSystem      *mocks.MockSystem
 		)
 
 		BeforeEach(func() {
@@ -32,6 +37,9 @@ var _ = Describe("Config", func() {
 			os.Setenv("HTTPS_PROXY", "some-https-proxy")
 			os.Setenv("NO_PROXY", "some-no-proxy")
 			os.Setenv("VM_MEMORY", "1024")
+
+			mockCtrl = gomock.NewController(GinkgoT())
+			mockSystem = mocks.NewMockSystem(mockCtrl)
 		})
 
 		AfterEach(func() {
@@ -40,10 +48,14 @@ var _ = Describe("Config", func() {
 			os.Setenv("HTTPS_PROXY", savedHTTPSProxy)
 			os.Setenv("NO_PROXY", savedNoProxy)
 			os.Setenv("VM_MEMORY", savedVMMemory)
+
+			mockCtrl.Finish()
 		})
 
 		It("should use given values and env vars to set fields", func() {
-			conf, err := config.New("some-vm", uint64(1024), uint64(2048))
+			mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+			mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+			conf, err := config.New("some-vm", mockSystem)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(conf.DefaultVMName).To(Equal("some-vm"))
 			Expect(conf.PCFDevHome).To(Equal("some-pcfdev-home"))
@@ -52,8 +64,8 @@ var _ = Describe("Config", func() {
 			Expect(conf.HTTPSProxy).To(Equal("some-https-proxy"))
 			Expect(conf.HTTPSProxy).To(Equal("some-https-proxy"))
 			Expect(conf.NoProxy).To(Equal("some-no-proxy"))
-			Expect(conf.MinMemory).To(Equal(uint64(1024)))
-			Expect(conf.MaxMemory).To(Equal(uint64(2048)))
+			Expect(conf.MinMemory).To(Equal(uint64(3072)))
+			Expect(conf.MaxMemory).To(Equal(uint64(4096)))
 		})
 
 		Context("when caps proxy env vars are unset", func() {
@@ -84,7 +96,9 @@ var _ = Describe("Config", func() {
 			})
 
 			It("should use lower case env vars", func() {
-				conf, err := config.New("some-vm", uint64(1024), uint64(2048))
+				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+				conf, err := config.New("some-vm", mockSystem)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(conf.HTTPProxy).To(Equal("some-other-http-proxy"))
 				Expect(conf.HTTPSProxy).To(Equal("some-other-https-proxy"))
@@ -116,7 +130,9 @@ var _ = Describe("Config", func() {
 			})
 
 			It("should prefer caps env vars", func() {
-				conf, err := config.New("some-vm", uint64(1024), uint64(2048))
+				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+				conf, err := config.New("some-vm", mockSystem)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(conf.HTTPProxy).To(Equal("some-http-proxy"))
 				Expect(conf.HTTPSProxy).To(Equal("some-https-proxy"))
@@ -126,13 +142,88 @@ var _ = Describe("Config", func() {
 
 		Context("when PCFDEV_HOME is not set", func() {
 			It("should use a .pcfdev dir within the user's home", func() {
+				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
 				os.Unsetenv("PCFDEV_HOME")
 
-				conf, err := config.New("some-vm", uint64(1024), uint64(2048))
+				conf, err := config.New("some-vm", mockSystem)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(conf.PCFDevHome).To(Equal(filepath.Join(os.Getenv("HOME"), ".pcfdev")))
 				Expect(conf.OVADir).To(Equal(filepath.Join(os.Getenv("HOME"), ".pcfdev", "ova")))
 			})
 		})
+
+		Context("memory", func() {
+			It("should set the total system memory", func() {
+				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+
+				conf, err := config.New("some-vm", mockSystem)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(conf.TotalMemory).To(Equal(uint64(1000)))
+			})
+
+			It("should set the free system memory", func() {
+				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+
+				conf, err := config.New("some-vm", mockSystem)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(conf.FreeMemory).To(Equal(uint64(2000)))
+			})
+
+			Context("when half of the total system memory is between the minimum and maximum", func() {
+				It("should give the VM half the total memory", func() {
+					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+					mockSystem.EXPECT().TotalMemory().Return(uint64(7000), nil)
+
+					conf, err := config.New("some-vm", mockSystem)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(conf.DefaultMemory).To(Equal(uint64(3500)))
+				})
+			})
+
+			Context("when half of the total system memory is less than the minimum", func() {
+				It("should give the VM the minimum amount of memory", func() {
+					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+					mockSystem.EXPECT().TotalMemory().Return(uint64(6000), nil)
+
+					conf, err := config.New("some-vm", mockSystem)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(conf.DefaultMemory).To(Equal(uint64(3072)))
+				})
+			})
+
+			Context("when half of the total system memory is more than the maximum", func() {
+				It("should give the VM the maximum amount of memory", func() {
+					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+					mockSystem.EXPECT().TotalMemory().Return(uint64(60000), nil)
+
+					conf, err := config.New("some-vm", mockSystem)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(conf.DefaultMemory).To(Equal(uint64(4096)))
+				})
+			})
+
+			Context("when getting free memory fails", func() {
+				It("should return an error", func() {
+					mockSystem.EXPECT().FreeMemory().Return(uint64(0), errors.New("some-error"))
+
+					_, err := config.New("some-vm", mockSystem)
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
+
+			Context("when getting total memory fails", func() {
+				It("should return an error", func() {
+					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+					mockSystem.EXPECT().TotalMemory().Return(uint64(0), errors.New("some-error"))
+
+					_, err := config.New("some-vm", mockSystem)
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
+		})
+
 	})
 })

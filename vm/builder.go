@@ -34,7 +34,7 @@ type VBoxBuilder struct {
 	System System
 }
 
-func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
+func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 	ssh := &ssh.SSH{}
 	system := &system.System{}
@@ -55,7 +55,13 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 	}
 
 	if !exists {
-		return b.buildNotCreatedVM(vmName, vmConfig, vbx, termUI)
+		return &NotCreated{
+			Name:    vmName,
+			VBox:    vbx,
+			UI:      termUI,
+			Builder: b,
+			Config:  b.Config,
+		}, nil
 	}
 
 	ip, err := b.Driver.GetVMIP(vmName)
@@ -85,9 +91,7 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 			IP:      ip,
 			SSHPort: sshPort,
 			Domain:  domain,
-			Config: &config.VMConfig{
-				Memory: memory,
-			},
+			Memory:  memory,
 
 			UI:   termUI,
 			VBox: vbx,
@@ -100,9 +104,8 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 			IP:      ip,
 			SSHPort: sshPort,
 			Domain:  domain,
-			Config: &config.VMConfig{
-				Memory: memory,
-			},
+			Memory:  memory,
+			Config:  b.Config,
 
 			UI:   termUI,
 			VBox: vbx,
@@ -115,9 +118,8 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 			IP:      ip,
 			SSHPort: sshPort,
 			Domain:  domain,
-			Config: &config.VMConfig{
-				Memory: memory,
-			},
+			Memory:  memory,
+			Config:  b.Config,
 
 			UI:   termUI,
 			SSH:  ssh,
@@ -126,42 +128,4 @@ func (b *VBoxBuilder) VM(vmName string, vmConfig *config.VMConfig) (VM, error) {
 	}
 
 	return nil, fmt.Errorf("failed to handle VM state '%s'", state)
-}
-
-func (b *VBoxBuilder) buildNotCreatedVM(vmName string, vmConfig *config.VMConfig, vbx VBox, termUI UI) (VM, error) {
-	var desiredMemory uint64
-	var err error
-
-	if vmConfig.Memory != uint64(0) {
-		desiredMemory = vmConfig.Memory
-	} else {
-		desiredMemory, err = b.computeMemory()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &NotCreated{
-		Name:    vmName,
-		VBox:    vbx,
-		UI:      termUI,
-		Builder: b,
-		Config:  &config.VMConfig{Memory: desiredMemory},
-	}, nil
-}
-
-func (b *VBoxBuilder) computeMemory() (uint64, error) {
-	maxMemory := b.Config.MaxMemory
-	minMemory := b.Config.MinMemory
-	totalMemory, err := b.System.TotalMemory()
-	halfTotal := totalMemory / 2
-	if err != nil {
-		return uint64(0), err
-	}
-	if halfTotal <= minMemory {
-		return minMemory, nil
-	} else if halfTotal >= maxMemory {
-		return maxMemory, nil
-	}
-	return halfTotal, nil
 }

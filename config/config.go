@@ -17,13 +17,32 @@ type Config struct {
 	NoProxy       string
 	MinMemory     uint64
 	MaxMemory     uint64
+	TotalMemory   uint64
+	FreeMemory    uint64
+	DefaultMemory uint64
 }
 
-func New(defaultVMName string, minMemory uint64, maxMemory uint64) (*Config, error) {
+//go:generate mockgen -package mocks -destination mocks/system.go github.com/pivotal-cf/pcfdev-cli/config System
+type System interface {
+	TotalMemory() (uint64, error)
+	FreeMemory() (uint64, error)
+}
+
+func New(defaultVMName string, system System) (*Config, error) {
 	pcfdevHome, err := getPCFDevHome()
 	if err != nil {
 		return nil, err
 	}
+	freeMemory, err := system.FreeMemory()
+	if err != nil {
+		return nil, err
+	}
+	totalMemory, err := system.TotalMemory()
+	if err != nil {
+		return nil, err
+	}
+	minMemory := uint64(3072)
+	maxMemory := uint64(4096)
 
 	return &Config{
 		DefaultVMName: defaultVMName,
@@ -34,6 +53,9 @@ func New(defaultVMName string, minMemory uint64, maxMemory uint64) (*Config, err
 		NoProxy:       getNoProxy(),
 		MinMemory:     minMemory,
 		MaxMemory:     maxMemory,
+		TotalMemory:   totalMemory,
+		FreeMemory:    freeMemory,
+		DefaultMemory: getDefaultMemory(totalMemory, minMemory, maxMemory),
 	}, nil
 }
 
@@ -69,4 +91,14 @@ func getNoProxy() string {
 		return proxy
 	}
 	return os.Getenv("no_proxy")
+}
+
+func getDefaultMemory(totalMemory, minMemory, maxMemory uint64) uint64 {
+	halfTotal := totalMemory / 2
+	if halfTotal <= minMemory {
+		return minMemory
+	} else if halfTotal >= maxMemory {
+		return maxMemory
+	}
+	return halfTotal
 }

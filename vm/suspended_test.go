@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang/mock/gomock"
-	conf "github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 
@@ -18,21 +18,21 @@ var _ = Describe("Suspended", func() {
 		mockUI      *mocks.MockUI
 		mockVBox    *mocks.MockVBox
 		suspendedVM vm.Suspended
-		config      *conf.VMConfig
+		conf        *config.Config
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
-		config = &conf.VMConfig{}
+		conf = &config.Config{}
 
 		suspendedVM = vm.Suspended{
 			Name:    "some-vm",
 			Domain:  "some-domain",
 			IP:      "some-ip",
 			SSHPort: "some-port",
-			Config:  config,
+			Config:  conf,
 
 			VBox: mockVBox,
 			UI:   mockUI,
@@ -64,7 +64,7 @@ var _ = Describe("Suspended", func() {
 				mockVBox.EXPECT().ResumeVM("some-vm").Return(nil),
 			)
 
-			Expect(suspendedVM.Start()).To(Succeed())
+			Expect(suspendedVM.Start(&vm.StartOpts{})).To(Succeed())
 		})
 
 		Context("when starting the vm fails", func() {
@@ -74,13 +74,59 @@ var _ = Describe("Suspended", func() {
 					mockVBox.EXPECT().ResumeVM("some-vm").Return(errors.New("some-error")),
 				)
 
-				Expect(suspendedVM.Start()).To(MatchError("failed to resume VM: some-error"))
+				Expect(suspendedVM.Start(&vm.StartOpts{})).To(MatchError("failed to resume VM: some-error"))
+			})
+		})
+	})
+
+	Describe("VerifyStartOpts", func() {
+		Context("when desired memory is passed", func() {
+			It("should return an error", func() {
+				Expect(suspendedVM.VerifyStartOpts(&vm.StartOpts{
+					Memory: 4000,
+				})).To(MatchError("memory cannot be changed once the vm has been created"))
+			})
+		})
+
+		Context("when no opts are passed", func() {
+			Context("when free memory is greater than or equal to the VM's memory", func() {
+				It("should succeed", func() {
+					conf.FreeMemory = uint64(3000)
+					suspendedVM.Memory = uint64(2000)
+					Expect(suspendedVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
+				})
+			})
+
+			Context("when free memory is less than the VM's memory", func() {
+				Context("when the user accepts to continue", func() {
+					It("should succeed", func() {
+						conf.FreeMemory = uint64(2000)
+						suspendedVM.Memory = uint64(3000)
+
+						mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(true)
+
+						Expect(suspendedVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
+					})
+				})
+
+				Context("when the user declines to continue", func() {
+					It("should return an error", func() {
+						conf.FreeMemory = uint64(2000)
+						suspendedVM.Memory = uint64(3000)
+
+						mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(false)
+
+						Expect(suspendedVM.VerifyStartOpts(&vm.StartOpts{})).To(MatchError("user declined to continue, exiting"))
+					})
+				})
 			})
 		})
 	})
 
 	Describe("Resume", func() {
 		It("should start vm", func() {
+			conf.FreeMemory = uint64(3000)
+			suspendedVM.Memory = uint64(2000)
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumeVM("some-vm").Return(nil),
@@ -91,12 +137,42 @@ var _ = Describe("Suspended", func() {
 
 		Context("when starting the vm fails", func() {
 			It("should return an error", func() {
+				conf.FreeMemory = uint64(3000)
+				suspendedVM.Memory = uint64(2000)
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
 					mockVBox.EXPECT().ResumeVM("some-vm").Return(errors.New("some-error")),
 				)
 
 				Expect(suspendedVM.Resume()).To(MatchError("failed to resume VM: some-error"))
+			})
+		})
+
+		Context("when free memory is less than the VM's memory", func() {
+			Context("when the user accepts to continue", func() {
+				It("should succeed", func() {
+					conf.FreeMemory = uint64(2000)
+					suspendedVM.Memory = uint64(3000)
+
+					gomock.InOrder(
+						mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(true),
+						mockUI.EXPECT().Say("Resuming VM..."),
+						mockVBox.EXPECT().ResumeVM("some-vm").Return(nil),
+					)
+
+					Expect(suspendedVM.Resume()).To(Succeed())
+				})
+			})
+
+			Context("when the user declines to continue", func() {
+				It("should return an error", func() {
+					conf.FreeMemory = uint64(2000)
+					suspendedVM.Memory = uint64(3000)
+
+					mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(false)
+
+					Expect(suspendedVM.Resume()).To(MatchError("user declined to continue, exiting"))
+				})
 			})
 		})
 	})
@@ -112,12 +188,6 @@ var _ = Describe("Suspended", func() {
 			mockVBox.EXPECT().DestroyVM("some-vm").Return(nil)
 
 			Expect(suspendedVM.Destroy()).To(Succeed())
-		})
-	})
-
-	Describe("Config", func() {
-		It("should return the config", func() {
-			Expect(suspendedVM.GetConfig()).To(BeIdenticalTo(config))
 		})
 	})
 })

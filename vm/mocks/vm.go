@@ -5,7 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	config "github.com/pivotal-cf/pcfdev-cli/config"
+	vm "github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
 // Mock of VM interface
@@ -39,16 +39,6 @@ func (_mr *_MockVMRecorder) Destroy() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Destroy")
 }
 
-func (_m *MockVM) GetConfig() *config.VMConfig {
-	ret := _m.ctrl.Call(_m, "GetConfig")
-	ret0, _ := ret[0].(*config.VMConfig)
-	return ret0
-}
-
-func (_mr *_MockVMRecorder) GetConfig() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetConfig")
-}
-
 func (_m *MockVM) Resume() error {
 	ret := _m.ctrl.Call(_m, "Resume")
 	ret0, _ := ret[0].(error)
@@ -59,14 +49,14 @@ func (_mr *_MockVMRecorder) Resume() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Resume")
 }
 
-func (_m *MockVM) Start() error {
-	ret := _m.ctrl.Call(_m, "Start")
+func (_m *MockVM) Start(_param0 *vm.StartOpts) error {
+	ret := _m.ctrl.Call(_m, "Start", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockVMRecorder) Start() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Start")
+func (_mr *_MockVMRecorder) Start(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Start", arg0)
 }
 
 func (_m *MockVM) Status() string {
@@ -97,4 +87,14 @@ func (_m *MockVM) Suspend() error {
 
 func (_mr *_MockVMRecorder) Suspend() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Suspend")
+}
+
+func (_m *MockVM) VerifyStartOpts(_param0 *vm.StartOpts) error {
+	ret := _m.ctrl.Call(_m, "VerifyStartOpts", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockVMRecorder) VerifyStartOpts(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "VerifyStartOpts", arg0)
 }

@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang/mock/gomock"
-	conf "github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/user"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
@@ -21,7 +21,7 @@ var _ = Describe("Not Created", func() {
 		mockBuilder  *mocks.MockBuilder
 		mockStopped  *mocks.MockVM
 		notCreatedVM vm.NotCreated
-		config       *conf.VMConfig
+		conf         *config.Config
 	)
 
 	BeforeEach(func() {
@@ -30,7 +30,7 @@ var _ = Describe("Not Created", func() {
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
 		mockStopped = mocks.NewMockVM(mockCtrl)
-		config = &conf.VMConfig{Memory: uint64(3072)}
+		conf = &config.Config{}
 
 		notCreatedVM = vm.NotCreated{
 			Name: "some-vm",
@@ -38,7 +38,7 @@ var _ = Describe("Not Created", func() {
 			VBox:    mockVBox,
 			UI:      mockUI,
 			Builder: mockBuilder,
-			Config:  config,
+			Config:  conf,
 		}
 	})
 
@@ -73,6 +73,111 @@ var _ = Describe("Not Created", func() {
 		})
 	})
 
+	Describe("VerifyStartOpts", func() {
+		Context("when memory is passed as an option", func() {
+			Context("when the desired memory is less than the minimum", func() {
+				It("should print an error", func() {
+					conf.MinMemory = uint64(3000)
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Memory: uint64(2000),
+					})).To(MatchError("PCF Dev requires at least 3000 MB of memory to run"))
+				})
+			})
+
+			Context("when the desired memory is equal to the minimum and less than free memory", func() {
+				It("should succeed", func() {
+					conf.FreeMemory = uint64(5000)
+					conf.MinMemory = uint64(3000)
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Memory: uint64(3000),
+					})).To(Succeed())
+				})
+			})
+
+			Context("when the desired memory is greater than the minimum and less than free memory", func() {
+				It("should succeed", func() {
+					conf.FreeMemory = uint64(5000)
+					conf.MinMemory = uint64(3000)
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Memory: uint64(4000),
+					})).To(Succeed())
+				})
+			})
+
+			Context("when desired memory is greater than free memory", func() {
+				Context("when the user accepts to continue", func() {
+					It("should succeed", func() {
+						conf.FreeMemory = uint64(2000)
+
+						mockUI.EXPECT().Confirm("Less than 4000 MB of free memory detected, continue (y/N): ").Return(true)
+
+						Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+							Memory: uint64(4000),
+						})).To(Succeed())
+					})
+				})
+				Context("when the user declines to continue", func() {
+					It("should return an error", func() {
+						conf.FreeMemory = uint64(2000)
+
+						mockUI.EXPECT().Confirm("Less than 4000 MB of free memory detected, continue (y/N): ").Return(false)
+
+						Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+							Memory: uint64(4000),
+						})).To(MatchError("user declined to continue, exiting"))
+					})
+				})
+			})
+		})
+
+		Context("when memory is not passed as an option", func() {
+			Context("when the default memory is equal to free memory", func() {
+				It("should succeed", func() {
+					conf.FreeMemory = uint64(3000)
+					conf.DefaultMemory = uint64(3000)
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
+				})
+			})
+
+			Context("when the default memory is less than free memory", func() {
+				It("should succeed", func() {
+					conf.FreeMemory = uint64(5000)
+					conf.DefaultMemory = uint64(3000)
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
+				})
+			})
+
+			Context("when default memory is greater than free memory", func() {
+				Context("when the user accepts to continue", func() {
+					It("should succeed", func() {
+						conf.FreeMemory = uint64(3000)
+						conf.DefaultMemory = uint64(4000)
+
+						mockUI.EXPECT().Confirm("Less than 4000 MB of free memory detected, continue (y/N): ").Return(true)
+
+						Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
+					})
+				})
+
+				Context("when the user declines to continue", func() {
+					It("should return an error", func() {
+						conf.FreeMemory = uint64(3000)
+						conf.DefaultMemory = uint64(4000)
+
+						mockUI.EXPECT().Confirm("Less than 4000 MB of free memory detected, continue (y/N): ").Return(false)
+
+						Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{})).To(MatchError("user declined to continue, exiting"))
+					})
+				})
+			})
+		})
+	})
+
 	Describe("Start", func() {
 		var home string
 
@@ -83,16 +188,21 @@ var _ = Describe("Not Created", func() {
 		})
 
 		Context("when no conflicting vm is present", func() {
-			It("should import and start the vm", func() {
-				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
-					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &conf.VMConfig{Memory: uint64(3072)}).Return(nil),
-					mockBuilder.EXPECT().VM("some-vm", &conf.VMConfig{Memory: uint64(3072)}).Return(mockStopped, nil),
-					mockStopped.EXPECT().Start(),
-				)
+			Context("when memory is provided as an option", func() {
+				It("should import and start the vm with given memory", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+						mockUI.EXPECT().Say("Importing VM..."),
+						mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(nil),
+						mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
+						mockStopped.EXPECT().Start(&vm.StartOpts{}),
+					)
 
-				notCreatedVM.Start()
+					notCreatedVM.Start(&vm.StartOpts{
+						Memory: uint64(3072),
+					})
+				})
+
 			})
 		})
 
@@ -100,7 +210,7 @@ var _ = Describe("Not Created", func() {
 			It("should return an error", func() {
 				mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, errors.New("some-error"))
 
-				Expect(notCreatedVM.Start()).To(MatchError("failed to start VM: some-error"))
+				Expect(notCreatedVM.Start(&vm.StartOpts{})).To(MatchError("failed to start VM: some-error"))
 			})
 		})
 
@@ -108,7 +218,7 @@ var _ = Describe("Not Created", func() {
 			It("should return an error", func() {
 				mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(true, nil)
 
-				Expect(notCreatedVM.Start()).To(MatchError("old version of PCF Dev already running"))
+				Expect(notCreatedVM.Start(&vm.StartOpts{})).To(MatchError("old version of PCF Dev already running"))
 			})
 		})
 
@@ -117,10 +227,12 @@ var _ = Describe("Not Created", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &conf.VMConfig{Memory: uint64(3072)}).Return(errors.New("some-error")),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(errors.New("some-error")),
 				)
 
-				Expect(notCreatedVM.Start()).To(MatchError("failed to import VM: some-error"))
+				Expect(notCreatedVM.Start(&vm.StartOpts{
+					Memory: uint64(3072),
+				})).To(MatchError("failed to import VM: some-error"))
 			})
 		})
 
@@ -129,11 +241,13 @@ var _ = Describe("Not Created", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &conf.VMConfig{Memory: uint64(3072)}).Return(nil),
-					mockBuilder.EXPECT().VM("some-vm", &conf.VMConfig{Memory: uint64(3072)}).Return(nil, errors.New("some-error")),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
 
-				Expect(notCreatedVM.Start()).To(MatchError("failed to start VM: some-error"))
+				Expect(notCreatedVM.Start(&vm.StartOpts{
+					Memory: uint64(3072),
+				})).To(MatchError("failed to start VM: some-error"))
 			})
 		})
 
@@ -142,12 +256,29 @@ var _ = Describe("Not Created", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &conf.VMConfig{Memory: uint64(3072)}).Return(nil),
-					mockBuilder.EXPECT().VM("some-vm", &conf.VMConfig{Memory: uint64(3072)}).Return(mockStopped, nil),
-					mockStopped.EXPECT().Start().Return(errors.New("some-error")),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
+					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("some-error")),
 				)
 
-				Expect(notCreatedVM.Start()).To(MatchError("failed to start VM: some-error"))
+				Expect(notCreatedVM.Start(&vm.StartOpts{
+					Memory: uint64(3072),
+				})).To(MatchError("failed to start VM: some-error"))
+			})
+		})
+
+		Context("when desired memory is not provided", func() {
+			It("should give the VM the default memory", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockUI.EXPECT().Say("Importing VM..."),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(150)}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
+					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(nil),
+				)
+				conf.DefaultMemory = uint64(150)
+
+				Expect(notCreatedVM.Start(&vm.StartOpts{})).To(Succeed())
 			})
 		})
 	})
@@ -171,12 +302,6 @@ var _ = Describe("Not Created", func() {
 			mockUI.EXPECT().Say("No VM suspended, cannot resume.")
 
 			Expect(notCreatedVM.Resume()).To(Succeed())
-		})
-	})
-
-	Describe("Config", func() {
-		It("should return the config", func() {
-			Expect(notCreatedVM.GetConfig()).To(BeIdenticalTo(config))
 		})
 	})
 })

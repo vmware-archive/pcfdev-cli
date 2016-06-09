@@ -33,7 +33,6 @@ var _ = Describe("Stopped", func() {
 			Domain:  "some-domain",
 			IP:      "some-ip",
 			SSHPort: "some-port",
-			Config:  config,
 
 			VBox: mockVBox,
 			UI:   mockUI,
@@ -67,11 +66,27 @@ var _ = Describe("Stopped", func() {
 		})
 	})
 
+	Describe("VerifyStartOpts", func() {
+		Context("when desired memory is passed", func() {
+			It("should return an error", func() {
+				Expect(runningVM.VerifyStartOpts(&vm.StartOpts{
+					Memory: 4000,
+				})).To(MatchError("memory cannot be changed once the vm has been created"))
+			})
+		})
+
+		Context("when no opts are passed", func() {
+			It("should succeed", func() {
+				Expect(runningVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
+			})
+		})
+	})
+
 	Describe("Start", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Say("PCF Dev is running")
 
-			runningVM.Start()
+			runningVM.Start(&vm.StartOpts{})
 		})
 	})
 
@@ -135,12 +150,6 @@ var _ = Describe("Stopped", func() {
 			mockUI.EXPECT().Say("PCF Dev is running")
 
 			Expect(runningVM.Resume()).To(Succeed())
-		})
-	})
-
-	Describe("Config", func() {
-		It("should return the config", func() {
-			Expect(runningVM.GetConfig()).To(BeIdenticalTo(config))
 		})
 	})
 })

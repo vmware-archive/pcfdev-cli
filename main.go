@@ -11,7 +11,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/ping"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
-	"github.com/pivotal-cf/pcfdev-cli/requirements"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/system"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -32,7 +31,8 @@ var (
 func main() {
 	fileSystem := &fs.FS{}
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
-	config, err := config.New(vmName, 3072, 4096)
+	system := &system.System{}
+	config, err := config.New(vmName, system)
 	if err != nil {
 		termUI.Failed("Error: %s", err)
 	}
@@ -47,7 +47,6 @@ func main() {
 		ProductFileId: productFileId,
 		Token:         token,
 	}
-	system := &system.System{}
 
 	cfplugin.Start(&plugin.Plugin{
 		Client: client,
@@ -64,7 +63,6 @@ func main() {
 		Builder: &vm.VBoxBuilder{
 			Driver: &vbox.VBoxDriver{},
 			Config: config,
-			System: system,
 		},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},
@@ -73,10 +71,6 @@ func main() {
 				Pinger:  &ping.Pinger{},
 				Network: &network.Network{},
 			},
-			Config: config,
-			System: system,
-		},
-		RequirementsChecker: &requirements.Checker{
 			Config: config,
 			System: system,
 		},

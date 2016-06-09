@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	conf "github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 
@@ -21,7 +21,7 @@ var _ = Describe("Stopped", func() {
 		mockVBox  *mocks.MockVBox
 		mockSSH   *mocks.MockSSH
 		stoppedVM vm.Stopped
-		config    *conf.VMConfig
+		conf      *config.Config
 	)
 
 	BeforeEach(func() {
@@ -29,18 +29,18 @@ var _ = Describe("Stopped", func() {
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
-		config = &conf.VMConfig{}
+		conf = &config.Config{}
 
 		stoppedVM = vm.Stopped{
 			Name:    "some-vm",
 			Domain:  "some-domain",
 			IP:      "some-ip",
 			SSHPort: "some-port",
-			Config:  config,
 
-			VBox: mockVBox,
-			UI:   mockUI,
-			SSH:  mockSSH,
+			VBox:   mockVBox,
+			UI:     mockUI,
+			SSH:    mockSSH,
+			Config: conf,
 		}
 	})
 
@@ -55,6 +55,50 @@ var _ = Describe("Stopped", func() {
 		})
 	})
 
+	Describe("VerifyStartOpts", func() {
+		Context("when desired memory is passed", func() {
+			It("should return an error", func() {
+				Expect(stoppedVM.VerifyStartOpts(&vm.StartOpts{
+					Memory: 4000,
+				})).To(MatchError("memory cannot be changed once the vm has been created"))
+			})
+		})
+
+		Context("when no opts are passed", func() {
+			Context("when free memory is greater than or equal to the VM's memory", func() {
+				It("should succeed", func() {
+					conf.FreeMemory = uint64(3000)
+					stoppedVM.Memory = uint64(2000)
+					Expect(stoppedVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
+				})
+			})
+
+			Context("when free memory is less than the VM's memory", func() {
+				Context("when the user accepts to continue", func() {
+					It("should succeed", func() {
+						conf.FreeMemory = uint64(2000)
+						stoppedVM.Memory = uint64(3000)
+
+						mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(true)
+
+						Expect(stoppedVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
+					})
+				})
+
+				Context("when the user declines to continue", func() {
+					It("should return an error", func() {
+						conf.FreeMemory = uint64(2000)
+						stoppedVM.Memory = uint64(3000)
+
+						mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(false)
+
+						Expect(stoppedVM.VerifyStartOpts(&vm.StartOpts{})).To(MatchError("user declined to continue, exiting"))
+					})
+				})
+			})
+		})
+	})
+
 	Describe("Start", func() {
 		It("should start vm", func() {
 			gomock.InOrder(
@@ -64,7 +108,7 @@ var _ = Describe("Stopped", func() {
 				mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
 			)
 
-			stoppedVM.Start()
+			stoppedVM.Start(&vm.StartOpts{})
 		})
 
 		Context("when starting the vm fails", func() {
@@ -74,7 +118,7 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM("some-vm", "some-ip", "some-port", "some-domain").Return(errors.New("some-error")),
 				)
 
-				Expect(stoppedVM.Start()).To(MatchError("failed to start VM: some-error"))
+				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("failed to start VM: some-error"))
 			})
 		})
 
@@ -87,7 +131,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
-				Expect(stoppedVM.Start()).To(MatchError("failed to provision VM: some-error"))
+				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("failed to provision VM: some-error"))
 			})
 		})
 	})
@@ -119,12 +163,6 @@ var _ = Describe("Stopped", func() {
 			mockUI.EXPECT().Say("Your VM is currently stopped. Only a suspended VM can be resumed.")
 
 			Expect(stoppedVM.Resume()).To(Succeed())
-		})
-	})
-
-	Describe("Config", func() {
-		It("should return the config", func() {
-			Expect(stoppedVM.GetConfig()).To(BeIdenticalTo(config))
 		})
 	})
 })

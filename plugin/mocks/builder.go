@@ -5,7 +5,6 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	config "github.com/pivotal-cf/pcfdev-cli/config"
 	vm "github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
@@ -30,13 +29,13 @@ func (_m *MockBuilder) EXPECT() *_MockBuilderRecorder {
 	return _m.recorder
 }
 
-func (_m *MockBuilder) VM(_param0 string, _param1 *config.VMConfig) (vm.VM, error) {
-	ret := _m.ctrl.Call(_m, "VM", _param0, _param1)
+func (_m *MockBuilder) VM(_param0 string) (vm.VM, error) {
+	ret := _m.ctrl.Call(_m, "VM", _param0)
 	ret0, _ := ret[0].(vm.VM)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockBuilderRecorder) VM(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "VM", arg0, arg1)
+func (_mr *_MockBuilderRecorder) VM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "VM", arg0)
 }

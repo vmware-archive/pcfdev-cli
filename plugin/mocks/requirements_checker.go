@@ -37,13 +37,3 @@ func (_m *MockRequirementsChecker) CheckMemory(_param0 uint64) error {
 func (_mr *_MockRequirementsCheckerRecorder) CheckMemory(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CheckMemory", arg0)
 }
-
-func (_m *MockRequirementsChecker) CheckMinMemory() error {
-	ret := _m.ctrl.Call(_m, "CheckMinMemory")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-func (_mr *_MockRequirementsCheckerRecorder) CheckMinMemory() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "CheckMinMemory")
-}

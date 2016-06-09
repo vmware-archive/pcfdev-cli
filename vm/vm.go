@@ -34,16 +34,21 @@ type SSH interface {
 
 //go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM
 type VM interface {
-	Start() error
+	Start(*StartOpts) error
 	Stop() error
 	Status() string
 	Destroy() error
 	Suspend() error
 	Resume() error
-	GetConfig() *config.VMConfig
+
+	VerifyStartOpts(*StartOpts) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/vm Builder
 type Builder interface {
-	VM(name string, vmConfig *config.VMConfig) (vm VM, err error)
+	VM(name string) (vm VM, err error)
+}
+
+type StartOpts struct {
+	Memory uint64
 }

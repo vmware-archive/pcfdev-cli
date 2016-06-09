@@ -28,6 +28,16 @@ func (_m *MockSystem) EXPECT() *_MockSystemRecorder {
 	return _m.recorder
 }
 
+func (_m *MockSystem) Cores() uint64 {
+	ret := _m.ctrl.Call(_m, "Cores")
+	ret0, _ := ret[0].(uint64)
+	return ret0
+}
+
+func (_mr *_MockSystemRecorder) Cores() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Cores")
+}
+
 func (_m *MockSystem) TotalMemory() (uint64, error) {
 	ret := _m.ctrl.Call(_m, "TotalMemory")
 	ret0, _ := ret[0].(uint64)

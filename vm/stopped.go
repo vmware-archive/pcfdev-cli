@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -13,11 +14,12 @@ type Stopped struct {
 	Domain  string
 	IP      string
 	SSHPort string
+	Memory  uint64
+	Config  *config.Config
 
-	VBox   VBox
-	SSH    SSH
-	UI     UI
-	Config *config.VMConfig
+	VBox VBox
+	SSH  SSH
+	UI   UI
 }
 
 func (s *Stopped) Stop() error {
@@ -25,7 +27,19 @@ func (s *Stopped) Stop() error {
 	return nil
 }
 
-func (s *Stopped) Start() error {
+func (s *Stopped) VerifyStartOpts(opts *StartOpts) error {
+	if opts.Memory != uint64(0) {
+		return errors.New("memory cannot be changed once the vm has been created")
+	}
+	if s.Memory > s.Config.FreeMemory {
+		if !s.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", s.Memory)) {
+			return errors.New("user declined to continue, exiting")
+		}
+	}
+	return nil
+}
+
+func (s *Stopped) Start(opts *StartOpts) error {
 	s.UI.Say("Starting VM...")
 	if err := s.VBox.StartVM(s.Name, s.IP, s.SSHPort, s.Domain); err != nil {
 		return &StartVMError{err}
@@ -56,8 +70,4 @@ func (s *Stopped) Suspend() error {
 func (s *Stopped) Resume() error {
 	s.UI.Say("Your VM is currently stopped. Only a suspended VM can be resumed.")
 	return nil
-}
-
-func (s *Stopped) GetConfig() *config.VMConfig {
-	return s.Config
 }

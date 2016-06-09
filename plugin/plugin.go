@@ -8,7 +8,6 @@ import (
 	"github.com/cloudfoundry/cli/flags"
 	"github.com/cloudfoundry/cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/config"
-	"github.com/pivotal-cf/pcfdev-cli/requirements"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
@@ -57,13 +56,12 @@ type Client interface {
 
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/plugin Builder
 type Builder interface {
-	VM(name string, vmConfig *config.VMConfig) (vm vm.VM, err error)
+	VM(name string) (vm vm.VM, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/plugin RequirementsChecker
 type RequirementsChecker interface {
 	CheckMemory(desiredMemory uint64) error
-	CheckMinMemory() error
 }
 
 //go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM
@@ -130,49 +128,25 @@ func getErrorText(err error) string {
 }
 
 func (p *Plugin) start() error {
-	var err error
-	var vmConfig *config.VMConfig
-	var vm vm.VM
-
-	if p.FlagContext.IsSet("m") {
-		vmConfig = &config.VMConfig{Memory: uint64(p.FlagContext.Int("m"))}
-		vm, err = p.Builder.VM(p.Config.DefaultVMName, vmConfig)
-		if err != nil {
-			return err
-		}
-		if vm.Status() != "Not Created" {
-			p.UI.Failed("The -m flag cannot be used if the VM has already been created.")
-			return nil
-		}
-	} else {
-		vm, err = p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
-		if err != nil {
-			return err
-		}
-	}
-
-	err = p.RequirementsChecker.CheckMemory(vm.GetConfig().Memory)
+	v, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
-		switch u := err.(type) {
-		case *requirements.NotEnoughMemoryError:
-			if !p.UI.Confirm(fmt.Sprintf("Less than %d MB of memory detected, continue (y/N): ", u.DesiredMemory)) {
-				p.UI.Say("Exiting...")
-				return nil
-			}
-		default:
-			return err
-		}
+		return err
 	}
-
+	opts := &vm.StartOpts{
+		Memory: uint64(p.FlagContext.Int("m")),
+	}
+	if err := v.VerifyStartOpts(opts); err != nil {
+		return err
+	}
 	if err := p.download(); err != nil {
 		return err
 	}
 
-	return vm.Start()
+	return v.Start(opts)
 }
 
 func (p *Plugin) status() error {
-	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
+	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
 	}
@@ -181,7 +155,7 @@ func (p *Plugin) status() error {
 }
 
 func (p *Plugin) stop() error {
-	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
+	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
 	}
@@ -189,7 +163,7 @@ func (p *Plugin) stop() error {
 }
 
 func (p *Plugin) suspend() error {
-	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
+	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
 	}
@@ -198,23 +172,10 @@ func (p *Plugin) suspend() error {
 }
 
 func (p *Plugin) resume() error {
-	vm, err := p.Builder.VM(p.Config.DefaultVMName, &config.VMConfig{})
+	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
 	}
-
-	if err := p.RequirementsChecker.CheckMemory(vm.GetConfig().Memory); err != nil {
-		switch u := err.(type) {
-		case *requirements.NotEnoughMemoryError:
-			if !p.UI.Confirm(fmt.Sprintf("Less than %d MB of memory detected, continue (y/N): ", u.DesiredMemory)) {
-				p.UI.Say("Exiting...")
-				return nil
-			}
-		default:
-			return err
-		}
-	}
-
 	return vm.Resume()
 }
 
@@ -231,7 +192,7 @@ func (p *Plugin) destroy() error {
 
 	p.UI.Say("Destroying VM...")
 	for _, vmName := range vms {
-		vm, err := p.Builder.VM(vmName, &config.VMConfig{})
+		vm, err := p.Builder.VM(vmName)
 		if err != nil {
 			return &DestroyVMError{err}
 		}
@@ -297,7 +258,7 @@ func (*Plugin) GetMetadata() plugin.PluginMetadata {
 					Usage: `cf dev SUBCOMMAND 
 SUBCOMMANDS:
    start                    Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.
-	[-m memory-in-mb]     Memory to allocate for VM. Default: half of system memory, no more than 4 GB
+      [-m memory-in-mb]     Memory to allocate for VM. Default: half of system memory, no more than 4 GB
    stop                     Shutdown the PCF Dev VM. All data is preserved.
    suspend                  Save the current state of the PCF Dev VM to disk and then stop the VM.
    resume                   Resume PCF Dev VM from suspended state.

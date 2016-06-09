@@ -29,6 +29,10 @@ func (p *Picker) SelectAvailableNetworkInterface(candidates []*network.Interface
 
 	for _, subnetIP := range allowedSubnets {
 		if vboxAddr := p.addrInSet(subnetIP, candidates); vboxAddr != nil {
+			if p.isDuplicateInterface(vboxAddr, allInterfaces) {
+				continue
+			}
+
 			vmIP, err := IPForSubnet(subnetIP)
 			if err != nil {
 				return nil, false, err
@@ -60,4 +64,15 @@ func (p *Picker) addrInSet(ip string, set []*network.Interface) (addr *network.I
 	}
 
 	return nil
+}
+
+func (p *Picker) isDuplicateInterface(networkInterface *network.Interface, set []*network.Interface) bool {
+	count := 0
+	for _, netInterface := range set {
+		if networkInterface.IP == netInterface.IP {
+			count += 1
+		}
+	}
+
+	return (count > 1)
 }

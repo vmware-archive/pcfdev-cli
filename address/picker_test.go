@@ -109,6 +109,32 @@ var _ = Describe("Picker", func() {
 			})
 		})
 
+		Context("when there is a vbox and other duplicate interface on 192.168.11.1 in ifconfig", func() {
+			It("should return the next interface and false", func() {
+				vboxInterface := &network.Interface{
+					Name: "some-interface",
+					IP:   "192.168.11.1",
+				}
+				netVboxInterface := &network.Interface{
+					Name: "some-vbox-interface",
+					IP:   "192.168.11.1",
+				}
+				netVmwareInterface := &network.Interface{
+					Name: "some-vmware-interface",
+					IP:   "192.168.11.1",
+				}
+
+				gomock.InOrder(
+					mockNetwork.EXPECT().Interfaces().Return([]*network.Interface{netVboxInterface, netVmwareInterface}, nil),
+				)
+
+				selected, exists, err := picker.SelectAvailableNetworkInterface([]*network.Interface{vboxInterface})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(exists).To(BeFalse())
+				Expect(selected.IP).To(Equal("192.168.22.1"))
+			})
+		})
+
 		Context("all allowed interfaces are taken", func() {
 			It("returns and error", func() {
 				interfaces := make([]*network.Interface, 9)

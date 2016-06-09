@@ -256,6 +256,7 @@ func (*Plugin) GetMetadata() plugin.PluginMetadata {
 				HelpText: "Control PCF Dev VMs running on your workstation",
 				UsageDetails: plugin.Usage{
 					Usage: `cf dev SUBCOMMAND 
+
 SUBCOMMANDS:
    start                    Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.
       [-m memory-in-mb]     Memory to allocate for VM. Default: half of system memory, no more than 4 GB

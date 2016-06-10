@@ -9,7 +9,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/user"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 
-	"github.com/cloudfoundry/cli/flags"
 	"github.com/cloudfoundry/cli/plugin/fakes"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -50,8 +49,7 @@ var _ = Describe("Plugin", func() {
 				DefaultVMName: "some-vm-name",
 				MinMemory:     uint64(3024),
 			},
-			Builder:     mockBuilder,
-			FlagContext: flags.New(),
+			Builder: mockBuilder,
 		}
 	})
 
@@ -240,11 +238,23 @@ var _ = Describe("Plugin", func() {
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
 				})
 			})
+
+			Context("when it is called with an invalid argument", func() {
+				It("should print the usage message", func() {
+					pcfdev.Run(fakeCliConnection, []string{"dev", "download", "-m"})
+
+					Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
+					Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
+				})
+			})
 		})
 
 		Describe("start", func() {
 			It("validates start options and starts the VM", func() {
-				startOpts := &vm.StartOpts{Memory: uint64(3456)}
+				startOpts := &vm.StartOpts{
+					Memory: uint64(3456),
+					CPUs:   2,
+				}
 				gomock.InOrder(
 					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().VerifyStartOpts(startOpts).Return(nil),
@@ -255,7 +265,7 @@ var _ = Describe("Plugin", func() {
 					mockUI.EXPECT().Say("\nVM downloaded"),
 					mockVM.EXPECT().Start(startOpts),
 				)
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "3456"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "3456", "-c", "2"})
 			})
 
 			Context("when the user does not use the allocated memory flag", func() {
@@ -400,6 +410,15 @@ var _ = Describe("Plugin", func() {
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
 			})
 		})
+
+		Context("when it is called with an invalid argument", func() {
+			It("should print the usage message", func() {
+				pcfdev.Run(fakeCliConnection, []string{"dev", "stop", "-m"})
+
+				Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
+				Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
+			})
+		})
 	})
 
 	Context("suspend", func() {
@@ -432,6 +451,15 @@ var _ = Describe("Plugin", func() {
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
+			})
+		})
+
+		Context("when it is called with an invalid argument", func() {
+			It("should print the usage message", func() {
+				pcfdev.Run(fakeCliConnection, []string{"dev", "suspend", "-m"})
+
+				Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
+				Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
 			})
 		})
 	})
@@ -469,6 +497,14 @@ var _ = Describe("Plugin", func() {
 			})
 		})
 
+		Context("when it is called with an invalid argument", func() {
+			It("should print the usage message", func() {
+				pcfdev.Run(fakeCliConnection, []string{"dev", "resume", "-m"})
+
+				Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
+				Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
+			})
+		})
 	})
 
 	Context("status", func() {
@@ -490,6 +526,15 @@ var _ = Describe("Plugin", func() {
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
+			})
+		})
+
+		Context("when it is called with an invalid argument", func() {
+			It("should print the usage message", func() {
+				pcfdev.Run(fakeCliConnection, []string{"dev", "status", "-m"})
+
+				Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
+				Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
 			})
 		})
 	})
@@ -564,6 +609,15 @@ var _ = Describe("Plugin", func() {
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
+			})
+		})
+
+		Context("when it is called with an invalid argument", func() {
+			It("should print the usage message", func() {
+				pcfdev.Run(fakeCliConnection, []string{"dev", "destroy", "-m"})
+
+				Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
+				Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
 			})
 		})
 	})

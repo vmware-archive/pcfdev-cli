@@ -176,7 +176,7 @@ var _ = Describe("pcfdev", func() {
 		os.Setenv("NO_PROXY", "192.168.98.98")
 
 		By("starting after running destroy")
-		pcfdevCommand = exec.Command("cf", "dev", "start", "-m", "3456")
+		pcfdevCommand = exec.Command("cf", "dev", "start", "-m", "3456", "-c", "2")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
@@ -184,6 +184,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("Services started"))
 		Expect(isVMRunning()).To(BeTrue())
 		Expect(vmMemory()).To(Equal("3456"))
+		Expect(vmCores()).To(Equal("2"))
 
 		stdout := gbytes.NewBuffer()
 		stderr := gbytes.NewBuffer()
@@ -256,6 +257,14 @@ func vmMemory() string {
 	Expect(err).NotTo(HaveOccurred())
 
 	regex := regexp.MustCompile(`memory=(\d+)`)
+	return regex.FindStringSubmatch(string(output))[1]
+}
+
+func vmCores() string {
+	output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
+	Expect(err).NotTo(HaveOccurred())
+
+	regex := regexp.MustCompile(`cpus=(\d+)`)
 	return regex.FindStringSubmatch(string(output))[1]
 }
 

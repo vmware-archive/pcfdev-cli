@@ -17,7 +17,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
-	"github.com/cloudfoundry/cli/flags"
 	cfplugin "github.com/cloudfoundry/cli/plugin"
 )
 
@@ -31,7 +30,9 @@ var (
 func main() {
 	fileSystem := &fs.FS{}
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
-	system := &system.System{}
+	system := &system.System{
+		FS: fileSystem,
+	}
 	config, err := config.New(vmName, system)
 	if err != nil {
 		termUI.Failed("Error: %s", err)
@@ -72,8 +73,6 @@ func main() {
 				Network: &network.Network{},
 			},
 			Config: config,
-			System: system,
 		},
-		FlagContext: flags.New(),
 	})
 }

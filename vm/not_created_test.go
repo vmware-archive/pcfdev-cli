@@ -176,6 +176,20 @@ var _ = Describe("Not Created", func() {
 				})
 			})
 		})
+
+		Context("when cores is passed as an option", func() {
+			Context("when cores is a positive number", func() {
+				It("should succeed", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{CPUs: 4})).To(Succeed())
+				})
+			})
+
+			Context("when cores is less than zero", func() {
+				It("should return an error", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{CPUs: -1})).To(MatchError("cannot start with less than one core"))
+				})
+			})
+		})
 	})
 
 	Describe("Start", func() {
@@ -188,18 +202,22 @@ var _ = Describe("Not Created", func() {
 		})
 
 		Context("when no conflicting vm is present", func() {
-			Context("when memory is provided as an option", func() {
-				It("should import and start the vm with given memory", func() {
+			Context("when opts are provided", func() {
+				It("should import and start the vm with given options", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(nil),
+						mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{
+							Memory: uint64(3072),
+							CPUs:   3,
+						}).Return(nil),
 						mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 						mockStopped.EXPECT().Start(&vm.StartOpts{}),
 					)
 
 					notCreatedVM.Start(&vm.StartOpts{
 						Memory: uint64(3072),
+						CPUs:   3,
 					})
 				})
 
@@ -267,16 +285,20 @@ var _ = Describe("Not Created", func() {
 			})
 		})
 
-		Context("when desired memory is not provided", func() {
-			It("should give the VM the default memory", func() {
+		Context("when the opts are not provided", func() {
+			It("should give the VM the default memory and cpus", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(150)}).Return(nil),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{
+						Memory: uint64(150),
+						CPUs:   7,
+					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(nil),
 				)
 				conf.DefaultMemory = uint64(150)
+				conf.DefaultCPUs = 7
 
 				Expect(notCreatedVM.Start(&vm.StartOpts{})).To(Succeed())
 			})

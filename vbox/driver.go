@@ -86,17 +86,19 @@ func (d *VBoxDriver) SuspendVM(vmName string) error {
 		return err
 	}
 
-	for attempts := 0; attempts < 100; attempts++ {
-		state, err := d.VMState(vmName)
+	var state string
+	var err error
+	for attempts := 0; attempts < 50; attempts++ {
+		state, err = d.VMState(vmName)
 		if err != nil {
-			return err
+			continue
 		}
 		if state == StateSaved {
 			return nil
 		}
 		time.Sleep(time.Second)
 	}
-	return errors.New("timed out waiting for vm to suspend")
+	return fmt.Errorf("timed out waiting for vm to suspend: %s", err)
 }
 
 func (d *VBoxDriver) ResumeVM(vmName string) error {

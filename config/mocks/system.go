@@ -39,6 +39,17 @@ func (_mr *_MockSystemRecorder) FreeMemory() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "FreeMemory")
 }
 
+func (_m *MockSystem) PhysicalCores() (int, error) {
+	ret := _m.ctrl.Call(_m, "PhysicalCores")
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockSystemRecorder) PhysicalCores() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "PhysicalCores")
+}
+
 func (_m *MockSystem) TotalMemory() (uint64, error) {
 	ret := _m.ctrl.Call(_m, "TotalMemory")
 	ret0, _ := ret[0].(uint64)

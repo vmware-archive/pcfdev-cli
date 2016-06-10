@@ -45,6 +45,9 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 			return errors.New("user declined to continue, exiting")
 		}
 	}
+	if opts.CPUs < 0 {
+		return errors.New("cannot start with less than one core")
+	}
 	return nil
 }
 
@@ -58,14 +61,23 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 	}
 
 	var memory uint64
-	n.UI.Say("Importing VM...")
 	if opts.Memory != uint64(0) {
 		memory = opts.Memory
 	} else {
 		memory = n.Config.DefaultMemory
 	}
+
+	var cpus int
+	if opts.CPUs != 0 {
+		cpus = opts.CPUs
+	} else {
+		cpus = n.Config.DefaultCPUs
+	}
+
+	n.UI.Say("Importing VM...")
 	if err := n.VBox.ImportVM(n.Name, &config.VMConfig{
 		Memory: memory,
+		CPUs:   cpus,
 	}); err != nil {
 		return &ImportVMError{err}
 	}

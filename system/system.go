@@ -2,7 +2,14 @@ package system
 
 import "github.com/cloudfoundry/gosigar"
 
-type System struct{}
+//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/system FS
+type FS interface {
+	Read(path string) ([]byte, error)
+}
+
+type System struct {
+	FS FS
+}
 
 func (s *System) FreeMemory() (uint64, error) {
 	mem := &sigar.Mem{}

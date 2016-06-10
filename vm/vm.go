@@ -51,4 +51,5 @@ type Builder interface {
 
 type StartOpts struct {
 	Memory uint64
+	CPUs   int
 }

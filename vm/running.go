@@ -24,8 +24,11 @@ func (r *Running) Stop() error {
 }
 
 func (r *Running) VerifyStartOpts(opts *StartOpts) error {
-	if opts.Memory > uint64(0) {
+	if opts.Memory != uint64(0) {
 		return errors.New("memory cannot be changed once the vm has been created")
+	}
+	if opts.CPUs != 0 {
+		return errors.New("cores cannot be changed once the vm has been created")
 	}
 	return nil
 }

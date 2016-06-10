@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -55,13 +56,13 @@ var _ = Describe("Config", func() {
 		It("should use given values and env vars to set fields", func() {
 			mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 			mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+			mockSystem.EXPECT().PhysicalCores().Return(4, nil)
 			conf, err := config.New("some-vm", mockSystem)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(conf.DefaultVMName).To(Equal("some-vm"))
 			Expect(conf.PCFDevHome).To(Equal("some-pcfdev-home"))
-			Expect(conf.OVADir).To(Equal("some-pcfdev-home/ova"))
+			Expect(conf.OVADir).To(Equal(filepath.Join("some-pcfdev-home", "ova")))
 			Expect(conf.HTTPProxy).To(Equal("some-http-proxy"))
-			Expect(conf.HTTPSProxy).To(Equal("some-https-proxy"))
 			Expect(conf.HTTPSProxy).To(Equal("some-https-proxy"))
 			Expect(conf.NoProxy).To(Equal("some-no-proxy"))
 			Expect(conf.MinMemory).To(Equal(uint64(3072)))
@@ -98,11 +99,12 @@ var _ = Describe("Config", func() {
 			It("should use lower case env vars", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+				mockSystem.EXPECT().PhysicalCores().Return(4, nil)
 				conf, err := config.New("some-vm", mockSystem)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(conf.HTTPProxy).To(Equal("some-other-http-proxy"))
 				Expect(conf.HTTPSProxy).To(Equal("some-other-https-proxy"))
-				Expect(conf.HTTPSProxy).To(Equal("some-other-https-proxy"))
+				Expect(conf.NoProxy).To(Equal("some-other-no-proxy"))
 			})
 		})
 
@@ -130,13 +132,17 @@ var _ = Describe("Config", func() {
 			})
 
 			It("should prefer caps env vars", func() {
+				if runtime.GOOS == "windows" {
+					Skip("does not apply on windows - env vars are case-insensitive")
+				}
 				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+				mockSystem.EXPECT().PhysicalCores().Return(4, nil)
 				conf, err := config.New("some-vm", mockSystem)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(conf.HTTPProxy).To(Equal("some-http-proxy"))
 				Expect(conf.HTTPSProxy).To(Equal("some-https-proxy"))
-				Expect(conf.HTTPSProxy).To(Equal("some-https-proxy"))
+				Expect(conf.NoProxy).To(Equal("some-no-proxy"))
 			})
 		})
 
@@ -144,6 +150,7 @@ var _ = Describe("Config", func() {
 			It("should use a .pcfdev dir within the user's home", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+				mockSystem.EXPECT().PhysicalCores().Return(4, nil)
 				os.Unsetenv("PCFDEV_HOME")
 
 				conf, err := config.New("some-vm", mockSystem)
@@ -157,6 +164,7 @@ var _ = Describe("Config", func() {
 			It("should set the total system memory", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+				mockSystem.EXPECT().PhysicalCores().Return(4, nil)
 
 				conf, err := config.New("some-vm", mockSystem)
 				Expect(err).NotTo(HaveOccurred())
@@ -166,6 +174,7 @@ var _ = Describe("Config", func() {
 			It("should set the free system memory", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+				mockSystem.EXPECT().PhysicalCores().Return(4, nil)
 
 				conf, err := config.New("some-vm", mockSystem)
 				Expect(err).NotTo(HaveOccurred())
@@ -176,6 +185,7 @@ var _ = Describe("Config", func() {
 				It("should give the VM half the total memory", func() {
 					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 					mockSystem.EXPECT().TotalMemory().Return(uint64(7000), nil)
+					mockSystem.EXPECT().PhysicalCores().Return(4, nil)
 
 					conf, err := config.New("some-vm", mockSystem)
 					Expect(err).NotTo(HaveOccurred())
@@ -187,6 +197,7 @@ var _ = Describe("Config", func() {
 				It("should give the VM the minimum amount of memory", func() {
 					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 					mockSystem.EXPECT().TotalMemory().Return(uint64(6000), nil)
+					mockSystem.EXPECT().PhysicalCores().Return(4, nil)
 
 					conf, err := config.New("some-vm", mockSystem)
 					Expect(err).NotTo(HaveOccurred())
@@ -198,6 +209,7 @@ var _ = Describe("Config", func() {
 				It("should give the VM the maximum amount of memory", func() {
 					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 					mockSystem.EXPECT().TotalMemory().Return(uint64(60000), nil)
+					mockSystem.EXPECT().PhysicalCores().Return(4, nil)
 
 					conf, err := config.New("some-vm", mockSystem)
 					Expect(err).NotTo(HaveOccurred())
@@ -218,6 +230,27 @@ var _ = Describe("Config", func() {
 				It("should return an error", func() {
 					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 					mockSystem.EXPECT().TotalMemory().Return(uint64(0), errors.New("some-error"))
+
+					_, err := config.New("some-vm", mockSystem)
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
+		})
+		Context("DefaultCPUs", func() {
+			It("should use the number of physical cores", func() {
+				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+				mockSystem.EXPECT().TotalMemory().Return(uint64(60000), nil)
+				mockSystem.EXPECT().PhysicalCores().Return(4, nil)
+				conf, err := config.New("some-vm", mockSystem)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(conf.DefaultCPUs).To(Equal(4))
+			})
+
+			Context("when there is an error getting the number of cores", func() {
+				It("should return an error", func() {
+					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+					mockSystem.EXPECT().TotalMemory().Return(uint64(60000), nil)
+					mockSystem.EXPECT().PhysicalCores().Return(0, errors.New("some-error"))
 
 					_, err := config.New("some-vm", mockSystem)
 					Expect(err).To(MatchError("some-error"))

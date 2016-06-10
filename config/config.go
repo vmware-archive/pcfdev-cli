@@ -20,12 +20,14 @@ type Config struct {
 	TotalMemory   uint64
 	FreeMemory    uint64
 	DefaultMemory uint64
+	DefaultCPUs   int
 }
 
 //go:generate mockgen -package mocks -destination mocks/system.go github.com/pivotal-cf/pcfdev-cli/config System
 type System interface {
 	TotalMemory() (uint64, error)
 	FreeMemory() (uint64, error)
+	PhysicalCores() (int, error)
 }
 
 func New(defaultVMName string, system System) (*Config, error) {
@@ -38,6 +40,10 @@ func New(defaultVMName string, system System) (*Config, error) {
 		return nil, err
 	}
 	totalMemory, err := system.TotalMemory()
+	if err != nil {
+		return nil, err
+	}
+	cores, err := system.PhysicalCores()
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +62,7 @@ func New(defaultVMName string, system System) (*Config, error) {
 		TotalMemory:   totalMemory,
 		FreeMemory:    freeMemory,
 		DefaultMemory: getDefaultMemory(totalMemory, minMemory, maxMemory),
+		DefaultCPUs:   cores,
 	}, nil
 }
 

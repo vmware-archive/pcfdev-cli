@@ -102,7 +102,7 @@ var _ = Describe("driver", func() {
 
 	Describe("#GetMemory", func() {
 		BeforeEach(func() {
-			err := exec.Command("vboxmanage", "modifyvm", vmName, "--memory", "4567").Run()
+			err := exec.Command(vBoxManagePath, "modifyvm", vmName, "--memory", "4567").Run()
 			Expect(err).NotTo(HaveOccurred())
 		})
 

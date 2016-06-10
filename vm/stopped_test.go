@@ -64,6 +64,14 @@ var _ = Describe("Stopped", func() {
 			})
 		})
 
+		Context("when desired cores is passed", func() {
+			It("should return an error", func() {
+				Expect(stoppedVM.VerifyStartOpts(&vm.StartOpts{
+					CPUs: 2,
+				})).To(MatchError("cores cannot be changed once the vm has been created"))
+			})
+		})
+
 		Context("when no opts are passed", func() {
 			Context("when free memory is greater than or equal to the VM's memory", func() {
 				It("should succeed", func() {

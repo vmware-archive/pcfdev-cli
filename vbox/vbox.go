@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -52,16 +53,10 @@ type Address interface {
 	SubnetForIP(vmIP string) (subnetIP string, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/system.go github.com/pivotal-cf/pcfdev-cli/vbox System
-type System interface {
-	FreeMemory() (memory uint64, err error)
-}
-
 type VBox struct {
 	Driver Driver
 	SSH    SSH
 	Picker NetworkPicker
-	System System
 	Config *config.Config
 }
 
@@ -153,6 +148,7 @@ func (v *VBox) ImportVM(vmName string, vmConfig *config.VMConfig) error {
 		"import",
 		ovaPath,
 		"--vsys", "0",
+		"--cpus", strconv.Itoa(vmConfig.CPUs),
 	}
 
 	for i, number := range virtualSystemNumbers {

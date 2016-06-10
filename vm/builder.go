@@ -10,7 +10,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/ping"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
-	"github.com/pivotal-cf/pcfdev-cli/system"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
@@ -23,21 +22,14 @@ type Driver interface {
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/system.go github.com/pivotal-cf/pcfdev-cli/vm System
-type System interface {
-	TotalMemory() (memory uint64, err error)
-}
-
 type VBoxBuilder struct {
 	Config *config.Config
 	Driver Driver
-	System System
 }
 
 func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 	ssh := &ssh.SSH{}
-	system := &system.System{}
 	vbx := &vbox.VBox{
 		SSH:    ssh,
 		Driver: &vbox.VBoxDriver{},
@@ -46,7 +38,6 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			Network: &network.Network{},
 		},
 		Config: b.Config,
-		System: system,
 	}
 
 	exists, err := b.Driver.VMExists(vmName)

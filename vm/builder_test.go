@@ -18,14 +18,12 @@ var _ = Describe("Builder", func() {
 		var (
 			mockCtrl   *gomock.Controller
 			mockDriver *mocks.MockDriver
-			mockSystem *mocks.MockSystem
 			builder    vm.Builder
 		)
 
 		BeforeEach(func() {
 			mockCtrl = gomock.NewController(GinkgoT())
 			mockDriver = mocks.NewMockDriver(mockCtrl)
-			mockSystem = mocks.NewMockSystem(mockCtrl)
 
 			builder = &vm.VBoxBuilder{
 				Driver: mockDriver,
@@ -33,7 +31,6 @@ var _ = Describe("Builder", func() {
 					MinMemory: 100,
 					MaxMemory: 200,
 				},
-				System: mockSystem,
 			}
 		})
 

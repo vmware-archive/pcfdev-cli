@@ -20,7 +20,6 @@ type Plugin struct {
 	Downloader          Downloader
 	Builder             Builder
 	RequirementsChecker RequirementsChecker
-	FlagContext         flags.FlagContext
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
@@ -71,15 +70,22 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 		return
 	}
 
-	p.FlagContext.NewIntFlag("memory", "m", "<memory in MB>")
-	if err := p.FlagContext.Parse(args...); err != nil {
-		p.showUsageMessage(cliConnection)
-		return
-	}
-
 	var subcommand string
 	if len(args) > 1 {
 		subcommand = args[1]
+	}
+
+	flagContext := flags.New()
+
+	switch subcommand {
+	case "start":
+		flagContext.NewIntFlag("m", "memory", "<memory in MB>")
+		flagContext.NewIntFlag("c", "cpus", "<number of cpus>")
+	}
+
+	if err := flagContext.Parse(args...); err != nil {
+		p.showUsageMessage(cliConnection)
+		return
 	}
 
 	switch subcommand {
@@ -88,7 +94,7 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 			p.UI.Failed(getErrorText(err))
 		}
 	case "start":
-		if err := p.start(); err != nil {
+		if err := p.start(flagContext); err != nil {
 			p.UI.Failed(getErrorText(err))
 		}
 	case "status":
@@ -127,13 +133,14 @@ func getErrorText(err error) string {
 	return fmt.Sprintf("Error: %s", err.Error())
 }
 
-func (p *Plugin) start() error {
+func (p *Plugin) start(flagContext flags.FlagContext) error {
 	v, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
 	}
 	opts := &vm.StartOpts{
-		Memory: uint64(p.FlagContext.Int("m")),
+		Memory: uint64(flagContext.Int("m")),
+		CPUs:   flagContext.Int("c"),
 	}
 	if err := v.VerifyStartOpts(opts); err != nil {
 		return err
@@ -259,7 +266,8 @@ func (*Plugin) GetMetadata() plugin.PluginMetadata {
 
 SUBCOMMANDS:
    start                    Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.
-      [-m memory-in-mb]     Memory to allocate for VM. Default: half of system memory, no more than 4 GB
+      [-m memory-in-mb]     Memory to allocate for VM. Default: half of system memory, no more than 4 GB.
+      [-c number-of-cores]  Number of processor cores used by VM. Default: number of physical cores.
    stop                     Shutdown the PCF Dev VM. All data is preserved.
    suspend                  Save the current state of the PCF Dev VM to disk and then stop the VM.
    resume                   Resume PCF Dev VM from suspended state.

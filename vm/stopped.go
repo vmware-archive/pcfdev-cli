@@ -31,6 +31,9 @@ func (s *Stopped) VerifyStartOpts(opts *StartOpts) error {
 	if opts.Memory != uint64(0) {
 		return errors.New("memory cannot be changed once the vm has been created")
 	}
+	if opts.CPUs != 0 {
+		return errors.New("cores cannot be changed once the vm has been created")
+	}
 	if s.Memory > s.Config.FreeMemory {
 		if !s.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", s.Memory)) {
 			return errors.New("user declined to continue, exiting")

@@ -301,7 +301,7 @@ var _ = Describe("Not Created", func() {
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
-					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("some-error")),
+					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("failed to start VM: some-error")),
 				)
 
 				Expect(notCreatedVM.Start(&vm.StartOpts{

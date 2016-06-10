@@ -88,7 +88,7 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 		return &StartVMError{err}
 	}
 	if err := stoppedVM.Start(&StartOpts{}); err != nil {
-		return &StartVMError{err}
+		return err
 	}
 	return nil
 }

@@ -201,26 +201,48 @@ var _ = Describe("Not Created", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		Context("when no conflicting vm is present", func() {
-			Context("when opts are provided", func() {
-				It("should import and start the vm with given options", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
-						mockUI.EXPECT().Say("Importing VM..."),
-						mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{
-							Memory: uint64(3072),
-							CPUs:   3,
-						}).Return(nil),
-						mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
-						mockStopped.EXPECT().Start(&vm.StartOpts{}),
-					)
-
-					notCreatedVM.Start(&vm.StartOpts{
-						Memory: uint64(3072),
+		Context("when opts are provided", func() {
+			It("should import and start the vm with given options", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockUI.EXPECT().Say("Allocating 4000 MB out of 8000 MB total system memory (5000 MB free)."),
+					mockUI.EXPECT().Say("Importing VM..."),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{
+						Memory: uint64(4000),
 						CPUs:   3,
-					})
-				})
+					}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
+					mockStopped.EXPECT().Start(&vm.StartOpts{}),
+				)
+				conf.FreeMemory = uint64(5000)
+				conf.TotalMemory = uint64(8000)
 
+				notCreatedVM.Start(&vm.StartOpts{
+					Memory: uint64(4000),
+					CPUs:   3,
+				})
+			})
+		})
+
+		Context("when the opts are not provided", func() {
+			It("should give the VM the default memory and cpus", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockUI.EXPECT().Say("Allocating 3500 MB out of 8000 MB total system memory (5000 MB free)."),
+					mockUI.EXPECT().Say("Importing VM..."),
+					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{
+						Memory: uint64(3500),
+						CPUs:   7,
+					}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
+					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(nil),
+				)
+				conf.DefaultCPUs = 7
+				conf.DefaultMemory = uint64(3500)
+				conf.FreeMemory = uint64(5000)
+				conf.TotalMemory = uint64(8000)
+
+				Expect(notCreatedVM.Start(&vm.StartOpts{})).To(Succeed())
 			})
 		})
 
@@ -244,6 +266,7 @@ var _ = Describe("Not Created", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(errors.New("some-error")),
 				)
@@ -258,6 +281,7 @@ var _ = Describe("Not Created", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
@@ -273,6 +297,7 @@ var _ = Describe("Not Created", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
@@ -282,25 +307,6 @@ var _ = Describe("Not Created", func() {
 				Expect(notCreatedVM.Start(&vm.StartOpts{
 					Memory: uint64(3072),
 				})).To(MatchError("failed to start VM: some-error"))
-			})
-		})
-
-		Context("when the opts are not provided", func() {
-			It("should give the VM the default memory and cpus", func() {
-				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
-					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{
-						Memory: uint64(150),
-						CPUs:   7,
-					}).Return(nil),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
-					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(nil),
-				)
-				conf.DefaultMemory = uint64(150)
-				conf.DefaultCPUs = 7
-
-				Expect(notCreatedVM.Start(&vm.StartOpts{})).To(Succeed())
 			})
 		})
 	})

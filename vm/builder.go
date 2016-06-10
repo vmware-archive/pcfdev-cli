@@ -8,7 +8,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/network"
-	"github.com/pivotal-cf/pcfdev-cli/ping"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
@@ -34,7 +33,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		SSH:    ssh,
 		Driver: &vbox.VBoxDriver{},
 		Picker: &address.Picker{
-			Pinger:  &ping.Pinger{},
+			Driver:  &vbox.VBoxDriver{},
 			Network: &network.Network{},
 		},
 		Config: b.Config,

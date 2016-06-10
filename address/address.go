@@ -43,12 +43,3 @@ func SubnetForIP(ip string) (string, error) {
 
 	return ip[0 : len(ip)-1], nil
 }
-
-func IPForSubnet(subnet string) (string, error) {
-	ip := subnet + "1"
-	_, ok := allowedAddresses[ip]
-	if !ok {
-		return "", fmt.Errorf("%s is not one of the allowed PCF Dev subnets", subnet)
-	}
-	return ip, nil
-}

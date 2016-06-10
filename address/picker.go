@@ -11,14 +11,14 @@ type Network interface {
 	Interfaces() (interfaces []*network.Interface, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/ping.go github.com/pivotal-cf/pcfdev-cli/address Pinger
-type Pinger interface {
-	TryIP(ip string) (responds bool, err error)
+//go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/address Driver
+type Driver interface {
+	IsInterfaceInUse(interfaceName string) (inUse bool, err error)
 }
 
 type Picker struct {
-	Pinger  Pinger
 	Network Network
+	Driver  Driver
 }
 
 func (p *Picker) SelectAvailableNetworkInterface(candidates []*network.Interface) (selectedInterface *network.Interface, exists bool, err error) {
@@ -33,17 +33,12 @@ func (p *Picker) SelectAvailableNetworkInterface(candidates []*network.Interface
 				continue
 			}
 
-			vmIP, err := IPForSubnet(subnetIP)
+			inUse, err := p.Driver.IsInterfaceInUse(vboxAddr.Name)
 			if err != nil {
 				return nil, false, err
 			}
 
-			responds, err := p.Pinger.TryIP(vmIP)
-			if err != nil {
-				return nil, false, err
-			}
-
-			if !responds {
+			if !inUse {
 				return vboxAddr, true, nil
 			}
 		}

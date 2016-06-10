@@ -517,4 +517,36 @@ var _ = Describe("driver", func() {
 			})
 		})
 	})
+
+	Describe("#IsInterfaceInUse", func() {
+		Context("when there is a VM assigned to the given hostonlyifs", func() {
+			var interfaceName string
+
+			BeforeEach(func() {
+				var err error
+				interfaceName, err = driver.CreateHostOnlyInterface("192.168.88.1")
+				Expect(err).NotTo(HaveOccurred())
+
+				err = driver.AttachNetworkInterface(interfaceName, vmName)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				command := exec.Command(vBoxManagePath, "hostonlyif", "remove", interfaceName)
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+			})
+
+			It("should return true", func() {
+				Expect(driver.IsInterfaceInUse(interfaceName)).To(BeTrue())
+			})
+		})
+
+		Context("when there is not a VM assigned to the given hostonlyifs", func() {
+			It("should return false", func() {
+				Expect(driver.IsInterfaceInUse("some-bad-interface")).To(BeFalse())
+			})
+		})
+	})
 })

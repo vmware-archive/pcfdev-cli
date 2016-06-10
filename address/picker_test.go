@@ -16,18 +16,18 @@ var _ = Describe("Picker", func() {
 	var (
 		picker      *address.Picker
 		mockCtrl    *gomock.Controller
-		mockPinger  *mocks.MockPinger
 		mockNetwork *mocks.MockNetwork
+		mockDriver  *mocks.MockDriver
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockNetwork = mocks.NewMockNetwork(mockCtrl)
-		mockPinger = mocks.NewMockPinger(mockCtrl)
+		mockDriver = mocks.NewMockDriver(mockCtrl)
 
 		picker = &address.Picker{
-			Pinger:  mockPinger,
 			Network: mockNetwork,
+			Driver:  mockDriver,
 		}
 	})
 
@@ -47,7 +47,7 @@ var _ = Describe("Picker", func() {
 			})
 		})
 
-		Context("when there is a vbox interface on 192.168.11.1 and nothing responds to ping on 192.168.11.11", func() {
+		Context("when there is a vbox interface on 192.168.11.1 and the interface is not in use", func() {
 			It("should reuse the existing interface", func() {
 				vboxInterface := &network.Interface{
 					Name: "some-interface",
@@ -59,7 +59,7 @@ var _ = Describe("Picker", func() {
 
 				gomock.InOrder(
 					mockNetwork.EXPECT().Interfaces().Return([]*network.Interface{netInterface}, nil),
-					mockPinger.EXPECT().TryIP("192.168.11.11").Return(false, nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-interface").Return(false, nil),
 				)
 
 				selected, exists, err := picker.SelectAvailableNetworkInterface([]*network.Interface{vboxInterface})
@@ -67,28 +67,6 @@ var _ = Describe("Picker", func() {
 				Expect(exists).To(BeTrue())
 				Expect(selected.Name).To(Equal("some-interface"))
 				Expect(selected.IP).To(Equal("192.168.11.1"))
-			})
-		})
-
-		Context("when there is a vbox interface on 192.168.11.1 and something responds to ping on 192.168.11.11", func() {
-			It("should return the next interface and false", func() {
-				vboxInterface := &network.Interface{
-					Name: "some-interface",
-					IP:   "192.168.11.1",
-				}
-				netInterface := &network.Interface{
-					IP: "192.168.11.1",
-				}
-
-				gomock.InOrder(
-					mockNetwork.EXPECT().Interfaces().Return([]*network.Interface{netInterface}, nil),
-					mockPinger.EXPECT().TryIP("192.168.11.11").Return(true, nil),
-				)
-
-				selected, exists, err := picker.SelectAvailableNetworkInterface([]*network.Interface{vboxInterface})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(exists).To(BeFalse())
-				Expect(selected.IP).To(Equal("192.168.22.1"))
 			})
 		})
 
@@ -106,6 +84,51 @@ var _ = Describe("Picker", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(exists).To(BeFalse())
 				Expect(selected.IP).To(Equal("192.168.22.1"))
+			})
+		})
+
+		Context("when there is vbox interface on 192.168.11.1 and it is in use", func() {
+			It("should return the next interface and false", func() {
+				netInterface := &network.Interface{
+					IP: "192.168.11.1",
+				}
+
+				vboxInterface := &network.Interface{
+					Name: "some-interface",
+					IP:   "192.168.11.1",
+				}
+
+				gomock.InOrder(
+					mockNetwork.EXPECT().Interfaces().Return([]*network.Interface{netInterface}, nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-interface").Return(true, nil),
+				)
+
+				selected, exists, err := picker.SelectAvailableNetworkInterface([]*network.Interface{vboxInterface})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(exists).To(BeFalse())
+				Expect(selected.IP).To(Equal("192.168.22.1"))
+			})
+		})
+
+		Context("when it errors trying to find out if the interface is in use", func() {
+			It("should return the error", func() {
+				netInterface := &network.Interface{
+					IP: "192.168.11.1",
+				}
+
+				vboxInterface := &network.Interface{
+					Name: "some-interface",
+					IP:   "192.168.11.1",
+				}
+
+				gomock.InOrder(
+					mockNetwork.EXPECT().Interfaces().Return([]*network.Interface{netInterface}, nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-interface").Return(false, errors.New("some-error")),
+				)
+
+				_, exists, err := picker.SelectAvailableNetworkInterface([]*network.Interface{vboxInterface})
+				Expect(err).To(MatchError("some-error"))
+				Expect(exists).To(BeFalse())
 			})
 		})
 
@@ -162,22 +185,5 @@ var _ = Describe("Picker", func() {
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
-
-		Context("when it fails attempt to ping ip", func() {
-			It("should return an error", func() {
-				netInterface := &network.Interface{
-					IP: "192.168.11.1",
-				}
-
-				gomock.InOrder(
-					mockNetwork.EXPECT().Interfaces().Return([]*network.Interface{netInterface}, nil),
-					mockPinger.EXPECT().TryIP("192.168.11.11").Return(false, errors.New("some-error")),
-				)
-
-				_, _, err := picker.SelectAvailableNetworkInterface([]*network.Interface{netInterface})
-				Expect(err).To(MatchError("some-error"))
-			})
-		})
-
 	})
 })

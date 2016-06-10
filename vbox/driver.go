@@ -299,3 +299,17 @@ func (d *VBoxDriver) getVBoxNetName(vmName string) (interfaceName string, err er
 
 	return "", nil
 }
+
+func (d *VBoxDriver) IsInterfaceInUse(interfaceName string) (bool, error) {
+	output, err := d.VBoxManage("list", "vms", "--long")
+	if err != nil {
+		return false, err
+	}
+
+	regex := regexp.MustCompile(`NIC\s.*Attachment: Host-only Interface '(` + interfaceName + `)'`)
+	if matches := regex.FindStringSubmatch(string(output)); len(matches) > 1 {
+		return true, nil
+	}
+
+	return false, nil
+}

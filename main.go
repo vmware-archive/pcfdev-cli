@@ -8,7 +8,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/downloader"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/network"
-	"github.com/pivotal-cf/pcfdev-cli/ping"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
@@ -69,8 +68,8 @@ func main() {
 			SSH:    &ssh.SSH{},
 			Driver: &vbox.VBoxDriver{},
 			Picker: &address.Picker{
-				Pinger:  &ping.Pinger{},
 				Network: &network.Network{},
+				Driver:  &vbox.VBoxDriver{},
 			},
 			Config: config,
 		},

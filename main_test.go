@@ -102,7 +102,7 @@ var _ = Describe("pcfdev", func() {
 	})
 
 	It("should start, stop, and destroy a virtualbox instance", func() {
-		pcfdevCommand := exec.Command("cf", "dev", "start")
+		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1")
 		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
@@ -176,7 +176,7 @@ var _ = Describe("pcfdev", func() {
 		os.Setenv("NO_PROXY", "192.168.98.98")
 
 		By("starting after running destroy")
-		pcfdevCommand = exec.Command("cf", "dev", "start", "-m", "3456", "-c", "2")
+		pcfdevCommand = exec.Command("cf", "dev", "start", "-m", "3456", "-c", "1")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
@@ -184,7 +184,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("Services started"))
 		Expect(isVMRunning()).To(BeTrue())
 		Expect(vmMemory()).To(Equal("3456"))
-		Expect(vmCores()).To(Equal("2"))
+		Expect(vmCores()).To(Equal("1"))
 
 		stdout := gbytes.NewBuffer()
 		stderr := gbytes.NewBuffer()

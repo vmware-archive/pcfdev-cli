@@ -117,5 +117,20 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		}, nil
 	}
 
+	if state == vbox.StateAborted {
+		return &Aborted{
+			Name:    vmName,
+			IP:      ip,
+			SSHPort: sshPort,
+			Domain:  domain,
+			Memory:  memory,
+			Config:  b.Config,
+
+			UI:   termUI,
+			SSH:  ssh,
+			VBox: vbx,
+		}, nil
+	}
+
 	return nil, fmt.Errorf("failed to handle VM state '%s'", state)
 }

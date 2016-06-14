@@ -150,7 +150,7 @@ var _ = Describe("Config", func() {
 			It("should use a .pcfdev dir within the user's home", func() {
 				var expectedHome string
 				if runtime.GOOS == "windows" {
-					expectedHome = os.Getenv("HOMEPATH")
+					expectedHome = filepath.Join(os.Getenv("HOMEDRIVE"), os.Getenv("HOMEPATH"))
 				} else {
 					expectedHome = os.Getenv("HOME")
 				}

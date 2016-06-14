@@ -148,6 +148,13 @@ var _ = Describe("Config", func() {
 
 		Context("when PCFDEV_HOME is not set", func() {
 			It("should use a .pcfdev dir within the user's home", func() {
+				var expectedHome string
+				if runtime.GOOS == "windows" {
+					expectedHome = os.Getenv("HOMEPATH")
+				} else {
+					expectedHome = os.Getenv("HOME")
+				}
+
 				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
 				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
 				mockSystem.EXPECT().PhysicalCores().Return(4, nil)
@@ -155,8 +162,8 @@ var _ = Describe("Config", func() {
 
 				conf, err := config.New("some-vm", mockSystem)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(conf.PCFDevHome).To(Equal(filepath.Join(os.Getenv("HOME"), ".pcfdev")))
-				Expect(conf.OVADir).To(Equal(filepath.Join(os.Getenv("HOME"), ".pcfdev", "ova")))
+				Expect(conf.PCFDevHome).To(Equal(filepath.Join(expectedHome, ".pcfdev")))
+				Expect(conf.OVADir).To(Equal(filepath.Join(expectedHome, ".pcfdev", "ova")))
 			})
 		})
 

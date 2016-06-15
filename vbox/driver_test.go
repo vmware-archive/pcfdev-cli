@@ -1,11 +1,11 @@
 package vbox_test
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
@@ -312,21 +312,34 @@ var _ = Describe("driver", func() {
 			var err error
 			interfaceName, err = driver.CreateHostOnlyInterface("192.168.77.1")
 			Expect(err).NotTo(HaveOccurred())
-			listCommand := exec.Command(vBoxManagePath, "list", "hostonlyifs")
-			grepCommand := exec.Command("grep", interfaceName, "-A10")
-			var output bytes.Buffer
-			grepCommand.Stdin, err = listCommand.StdoutPipe()
-			Expect(err).NotTo(HaveOccurred())
-			grepCommand.Stdout = &output
-			grepCommand.Start()
-			err = listCommand.Run()
-			Expect(err).NotTo(HaveOccurred())
-			err = grepCommand.Wait()
+
+			var name string
+			var ipAddress string
+			var netMask string
+			var output []byte
+			output, err = exec.Command(vBoxManagePath, "list", "hostonlyifs").Output()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(output.String()).To(MatchRegexp(`Name:\s+` + interfaceName))
-			Expect(output.String()).To(MatchRegexp(`IPAddress:\s+192.168.77.1`))
-			Expect(output.String()).To(MatchRegexp(`NetworkMask:\s+255.255.255.0`))
+			nameRegex := regexp.MustCompile(`(?m:^Name:\s+(.*))`)
+			nameMatches := nameRegex.FindAllStringSubmatch(string(output), -1)
+
+			ipRegex := regexp.MustCompile(`(?m:^IPAddress:\s+(.*))`)
+			ipMatches := ipRegex.FindAllStringSubmatch(string(output), -1)
+
+			netMaskRegex := regexp.MustCompile(`(?m:^NetworkMask:\s+(.*))`)
+			netMaskRegexMatches := netMaskRegex.FindAllStringSubmatch(string(output), -1)
+
+			for i := 0; i < len(nameMatches); i++ {
+				if strings.TrimSpace(nameMatches[i][1]) == interfaceName {
+					name = strings.TrimSpace(nameMatches[i][1])
+					ipAddress = strings.TrimSpace(ipMatches[i][1])
+					netMask = strings.TrimSpace(netMaskRegexMatches[i][1])
+				}
+			}
+
+			Expect(name).To(Equal(interfaceName))
+			Expect(ipAddress).To(Equal("192.168.77.1"))
+			Expect(netMask).To(Equal("255.255.255.0"))
 		})
 	})
 

@@ -63,3 +63,5 @@ fixtures/config/plugin-config/.cf/plugins/empty_plugin
 /pcfdev-cli
 
 *NERD_tree_*
+
+*cli-artifacts*

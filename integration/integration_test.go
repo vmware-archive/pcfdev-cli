@@ -24,6 +24,7 @@ const (
 )
 
 var (
+	pluginPath      string
 	tempHome        string
 	oldCFHome       string
 	oldCFPluginHome string
@@ -35,6 +36,8 @@ var (
 )
 
 var _ = BeforeSuite(func() {
+	Expect(os.Getenv("PIVNET_TOKEN")).NotTo(BeEmpty(), "PIVNET_TOKEN must be set")
+
 	oldCFHome = os.Getenv("CF_HOME")
 	oldCFPluginHome = os.Getenv("CF_PLUGIN_HOME")
 	oldPCFDevHome = os.Getenv("PCFDEV_HOME")
@@ -44,30 +47,23 @@ var _ = BeforeSuite(func() {
 
 	var err error
 	tempHome, err = ioutil.TempDir("", "pcfdev")
-
 	Expect(err).NotTo(HaveOccurred())
+
 	os.Setenv("CF_HOME", tempHome)
 	os.Setenv("CF_PLUGIN_HOME", filepath.Join(tempHome, "plugins"))
-	os.Setenv("PCFDEV_HOME", tempHome)
-	oldHTTPSProxy = os.Getenv("HTTPS_PROXY")
-	oldNoProxy = os.Getenv("NO_PROXY")
+	os.Setenv("PCFDEV_HOME", filepath.Join(tempHome, "pcfdev"))
 
-	uninstallCommand := exec.Command("cf", "uninstall-plugin", "pcfdev")
-	session, err := gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(session, "10s").Should(gexec.Exit())
-
-	pluginPath, err := gexec.Build(filepath.Join("github.com", "pivotal-cf", "pcfdev-cli"), "-ldflags",
+	pluginPath, err = gexec.Build(filepath.Join("github.com", "pivotal-cf", "pcfdev-cli"), "-ldflags",
 		"-X main.vmName="+vmName+
 			" -X main.releaseId=1622"+
 			" -X main.productFileId=4448"+
 			" -X main.md5=05761a420b00028ae5384c6bc460a6ba")
 	Expect(err).NotTo(HaveOccurred())
 
-	installCommand := exec.Command("cf", "install-plugin", "-f", pluginPath)
-	session, err = gexec.Start(installCommand, GinkgoWriter, GinkgoWriter)
+	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session, "1m").Should(gexec.Exit(0))
+	Expect(session).To(gbytes.Say("Plugin successfully installed, run: cf dev help"))
 
 	vBoxManagePath, err = helpers.VBoxManagePath()
 	Expect(err).NotTo(HaveOccurred())
@@ -83,7 +79,7 @@ var _ = AfterSuite(func() {
 	os.Setenv("NO_PROXY", oldNoProxy)
 })
 
-var _ = Describe("pcfdev", func() {
+var _ = Describe("PCF Dev", func() {
 	AfterEach(func() {
 		output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
 		if err != nil {
@@ -99,6 +95,22 @@ var _ = Describe("pcfdev", func() {
 		if len(matches) > 1 {
 			exec.Command(vBoxManagePath, "hostonlyif", "remove", matches[1]).Run()
 		}
+	})
+
+	It("should output a helpful usage message when run directly with help flags", func() {
+		pluginCommand := exec.Command(pluginPath, "--help")
+		session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "5s").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("After installing, run: cf dev help"))
+	})
+
+	It("should output a helpful error message when installation fails", func() {
+		pluginCommand := exec.Command(pluginPath)
+		session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "5s").Should(gexec.Exit(1))
+		Expect(session).To(gbytes.Say("Failed to install plugin. Try running: cf install-plugin"))
 	})
 
 	It("should start, stop, and destroy a virtualbox instance", func() {

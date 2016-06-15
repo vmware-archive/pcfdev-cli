@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"os/exec"
 
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/cloudfoundry/cli/cf/terminal"
 	cfplugin "github.com/cloudfoundry/cli/plugin"
+	"github.com/kardianos/osext"
 )
 
 var (
@@ -27,19 +29,22 @@ var (
 )
 
 func main() {
+	ui := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
+
+	confirmInstalled(ui)
+
 	fileSystem := &fs.FS{}
-	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 	system := &system.System{
 		FS: fileSystem,
 	}
 	config, err := config.New(vmName, system)
 	if err != nil {
-		termUI.Failed("Error: %s", err)
+		ui.Failed("Error: %s", err)
 	}
 	token := &pivnet.Token{
 		Config: config,
 		FS:     fileSystem,
-		UI:     termUI,
+		UI:     ui,
 	}
 	client := &pivnet.Client{
 		Host:          "https://network.pivotal.io",
@@ -57,7 +62,7 @@ func main() {
 			Config:       config,
 			Token:        token,
 		},
-		UI:     &plugin.NonTranslatingUI{termUI},
+		UI:     &plugin.NonTranslatingUI{ui},
 		Config: config,
 		SSH:    &ssh.SSH{},
 		FS:     fileSystem,
@@ -77,4 +82,32 @@ func main() {
 			Config: config,
 		},
 	})
+}
+
+func confirmInstalled(ui terminal.UI) {
+	var firstArg string
+	if len(os.Args) > 1 {
+		firstArg = os.Args[1]
+	}
+
+	switch firstArg {
+	case "":
+		plugin, err := osext.Executable()
+		if err != nil {
+			ui.Say("Failed to determine plugin path: %s", err)
+			os.Exit(1)
+		}
+		if err := exec.Command("cf", "install-plugin", plugin, "-f").Run(); err != nil {
+			ui.Say("Failed to install plugin. Try running: cf install-plugin %s", plugin)
+			os.Exit(1)
+		}
+		ui.Say("Plugin successfully installed, run: cf dev help")
+		os.Exit(0)
+	case "help", "-h", "--help":
+		ui.Say("Usage: %s", os.Args[0])
+		ui.Say("Running this binary directly will automatically install the PCF Dev cf CLI plugin.")
+		ui.Say("You must have the latest version of the cf CLI and Virtualbox 5.0+ to use PCF Dev.")
+		ui.Say("After installing, run: cf dev help")
+		os.Exit(0)
+	}
 }

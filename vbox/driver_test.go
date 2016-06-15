@@ -1,9 +1,13 @@
 package vbox_test
 
 import (
+	"archive/tar"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -178,6 +182,29 @@ var _ = Describe("driver", func() {
 		})
 	})
 
+	Describe("#CreateVM", func() {
+		var createdVMName string
+
+		BeforeEach(func() {
+			createdVMName = "some-created-vm"
+		})
+
+		AfterEach(func() {
+			exec.Command(vBoxManagePath, "controlvm", createdVMName, "poweroff").Run()
+			exec.Command(vBoxManagePath, "unregistervm", createdVMName, "--delete").Run()
+		})
+
+		It("should create VM", func() {
+			basedir := os.TempDir()
+			err := driver.CreateVM(createdVMName, basedir)
+			command := exec.Command(vBoxManagePath, "list", "vms")
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say(createdVMName))
+		})
+	})
+
 	Describe("#VMExists", func() {
 		Context("when VM exists", func() {
 			It("should return true", func() {
@@ -294,6 +321,54 @@ var _ = Describe("driver", func() {
 				err := driver.DestroyVM("some-bad-vm-name")
 				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage unregistervm some-bad-vm-name --delete': exit status 1")))
 				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
+			})
+		})
+	})
+
+	Describe("#AttachDisk", func() {
+		var tmpDir string
+
+		BeforeEach(func() {
+			var err error
+			tmpDir, err = ioutil.TempDir("", "pcfdev-vbox-driver")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(exec.Command(
+				vBoxManagePath, "createvm", "--name", "some-vm", "--ostype", "Ubuntu_64", "--basefolder", tmpDir, "--register").Run(),
+			).To(Succeed())
+			Expect(exec.Command(
+				vBoxManagePath, "createmedium", "disk", "--filename", filepath.Join(tmpDir, "some-disk.vmdk"), "--size", "1", "--format", "VMDK").Run(),
+			).To(Succeed())
+		})
+
+		AfterEach(func() {
+			exec.Command(vBoxManagePath, "unregistervm", "some-vm", "--delete").Run()
+			exec.Command(vBoxManagePath, "closemedium", "disk", filepath.Join(tmpDir, "some-disk.vmdk")).Run()
+			os.RemoveAll(tmpDir)
+		})
+
+		It("should attach disk", func() {
+			Expect(driver.AttachDisk("some-vm", filepath.Join(tmpDir, "some-disk.vmdk"))).To(Succeed())
+
+			command := exec.Command(vBoxManagePath, "showvminfo", "some-vm", "--machinereadable")
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say(`storagecontrollername0="SATA"`))
+			Expect(session).To(gbytes.Say(fmt.Sprintf(`"SATA-0-0"="%s"`, filepath.Join(tmpDir, "some-disk.vmdk"))))
+		})
+
+		Context("when adding the storage controller fails", func() {
+			It("should return an error", func() {
+				Expect(driver.AttachDisk("some-bad-vm", "some-disk.vmdk")).To(
+					MatchError(ContainSubstring("failed to execute 'VBoxManage storagectl some-bad-vm --name SATA --add sata':")))
+			})
+		})
+
+		Context("when attaching the storage fails", func() {
+			It("should return an error", func() {
+				Expect(driver.AttachDisk("some-vm", "some-bad-disk")).To(
+					MatchError(ContainSubstring("failed to execute 'VBoxManage storageattach some-vm --storagectl SATA --medium some-bad-disk --type hdd --port 0 --device 0':")))
 			})
 		})
 	})
@@ -495,6 +570,24 @@ var _ = Describe("driver", func() {
 		})
 	})
 
+	Describe("#SetCPUs", func() {
+		It("should set vm cpus", func() {
+			Expect(driver.SetCPUs(vmName, 2)).To(Succeed())
+
+			showvmInfoCommand := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable")
+			session, err := gexec.Start(showvmInfoCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session).Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say(`cpus=2`))
+		})
+
+		Context("when setting memory fails", func() {
+			It("should return an error", func() {
+				Expect(driver.SetCPUs("some-bad-vm-name", 1)).To(MatchError(ContainSubstring("failed to execute 'VBoxManage modifyvm some-bad-vm-name --cpus 1'")))
+			})
+		})
+	})
+
 	Describe("#VMs", func() {
 		It("should return a list of VMs", func() {
 			Expect(driver.VMs()).To(ContainElement(vmName))
@@ -512,22 +605,6 @@ var _ = Describe("driver", func() {
 			Expect(driver.StartVM(vmName)).To(Succeed())
 
 			Expect(driver.RunningVMs()).To(ContainElement(vmName))
-		})
-	})
-
-	Describe("#GetVirtualSystemNumbersOfHardDiskImages", func() {
-		It("should the virtual system number of the hard disk image", func() {
-			ovaPath := "../assets/snappy.ova"
-			Expect(driver.GetVirtualSystemNumbersOfHardDiskImages(ovaPath)).To(ConsistOf([]string{"6", "7"}))
-		})
-
-		Context("when there is an error getting the virtual system number", func() {
-			It("should return an error", func() {
-				numbers, err := driver.GetVirtualSystemNumbersOfHardDiskImages("some-bad-ova-path.ova")
-				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage import some-bad-ova-path.ova -n': exit status 1")))
-				Expect(err).To(MatchError(ContainSubstring("Could not open the OVA file")))
-				Expect(numbers).To(BeNil())
-			})
 		})
 	})
 
@@ -559,6 +636,65 @@ var _ = Describe("driver", func() {
 		Context("when there is not a VM assigned to the given hostonlyifs", func() {
 			It("should return false", func() {
 				Expect(driver.IsInterfaceInUse("some-bad-interface")).To(BeFalse())
+			})
+		})
+	})
+
+	Describe("#CloneDisk", func() {
+		var tmpDir string
+
+		BeforeEach(func() {
+			var err error
+			tmpDir, err = ioutil.TempDir("", "pcfdev-vbox-driver")
+			Expect(err).NotTo(HaveOccurred())
+
+			archive, err := os.Open(filepath.Join("..", "assets", "snappy.ova"))
+			Expect(err).NotTo(HaveOccurred())
+
+			reader := tar.NewReader(archive)
+			for {
+				header, err := reader.Next()
+				if err == io.EOF {
+					break
+				}
+				Expect(err).NotTo(HaveOccurred())
+
+				if header.Name == "Snappy-disk1.vmdk" {
+					file, err := os.OpenFile(filepath.Join(tmpDir, "compressed-Snappy-disk1.vmdk"), os.O_WRONLY|os.O_CREATE, 0644)
+					Expect(err).NotTo(HaveOccurred())
+					defer file.Close()
+
+					_, err = io.Copy(file, reader)
+					Expect(err).NotTo(HaveOccurred())
+				}
+			}
+		})
+
+		AfterEach(func() {
+			exec.Command(vBoxManagePath, "closemedium", "disk", filepath.Join(tmpDir, "cloned-Snappy-disk1.vmdk")).Run()
+			os.RemoveAll(tmpDir)
+		})
+
+		It("should clone a disk", func() {
+			Expect(driver.CloneDisk(filepath.Join(tmpDir, "compressed-Snappy-disk1.vmdk"), filepath.Join(tmpDir, "cloned-Snappy-disk1.vmdk"))).To(Succeed())
+
+			command := exec.Command(vBoxManagePath, "showmediuminfo", "disk", filepath.Join(tmpDir, "cloned-Snappy-disk1.vmdk"))
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say(`Storage format: VMDK`))
+
+			command = exec.Command(vBoxManagePath, "list", "hdds")
+			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+			Expect(session).NotTo(gbytes.Say("compressed-Snappy-disk1.vmdk"))
+		})
+
+		Context("when cloning fails", func() {
+			It("should return an error", func() {
+				Expect(driver.CloneDisk("some-bad-src", "cloned-Snappy-disk1.vmdk")).To(
+					MatchError(ContainSubstring("failed to execute 'VBoxManage clonemedium disk some-bad-src cloned-Snappy-disk1.vmdk':")))
 			})
 		})
 	})

@@ -62,6 +62,7 @@ var _ = Describe("Config", func() {
 			Expect(conf.DefaultVMName).To(Equal("some-vm"))
 			Expect(conf.PCFDevHome).To(Equal("some-pcfdev-home"))
 			Expect(conf.OVADir).To(Equal(filepath.Join("some-pcfdev-home", "ova")))
+			Expect(conf.VMDir).To(Equal(filepath.Join("some-pcfdev-home", "vms")))
 			Expect(conf.HTTPProxy).To(Equal("some-http-proxy"))
 			Expect(conf.HTTPSProxy).To(Equal("some-https-proxy"))
 			Expect(conf.NoProxy).To(Equal("some-no-proxy"))

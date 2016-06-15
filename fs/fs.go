@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"archive/tar"
 	cMD5 "crypto/md5"
 	"fmt"
 	"io"
@@ -110,6 +111,30 @@ func (fs *FS) Move(source string, destination string) error {
 	}
 
 	return nil
+}
+
+func (fs *FS) Extract(archivePath string, destination string, file string) error {
+	archive, err := os.Open(archivePath)
+	if err != nil {
+		return fmt.Errorf("failed to open %s: %s", archivePath, err)
+	}
+
+	reader := tar.NewReader(archive)
+	for {
+		header, err := reader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("malformed tar %s:%s", archivePath, err)
+		}
+		if header.Name == file {
+			fs.Write(filepath.Join(destination, header.Name), reader)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("could not find %s in %s", file, archivePath)
 }
 
 func (fs *FS) fileInSet(filenameToFind string, filenames []string) bool {

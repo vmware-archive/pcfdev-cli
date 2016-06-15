@@ -66,6 +66,7 @@ func main() {
 		},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},
+			FS:     fileSystem,
 			Driver: &vbox.VBoxDriver{},
 			Picker: &address.Picker{
 				Network: &network.Network{},

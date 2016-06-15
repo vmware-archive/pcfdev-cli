@@ -40,6 +40,23 @@ func (d *VBoxDriver) StartVM(vmName string) error {
 	return err
 }
 
+func (d *VBoxDriver) CreateVM(vmName string, basedir string) error {
+	_, err := d.VBoxManage("createvm", "--name", vmName, "--ostype", "Ubuntu_64", "--basefolder", basedir, "--register")
+	return err
+}
+
+func (d *VBoxDriver) AttachDisk(vmName string, diskPath string) error {
+	_, err := d.VBoxManage("storagectl", vmName, "--name", "SATA", "--add", "sata")
+	if err != nil {
+		return err
+	}
+	_, err = d.VBoxManage("storageattach", vmName, "--storagectl", "SATA", "--medium", diskPath, "--type", "hdd", "--port", "0", "--device", "0")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (d *VBoxDriver) VMExists(vmName string) (exists bool, err error) {
 	output, err := d.VBoxManage("list", "vms")
 	if err != nil {
@@ -180,6 +197,11 @@ func (d *VBoxDriver) SetMemory(vmName string, memory uint64) error {
 	return err
 }
 
+func (d *VBoxDriver) SetCPUs(vmName string, cpus int) error {
+	_, err := d.VBoxManage("modifyvm", vmName, "--cpus", strconv.Itoa(cpus))
+	return err
+}
+
 func (d *VBoxDriver) GetVMIP(vmName string) (string, error) {
 	vboxnetName, err := d.getVBoxNetName(vmName)
 	if err != nil {
@@ -244,28 +266,6 @@ func (d *VBoxDriver) VMs() ([]string, error) {
 	return vms, nil
 }
 
-func (d *VBoxDriver) GetVirtualSystemNumbersOfHardDiskImages(ovaPath string) (virtualSystemNumbers []string, err error) {
-	output, err := d.VBoxManage("import", ovaPath, "-n")
-	if err != nil {
-		return nil, err
-	}
-
-	numbers := []string{}
-	for _, line := range strings.Split(strings.Trim(string(output), "\n"), "\n") {
-		regex := regexp.MustCompile(`(\d+):\s{1}Hard disk image:`)
-		if matches := regex.FindStringSubmatch(string(line)); len(matches) > 1 {
-			numbers = append(numbers, matches[1])
-		}
-	}
-
-	if len(numbers) == 0 {
-		return nil, fmt.Errorf("could not determine hard disk image virtual system numbers of '%s': %s", ovaPath, err)
-	}
-
-	return numbers, nil
-
-}
-
 func (d *VBoxDriver) RunningVMs() (vms []string, err error) {
 	output, err := d.VBoxManage("list", "runningvms")
 	if err != nil {
@@ -313,4 +313,14 @@ func (d *VBoxDriver) IsInterfaceInUse(interfaceName string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (d *VBoxDriver) CloneDisk(src, dst string) error {
+	if _, err := d.VBoxManage("clonemedium", "disk", src, dst); err != nil {
+		return err
+	}
+	if _, err := d.VBoxManage("closemedium", "disk", src); err != nil {
+		return err
+	}
+	return nil
 }

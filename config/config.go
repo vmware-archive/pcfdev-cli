@@ -12,6 +12,7 @@ type Config struct {
 	DefaultVMName string
 	PCFDevHome    string
 	OVADir        string
+	VMDir         string
 	HTTPProxy     string
 	HTTPSProxy    string
 	NoProxy       string
@@ -54,6 +55,7 @@ func New(defaultVMName string, system System) (*Config, error) {
 		DefaultVMName: defaultVMName,
 		PCFDevHome:    pcfdevHome,
 		OVADir:        filepath.Join(pcfdevHome, "ova"),
+		VMDir:         filepath.Join(pcfdevHome, "vms"),
 		HTTPProxy:     getHTTPProxy(),
 		HTTPSProxy:    getHTTPSProxy(),
 		NoProxy:       getNoProxy(),

@@ -5,7 +5,6 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -32,8 +31,17 @@ type Driver interface {
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 	GetHostOnlyInterfaces() (interfaces []*network.Interface, err error)
 	GetVMIP(vmName string) (vmIP string, err error)
+	SetCPUs(vmName string, cpuNumber int) error
 	SetMemory(vmName string, memory uint64) error
-	GetVirtualSystemNumbersOfHardDiskImages(ovaPath string) (virtualSystemNumbers []string, err error)
+	CreateVM(vmName string, baseDirectory string) error
+	AttachDisk(vmName string, diskPath string) error
+	CloneDisk(src string, dest string) error
+}
+
+//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vbox FS
+type FS interface {
+	Extract(archive string, destination string, filename string) error
+	RemoveFile(path string) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
@@ -56,6 +64,7 @@ type Address interface {
 type VBox struct {
 	Driver Driver
 	SSH    SSH
+	FS     FS
 	Picker NetworkPicker
 	Config *config.Config
 }
@@ -131,34 +140,26 @@ func (v *VBox) proxySettings(ip string) (settings string, err error) {
 }
 
 func (v *VBox) ImportVM(vmName string, vmConfig *config.VMConfig) error {
-	_, sshPort, err := v.SSH.GenerateAddress()
-
-	if err != nil {
+	if err := v.Driver.CreateVM(vmName, v.Config.VMDir); err != nil {
 		return err
 	}
 
-	ovaPath := filepath.Join(v.Config.OVADir, vmName+".ova")
-
-	virtualSystemNumbers, err := v.Driver.GetVirtualSystemNumbersOfHardDiskImages(ovaPath)
-	if err != nil {
+	diskName := vmName + "-disk1.vmdk"
+	compressedDisk := filepath.Join(v.Config.OVADir, diskName)
+	uncompressedDisk := filepath.Join(v.Config.VMDir, vmName, diskName)
+	if err := v.FS.Extract(filepath.Join(v.Config.OVADir, vmName+".ova"), v.Config.OVADir, diskName); err != nil {
 		return err
 	}
 
-	importArguments := []string{
-		"import",
-		ovaPath,
-		"--vsys", "0",
-		"--cpus", strconv.Itoa(vmConfig.CPUs),
+	if err := v.Driver.CloneDisk(compressedDisk, uncompressedDisk); err != nil {
+		return err
 	}
 
-	for i, number := range virtualSystemNumbers {
-		importArguments = append(importArguments, "--unit")
-		importArguments = append(importArguments, number)
-		importArguments = append(importArguments, "--disk")
-		importArguments = append(importArguments, filepath.Join(v.Config.PCFDevHome, fmt.Sprintf("%s-disk%d.vmdk", vmName, i)))
+	if err := v.FS.RemoveFile(compressedDisk); err != nil {
+		return err
 	}
 
-	if _, err := v.Driver.VBoxManage(importArguments...); err != nil {
+	if err := v.Driver.AttachDisk(vmName, uncompressedDisk); err != nil {
 		return err
 	}
 
@@ -178,13 +179,20 @@ func (v *VBox) ImportVM(vmName string, vmConfig *config.VMConfig) error {
 		}
 	}
 
-	err = v.Driver.AttachNetworkInterface(selectedInterface.Name, vmName)
+	if err := v.Driver.AttachNetworkInterface(selectedInterface.Name, vmName); err != nil {
+		return err
+	}
+
+	_, sshPort, err := v.SSH.GenerateAddress()
 	if err != nil {
 		return err
 	}
 
-	err = v.Driver.ForwardPort(vmName, "ssh", sshPort, "22")
-	if err != nil {
+	if err := v.Driver.ForwardPort(vmName, "ssh", sshPort, "22"); err != nil {
+		return err
+	}
+
+	if err := v.Driver.SetCPUs(vmName, vmConfig.CPUs); err != nil {
 		return err
 	}
 

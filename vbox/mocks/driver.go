@@ -29,6 +29,16 @@ func (_m *MockDriver) EXPECT() *_MockDriverRecorder {
 	return _m.recorder
 }
 
+func (_m *MockDriver) AttachDisk(_param0 string, _param1 string) error {
+	ret := _m.ctrl.Call(_m, "AttachDisk", _param0, _param1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) AttachDisk(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "AttachDisk", arg0, arg1)
+}
+
 func (_m *MockDriver) AttachNetworkInterface(_param0 string, _param1 string) error {
 	ret := _m.ctrl.Call(_m, "AttachNetworkInterface", _param0, _param1)
 	ret0, _ := ret[0].(error)
@@ -37,6 +47,16 @@ func (_m *MockDriver) AttachNetworkInterface(_param0 string, _param1 string) err
 
 func (_mr *_MockDriverRecorder) AttachNetworkInterface(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "AttachNetworkInterface", arg0, arg1)
+}
+
+func (_m *MockDriver) CloneDisk(_param0 string, _param1 string) error {
+	ret := _m.ctrl.Call(_m, "CloneDisk", _param0, _param1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) CloneDisk(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "CloneDisk", arg0, arg1)
 }
 
 func (_m *MockDriver) CreateHostOnlyInterface(_param0 string) (string, error) {
@@ -48,6 +68,16 @@ func (_m *MockDriver) CreateHostOnlyInterface(_param0 string) (string, error) {
 
 func (_mr *_MockDriverRecorder) CreateHostOnlyInterface(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateHostOnlyInterface", arg0)
+}
+
+func (_m *MockDriver) CreateVM(_param0 string, _param1 string) error {
+	ret := _m.ctrl.Call(_m, "CreateVM", _param0, _param1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) CreateVM(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateVM", arg0, arg1)
 }
 
 func (_m *MockDriver) DestroyVM(_param0 string) error {
@@ -103,17 +133,6 @@ func (_mr *_MockDriverRecorder) GetVMIP(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVMIP", arg0)
 }
 
-func (_m *MockDriver) GetVirtualSystemNumbersOfHardDiskImages(_param0 string) ([]string, error) {
-	ret := _m.ctrl.Call(_m, "GetVirtualSystemNumbersOfHardDiskImages", _param0)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockDriverRecorder) GetVirtualSystemNumbersOfHardDiskImages(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVirtualSystemNumbersOfHardDiskImages", arg0)
-}
-
 func (_m *MockDriver) PowerOffVM(_param0 string) error {
 	ret := _m.ctrl.Call(_m, "PowerOffVM", _param0)
 	ret0, _ := ret[0].(error)
@@ -143,6 +162,16 @@ func (_m *MockDriver) RunningVMs() ([]string, error) {
 
 func (_mr *_MockDriverRecorder) RunningVMs() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunningVMs")
+}
+
+func (_m *MockDriver) SetCPUs(_param0 string, _param1 int) error {
+	ret := _m.ctrl.Call(_m, "SetCPUs", _param0, _param1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) SetCPUs(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetCPUs", arg0, arg1)
 }
 
 func (_m *MockDriver) SetMemory(_param0 string, _param1 uint64) error {

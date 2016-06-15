@@ -7,6 +7,7 @@ import (
 	"github.com/cloudfoundry/cli/cf/terminal"
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -31,6 +32,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	ssh := &ssh.SSH{}
 	vbx := &vbox.VBox{
 		SSH:    ssh,
+		FS:     &fs.FS{},
 		Driver: &vbox.VBoxDriver{},
 		Picker: &address.Picker{
 			Driver:  &vbox.VBoxDriver{},

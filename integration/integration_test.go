@@ -109,7 +109,7 @@ var _ = Describe("pcfdev", func() {
 		Expect(session).To(gbytes.Say("Waiting for services to start..."))
 		Expect(session).To(gbytes.Say("Services started"))
 		Expect(isVMRunning()).To(BeTrue())
-		Expect(filepath.Join(tempHome, vmName+"-disk0.vmdk")).To(BeAnExistingFile())
+		Expect(filepath.Join(tempHome, "vms", vmName, vmName+"-disk1.vmdk")).To(BeAnExistingFile())
 
 		By("re-running 'cf dev start' with no effect")
 		restartCommand := exec.Command("cf", "dev", "start")

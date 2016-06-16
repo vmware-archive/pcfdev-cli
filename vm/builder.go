@@ -48,11 +48,13 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 
 	if !exists {
 		return &NotCreated{
-			Name:    vmName,
 			VBox:    vbx,
 			UI:      termUI,
 			Builder: b,
 			Config:  b.Config,
+			VMConfig: &config.VMConfig{
+				Name: vmName,
+			},
 		}, nil
 	}
 
@@ -79,11 +81,13 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	}
 	if state == vbox.StateRunning {
 		return &Running{
-			Name:    vmName,
-			IP:      ip,
-			SSHPort: sshPort,
-			Domain:  domain,
-			Memory:  memory,
+			VMConfig: &config.VMConfig{
+				Name:    vmName,
+				IP:      ip,
+				SSHPort: sshPort,
+				Domain:  domain,
+				Memory:  memory,
+			},
 
 			UI:   termUI,
 			VBox: vbx,
@@ -92,12 +96,14 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 
 	if state == vbox.StateSaved || state == vbox.StatePaused {
 		return &Suspended{
-			Name:    vmName,
-			IP:      ip,
-			SSHPort: sshPort,
-			Domain:  domain,
-			Memory:  memory,
-			Config:  b.Config,
+			VMConfig: &config.VMConfig{
+				Name:    vmName,
+				IP:      ip,
+				SSHPort: sshPort,
+				Domain:  domain,
+				Memory:  memory,
+			},
+			Config: b.Config,
 
 			UI:   termUI,
 			VBox: vbx,
@@ -106,12 +112,14 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 
 	if state == vbox.StateStopped || state == vbox.StateAborted {
 		return &Stopped{
-			Name:    vmName,
-			IP:      ip,
-			SSHPort: sshPort,
-			Domain:  domain,
-			Memory:  memory,
-			Config:  b.Config,
+			VMConfig: &config.VMConfig{
+				Name:    vmName,
+				IP:      ip,
+				SSHPort: sshPort,
+				Domain:  domain,
+				Memory:  memory,
+			},
+			Config: b.Config,
 
 			UI:   termUI,
 			SSH:  ssh,

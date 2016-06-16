@@ -1,13 +1,13 @@
 package vm
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/pivotal-cf/pcfdev-cli/config"
+)
 
 type Running struct {
-	Name    string
-	Domain  string
-	IP      string
-	SSHPort string
-	Memory  uint64
+	VMConfig *config.VMConfig
 
 	VBox VBox
 	UI   UI
@@ -15,7 +15,7 @@ type Running struct {
 
 func (r *Running) Stop() error {
 	r.UI.Say("Stopping VM...")
-	err := r.VBox.StopVM(r.Name)
+	err := r.VBox.StopVM(r.VMConfig)
 	if err != nil {
 		return &StopVMError{err}
 	}
@@ -44,7 +44,7 @@ func (r *Running) Status() string {
 
 func (r *Running) Suspend() error {
 	r.UI.Say("Suspending VM...")
-	if err := r.VBox.SuspendVM(r.Name); err != nil {
+	if err := r.VBox.SuspendVM(r.VMConfig); err != nil {
 		return &SuspendVMError{err}
 	}
 

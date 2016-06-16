@@ -29,10 +29,12 @@ var _ = Describe("Stopped", func() {
 		config = &conf.VMConfig{}
 
 		runningVM = vm.Running{
-			Name:    "some-vm",
-			Domain:  "some-domain",
-			IP:      "some-ip",
-			SSHPort: "some-port",
+			VMConfig: &conf.VMConfig{
+				Name:    "some-vm",
+				Domain:  "some-domain",
+				IP:      "some-ip",
+				SSHPort: "some-port",
+			},
 
 			VBox: mockVBox,
 			UI:   mockUI,
@@ -47,7 +49,7 @@ var _ = Describe("Stopped", func() {
 		It("should stop the vm", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Stopping VM..."),
-				mockVBox.EXPECT().StopVM("some-vm"),
+				mockVBox.EXPECT().StopVM(runningVM.VMConfig),
 				mockUI.EXPECT().Say("PCF Dev is now stopped"),
 			)
 
@@ -58,7 +60,7 @@ var _ = Describe("Stopped", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Stopping VM..."),
-					mockVBox.EXPECT().StopVM("some-vm").Return(errors.New("some-error")),
+					mockVBox.EXPECT().StopVM(runningVM.VMConfig).Return(errors.New("some-error")),
 				)
 
 				Expect(runningVM.Stop()).To(MatchError("failed to stop VM: some-error"))
@@ -107,7 +109,7 @@ var _ = Describe("Stopped", func() {
 	Describe("Suspend", func() {
 		It("should suspend the vm", func() {
 			mockUI.EXPECT().Say("Suspending VM...")
-			mockVBox.EXPECT().SuspendVM("some-vm").Return(nil)
+			mockVBox.EXPECT().SuspendVM(runningVM.VMConfig).Return(nil)
 			mockUI.EXPECT().Say("PCF Dev is now suspended")
 
 			Expect(runningVM.Suspend()).To(Succeed())
@@ -116,7 +118,7 @@ var _ = Describe("Stopped", func() {
 		Context("when suspending the vm fails", func() {
 			It("should return an error", func() {
 				mockUI.EXPECT().Say("Suspending VM...")
-				mockVBox.EXPECT().SuspendVM("some-vm").Return(errors.New("some-error"))
+				mockVBox.EXPECT().SuspendVM(runningVM.VMConfig).Return(errors.New("some-error"))
 
 				Expect(runningVM.Suspend()).To(MatchError("failed to suspend VM: some-error"))
 			})

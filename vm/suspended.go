@@ -8,12 +8,8 @@ import (
 )
 
 type Suspended struct {
-	Name    string
-	Domain  string
-	IP      string
-	Memory  uint64
-	SSHPort string
-	Config  *config.Config
+	Config   *config.Config
+	VMConfig *config.VMConfig
 
 	VBox VBox
 	UI   UI
@@ -53,7 +49,7 @@ func (s *Suspended) Resume() error {
 	}
 
 	s.UI.Say("Resuming VM...")
-	if err := s.VBox.ResumeVM(s.Name); err != nil {
+	if err := s.VBox.ResumeVM(s.VMConfig); err != nil {
 		return &ResumeVMError{err}
 	}
 
@@ -61,8 +57,8 @@ func (s *Suspended) Resume() error {
 }
 
 func (s *Suspended) checkMemory() error {
-	if s.Memory > s.Config.FreeMemory {
-		if !s.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", s.Memory)) {
+	if s.VMConfig.Memory > s.Config.FreeMemory {
+		if !s.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", s.VMConfig.Memory)) {
 			return errors.New("user declined to continue, exiting")
 		}
 	}

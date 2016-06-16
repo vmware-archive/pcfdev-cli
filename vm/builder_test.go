@@ -46,7 +46,7 @@ var _ = Describe("Builder", func() {
 
 				switch u := notCreatedVM.(type) {
 				case *vm.NotCreated:
-					Expect(u.Name).To(Equal("some-vm"))
+					Expect(u.VMConfig.Name).To(Equal("some-vm"))
 				default:
 					Fail("wrong type")
 				}
@@ -69,10 +69,10 @@ var _ = Describe("Builder", func() {
 
 					switch u := notCreatedVM.(type) {
 					case *vm.Stopped:
-						Expect(u.Name).To(Equal("some-vm"))
-						Expect(u.IP).To(Equal("192.168.11.11"))
-						Expect(u.SSHPort).To(Equal("some-port"))
-						Expect(u.Domain).To(Equal("local.pcfdev.io"))
+						Expect(u.VMConfig.Name).To(Equal("some-vm"))
+						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
+						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
+						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.SSH).NotTo(BeNil())
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
@@ -97,10 +97,10 @@ var _ = Describe("Builder", func() {
 
 					switch u := notCreatedVM.(type) {
 					case *vm.Stopped:
-						Expect(u.Name).To(Equal("some-vm"))
-						Expect(u.IP).To(Equal("192.168.11.11"))
-						Expect(u.SSHPort).To(Equal("some-port"))
-						Expect(u.Domain).To(Equal("local.pcfdev.io"))
+						Expect(u.VMConfig.Name).To(Equal("some-vm"))
+						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
+						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
+						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.SSH).NotTo(BeNil())
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
@@ -171,10 +171,10 @@ var _ = Describe("Builder", func() {
 
 					switch u := notCreatedVM.(type) {
 					case *vm.Running:
-						Expect(u.Name).To(Equal("some-vm"))
-						Expect(u.IP).To(Equal("192.168.11.11"))
-						Expect(u.SSHPort).To(Equal("some-port"))
-						Expect(u.Domain).To(Equal("local.pcfdev.io"))
+						Expect(u.VMConfig.Name).To(Equal("some-vm"))
+						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
+						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
+						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
 					default:
@@ -198,10 +198,10 @@ var _ = Describe("Builder", func() {
 
 					switch u := suspendedVM.(type) {
 					case *vm.Suspended:
-						Expect(u.Name).To(Equal("some-vm"))
-						Expect(u.IP).To(Equal("192.168.11.11"))
-						Expect(u.SSHPort).To(Equal("some-port"))
-						Expect(u.Domain).To(Equal("local.pcfdev.io"))
+						Expect(u.VMConfig.Name).To(Equal("some-vm"))
+						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
+						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
+						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
 					default:
@@ -225,10 +225,10 @@ var _ = Describe("Builder", func() {
 
 					switch u := suspendedVM.(type) {
 					case *vm.Suspended:
-						Expect(u.Name).To(Equal("some-vm"))
-						Expect(u.IP).To(Equal("192.168.11.11"))
-						Expect(u.SSHPort).To(Equal("some-port"))
-						Expect(u.Domain).To(Equal("local.pcfdev.io"))
+						Expect(u.VMConfig.Name).To(Equal("some-vm"))
+						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
+						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
+						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
 					default:

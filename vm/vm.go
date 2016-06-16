@@ -9,13 +9,13 @@ import (
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/vm VBox
 type VBox interface {
-	StartVM(name string, ip string, sshPort string, domain string) error
-	StopVM(name string) error
-	ResumeVM(name string) error
-	SuspendVM(name string) error
-	PowerOffVM(name string) error
-	ImportVM(name string, vmConfig *config.VMConfig) error
-	ConflictingVMPresent(name string) (conflict bool, err error)
+	StartVM(vmConfig *config.VMConfig) error
+	StopVM(vmConfig *config.VMConfig) error
+	ResumeVM(vmConfig *config.VMConfig) error
+	SuspendVM(vmConfig *config.VMConfig) error
+	PowerOffVM(vmConfig *config.VMConfig) error
+	ImportVM(vmConfig *config.VMConfig) error
+	ConflictingVMPresent(vmConfig *config.VMConfig) (conflict bool, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/vm UI

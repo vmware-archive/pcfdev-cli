@@ -82,7 +82,8 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().SetCPUs("some-vm", 7),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{
+				err := vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})
@@ -111,7 +112,8 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().SetCPUs("some-vm", 7),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{
+				err := vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})
@@ -142,7 +144,8 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().SetCPUs("some-vm", 7),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
-				err := vbx.ImportVM("some-vm", &config.VMConfig{
+				err := vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})
@@ -155,7 +158,7 @@ var _ = Describe("vbox", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{})).To(MatchError("some-error"))
+				Expect(vbx.ImportVM(&config.VMConfig{Name: "some-vm"})).To(MatchError("some-error"))
 			})
 		})
 
@@ -165,7 +168,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
 					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk").Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{})).To(MatchError("some-error"))
+				Expect(vbx.ImportVM(&config.VMConfig{Name: "some-vm"})).To(MatchError("some-error"))
 			})
 		})
 
@@ -176,7 +179,7 @@ var _ = Describe("vbox", func() {
 					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{})).To(MatchError("some-error"))
+				Expect(vbx.ImportVM(&config.VMConfig{Name: "some-vm"})).To(MatchError("some-error"))
 			})
 		})
 
@@ -188,7 +191,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")).Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{})).To(MatchError("some-error"))
+				Expect(vbx.ImportVM(&config.VMConfig{Name: "some-vm"})).To(MatchError("some-error"))
 			})
 		})
 
@@ -201,7 +204,7 @@ var _ = Describe("vbox", func() {
 					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{})).To(MatchError("some-error"))
+				Expect(vbx.ImportVM(&config.VMConfig{Name: "some-vm"})).To(MatchError("some-error"))
 			})
 		})
 
@@ -215,7 +218,8 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return([]*network.Interface{}, errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{
+				Expect(vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})).To(MatchError("some-error"))
@@ -237,7 +241,8 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(nil, false, errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{
+				Expect(vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})).To(MatchError("some-error"))
@@ -261,7 +266,8 @@ var _ = Describe("vbox", func() {
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, false, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface(ip).Return("", errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{
+				Expect(vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})).To(MatchError("some-error"))
@@ -284,7 +290,8 @@ var _ = Describe("vbox", func() {
 					mockPicker.EXPECT().SelectAvailableNetworkInterface(vboxnets).Return(iface, true, nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm").Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{
+				Expect(vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})).To(MatchError("some-error"))
@@ -309,7 +316,8 @@ var _ = Describe("vbox", func() {
 					mockSSH.EXPECT().GenerateAddress().Return("", "", errors.New("some-error")),
 				)
 
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{
+				Expect(vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})).To(MatchError("some-error"))
@@ -334,7 +342,8 @@ var _ = Describe("vbox", func() {
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22").Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{
+				Expect(vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})).To(MatchError("some-error"))
@@ -360,7 +369,8 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().ForwardPort("some-vm", "ssh", "some-port", "22"),
 					mockDriver.EXPECT().SetCPUs("some-vm", 7).Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{
+				Expect(vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})).To(MatchError("some-error"))
@@ -387,7 +397,8 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().SetCPUs("some-vm", 7),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)).Return(errors.New("some-error")),
 				)
-				Expect(vbx.ImportVM("some-vm", &config.VMConfig{
+				Expect(vbx.ImportVM(&config.VMConfig{
+					Name:   "some-vm",
 					Memory: uint64(2000),
 					CPUs:   7,
 				})).To(MatchError("some-error"))
@@ -417,7 +428,12 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().StartVM("some-vm"),
 				)
 
-				Expect(vbx.StartVM("some-vm", "192.168.22.11", "some-port", "some-domain")).To(Succeed())
+				Expect(vbx.StartVM(&config.VMConfig{
+					Name:    "some-vm",
+					IP:      "192.168.22.11",
+					SSHPort: "some-port",
+					Domain:  "some-domain",
+				})).To(Succeed())
 			})
 
 			It("translates 127.0.0.1 to subnetIP in proxy settings", func() {
@@ -443,7 +459,12 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().StartVM("some-vm"),
 				)
 
-				Expect(vbx.StartVM("some-vm", "192.168.22.11", "some-port", "some-domain")).To(Succeed())
+				Expect(vbx.StartVM(&config.VMConfig{
+					Name:    "some-vm",
+					IP:      "192.168.22.11",
+					SSHPort: "some-port",
+					Domain:  "some-domain",
+				})).To(Succeed())
 			})
 
 			Context("when a bad ip is passed to StartVM command", func() {
@@ -453,7 +474,12 @@ var _ = Describe("vbox", func() {
 						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress some-bad-ip\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
 					)
 
-					Expect(vbx.StartVM("some-vm", "some-bad-ip", "some-port", "some-domain")).To(MatchError("some-bad-ip is not one of the allowed PCF Dev ips"))
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "some-bad-ip",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(MatchError("some-bad-ip is not one of the allowed PCF Dev ips"))
 				})
 			})
 
@@ -463,7 +489,12 @@ var _ = Describe("vbox", func() {
 						mockDriver.EXPECT().StartVM("some-vm").Return(errors.New("some-error")),
 					)
 
-					Expect(vbx.StartVM("some-vm", "192.168.22.11", "some-port", "some-domain")).To(MatchError("some-error"))
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.22.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(MatchError("some-error"))
 				})
 			})
 
@@ -474,7 +505,12 @@ var _ = Describe("vbox", func() {
 						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.11.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces"), "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
 					)
 
-					Expect(vbx.StartVM("some-vm", "192.168.11.11", "some-port", "some-domain")).To(MatchError("some-error"))
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.11.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(MatchError("some-error"))
 				})
 			})
 
@@ -499,7 +535,12 @@ var _ = Describe("vbox", func() {
 						mockDriver.EXPECT().StopVM("some-vm").Return(errors.New("some-error")),
 					)
 
-					Expect(vbx.StartVM("some-vm", "192.168.11.11", "some-port", "some-domain")).To(MatchError("some-error"))
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.11.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(MatchError("some-error"))
 				})
 			})
 		})
@@ -509,7 +550,7 @@ var _ = Describe("vbox", func() {
 		It("should stop the VM", func() {
 			mockDriver.EXPECT().StopVM("some-vm")
 
-			err := vbx.StopVM("some-vm")
+			err := vbx.StopVM(&config.VMConfig{Name: "some-vm"})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -518,7 +559,7 @@ var _ = Describe("vbox", func() {
 				expectedError := errors.New("some-error")
 
 				mockDriver.EXPECT().StopVM("some-vm").Return(expectedError)
-				err := vbx.StopVM("some-vm")
+				err := vbx.StopVM(&config.VMConfig{Name: "some-vm"})
 				Expect(err).To(MatchError(expectedError))
 			})
 		})
@@ -528,7 +569,7 @@ var _ = Describe("vbox", func() {
 		It("should suspend the VM", func() {
 			mockDriver.EXPECT().SuspendVM("some-vm")
 
-			err := vbx.SuspendVM("some-vm")
+			err := vbx.SuspendVM(&config.VMConfig{Name: "some-vm"})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -537,7 +578,7 @@ var _ = Describe("vbox", func() {
 				expectedError := errors.New("some-error")
 
 				mockDriver.EXPECT().SuspendVM("some-vm").Return(expectedError)
-				err := vbx.SuspendVM("some-vm")
+				err := vbx.SuspendVM(&config.VMConfig{Name: "some-vm"})
 				Expect(err).To(MatchError(expectedError))
 			})
 		})
@@ -547,7 +588,7 @@ var _ = Describe("vbox", func() {
 		It("should resume the VM", func() {
 			mockDriver.EXPECT().ResumeVM("some-vm")
 
-			err := vbx.ResumeVM("some-vm")
+			err := vbx.ResumeVM(&config.VMConfig{Name: "some-vm"})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -556,7 +597,7 @@ var _ = Describe("vbox", func() {
 				expectedError := errors.New("some-error")
 
 				mockDriver.EXPECT().ResumeVM("some-vm").Return(expectedError)
-				err := vbx.ResumeVM("some-vm")
+				err := vbx.ResumeVM(&config.VMConfig{Name: "some-vm"})
 				Expect(err).To(MatchError(expectedError))
 			})
 		})
@@ -566,21 +607,21 @@ var _ = Describe("vbox", func() {
 		Context("when there are no conflicting VMs with the prefix pcfdev-", func() {
 			It("should return false", func() {
 				mockDriver.EXPECT().RunningVMs().Return([]string{"some-other-vm", "pcfdev-our-vm"}, nil)
-				Expect(vbx.ConflictingVMPresent("pcfdev-our-vm")).To(BeFalse())
+				Expect(vbx.ConflictingVMPresent(&config.VMConfig{Name: "pcfdev-our-vm"})).To(BeFalse())
 			})
 		})
 
 		Context("when there are conflicting VMs with the prefix pcfdev- running", func() {
 			It("should return true", func() {
 				mockDriver.EXPECT().RunningVMs().Return([]string{"pcfdev-conflicting-vm", "pcfdev-our-vm"}, nil)
-				Expect(vbx.ConflictingVMPresent("pcfdev-our-vm")).To(BeTrue())
+				Expect(vbx.ConflictingVMPresent(&config.VMConfig{Name: "pcfdev-our-vm"})).To(BeTrue())
 			})
 		})
 
 		Context("when getting running vms returns an error", func() {
 			It("should return an error", func() {
 				mockDriver.EXPECT().RunningVMs().Return(nil, errors.New("some-error"))
-				_, err := vbx.ConflictingVMPresent("pcfdev-our-vm")
+				_, err := vbx.ConflictingVMPresent(&config.VMConfig{Name: "pcfdev-our-vm"})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -590,14 +631,14 @@ var _ = Describe("vbox", func() {
 		It("should destroy the VM", func() {
 			mockDriver.EXPECT().DestroyVM("some-vm")
 
-			Expect(vbx.DestroyVM("some-vm")).To(Succeed())
+			Expect(vbx.DestroyVM(&config.VMConfig{Name: "some-vm"})).To(Succeed())
 		})
 
 		Context("when the driver fails to destroy VM", func() {
 			It("should return the error", func() {
 				mockDriver.EXPECT().DestroyVM("some-vm").Return(errors.New("some-error"))
 
-				Expect(vbx.DestroyVM("some-vm")).To(MatchError("some-error"))
+				Expect(vbx.DestroyVM(&config.VMConfig{Name: "some-vm"})).To(MatchError("some-error"))
 			})
 		})
 	})
@@ -606,14 +647,14 @@ var _ = Describe("vbox", func() {
 		It("should power off the VM", func() {
 			mockDriver.EXPECT().PowerOffVM("some-vm")
 
-			Expect(vbx.PowerOffVM("some-vm")).To(Succeed())
+			Expect(vbx.PowerOffVM(&config.VMConfig{Name: "some-vm"})).To(Succeed())
 		})
 
 		Context("when the driver fails to power off the VM", func() {
 			It("should return the error", func() {
 				mockDriver.EXPECT().PowerOffVM("some-vm").Return(errors.New("some-error"))
 
-				Expect(vbx.PowerOffVM("some-vm")).To(MatchError("some-error"))
+				Expect(vbx.PowerOffVM(&config.VMConfig{Name: "some-vm"})).To(MatchError("some-error"))
 			})
 		})
 	})

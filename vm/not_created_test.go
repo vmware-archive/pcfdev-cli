@@ -33,7 +33,9 @@ var _ = Describe("Not Created", func() {
 		conf = &config.Config{}
 
 		notCreatedVM = vm.NotCreated{
-			Name: "some-vm",
+			VMConfig: &config.VMConfig{
+				Name: "some-vm",
+			},
 
 			VBox:    mockVBox,
 			UI:      mockUI,
@@ -50,7 +52,7 @@ var _ = Describe("Not Created", func() {
 		Context("when no conflicting vm is present", func() {
 			It("should print a message", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, nil),
 					mockUI.EXPECT().Say("PCF Dev VM has not been created"),
 				)
 
@@ -59,14 +61,14 @@ var _ = Describe("Not Created", func() {
 		})
 		Context("when conflicting vm is present", func() {
 			It("should return an error", func() {
-				mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(true, nil)
+				mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(true, nil)
 
 				Expect(notCreatedVM.Stop()).To(MatchError("old version of PCF Dev already running"))
 			})
 		})
 		Context("when there is an error seeing if there is an conflicting VM present", func() {
 			It("should return an error", func() {
-				mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, errors.New("some-error"))
+				mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, errors.New("some-error"))
 
 				Expect(notCreatedVM.Stop()).To(MatchError("failed to stop VM: some-error"))
 			})
@@ -204,10 +206,11 @@ var _ = Describe("Not Created", func() {
 		Context("when opts are provided", func() {
 			It("should import and start the vm with given options", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, nil),
 					mockUI.EXPECT().Say("Allocating 4000 MB out of 8000 MB total system memory (5000 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{
+						Name:   "some-vm",
 						Memory: uint64(4000),
 						CPUs:   3,
 					}).Return(nil),
@@ -227,10 +230,11 @@ var _ = Describe("Not Created", func() {
 		Context("when the opts are not provided", func() {
 			It("should give the VM the default memory and cpus", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, nil),
 					mockUI.EXPECT().Say("Allocating 3500 MB out of 8000 MB total system memory (5000 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{
+						Name:   "some-vm",
 						Memory: uint64(3500),
 						CPUs:   7,
 					}).Return(nil),
@@ -248,7 +252,7 @@ var _ = Describe("Not Created", func() {
 
 		Context("when there is an error seeing if conflicting vms are present", func() {
 			It("should return an error", func() {
-				mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, errors.New("some-error"))
+				mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, errors.New("some-error"))
 
 				Expect(notCreatedVM.Start(&vm.StartOpts{})).To(MatchError("failed to start VM: some-error"))
 			})
@@ -256,7 +260,7 @@ var _ = Describe("Not Created", func() {
 
 		Context("when there are conflicting vms present", func() {
 			It("should return an error", func() {
-				mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(true, nil)
+				mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(true, nil)
 
 				Expect(notCreatedVM.Start(&vm.StartOpts{})).To(MatchError("old version of PCF Dev already running"))
 			})
@@ -265,10 +269,10 @@ var _ = Describe("Not Created", func() {
 		Context("when there is an error importing the VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, nil),
 					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(errors.New("some-error")),
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{Name: "some-vm", Memory: uint64(3072)}).Return(errors.New("some-error")),
 				)
 
 				Expect(notCreatedVM.Start(&vm.StartOpts{
@@ -280,10 +284,10 @@ var _ = Describe("Not Created", func() {
 		Context("when there is an error constructing a stopped VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, nil),
 					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(nil),
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{Name: "some-vm", Memory: uint64(3072)}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
 
@@ -296,10 +300,10 @@ var _ = Describe("Not Created", func() {
 		Context("when there is an error starting the stopped VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent("some-vm").Return(false, nil),
+					mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, nil),
 					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM("some-vm", &config.VMConfig{Memory: uint64(3072)}).Return(nil),
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{Name: "some-vm", Memory: uint64(3072)}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("failed to start VM: some-error")),
 				)

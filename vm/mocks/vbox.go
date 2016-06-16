@@ -29,7 +29,7 @@ func (_m *MockVBox) EXPECT() *_MockVBoxRecorder {
 	return _m.recorder
 }
 
-func (_m *MockVBox) ConflictingVMPresent(_param0 string) (bool, error) {
+func (_m *MockVBox) ConflictingVMPresent(_param0 *config.VMConfig) (bool, error) {
 	ret := _m.ctrl.Call(_m, "ConflictingVMPresent", _param0)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
@@ -40,17 +40,17 @@ func (_mr *_MockVBoxRecorder) ConflictingVMPresent(arg0 interface{}) *gomock.Cal
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ConflictingVMPresent", arg0)
 }
 
-func (_m *MockVBox) ImportVM(_param0 string, _param1 *config.VMConfig) error {
-	ret := _m.ctrl.Call(_m, "ImportVM", _param0, _param1)
+func (_m *MockVBox) ImportVM(_param0 *config.VMConfig) error {
+	ret := _m.ctrl.Call(_m, "ImportVM", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockVBoxRecorder) ImportVM(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ImportVM", arg0, arg1)
+func (_mr *_MockVBoxRecorder) ImportVM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ImportVM", arg0)
 }
 
-func (_m *MockVBox) PowerOffVM(_param0 string) error {
+func (_m *MockVBox) PowerOffVM(_param0 *config.VMConfig) error {
 	ret := _m.ctrl.Call(_m, "PowerOffVM", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -60,7 +60,7 @@ func (_mr *_MockVBoxRecorder) PowerOffVM(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "PowerOffVM", arg0)
 }
 
-func (_m *MockVBox) ResumeVM(_param0 string) error {
+func (_m *MockVBox) ResumeVM(_param0 *config.VMConfig) error {
 	ret := _m.ctrl.Call(_m, "ResumeVM", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -70,17 +70,17 @@ func (_mr *_MockVBoxRecorder) ResumeVM(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ResumeVM", arg0)
 }
 
-func (_m *MockVBox) StartVM(_param0 string, _param1 string, _param2 string, _param3 string) error {
-	ret := _m.ctrl.Call(_m, "StartVM", _param0, _param1, _param2, _param3)
+func (_m *MockVBox) StartVM(_param0 *config.VMConfig) error {
+	ret := _m.ctrl.Call(_m, "StartVM", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockVBoxRecorder) StartVM(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "StartVM", arg0, arg1, arg2, arg3)
+func (_mr *_MockVBoxRecorder) StartVM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "StartVM", arg0)
 }
 
-func (_m *MockVBox) StopVM(_param0 string) error {
+func (_m *MockVBox) StopVM(_param0 *config.VMConfig) error {
 	ret := _m.ctrl.Call(_m, "StopVM", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -90,7 +90,7 @@ func (_mr *_MockVBoxRecorder) StopVM(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "StopVM", arg0)
 }
 
-func (_m *MockVBox) SuspendVM(_param0 string) error {
+func (_m *MockVBox) SuspendVM(_param0 *config.VMConfig) error {
 	ret := _m.ctrl.Call(_m, "SuspendVM", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0

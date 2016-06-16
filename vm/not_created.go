@@ -8,16 +8,15 @@ import (
 )
 
 type NotCreated struct {
-	Name string
-
-	VBox    VBox
-	UI      UI
-	Builder Builder
-	Config  *config.Config
+	VBox     VBox
+	UI       UI
+	Builder  Builder
+	Config   *config.Config
+	VMConfig *config.VMConfig
 }
 
 func (n *NotCreated) Stop() error {
-	conflict, err := n.VBox.ConflictingVMPresent(n.Name)
+	conflict, err := n.VBox.ConflictingVMPresent(n.VMConfig)
 	if err != nil {
 		return &StopVMError{err}
 	}
@@ -52,7 +51,7 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 }
 
 func (n *NotCreated) Start(opts *StartOpts) error {
-	conflict, err := n.VBox.ConflictingVMPresent(n.Name)
+	conflict, err := n.VBox.ConflictingVMPresent(n.VMConfig)
 	if err != nil {
 		return &StartVMError{err}
 	}
@@ -76,14 +75,15 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 
 	n.UI.Say(fmt.Sprintf("Allocating %d MB out of %d MB total system memory (%d MB free).", memory, n.Config.TotalMemory, n.Config.FreeMemory))
 	n.UI.Say("Importing VM...")
-	if err := n.VBox.ImportVM(n.Name, &config.VMConfig{
+	if err := n.VBox.ImportVM(&config.VMConfig{
+		Name:   n.VMConfig.Name,
 		Memory: memory,
 		CPUs:   cpus,
 	}); err != nil {
 		return &ImportVMError{err}
 	}
 
-	stoppedVM, err := n.Builder.VM(n.Name)
+	stoppedVM, err := n.Builder.VM(n.VMConfig.Name)
 	if err != nil {
 		return &StartVMError{err}
 	}

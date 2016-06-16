@@ -76,23 +76,23 @@ const (
 	StatusNotCreated = "Not created"
 )
 
-func (v *VBox) StartVM(vmName string, ip string, sshPort string, domain string) error {
-	if err := v.Driver.StartVM(vmName); err != nil {
+func (v *VBox) StartVM(vmConfig *config.VMConfig) error {
+	if err := v.Driver.StartVM(vmConfig.Name); err != nil {
 		return err
 	}
 
-	if err := v.configureNetwork(ip, sshPort); err != nil {
+	if err := v.configureNetwork(vmConfig.IP, vmConfig.SSHPort); err != nil {
 		return err
 	}
-	if err := v.configureEnvironment(ip, sshPort); err != nil {
-		return err
-	}
-
-	if err := v.Driver.StopVM(vmName); err != nil {
+	if err := v.configureEnvironment(vmConfig.IP, vmConfig.SSHPort); err != nil {
 		return err
 	}
 
-	return v.Driver.StartVM(vmName)
+	if err := v.Driver.StopVM(vmConfig.Name); err != nil {
+		return err
+	}
+
+	return v.Driver.StartVM(vmConfig.Name)
 }
 
 func (v *VBox) configureNetwork(ip string, sshPort string) error {
@@ -139,15 +139,15 @@ func (v *VBox) proxySettings(ip string) (settings string, err error) {
 	}, "\n"), nil
 }
 
-func (v *VBox) ImportVM(vmName string, vmConfig *config.VMConfig) error {
-	if err := v.Driver.CreateVM(vmName, v.Config.VMDir); err != nil {
+func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {
+	if err := v.Driver.CreateVM(vmConfig.Name, v.Config.VMDir); err != nil {
 		return err
 	}
 
-	diskName := vmName + "-disk1.vmdk"
+	diskName := vmConfig.Name + "-disk1.vmdk"
 	compressedDisk := filepath.Join(v.Config.OVADir, diskName)
-	uncompressedDisk := filepath.Join(v.Config.VMDir, vmName, diskName)
-	if err := v.FS.Extract(filepath.Join(v.Config.OVADir, vmName+".ova"), v.Config.OVADir, diskName); err != nil {
+	uncompressedDisk := filepath.Join(v.Config.VMDir, vmConfig.Name, diskName)
+	if err := v.FS.Extract(filepath.Join(v.Config.OVADir, vmConfig.Name+".ova"), v.Config.OVADir, diskName); err != nil {
 		return err
 	}
 
@@ -159,7 +159,7 @@ func (v *VBox) ImportVM(vmName string, vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	if err := v.Driver.AttachDisk(vmName, uncompressedDisk); err != nil {
+	if err := v.Driver.AttachDisk(vmConfig.Name, uncompressedDisk); err != nil {
 		return err
 	}
 
@@ -179,7 +179,7 @@ func (v *VBox) ImportVM(vmName string, vmConfig *config.VMConfig) error {
 		}
 	}
 
-	if err := v.Driver.AttachNetworkInterface(selectedInterface.Name, vmName); err != nil {
+	if err := v.Driver.AttachNetworkInterface(selectedInterface.Name, vmConfig.Name); err != nil {
 		return err
 	}
 
@@ -188,53 +188,53 @@ func (v *VBox) ImportVM(vmName string, vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	if err := v.Driver.ForwardPort(vmName, "ssh", sshPort, "22"); err != nil {
+	if err := v.Driver.ForwardPort(vmConfig.Name, "ssh", sshPort, "22"); err != nil {
 		return err
 	}
 
-	if err := v.Driver.SetCPUs(vmName, vmConfig.CPUs); err != nil {
+	if err := v.Driver.SetCPUs(vmConfig.Name, vmConfig.CPUs); err != nil {
 		return err
 	}
 
-	if err := v.Driver.SetMemory(vmName, vmConfig.Memory); err != nil {
+	if err := v.Driver.SetMemory(vmConfig.Name, vmConfig.Memory); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (v *VBox) DestroyVM(vmName string) error {
-	return v.Driver.DestroyVM(vmName)
+func (v *VBox) DestroyVM(vmConfig *config.VMConfig) error {
+	return v.Driver.DestroyVM(vmConfig.Name)
 }
 
-func (v *VBox) PowerOffVM(vmName string) error {
-	return v.Driver.PowerOffVM(vmName)
+func (v *VBox) PowerOffVM(vmConfig *config.VMConfig) error {
+	return v.Driver.PowerOffVM(vmConfig.Name)
 }
 
-func (v *VBox) ConflictingVMPresent(vmName string) (conflict bool, err error) {
+func (v *VBox) ConflictingVMPresent(vmConfig *config.VMConfig) (conflict bool, err error) {
 	vms, err := v.Driver.RunningVMs()
 	if err != nil {
 		return false, err
 	}
 
 	for _, vm := range vms {
-		if strings.HasPrefix(vm, "pcfdev-") && vm != vmName {
+		if strings.HasPrefix(vm, "pcfdev-") && vm != vmConfig.Name {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-func (v *VBox) StopVM(vmName string) error {
-	return v.Driver.StopVM(vmName)
+func (v *VBox) StopVM(vmConfig *config.VMConfig) error {
+	return v.Driver.StopVM(vmConfig.Name)
 }
 
-func (v *VBox) SuspendVM(vmName string) error {
-	return v.Driver.SuspendVM(vmName)
+func (v *VBox) SuspendVM(vmConfig *config.VMConfig) error {
+	return v.Driver.SuspendVM(vmConfig.Name)
 }
 
-func (v *VBox) ResumeVM(vmName string) error {
-	return v.Driver.ResumeVM(vmName)
+func (v *VBox) ResumeVM(vmConfig *config.VMConfig) error {
+	return v.Driver.ResumeVM(vmConfig.Name)
 }
 
 func (v *VBox) DestroyPCFDevVMs() (int, error) {

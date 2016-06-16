@@ -1,6 +1,10 @@
 package config
 
 type VMConfig struct {
-	Memory uint64
-	CPUs   int
+	Name    string
+	Domain  string
+	IP      string
+	Memory  uint64
+	CPUs    int
+	SSHPort string
 }

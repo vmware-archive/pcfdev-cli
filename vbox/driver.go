@@ -131,7 +131,13 @@ func (d *VBoxDriver) PowerOffVM(vmName string) error {
 }
 
 func (d *VBoxDriver) DestroyVM(vmName string) error {
-	_, err := d.VBoxManage("unregistervm", vmName, "--delete")
+	var err error
+	for attempts := 0; attempts < 50; attempts++ {
+		_, err = d.VBoxManage("unregistervm", vmName, "--delete")
+		if err == nil {
+			return nil
+		}
+	}
 	return err
 }
 

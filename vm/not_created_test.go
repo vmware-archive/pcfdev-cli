@@ -34,7 +34,8 @@ var _ = Describe("Not Created", func() {
 
 		notCreatedVM = vm.NotCreated{
 			VMConfig: &config.VMConfig{
-				Name: "some-vm",
+				Name:     "some-vm",
+				DiskName: "some-vm-disk1.vmdk",
 			},
 
 			VBox:    mockVBox,
@@ -210,9 +211,10 @@ var _ = Describe("Not Created", func() {
 					mockUI.EXPECT().Say("Allocating 4000 MB out of 8000 MB total system memory (5000 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM(&config.VMConfig{
-						Name:   "some-vm",
-						Memory: uint64(4000),
-						CPUs:   3,
+						Name:     "some-vm",
+						DiskName: "some-vm-disk1.vmdk",
+						Memory:   uint64(4000),
+						CPUs:     3,
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(&vm.StartOpts{}),
@@ -234,9 +236,10 @@ var _ = Describe("Not Created", func() {
 					mockUI.EXPECT().Say("Allocating 3500 MB out of 8000 MB total system memory (5000 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM(&config.VMConfig{
-						Name:   "some-vm",
-						Memory: uint64(3500),
-						CPUs:   7,
+						Name:     "some-vm",
+						DiskName: "some-vm-disk1.vmdk",
+						Memory:   uint64(3500),
+						CPUs:     7,
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(nil),
@@ -272,7 +275,11 @@ var _ = Describe("Not Created", func() {
 					mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, nil),
 					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM(&config.VMConfig{Name: "some-vm", Memory: uint64(3072)}).Return(errors.New("some-error")),
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{
+						Name:     "some-vm",
+						DiskName: "some-vm-disk1.vmdk",
+						Memory:   uint64(3072),
+					}).Return(errors.New("some-error")),
 				)
 
 				Expect(notCreatedVM.Start(&vm.StartOpts{
@@ -287,7 +294,11 @@ var _ = Describe("Not Created", func() {
 					mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, nil),
 					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM(&config.VMConfig{Name: "some-vm", Memory: uint64(3072)}).Return(nil),
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{
+						Name:     "some-vm",
+						DiskName: "some-vm-disk1.vmdk",
+						Memory:   uint64(3072),
+					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
 
@@ -303,7 +314,11 @@ var _ = Describe("Not Created", func() {
 					mockVBox.EXPECT().ConflictingVMPresent(notCreatedVM.VMConfig).Return(false, nil),
 					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
-					mockVBox.EXPECT().ImportVM(&config.VMConfig{Name: "some-vm", Memory: uint64(3072)}).Return(nil),
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{
+						Name:     "some-vm",
+						DiskName: "some-vm-disk1.vmdk",
+						Memory:   uint64(3072),
+					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("failed to start VM: some-error")),
 				)

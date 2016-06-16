@@ -64,6 +64,7 @@ func main() {
 		Builder: &vm.VBoxBuilder{
 			Driver: &vbox.VBoxDriver{},
 			Config: config,
+			FS:     fileSystem,
 		},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},

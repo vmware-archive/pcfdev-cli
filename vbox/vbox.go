@@ -1,6 +1,7 @@
 package vbox
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -144,10 +145,9 @@ func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	diskName := vmConfig.Name + "-disk1.vmdk"
-	compressedDisk := filepath.Join(v.Config.OVADir, diskName)
-	uncompressedDisk := filepath.Join(v.Config.VMDir, vmConfig.Name, diskName)
-	if err := v.FS.Extract(filepath.Join(v.Config.OVADir, vmConfig.Name+".ova"), v.Config.OVADir, diskName); err != nil {
+	compressedDisk := filepath.Join(v.Config.OVADir, vmConfig.DiskName)
+	uncompressedDisk := filepath.Join(v.Config.VMDir, vmConfig.Name, vmConfig.DiskName)
+	if err := v.FS.Extract(filepath.Join(v.Config.OVADir, vmConfig.Name+".ova"), v.Config.OVADir, vmConfig.DiskName); err != nil {
 		return err
 	}
 
@@ -237,22 +237,29 @@ func (v *VBox) ResumeVM(vmConfig *config.VMConfig) error {
 	return v.Driver.ResumeVM(vmConfig.Name)
 }
 
-func (v *VBox) DestroyPCFDevVMs() (int, error) {
+func (v *VBox) DestroyPCFDevVMs() error {
 	vms, err := v.Driver.VMs()
 	if err != nil {
-		return 0, err
+		return err
 	}
-
-	destroyedVMCount := 0
 
 	for _, vm := range vms {
 		if strings.HasPrefix(vm, "pcfdev-") {
 			v.Driver.PowerOffVM(vm)
-			if v.Driver.DestroyVM(vm) == nil {
-				destroyedVMCount++
-			}
+			v.Driver.DestroyVM(vm)
 		}
 	}
 
-	return destroyedVMCount, nil
+	vms, err = v.Driver.VMs()
+	if err != nil {
+		return err
+	}
+
+	for _, vm := range vms {
+		if strings.HasPrefix(vm, "pcfdev-") {
+			return errors.New("failed to destroy all pcfdev vms")
+		}
+	}
+
+	return nil
 }

@@ -38,7 +38,7 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
 type VBox interface {
-	DestroyPCFDevVMs() (destroyedVMCount int, err error)
+	DestroyPCFDevVMs() (err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/downloader.go github.com/pivotal-cf/pcfdev-cli/plugin Downloader
@@ -193,11 +193,8 @@ func (p *Plugin) resume() error {
 }
 
 func (p *Plugin) destroy() error {
-	destroyedVMCount, err := p.VBox.DestroyPCFDevVMs()
-	if err != nil {
+	if err := p.VBox.DestroyPCFDevVMs(); err != nil {
 		p.UI.Failed(fmt.Sprintf("Error destroying PCF Dev VM: %s", err))
-	} else if destroyedVMCount == 0 {
-		p.UI.Say("PCF Dev VM has not been created")
 	} else {
 		p.UI.Say("PCF Dev VM has been destroyed")
 	}

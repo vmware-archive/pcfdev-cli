@@ -76,9 +76,10 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 	n.UI.Say(fmt.Sprintf("Allocating %d MB out of %d MB total system memory (%d MB free).", memory, n.Config.TotalMemory, n.Config.FreeMemory))
 	n.UI.Say("Importing VM...")
 	if err := n.VBox.ImportVM(&config.VMConfig{
-		Name:   n.VMConfig.Name,
-		Memory: memory,
-		CPUs:   cpus,
+		Name:     n.VMConfig.Name,
+		DiskName: n.VMConfig.DiskName,
+		Memory:   memory,
+		CPUs:     cpus,
 	}); err != nil {
 		return &ImportVMError{err}
 	}

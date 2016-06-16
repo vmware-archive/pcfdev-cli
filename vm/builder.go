@@ -3,6 +3,7 @@ package vm
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
 	"github.com/pivotal-cf/pcfdev-cli/address"
@@ -22,9 +23,15 @@ type Driver interface {
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 }
 
+//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vm FS
+type FS interface {
+	Exists(path string) (exists bool, err error)
+}
+
 type VBoxBuilder struct {
 	Config *config.Config
 	Driver Driver
+	FS     FS
 }
 
 func (b *VBoxBuilder) VM(vmName string) (VM, error) {
@@ -40,6 +47,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		},
 		Config: b.Config,
 	}
+	diskName := vmName + "-disk1.vmdk"
 
 	exists, err := b.Driver.VMExists(vmName)
 	if err != nil {
@@ -47,24 +55,40 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	}
 
 	if !exists {
+		dirExists, err := b.FS.Exists(filepath.Join(b.Config.VMDir, vmName))
+		if err != nil {
+			return nil, err
+		}
+
+		if dirExists {
+			return &Invalid{
+				UI: termUI,
+			}, nil
+		}
+
 		return &NotCreated{
 			VBox:    vbx,
 			UI:      termUI,
 			Builder: b,
 			Config:  b.Config,
 			VMConfig: &config.VMConfig{
-				Name: vmName,
+				Name:     vmName,
+				DiskName: diskName,
 			},
 		}, nil
 	}
 
 	ip, err := b.Driver.GetVMIP(vmName)
 	if err != nil {
-		return nil, err
+		return &Invalid{
+			UI: termUI,
+		}, nil
 	}
 	domain, err := address.DomainForIP(ip)
 	if err != nil {
-		return nil, err
+		return &Invalid{
+			UI: termUI,
+		}, nil
 	}
 	memory, err := b.Driver.GetMemory(vmName)
 	if err != nil {
@@ -72,7 +96,9 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	}
 	sshPort, err := b.Driver.GetHostForwardPort(vmName, "ssh")
 	if err != nil {
-		return nil, err
+		return &Invalid{
+			UI: termUI,
+		}, nil
 	}
 
 	state, err := b.Driver.VMState(vmName)
@@ -82,11 +108,12 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	if state == vbox.StateRunning {
 		return &Running{
 			VMConfig: &config.VMConfig{
-				Name:    vmName,
-				IP:      ip,
-				SSHPort: sshPort,
-				Domain:  domain,
-				Memory:  memory,
+				Name:     vmName,
+				DiskName: diskName,
+				IP:       ip,
+				SSHPort:  sshPort,
+				Domain:   domain,
+				Memory:   memory,
 			},
 
 			UI:   termUI,
@@ -97,11 +124,12 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	if state == vbox.StateSaved || state == vbox.StatePaused {
 		return &Suspended{
 			VMConfig: &config.VMConfig{
-				Name:    vmName,
-				IP:      ip,
-				SSHPort: sshPort,
-				Domain:  domain,
-				Memory:  memory,
+				Name:     vmName,
+				DiskName: diskName,
+				IP:       ip,
+				SSHPort:  sshPort,
+				Domain:   domain,
+				Memory:   memory,
 			},
 			Config: b.Config,
 
@@ -113,11 +141,12 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	if state == vbox.StateStopped || state == vbox.StateAborted {
 		return &Stopped{
 			VMConfig: &config.VMConfig{
-				Name:    vmName,
-				IP:      ip,
-				SSHPort: sshPort,
-				Domain:  domain,
-				Memory:  memory,
+				Name:     vmName,
+				DiskName: diskName,
+				IP:       ip,
+				SSHPort:  sshPort,
+				Domain:   domain,
+				Memory:   memory,
 			},
 			Config: b.Config,
 

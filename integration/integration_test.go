@@ -168,7 +168,6 @@ var _ = Describe("pcfdev", func() {
 		session, err = gexec.Start(redestroyCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
-		Expect(session).To(gbytes.Say("PCF Dev VM has not been created"))
 
 		By("setting proxy variables")
 		os.Setenv("HTTP_PROXY", "192.168.93.23")

@@ -1,3 +1,7 @@
 #!/bin/bash
 
+pcfdev_dir=$(cd `dirname $0` && cd .. && pwd)
+mocks_dirs=$(go list -f '{{.Dir}}' github.com/pivotal-cf/pcfdev-cli/... | grep -v /vendor/ | grep '/mocks$')
+find $mocks_dirs -name "*.go" -exec rm {} \;
+
 go generate $(go list github.com/pivotal-cf/pcfdev-cli/... | grep -v /vendor/)

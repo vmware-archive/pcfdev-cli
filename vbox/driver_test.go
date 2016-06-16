@@ -355,7 +355,7 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say(`storagecontrollername0="SATA"`))
-			Expect(session).To(gbytes.Say(fmt.Sprintf(`"SATA-0-0"="%s"`, filepath.Join(tmpDir, "some-disk.vmdk"))))
+			Expect(session).To(gbytes.Say(`"SATA-0-0"=".*some-disk.vmdk"`))
 		})
 
 		Context("when adding the storage controller fails", func() {

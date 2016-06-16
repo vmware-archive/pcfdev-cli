@@ -55,7 +55,7 @@ func (fs *FS) DeleteAllExcept(path string, filenames []string) error {
 
 	for _, file := range files {
 		if !fs.fileInSet(file.Name(), filenames) {
-			err := fs.RemoveFile(filepath.Join(path, file.Name()))
+			err := fs.Remove(filepath.Join(path, file.Name()))
 			if err != nil {
 				return err
 			}
@@ -65,8 +65,8 @@ func (fs *FS) DeleteAllExcept(path string, filenames []string) error {
 	return nil
 }
 
-func (fs *FS) RemoveFile(path string) error {
-	err := os.Remove(path)
+func (fs *FS) Remove(path string) error {
+	err := os.RemoveAll(path)
 	if err != nil {
 		return fmt.Errorf("failed to remove file %s: %s", path, err)
 	}

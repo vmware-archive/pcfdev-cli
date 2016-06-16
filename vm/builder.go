@@ -90,7 +90,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		}, nil
 	}
 
-	if state == vbox.StateSaved {
+	if state == vbox.StateSaved || state == vbox.StatePaused {
 		return &Suspended{
 			Name:    vmName,
 			IP:      ip,
@@ -104,23 +104,8 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		}, nil
 	}
 
-	if state == vbox.StateStopped {
+	if state == vbox.StateStopped || state == vbox.StateAborted {
 		return &Stopped{
-			Name:    vmName,
-			IP:      ip,
-			SSHPort: sshPort,
-			Domain:  domain,
-			Memory:  memory,
-			Config:  b.Config,
-
-			UI:   termUI,
-			SSH:  ssh,
-			VBox: vbx,
-		}, nil
-	}
-
-	if state == vbox.StateAborted {
-		return &Aborted{
 			Name:    vmName,
 			IP:      ip,
 			SSHPort: sshPort,

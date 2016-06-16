@@ -92,14 +92,14 @@ func (_mr *_MockFSRecorder) Move(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Move", arg0, arg1)
 }
 
-func (_m *MockFS) RemoveFile(_param0 string) error {
-	ret := _m.ctrl.Call(_m, "RemoveFile", _param0)
+func (_m *MockFS) Remove(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "Remove", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockFSRecorder) RemoveFile(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "RemoveFile", arg0)
+func (_mr *_MockFSRecorder) Remove(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Remove", arg0)
 }
 
 func (_m *MockFS) Write(_param0 string, _param1 io.Reader) error {

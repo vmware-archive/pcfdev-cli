@@ -104,36 +104,6 @@ var _ = Describe("Stopped", func() {
 		})
 	})
 
-	Describe("Destroy", func() {
-		It("should poweroff and destroy the vm", func() {
-			gomock.InOrder(
-				mockVBox.EXPECT().PowerOffVM("some-vm").Return(nil),
-				mockVBox.EXPECT().DestroyVM("some-vm").Return(nil),
-			)
-
-			Expect(runningVM.Destroy()).To(Succeed())
-		})
-
-		Context("when powering off the vm fails", func() {
-			It("should return an error", func() {
-				mockVBox.EXPECT().PowerOffVM("some-vm").Return(errors.New("some-error"))
-
-				Expect(runningVM.Destroy()).To(MatchError("failed to destroy VM: some-error"))
-			})
-		})
-
-		Context("when destroying the vm fails", func() {
-			It("should return an error", func() {
-				gomock.InOrder(
-					mockVBox.EXPECT().PowerOffVM("some-vm").Return(nil),
-					mockVBox.EXPECT().DestroyVM("some-vm").Return(errors.New("some-error")),
-				)
-
-				Expect(runningVM.Destroy()).To(MatchError("failed to destroy VM: some-error"))
-			})
-		})
-	})
-
 	Describe("Suspend", func() {
 		It("should suspend the vm", func() {
 			mockUI.EXPECT().Say("Suspending VM...")

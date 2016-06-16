@@ -28,13 +28,13 @@ func (_m *MockVBox) EXPECT() *_MockVBoxRecorder {
 	return _m.recorder
 }
 
-func (_m *MockVBox) GetPCFDevVMs() ([]string, error) {
-	ret := _m.ctrl.Call(_m, "GetPCFDevVMs")
-	ret0, _ := ret[0].([]string)
+func (_m *MockVBox) DestroyPCFDevVMs() (int, error) {
+	ret := _m.ctrl.Call(_m, "DestroyPCFDevVMs")
+	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockVBoxRecorder) GetPCFDevVMs() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetPCFDevVMs")
+func (_mr *_MockVBoxRecorder) DestroyPCFDevVMs() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DestroyPCFDevVMs")
 }

@@ -42,16 +42,6 @@ func (r *Running) Status() string {
 	return "Running"
 }
 
-func (r *Running) Destroy() error {
-	if err := r.VBox.PowerOffVM(r.Name); err != nil {
-		return &DestroyVMError{err}
-	}
-	if err := r.VBox.DestroyVM(r.Name); err != nil {
-		return &DestroyVMError{err}
-	}
-	return nil
-}
-
 func (r *Running) Suspend() error {
 	r.UI.Say("Suspending VM...")
 	if err := r.VBox.SuspendVM(r.Name); err != nil {

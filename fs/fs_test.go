@@ -180,22 +180,16 @@ var _ = Describe("Filesystem", func() {
 		})
 	})
 
-	Describe("#RemoveFile", func() {
+	Describe("#Remove", func() {
 		BeforeEach(func() {
 			Expect(ioutil.WriteFile(filepath.Join(tmpDir, "some-file"), []byte("some-contents"), 0644)).To(Succeed())
 		})
 
 		It("should remove the given file", func() {
-			Expect(fs.RemoveFile(filepath.Join(tmpDir, "some-file"))).To(Succeed())
+			Expect(fs.Remove(filepath.Join(tmpDir, "some-file"))).To(Succeed())
 
 			_, err := os.Stat(filepath.Join(tmpDir, "some-file"))
 			Expect(os.IsNotExist(err)).To(BeTrue())
-		})
-
-		Context("when removing a file fails", func() {
-			It("should return an error", func() {
-				Expect(fs.RemoveFile(filepath.Join(tmpDir, "some-bad-file"))).To(MatchError(ContainSubstring(fmt.Sprintf("failed to remove file %s:", filepath.Join(tmpDir, "some-bad-file")))))
-			})
 		})
 	})
 

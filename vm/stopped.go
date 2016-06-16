@@ -61,10 +61,6 @@ func (s *Stopped) Status() string {
 	return "Stopped"
 }
 
-func (s *Stopped) Destroy() error {
-	return s.VBox.DestroyVM(s.Name)
-}
-
 func (s *Stopped) Suspend() error {
 	s.UI.Say("Your VM is currently stopped and cannot be suspended.")
 	return nil

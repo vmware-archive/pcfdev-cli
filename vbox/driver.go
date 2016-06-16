@@ -20,6 +20,7 @@ const (
 	StateSaved   = "saved"
 	StateStopped = "poweroff"
 	StateAborted = "aborted"
+	StatePaused  = "paused"
 )
 
 func (*VBoxDriver) VBoxManage(arg ...string) (output []byte, err error) {

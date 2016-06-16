@@ -25,6 +25,7 @@ var _ = Describe("Plugin", func() {
 		mockClient        *mocks.MockClient
 		mockBuilder       *mocks.MockBuilder
 		mockVM            *mocks.MockVM
+		mockFS            *mocks.MockFS
 		fakeCliConnection *fakes.FakeCliConnection
 		pcfdev            *plugin.Plugin
 	)
@@ -38,16 +39,18 @@ var _ = Describe("Plugin", func() {
 		mockClient = mocks.NewMockClient(mockCtrl)
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
 		mockVM = mocks.NewMockVM(mockCtrl)
+		mockFS = mocks.NewMockFS(mockCtrl)
 		fakeCliConnection = &fakes.FakeCliConnection{}
 		pcfdev = &plugin.Plugin{
 			SSH:        mockSSH,
 			UI:         mockUI,
 			VBox:       mockVBox,
+			FS:         mockFS,
 			Downloader: mockDownloader,
 			Client:     mockClient,
 			Config: &config.Config{
 				DefaultVMName: "some-vm-name",
-				MinMemory:     uint64(3024),
+				VMDir:         "some-vm-dir",
 			},
 			Builder: mockBuilder,
 		}
@@ -540,72 +543,47 @@ var _ = Describe("Plugin", func() {
 	})
 
 	Context("destroy", func() {
-		var mockVM2 *mocks.MockVM
-
-		BeforeEach(func() {
-			mockVM2 = mocks.NewMockVM(mockCtrl)
-		})
-
-		It("should destroy all PCF Dev VMs created by the CLI", func() {
-			vms := []string{"pcfdev-0.0.0", "pcfdev-0.0.1"}
+		It("should destroy all PCF Dev VMs created by the CLI and the VM dir", func() {
 			gomock.InOrder(
-				mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
-				mockUI.EXPECT().Say("Destroying VM..."),
-				mockBuilder.EXPECT().VM("pcfdev-0.0.0").Return(mockVM, nil),
-				mockVM.EXPECT().Destroy().Return(nil),
-				mockBuilder.EXPECT().VM("pcfdev-0.0.1").Return(mockVM2, nil),
-				mockVM2.EXPECT().Destroy().Return(nil),
+				mockVBox.EXPECT().DestroyPCFDevVMs().Return(2, nil),
 				mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
+				mockFS.EXPECT().Remove("some-vm-dir"),
 			)
 
 			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
 		})
 
-		Context("there are no PCF Dev VMs", func() {
-			It("should send an error message", func() {
+		Context("when there are no PCF Dev VMs", func() {
+			It("should print a message and remove the VM dir", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().GetPCFDevVMs().Return([]string{}, nil),
+					mockVBox.EXPECT().DestroyPCFDevVMs().Return(0, nil),
 					mockUI.EXPECT().Say("PCF Dev VM has not been created"),
+					mockFS.EXPECT().Remove("some-vm-dir"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
 			})
 		})
 
-		Context("there is an error getting the PCFDev names", func() {
-			It("should send an error message", func() {
+		Context("when there is an error destroying PCF Dev VMs", func() {
+			It("should print a message and remove the VM dir", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().GetPCFDevVMs().Return([]string{}, errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: failed to destroy VM: some-error"),
+					mockVBox.EXPECT().DestroyPCFDevVMs().Return(0, errors.New("some-error")),
+					mockUI.EXPECT().Failed("Error destroying PCF Dev VM: some-error"),
+					mockFS.EXPECT().Remove("some-vm-dir"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
 			})
 		})
 
-		Context("there is an error building the VMs", func() {
-			It("should send an error message", func() {
-				vms := []string{"pcfdev-0.0.0"}
+		Context("when there is an error removing the VM dir", func() {
+			It("print a message", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
-					mockUI.EXPECT().Say("Destroying VM..."),
-					mockBuilder.EXPECT().VM("pcfdev-0.0.0").Return(nil, errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: failed to destroy VM: some-error"),
-				)
-
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})
-			})
-		})
-
-		Context("there is an error destroying the VMs", func() {
-			It("should send an error message", func() {
-				vms := []string{"pcfdev-0.0.0"}
-				gomock.InOrder(
-					mockVBox.EXPECT().GetPCFDevVMs().Return(vms, nil),
-					mockUI.EXPECT().Say("Destroying VM..."),
-					mockBuilder.EXPECT().VM("pcfdev-0.0.0").Return(mockVM, nil),
-					mockVM.EXPECT().Destroy().Return(errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: failed to destroy VM: some-error"),
+					mockVBox.EXPECT().DestroyPCFDevVMs().Return(2, nil),
+					mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
+					mockFS.EXPECT().Remove("some-vm-dir").Return(errors.New("some-error")),
+					mockUI.EXPECT().Failed("Error removing some-vm-dir: some-error"),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})

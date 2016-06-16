@@ -14,6 +14,7 @@ import (
 type Plugin struct {
 	SSH                 SSH
 	UI                  UI
+	FS                  FS
 	VBox                VBox
 	Client              Client
 	Config              *config.Config
@@ -37,7 +38,7 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
 type VBox interface {
-	GetPCFDevVMs() (names []string, err error)
+	DestroyPCFDevVMs() (destroyedVMCount int, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/downloader.go github.com/pivotal-cf/pcfdev-cli/plugin Downloader
@@ -61,6 +62,11 @@ type Builder interface {
 //go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/plugin RequirementsChecker
 type RequirementsChecker interface {
 	CheckMemory(desiredMemory uint64) error
+}
+
+//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin FS
+type FS interface {
+	Remove(path string) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM
@@ -187,27 +193,19 @@ func (p *Plugin) resume() error {
 }
 
 func (p *Plugin) destroy() error {
-	vms, err := p.VBox.GetPCFDevVMs()
+	destroyedVMCount, err := p.VBox.DestroyPCFDevVMs()
 	if err != nil {
-		return &DestroyVMError{err}
-	}
-
-	if len(vms) == 0 {
+		p.UI.Failed(fmt.Sprintf("Error destroying PCF Dev VM: %s", err))
+	} else if destroyedVMCount == 0 {
 		p.UI.Say("PCF Dev VM has not been created")
-		return nil
+	} else {
+		p.UI.Say("PCF Dev VM has been destroyed")
 	}
 
-	p.UI.Say("Destroying VM...")
-	for _, vmName := range vms {
-		vm, err := p.Builder.VM(vmName)
-		if err != nil {
-			return &DestroyVMError{err}
-		}
-		if err := vm.Destroy(); err != nil {
-			return &DestroyVMError{err}
-		}
+	if err := p.FS.Remove(p.Config.VMDir); err != nil {
+		p.UI.Failed(fmt.Sprintf("Error removing %s: %s", p.Config.VMDir, err))
 	}
-	p.UI.Say("PCF Dev VM has been destroyed")
+
 	return nil
 }
 

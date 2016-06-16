@@ -150,14 +150,6 @@ var _ = Describe("Stopped", func() {
 		})
 	})
 
-	Describe("Destroy", func() {
-		It("should destroy the vm", func() {
-			mockVBox.EXPECT().DestroyVM("some-vm").Return(nil)
-
-			Expect(stoppedVM.Destroy()).To(Succeed())
-		})
-	})
-
 	Describe("Suspend", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Say("Your VM is currently stopped and cannot be suspended.")

@@ -60,6 +60,7 @@ func main() {
 		UI:     &plugin.NonTranslatingUI{termUI},
 		Config: config,
 		SSH:    &ssh.SSH{},
+		FS:     fileSystem,
 		Builder: &vm.VBoxBuilder{
 			Driver: &vbox.VBoxDriver{},
 			Config: config,

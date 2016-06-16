@@ -41,7 +41,7 @@ type Driver interface {
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vbox FS
 type FS interface {
 	Extract(archive string, destination string, filename string) error
-	RemoveFile(path string) error
+	Remove(path string) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
@@ -155,7 +155,7 @@ func (v *VBox) ImportVM(vmName string, vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	if err := v.FS.RemoveFile(compressedDisk); err != nil {
+	if err := v.FS.Remove(compressedDisk); err != nil {
 		return err
 	}
 
@@ -237,19 +237,22 @@ func (v *VBox) ResumeVM(vmName string) error {
 	return v.Driver.ResumeVM(vmName)
 }
 
-func (v *VBox) GetPCFDevVMs() ([]string, error) {
+func (v *VBox) DestroyPCFDevVMs() (int, error) {
 	vms, err := v.Driver.VMs()
 	if err != nil {
-		return []string{}, err
+		return 0, err
 	}
 
-	pcfdevVMs := []string{}
+	destroyedVMCount := 0
 
 	for _, vm := range vms {
 		if strings.HasPrefix(vm, "pcfdev-") {
-			pcfdevVMs = append(pcfdevVMs, vm)
+			v.Driver.PowerOffVM(vm)
+			if v.Driver.DestroyVM(vm) == nil {
+				destroyedVMCount++
+			}
 		}
 	}
 
-	return pcfdevVMs, nil
+	return destroyedVMCount, nil
 }

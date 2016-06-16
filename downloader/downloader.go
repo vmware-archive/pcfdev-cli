@@ -22,7 +22,7 @@ type FS interface {
 	Write(path string, contents io.Reader) error
 	MD5(path string) (md5 string, err error)
 	Move(source string, destinationPath string) error
-	RemoveFile(path string) error
+	Remove(path string) error
 	DeleteAllExcept(path string, filenames []string) error
 }
 
@@ -114,7 +114,7 @@ func (d *Downloader) resumeDownload(path string) (md5 string, err error) {
 
 	md5, err = d.download(path, startAtByte)
 	if md5 != d.ExpectedMD5 {
-		if err := d.FS.RemoveFile(d.partialFile(path)); err != nil {
+		if err := d.FS.Remove(d.partialFile(path)); err != nil {
 			return "", err
 		}
 		return d.download(path, 0)

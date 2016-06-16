@@ -16,7 +16,7 @@ type FS interface {
 	Exists(path string) (bool, error)
 	Read(path string) (contents []byte, err error)
 	Write(path string, contents io.Reader) error
-	RemoveFile(path string) error
+	Remove(path string) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/pivnet UI

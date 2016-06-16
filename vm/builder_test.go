@@ -82,6 +82,34 @@ var _ = Describe("Builder", func() {
 				})
 			})
 
+			Context("when vm is aborted", func() {
+				It("should return a stopped vm", func() {
+					gomock.InOrder(
+						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
+						mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(3456), nil),
+						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
+						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateAborted, nil),
+					)
+
+					notCreatedVM, err := builder.VM("some-vm")
+					Expect(err).NotTo(HaveOccurred())
+
+					switch u := notCreatedVM.(type) {
+					case *vm.Stopped:
+						Expect(u.Name).To(Equal("some-vm"))
+						Expect(u.IP).To(Equal("192.168.11.11"))
+						Expect(u.SSHPort).To(Equal("some-port"))
+						Expect(u.Domain).To(Equal("local.pcfdev.io"))
+						Expect(u.SSH).NotTo(BeNil())
+						Expect(u.VBox).NotTo(BeNil())
+						Expect(u.UI).NotTo(BeNil())
+					default:
+						Fail("wrong type")
+					}
+				})
+			})
+
 			Context("when there is an error seeing if vm exists", func() {
 				It("should return an error", func() {
 					mockDriver.EXPECT().VMExists("some-vm").Return(false, errors.New("some-error"))
@@ -182,21 +210,21 @@ var _ = Describe("Builder", func() {
 				})
 			})
 
-			Context("when vm is aborted", func() {
-				It("should return an aborted vm", func() {
+			Context("when vm is paused", func() {
+				It("should return a suspended vm", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
 						mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(3456), nil),
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
-						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateAborted, nil),
+						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StatePaused, nil),
 					)
 
-					abortedVM, err := builder.VM("some-vm")
+					suspendedVM, err := builder.VM("some-vm")
 					Expect(err).NotTo(HaveOccurred())
 
-					switch u := abortedVM.(type) {
-					case *vm.Aborted:
+					switch u := suspendedVM.(type) {
+					case *vm.Suspended:
 						Expect(u.Name).To(Equal("some-vm"))
 						Expect(u.IP).To(Equal("192.168.11.11"))
 						Expect(u.SSHPort).To(Equal("some-port"))

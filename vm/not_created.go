@@ -97,10 +97,6 @@ func (n *NotCreated) Status() string {
 	return "Not Created"
 }
 
-func (n *NotCreated) Destroy() error {
-	return nil
-}
-
 func (n *NotCreated) Suspend() error {
 	n.UI.Say("No VM running, cannot suspend.")
 	return nil

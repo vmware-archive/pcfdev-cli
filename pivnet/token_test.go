@@ -163,7 +163,7 @@ var _ = Describe("Pivnet Token", func() {
 					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(true, nil),
 					mockFS.EXPECT().Read(filepath.Join("some-pcfdev-home", "token")).Return([]byte("some-user-provided-token"), nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(true, nil),
-					mockFS.EXPECT().RemoveFile(filepath.Join("some-pcfdev-home", "token")),
+					mockFS.EXPECT().Remove(filepath.Join("some-pcfdev-home", "token")),
 					mockFS.EXPECT().Write(filepath.Join("some-pcfdev-home", "token"), strings.NewReader("some-user-provided-token")),
 				)
 
@@ -211,7 +211,7 @@ var _ = Describe("Pivnet Token", func() {
 			It("should delete the token file", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(true, nil),
-					mockFS.EXPECT().RemoveFile(filepath.Join("some-pcfdev-home", "token")).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-pcfdev-home", "token")).Return(nil),
 				)
 				Expect(token.Destroy()).To(Succeed())
 			})
@@ -235,7 +235,7 @@ var _ = Describe("Pivnet Token", func() {
 			It("should throw an error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(true, nil),
-					mockFS.EXPECT().RemoveFile(filepath.Join("some-pcfdev-home", "token")).Return(errors.New("some-error")),
+					mockFS.EXPECT().Remove(filepath.Join("some-pcfdev-home", "token")).Return(errors.New("some-error")),
 				)
 				Expect(token.Destroy()).To(MatchError("some-error"))
 			})

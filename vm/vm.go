@@ -11,7 +11,6 @@ import (
 type VBox interface {
 	StartVM(name string, ip string, sshPort string, domain string) error
 	StopVM(name string) error
-	DestroyVM(name string) error
 	ResumeVM(name string) error
 	SuspendVM(name string) error
 	PowerOffVM(name string) error
@@ -37,7 +36,6 @@ type VM interface {
 	Start(*StartOpts) error
 	Stop() error
 	Status() string
-	Destroy() error
 	Suspend() error
 	Resume() error
 

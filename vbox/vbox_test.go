@@ -75,9 +75,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
@@ -114,9 +114,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
@@ -155,7 +155,7 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk").Return(errors.New("some-error")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk").Return(errors.New("some-error")),
 				)
 				Expect(vbx.ImportVM(
 					&config.VMConfig{
@@ -169,8 +169,8 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(errors.New("some-error")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(errors.New("some-error")),
 				)
 				Expect(vbx.ImportVM(
 					&config.VMConfig{
@@ -184,9 +184,9 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")).Return(errors.New("some-error")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")).Return(errors.New("some-error")),
 				)
 				Expect(vbx.ImportVM(
 					&config.VMConfig{
@@ -200,9 +200,9 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(errors.New("some-error")),
 				)
 				Expect(vbx.ImportVM(
@@ -217,9 +217,9 @@ var _ = Describe("vbox", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return([]*network.Interface{}, errors.New("some-error")),
 				)
@@ -242,9 +242,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("", errors.New("some-error")),
@@ -268,9 +268,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
@@ -295,9 +295,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
@@ -323,9 +323,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
@@ -351,9 +351,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
@@ -380,9 +380,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
@@ -411,9 +411,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
@@ -442,9 +442,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
@@ -474,9 +474,9 @@ var _ = Describe("vbox", func() {
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
-					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), "some-ova-dir", "some-vm-disk1.vmdk"),
-					mockDriver.EXPECT().CloneDisk(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-ova-dir", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Extract(filepath.Join("some-ova-dir", "some-vm.ova"), filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), "some-vm-disk1.vmdk"),
+					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),

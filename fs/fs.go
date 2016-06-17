@@ -113,7 +113,7 @@ func (fs *FS) Move(source string, destination string) error {
 	return nil
 }
 
-func (fs *FS) Extract(archivePath string, destination string, file string) error {
+func (fs *FS) Extract(archivePath string, destinationPath string, file string) error {
 	archive, err := os.Open(archivePath)
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %s", archivePath, err)
@@ -129,7 +129,7 @@ func (fs *FS) Extract(archivePath string, destination string, file string) error
 			return fmt.Errorf("malformed tar %s:%s", archivePath, err)
 		}
 		if header.Name == file {
-			fs.Write(filepath.Join(destination, header.Name), reader)
+			fs.Write(destinationPath, reader)
 			return nil
 		}
 	}

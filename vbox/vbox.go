@@ -43,7 +43,7 @@ type Driver interface {
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vbox FS
 type FS interface {
-	Extract(archive string, destination string, filename string) error
+	Extract(archivePath string, destinationPath string, filename string) error
 	Remove(path string) error
 }
 
@@ -147,9 +147,9 @@ func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	compressedDisk := filepath.Join(v.Config.OVADir, vmConfig.DiskName)
+	compressedDisk := filepath.Join(v.Config.VMDir, vmConfig.DiskName) + ".compressed"
 	uncompressedDisk := filepath.Join(v.Config.VMDir, vmConfig.Name, vmConfig.DiskName)
-	if err := v.FS.Extract(filepath.Join(v.Config.OVADir, vmConfig.Name+".ova"), v.Config.OVADir, vmConfig.DiskName); err != nil {
+	if err := v.FS.Extract(filepath.Join(v.Config.OVADir, vmConfig.Name+".ova"), compressedDisk, vmConfig.DiskName); err != nil {
 		return err
 	}
 

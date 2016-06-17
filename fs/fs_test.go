@@ -253,7 +253,12 @@ var _ = Describe("Filesystem", func() {
 		})
 
 		It("should extract the given file from the archive to the destination", func() {
-			Expect(fs.Extract(filepath.Join(tmpDir, "some-tar"), filepath.Join(tmpDir), "some-file.txt")).To(Succeed())
+			Expect(
+				fs.Extract(
+					filepath.Join(tmpDir, "some-tar"),
+					filepath.Join(tmpDir, "some-file.txt"),
+					"some-file.txt"),
+			).To(Succeed())
 			Expect(ioutil.ReadFile(filepath.Join(tmpDir, "some-file.txt"))).To(Equal([]byte("some-contents")))
 			_, err := os.Stat(filepath.Join(tmpDir, "some-other-file.txt"))
 			Expect(os.IsNotExist(err)).To(BeTrue())
@@ -261,14 +266,24 @@ var _ = Describe("Filesystem", func() {
 
 		Context("when the file does not exist in the archive", func() {
 			It("should return an error", func() {
-				Expect(fs.Extract(filepath.Join(tmpDir, "some-tar"), tmpDir, "some-bad-file.txt")).To(
+				Expect(
+					fs.Extract(
+						filepath.Join(tmpDir, "some-tar"),
+						filepath.Join(tmpDir, "some-bad-file.txt"),
+						"some-bad-file.txt"),
+				).To(
 					MatchError(fmt.Sprintf("could not find some-bad-file.txt in %s", filepath.Join(tmpDir, "some-tar"))))
 			})
 		})
 
 		Context("when the archive does not exist", func() {
 			It("should return an error", func() {
-				Expect(fs.Extract("some-bad-archive", tmpDir, "some-file.txt")).To(
+				Expect(
+					fs.Extract(
+						"some-bad-archive",
+						filepath.Join(tmpDir, "some-file.txt"),
+						"some-file.txt"),
+				).To(
 					MatchError(ContainSubstring("failed to open some-bad-archive:")))
 			})
 		})
@@ -279,7 +294,12 @@ var _ = Describe("Filesystem", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(fs.Extract(filepath.Join(tmpDir, "some-bad-tar"), tmpDir, "some-file.txt")).To(
+				Expect(
+					fs.Extract(
+						filepath.Join(tmpDir, "some-bad-tar"),
+						filepath.Join(tmpDir, "some-file.txt"),
+						"some-file.txt"),
+				).To(
 					MatchError(ContainSubstring(fmt.Sprintf("malformed tar %s:", filepath.Join(tmpDir, "some-bad-tar")))))
 			})
 		})

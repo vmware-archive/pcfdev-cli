@@ -8,8 +8,9 @@ import (
 type Network struct{}
 
 type Interface struct {
-	Name string
-	IP   string
+	HardwareAddress string
+	Name            string
+	IP              string
 }
 
 func (n *Network) Interfaces() (interfaces []*Interface, err error) {
@@ -25,13 +26,26 @@ func (n *Network) Interfaces() (interfaces []*Interface, err error) {
 			return nil, err
 		}
 
-		if len(addrs) > 0 {
-			interfaces = append(interfaces, &Interface{
-				IP:   strings.Split(addrs[0].String(), "/")[0],
-				Name: iface.Name,
-			})
+		for _, addr := range addrs {
+			addrString := strings.Split(addr.String(), "/")[0]
+
+			if n.isIPV4(net.ParseIP(addrString)) {
+				interfaces = append(interfaces, &Interface{
+					IP:              addrString,
+					HardwareAddress: iface.HardwareAddr.String(),
+				})
+			}
 		}
 	}
 
 	return interfaces, nil
+}
+
+func (n *Network) isIPV4(ip net.IP) bool {
+	ip4 := ip.To4()
+	if ip4 == nil {
+		return false
+	}
+
+	return len(ip4) == net.IPv4len
 }

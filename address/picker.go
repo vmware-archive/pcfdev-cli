@@ -64,7 +64,7 @@ func (p *Picker) nonReusableInterfaceExists(ip string, reusableInterfaces []*net
 	for _, iface := range allInterfaces {
 		reusable := false
 		for _, reusableIface := range reusableInterfaces {
-			if iface.Name == reusableIface.Name {
+			if iface.HardwareAddress == reusableIface.HardwareAddress {
 				reusable = true
 			}
 		}

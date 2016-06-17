@@ -477,8 +477,11 @@ var _ = Describe("driver", func() {
 	})
 
 	Describe("#GetHostOnlyInterfaces", func() {
-		var interfaceName string
-		var expectedIP string
+		var (
+			interfaceName           string
+			expectedIP              string
+			expectedHardwareAddress string
+		)
 
 		BeforeEach(func() {
 			expectedIP = "192.168.55.55"
@@ -491,6 +494,20 @@ var _ = Describe("driver", func() {
 			session, err := gexec.Start(assignIP, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session).Should(gexec.Exit(0))
+
+			hardwareAddressOutput, err := exec.Command(vBoxManagePath, "list", "hostonlyifs").Output()
+			Expect(err).NotTo(HaveOccurred())
+
+			nameRegex := regexp.MustCompile(`(?m:^Name:\s+(.*))`)
+			nameMatches := nameRegex.FindAllStringSubmatch(string(hardwareAddressOutput), -1)
+			hardwareAddressRegex := regexp.MustCompile(`(?m:^HardwareAddress:\s+(.*))`)
+			hardwareAddressMatches := hardwareAddressRegex.FindAllStringSubmatch(string(hardwareAddressOutput), -1)
+
+			for i := 0; i < len(nameMatches); i++ {
+				if strings.TrimSpace(nameMatches[i][1]) == interfaceName {
+					expectedHardwareAddress = strings.TrimSpace(hardwareAddressMatches[i][1])
+				}
+			}
 		})
 
 		AfterEach(func() {
@@ -507,6 +524,7 @@ var _ = Describe("driver", func() {
 			for _, iface := range interfaces {
 				if iface.Name == interfaceName {
 					Expect(iface.IP).To(Equal(expectedIP))
+					Expect(iface.HardwareAddress).To(Equal(expectedHardwareAddress))
 					return
 				}
 			}

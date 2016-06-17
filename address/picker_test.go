@@ -64,14 +64,15 @@ var _ = Describe("Picker", func() {
 			It("should return the next interface", func() {
 				vboxInterfaces := []*network.Interface{
 					&network.Interface{
-						Name: "some-interface",
-						IP:   "192.168.11.1",
+						Name:            "some-interface",
+						IP:              "192.168.11.1",
+						HardwareAddress: "some-hardware-address",
 					},
 				}
 				netInterfaces := []*network.Interface{
 					&network.Interface{
-						Name: "some-vmware-interface",
-						IP:   "192.168.11.1",
+						IP:              "192.168.11.1",
+						HardwareAddress: "some-vmware-hardware-address",
 					},
 				}
 
@@ -87,14 +88,15 @@ var _ = Describe("Picker", func() {
 			It("should reuse the existing interface", func() {
 				vboxInterfaces := []*network.Interface{
 					&network.Interface{
-						Name: "some-interface",
-						IP:   "192.168.11.1",
+						Name:            "some-interface",
+						IP:              "192.168.11.1",
+						HardwareAddress: "some-hardware-address",
 					},
 				}
 				netInterfaces := []*network.Interface{
 					&network.Interface{
-						Name: "some-interface",
-						IP:   "192.168.11.1",
+						IP:              "192.168.11.1",
+						HardwareAddress: "some-hardware-address",
 					},
 				}
 
@@ -111,14 +113,15 @@ var _ = Describe("Picker", func() {
 			It("should return the next interface", func() {
 				vboxInterfaces := []*network.Interface{
 					&network.Interface{
-						Name: "some-interface",
-						IP:   "192.168.11.1",
+						Name:            "some-interface",
+						IP:              "192.168.11.1",
+						HardwareAddress: "some-hardware-address",
 					},
 				}
 				netInterfaces := []*network.Interface{
 					&network.Interface{
-						Name: "some-interface",
-						IP:   "192.168.11.1",
+						IP:              "192.168.11.1",
+						HardwareAddress: "some-hardware-address",
 					},
 				}
 
@@ -136,8 +139,8 @@ var _ = Describe("Picker", func() {
 				interfaces := make([]*network.Interface, 9)
 				for i := 1; i < 10; i++ {
 					interfaces[i-1] = &network.Interface{
-						Name: "some-interface",
-						IP:   fmt.Sprintf("192.168.%d%d.1", i, i),
+						IP:              fmt.Sprintf("192.168.%d%d.1", i, i),
+						HardwareAddress: fmt.Sprintf("some-hardware-address.%d", i),
 					}
 				}
 
@@ -154,14 +157,15 @@ var _ = Describe("Picker", func() {
 			It("should return the error", func() {
 				vboxInterfaces := []*network.Interface{
 					&network.Interface{
-						Name: "some-interface",
-						IP:   "192.168.11.1",
+						Name:            "some-interface",
+						IP:              "192.168.11.1",
+						HardwareAddress: "some-hardware-address",
 					},
 				}
 				netInterfaces := []*network.Interface{
 					&network.Interface{
-						Name: "some-interface",
-						IP:   "192.168.11.1",
+						IP:              "192.168.11.1",
+						HardwareAddress: "some-hardware-address",
 					},
 				}
 

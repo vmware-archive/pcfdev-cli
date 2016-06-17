@@ -32,7 +32,8 @@ func ImportSnappy() (vmName string, err error) {
 		}
 	}
 
-	tmpDir := os.Getenv("TMPDIR")
+	tmpDir := os.TempDir()
+
 	uuid, err := gouuid.NewV4()
 	if err != nil {
 		return "", err

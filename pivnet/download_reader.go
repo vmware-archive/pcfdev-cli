@@ -10,6 +10,7 @@ import (
 type DownloadReader struct {
 	io.ReadCloser
 	accumulatedLength int64
+	lastPercentage    int
 	Writer            io.Writer
 	ContentLength     int64
 	ExistingLength    int64
@@ -38,11 +39,17 @@ func (dr *DownloadReader) displayProgress(length int64) {
 	bars := int(math.Ceil(20 * downloadedPercentage))
 	bars = int(math.Min(float64(bars), float64(20-plusses)))
 	spaces := 20 - bars - plusses
+	percentage := int(math.Ceil(totalPercentage * 100))
+
+	if dr.lastPercentage == percentage {
+		return
+	}
+	dr.lastPercentage = percentage
 
 	fmt.Fprintf(dr.Writer,
 		"\rProgress: |%s%s>%s| %d%%",
 		strings.Repeat("+", plusses),
 		strings.Repeat("=", bars),
 		strings.Repeat(" ", spaces),
-		int(math.Ceil(totalPercentage*100)))
+		percentage)
 }

@@ -21,34 +21,34 @@ type Picker struct {
 	Driver  Driver
 }
 
-func (p *Picker) SelectAvailableNetworkInterface(candidates []*network.Interface) (selectedInterface *network.Interface, exists bool, err error) {
+func (p *Picker) SelectAvailableIP(vboxnets []*network.Interface) (ip string, err error) {
 	allInterfaces, err := p.Network.Interfaces()
 	if err != nil {
-		return nil, false, err
+		return "", err
 	}
 
 	for _, subnetIP := range allowedSubnets {
-		if vboxAddr := p.addrInSet(subnetIP, candidates); vboxAddr != nil {
+		if vboxAddr := p.addrInSet(subnetIP, vboxnets); vboxAddr != nil {
 			if p.isDuplicateInterface(vboxAddr, allInterfaces) {
 				continue
 			}
 
 			inUse, err := p.Driver.IsInterfaceInUse(vboxAddr.Name)
 			if err != nil {
-				return nil, false, err
+				return "", err
 			}
 
 			if !inUse {
-				return vboxAddr, true, nil
+				return vboxAddr.IP, nil
 			}
 		}
 
 		if p.addrInSet(subnetIP, allInterfaces) == nil {
-			return &network.Interface{IP: subnetIP}, false, nil
+			return subnetIP, nil
 		}
 	}
 
-	return nil, false, fmt.Errorf("all allowed network interfaces are currently taken")
+	return "", fmt.Errorf("all allowed network interfaces are currently taken")
 }
 
 func (p *Picker) addrInSet(ip string, set []*network.Interface) (addr *network.Interface) {

@@ -59,6 +59,16 @@ func (_mr *_MockDriverRecorder) CloneDisk(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CloneDisk", arg0, arg1)
 }
 
+func (_m *MockDriver) ConfigureHostOnlyInterface(_param0 string, _param1 string) error {
+	ret := _m.ctrl.Call(_m, "ConfigureHostOnlyInterface", _param0, _param1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) ConfigureHostOnlyInterface(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ConfigureHostOnlyInterface", arg0, arg1)
+}
+
 func (_m *MockDriver) CreateHostOnlyInterface(_param0 string) (string, error) {
 	ret := _m.ctrl.Call(_m, "CreateHostOnlyInterface", _param0)
 	ret0, _ := ret[0].(string)
@@ -120,6 +130,17 @@ func (_m *MockDriver) GetHostOnlyInterfaces() ([]*network.Interface, error) {
 
 func (_mr *_MockDriverRecorder) GetHostOnlyInterfaces() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetHostOnlyInterfaces")
+}
+
+func (_m *MockDriver) GetUnusedHostOnlyInterface() (string, error) {
+	ret := _m.ctrl.Call(_m, "GetUnusedHostOnlyInterface")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) GetUnusedHostOnlyInterface() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetUnusedHostOnlyInterface")
 }
 
 func (_m *MockDriver) GetVMIP(_param0 string) (string, error) {

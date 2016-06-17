@@ -27,10 +27,12 @@ type Driver interface {
 	VMs() (vms []string, err error)
 	RunningVMs() (vms []string, err error)
 	CreateHostOnlyInterface(ip string) (interfaceName string, err error)
+	ConfigureHostOnlyInterface(interfaceName string, ip string) error
 	AttachNetworkInterface(interfaceName string, vmName string) error
 	ForwardPort(vmName string, ruleName string, hostPort string, guestPort string) error
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 	GetHostOnlyInterfaces() (interfaces []*network.Interface, err error)
+	GetUnusedHostOnlyInterface() (interfaceName string, err error)
 	GetVMIP(vmName string) (vmIP string, err error)
 	SetCPUs(vmName string, cpuNumber int) error
 	SetMemory(vmName string, memory uint64) error
@@ -53,7 +55,7 @@ type SSH interface {
 
 //go:generate mockgen -package mocks -destination mocks/picker.go github.com/pivotal-cf/pcfdev-cli/vbox NetworkPicker
 type NetworkPicker interface {
-	SelectAvailableNetworkInterface(candidates []*network.Interface) (selectedInterface *network.Interface, exists bool, err error)
+	SelectAvailableIP(vboxnets []*network.Interface) (ip string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/address.go github.com/pivotal-cf/pcfdev-cli/vbox Address
@@ -168,18 +170,28 @@ func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	selectedInterface, exists, err := v.Picker.SelectAvailableNetworkInterface(vboxInterfaces)
+	ip, err := v.Picker.SelectAvailableIP(vboxInterfaces)
 	if err != nil {
 		return err
 	}
-	if !exists {
-		selectedInterface.Name, err = v.Driver.CreateHostOnlyInterface(selectedInterface.IP)
+
+	interfaceName, err := v.Driver.GetUnusedHostOnlyInterface()
+	if err != nil {
+		return err
+	}
+	if interfaceName == "" {
+		interfaceName, err = v.Driver.CreateHostOnlyInterface(ip)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = v.Driver.ConfigureHostOnlyInterface(interfaceName, ip)
 		if err != nil {
 			return err
 		}
 	}
 
-	if err := v.Driver.AttachNetworkInterface(selectedInterface.Name, vmConfig.Name); err != nil {
+	if err := v.Driver.AttachNetworkInterface(interfaceName, vmConfig.Name); err != nil {
 		return err
 	}
 

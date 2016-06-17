@@ -373,6 +373,63 @@ var _ = Describe("driver", func() {
 		})
 	})
 
+	Describe("#ConfigureHostOnlyInterface", func() {
+		var interfaceName string
+
+		BeforeEach(func() {
+			var err error
+			interfaceName, err = driver.CreateHostOnlyInterface("192.168.77.1")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			command := exec.Command(vBoxManagePath, "hostonlyif", "remove", interfaceName)
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+		})
+
+		It("should configure a preexisting hostonlyif", func() {
+			err := driver.ConfigureHostOnlyInterface(interfaceName, "192.168.11.1")
+			Expect(err).NotTo(HaveOccurred())
+
+			var name string
+			var ipAddress string
+			var netMask string
+			var output []byte
+			output, err = exec.Command(vBoxManagePath, "list", "hostonlyifs").Output()
+			Expect(err).NotTo(HaveOccurred())
+
+			nameRegex := regexp.MustCompile(`(?m:^Name:\s+(.*))`)
+			nameMatches := nameRegex.FindAllStringSubmatch(string(output), -1)
+
+			ipRegex := regexp.MustCompile(`(?m:^IPAddress:\s+(.*))`)
+			ipMatches := ipRegex.FindAllStringSubmatch(string(output), -1)
+
+			netMaskRegex := regexp.MustCompile(`(?m:^NetworkMask:\s+(.*))`)
+			netMaskRegexMatches := netMaskRegex.FindAllStringSubmatch(string(output), -1)
+
+			for i := 0; i < len(nameMatches); i++ {
+				if strings.TrimSpace(nameMatches[i][1]) == interfaceName {
+					name = strings.TrimSpace(nameMatches[i][1])
+					ipAddress = strings.TrimSpace(ipMatches[i][1])
+					netMask = strings.TrimSpace(netMaskRegexMatches[i][1])
+				}
+			}
+
+			Expect(name).To(Equal(interfaceName))
+			Expect(ipAddress).To(Equal("192.168.11.1"))
+			Expect(netMask).To(Equal("255.255.255.0"))
+		})
+
+		Context("when configuring the interface returns an error", func() {
+			It("should return an error", func() {
+				Expect(driver.ConfigureHostOnlyInterface("some-bad-interface", "192.168.11.1")).To(
+					MatchError(ContainSubstring("failed to execute 'VBoxManage hostonlyif ipconfig some-bad-interface --ip 192.168.11.1':")))
+			})
+		})
+	})
+
 	Describe("#CreateHostOnlyInterface", func() {
 		var interfaceName string
 
@@ -453,6 +510,50 @@ var _ = Describe("driver", func() {
 				}
 			}
 			Fail(fmt.Sprintf("did not create interface with expected name %s", interfaceName))
+		})
+	})
+
+	Describe("#GetUnusedHostOnlyInterface", func() {
+		Context("when there are unused host-only interfaces", func() {
+			var usedInterface, unusedInterface, otherUnusedInterface string
+
+			BeforeEach(func() {
+				output, err := exec.Command(vBoxManagePath, "hostonlyif", "create").Output()
+				Expect(err).NotTo(HaveOccurred())
+				regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
+				matches := regex.FindStringSubmatch(string(output))
+				usedInterface = matches[1]
+
+				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--nic2", "hostonly", "--hostonlyadapter2", usedInterface).Run()).To(Succeed())
+
+				output, err = exec.Command(vBoxManagePath, "hostonlyif", "create").Output()
+				Expect(err).NotTo(HaveOccurred())
+				regex = regexp.MustCompile(`Interface '(.*)' was successfully created`)
+				matches = regex.FindStringSubmatch(string(output))
+				unusedInterface = matches[1]
+
+				output, err = exec.Command(vBoxManagePath, "hostonlyif", "create").Output()
+				Expect(err).NotTo(HaveOccurred())
+				regex = regexp.MustCompile(`Interface '(.*)' was successfully created`)
+				matches = regex.FindStringSubmatch(string(output))
+				otherUnusedInterface = matches[1]
+			})
+
+			AfterEach(func() {
+				exec.Command(vBoxManagePath, "hostonlyif", "remove", usedInterface).Run()
+				exec.Command(vBoxManagePath, "hostonlyif", "remove", unusedInterface).Run()
+				exec.Command(vBoxManagePath, "hostonlyif", "remove", otherUnusedInterface).Run()
+			})
+
+			It("should return the name of the first unused host-only interface", func() {
+				Expect(driver.GetUnusedHostOnlyInterface()).To(Equal(unusedInterface))
+			})
+		})
+
+		Context("when there are no unused host-only interfaces", func() {
+			It("should return nothing", func() {
+				Expect(driver.GetUnusedHostOnlyInterface()).To(Equal(""))
+			})
 		})
 	})
 

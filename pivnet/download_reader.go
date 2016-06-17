@@ -41,7 +41,7 @@ func (dr *DownloadReader) displayProgress(length int64) {
 	spaces := 20 - bars - plusses
 	percentage := int(math.Ceil(totalPercentage * 100))
 
-	if dr.lastPercentage == percentage {
+	if percentage != 0 && dr.lastPercentage == percentage {
 		return
 	}
 	dr.lastPercentage = percentage

@@ -8,6 +8,7 @@ import (
 
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	. "github.com/pivotal-cf/pcfdev-cli/ssh"
+	"github.com/pivotal-cf/pcfdev-cli/test_helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -50,7 +51,7 @@ var _ = Describe("ssh", func() {
 				var err error
 				stdout = gbytes.NewBuffer()
 				stderr = gbytes.NewBuffer()
-				vmName, err = helpers.ImportSnappy()
+				vmName, err = test_helpers.ImportSnappy()
 				Expect(err).NotTo(HaveOccurred())
 
 				_, port, err = ssh.GenerateAddress()

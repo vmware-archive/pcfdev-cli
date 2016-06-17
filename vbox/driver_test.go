@@ -14,6 +14,7 @@ import (
 
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
+	"github.com/pivotal-cf/pcfdev-cli/test_helpers"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 
 	. "github.com/onsi/ginkgo"
@@ -38,7 +39,7 @@ var _ = Describe("driver", func() {
 		driver = &vbox.VBoxDriver{}
 
 		var err error
-		vmName, err = helpers.ImportSnappy()
+		vmName, err = test_helpers.ImportSnappy()
 		Expect(err).NotTo(HaveOccurred())
 	})
 

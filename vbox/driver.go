@@ -87,19 +87,19 @@ func (d *VBoxDriver) StopVM(vmName string) error {
 		return err
 	}
 
-	var state string
-	var err error
-	for attempts := 0; attempts < 50; attempts++ {
-		state, err = d.VMState(vmName)
+	return helpers.ExecuteWithTimeout(func() error {
+		state, err := d.VMState(vmName)
 		if err != nil {
-			continue
+			return fmt.Errorf("timed out waiting for vm to stop: %s", err)
 		}
-		if state == StateStopped {
-			return nil
+		if state != StateStopped {
+			return fmt.Errorf("timed out waiting for vm to stop")
 		}
-		time.Sleep(time.Second)
-	}
-	return fmt.Errorf("timed out waiting for vm to stop: %s", err)
+		return nil
+	},
+		time.Minute,
+		time.Second,
+	)
 }
 
 func (d *VBoxDriver) SuspendVM(vmName string) error {
@@ -107,19 +107,19 @@ func (d *VBoxDriver) SuspendVM(vmName string) error {
 		return err
 	}
 
-	var state string
-	var err error
-	for attempts := 0; attempts < 50; attempts++ {
-		state, err = d.VMState(vmName)
+	return helpers.ExecuteWithTimeout(func() error {
+		state, err := d.VMState(vmName)
 		if err != nil {
-			continue
+			return fmt.Errorf("timed out waiting for vm to suspend: %s", err)
 		}
-		if state == StateSaved {
-			return nil
+		if state != StateSaved {
+			return fmt.Errorf("timed out waiting for vm to suspend")
 		}
-		time.Sleep(time.Second)
-	}
-	return fmt.Errorf("timed out waiting for vm to suspend: %s", err)
+		return nil
+	},
+		time.Minute,
+		time.Second,
+	)
 }
 
 func (d *VBoxDriver) ResumeVM(vmName string) error {
@@ -132,14 +132,15 @@ func (d *VBoxDriver) PowerOffVM(vmName string) error {
 }
 
 func (d *VBoxDriver) DestroyVM(vmName string) error {
-	var err error
-	for attempts := 0; attempts < 50; attempts++ {
-		_, err = d.VBoxManage("unregistervm", vmName, "--delete")
-		if err == nil {
-			return nil
+	return helpers.ExecuteWithTimeout(func() error {
+		if _, err := d.VBoxManage("unregistervm", vmName, "--delete"); err != nil {
+			return fmt.Errorf("timed out waiting for vm to destroy: %s", err)
 		}
-	}
-	return err
+		return nil
+	},
+		time.Minute,
+		time.Second,
+	)
 }
 
 func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (interfaceName string, err error) {

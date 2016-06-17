@@ -68,6 +68,10 @@ var _ = Describe("vbox", func() {
 						Name: "some-used-vbox-interface",
 						IP:   "some-used-ip",
 					},
+					&network.Interface{
+						Name: "some-other-used-vbox-interface",
+						IP:   "some-used-ip",
+					},
 				}
 				gomock.InOrder(
 					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
@@ -77,7 +81,8 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
-					mockDriver.EXPECT().GetUnusedHostOnlyInterface().Return("", nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-used-vbox-interface").Return(true, nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-other-used-vbox-interface").Return(true, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface("some-unused-ip").Return("some-interface", nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
@@ -95,12 +100,16 @@ var _ = Describe("vbox", func() {
 			})
 		})
 
-		Context("when there is an unused VBox interface", func() {
-			It("should attach that interface", func() {
+		Context("when there are unused VBox interfaces", func() {
+			It("should attach the first unused interface", func() {
 				vboxnets := []*network.Interface{
 					&network.Interface{
 						Name: "some-unused-vbox-interface",
 						IP:   "some-unused-ip",
+					},
+					&network.Interface{
+						Name: "some-other-unused-vbox-interface",
+						IP:   "some-other-unused-ip",
 					},
 				}
 				gomock.InOrder(
@@ -111,7 +120,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
-					mockDriver.EXPECT().GetUnusedHostOnlyInterface().Return("some-unused-vbox-interface", nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-unused-vbox-interface").Return(false, nil),
 					mockDriver.EXPECT().ConfigureHostOnlyInterface("some-unused-vbox-interface", "some-unused-ip"),
 					mockDriver.EXPECT().AttachNetworkInterface("some-unused-vbox-interface", "some-vm"),
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
@@ -241,14 +250,15 @@ var _ = Describe("vbox", func() {
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("", errors.New("some-error")),
 				)
 				Expect(vbx.ImportVM(&config.VMConfig{
-					Name:   "some-vm",
-					Memory: uint64(2000),
-					CPUs:   7,
+					Name:     "some-vm",
+					DiskName: "some-vm-disk1.vmdk",
+					Memory:   uint64(2000),
+					CPUs:     7,
 				})).To(MatchError("some-error"))
 			})
 		})
 
-		Context("when getting an unused host-only interface fails", func() {
+		Context("when checking if an interface is in use fails", func() {
 			It("should return an error", func() {
 				vboxnets := []*network.Interface{
 					&network.Interface{
@@ -264,12 +274,13 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
-					mockDriver.EXPECT().GetUnusedHostOnlyInterface().Return("", errors.New("some-error")),
+					mockDriver.EXPECT().IsInterfaceInUse("some-used-vbox-interface").Return(false, errors.New("some-error")),
 				)
 				Expect(vbx.ImportVM(&config.VMConfig{
-					Name:   "some-vm",
-					Memory: uint64(2000),
-					CPUs:   7,
+					Name:     "some-vm",
+					DiskName: "some-vm-disk1.vmdk",
+					Memory:   uint64(2000),
+					CPUs:     7,
 				})).To(MatchError("some-error"))
 			})
 		})
@@ -290,7 +301,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
-					mockDriver.EXPECT().GetUnusedHostOnlyInterface().Return("", nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-used-vbox-interface").Return(true, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface("some-unused-ip").Return("", errors.New("some-error")),
 				)
 				Expect(vbx.ImportVM(&config.VMConfig{
@@ -318,7 +329,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
-					mockDriver.EXPECT().GetUnusedHostOnlyInterface().Return("some-unused-vbox-interface", nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-unused-vbox-interface").Return(false, nil),
 					mockDriver.EXPECT().ConfigureHostOnlyInterface("some-unused-vbox-interface", "some-unused-ip").Return(errors.New("some-error")),
 				)
 				Expect(vbx.ImportVM(&config.VMConfig{
@@ -346,7 +357,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
-					mockDriver.EXPECT().GetUnusedHostOnlyInterface().Return("", nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-used-vbox-interface").Return(true, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface("some-unused-ip").Return("some-interface", nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm").Return(errors.New("some-error")),
 				)
@@ -375,7 +386,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
-					mockDriver.EXPECT().GetUnusedHostOnlyInterface().Return("", nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-used-vbox-interface").Return(true, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface("some-unused-ip").Return("some-interface", nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
 					mockSSH.EXPECT().GenerateAddress().Return("", "", errors.New("some-error")),
@@ -406,7 +417,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
-					mockDriver.EXPECT().GetUnusedHostOnlyInterface().Return("", nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-used-vbox-interface").Return(true, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface("some-unused-ip").Return("some-interface", nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
@@ -437,7 +448,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
-					mockDriver.EXPECT().GetUnusedHostOnlyInterface().Return("", nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-used-vbox-interface").Return(true, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface("some-unused-ip").Return("some-interface", nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),
@@ -469,7 +480,7 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().AttachDisk("some-vm", filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().GetHostOnlyInterfaces().Return(vboxnets, nil),
 					mockPicker.EXPECT().SelectAvailableIP(vboxnets).Return("some-unused-ip", nil),
-					mockDriver.EXPECT().GetUnusedHostOnlyInterface().Return("", nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-used-vbox-interface").Return(true, nil),
 					mockDriver.EXPECT().CreateHostOnlyInterface("some-unused-ip").Return("some-interface", nil),
 					mockDriver.EXPECT().AttachNetworkInterface("some-interface", "some-vm"),
 					mockSSH.EXPECT().GenerateAddress().Return("some-host", "some-port", nil),

@@ -132,17 +132,6 @@ func (_mr *_MockDriverRecorder) GetHostOnlyInterfaces() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetHostOnlyInterfaces")
 }
 
-func (_m *MockDriver) GetUnusedHostOnlyInterface() (string, error) {
-	ret := _m.ctrl.Call(_m, "GetUnusedHostOnlyInterface")
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockDriverRecorder) GetUnusedHostOnlyInterface() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetUnusedHostOnlyInterface")
-}
-
 func (_m *MockDriver) GetVMIP(_param0 string) (string, error) {
 	ret := _m.ctrl.Call(_m, "GetVMIP", _param0)
 	ret0, _ := ret[0].(string)
@@ -152,6 +141,17 @@ func (_m *MockDriver) GetVMIP(_param0 string) (string, error) {
 
 func (_mr *_MockDriverRecorder) GetVMIP(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVMIP", arg0)
+}
+
+func (_m *MockDriver) IsInterfaceInUse(_param0 string) (bool, error) {
+	ret := _m.ctrl.Call(_m, "IsInterfaceInUse", _param0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) IsInterfaceInUse(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsInterfaceInUse", arg0)
 }
 
 func (_m *MockDriver) PowerOffVM(_param0 string) error {

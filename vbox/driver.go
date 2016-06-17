@@ -193,25 +193,6 @@ func (d *VBoxDriver) GetHostOnlyInterfaces() (interfaces []*network.Interface, e
 	return vboxnets, nil
 }
 
-func (d *VBoxDriver) GetUnusedHostOnlyInterface() (interfaceName string, err error) {
-	interfaces, err := d.GetHostOnlyInterfaces()
-	if err != nil {
-		return "", err
-	}
-
-	for _, iface := range interfaces {
-		interfaceInUse, err := d.IsInterfaceInUse(iface.Name)
-		if err != nil {
-			return "", err
-		}
-		if !interfaceInUse {
-			return iface.Name, nil
-		}
-	}
-
-	return "", nil
-}
-
 func (d *VBoxDriver) GetMemory(vmName string) (uint64, error) {
 	output, err := d.VBoxManage("showvminfo", vmName, "--machinereadable")
 	if err != nil {

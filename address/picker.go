@@ -21,31 +21,30 @@ type Picker struct {
 	Driver  Driver
 }
 
-func (p *Picker) SelectAvailableIP(vboxnets []*network.Interface) (ip string, err error) {
+func (p *Picker) SelectAvailableIP(reusableInterfaces []*network.Interface) (ip string, err error) {
 	allInterfaces, err := p.Network.Interfaces()
 	if err != nil {
 		return "", err
 	}
 
 	for _, subnetIP := range allowedSubnets {
-		if vboxAddr := p.addrInSet(subnetIP, vboxnets); vboxAddr != nil {
-			if p.isDuplicateInterface(vboxAddr, allInterfaces) {
-				continue
-			}
+		if p.nonReusableInterfaceExists(subnetIP, reusableInterfaces, allInterfaces) {
+			continue
+		}
 
-			inUse, err := p.Driver.IsInterfaceInUse(vboxAddr.Name)
+		if reusableAddr := p.addrInSet(subnetIP, reusableInterfaces); reusableAddr != nil {
+			inUse, err := p.Driver.IsInterfaceInUse(reusableAddr.Name)
 			if err != nil {
 				return "", err
 			}
 
-			if !inUse {
-				return vboxAddr.IP, nil
+			if inUse {
+				continue
 			}
+			return reusableAddr.IP, nil
 		}
 
-		if p.addrInSet(subnetIP, allInterfaces) == nil {
-			return subnetIP, nil
-		}
+		return subnetIP, nil
 	}
 
 	return "", fmt.Errorf("all allowed network interfaces are currently taken")
@@ -61,13 +60,17 @@ func (p *Picker) addrInSet(ip string, set []*network.Interface) (addr *network.I
 	return nil
 }
 
-func (p *Picker) isDuplicateInterface(networkInterface *network.Interface, set []*network.Interface) bool {
-	count := 0
-	for _, netInterface := range set {
-		if networkInterface.IP == netInterface.IP {
-			count += 1
+func (p *Picker) nonReusableInterfaceExists(ip string, reusableInterfaces []*network.Interface, allInterfaces []*network.Interface) bool {
+	for _, iface := range allInterfaces {
+		reusable := false
+		for _, reusableIface := range reusableInterfaces {
+			if iface.Name == reusableIface.Name {
+				reusable = true
+			}
+		}
+		if !reusable && ip == iface.IP {
+			return true
 		}
 	}
-
-	return (count > 1)
+	return false
 }

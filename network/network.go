@@ -13,16 +13,25 @@ type Interface struct {
 }
 
 func (n *Network) Interfaces() (interfaces []*Interface, err error) {
-	addrs, err := net.InterfaceAddrs()
+	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
 	}
 
-	interfaces = make([]*Interface, len(addrs))
-	for i, addr := range addrs {
-		interfaces[i] = &Interface{
-			IP: strings.Split(addr.String(), "/")[0],
+	interfaces = make([]*Interface, 0)
+	for _, iface := range ifaces {
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return nil, err
+		}
+
+		if len(addrs) > 0 {
+			interfaces = append(interfaces, &Interface{
+				IP:   strings.Split(addrs[0].String(), "/")[0],
+				Name: iface.Name,
+			})
 		}
 	}
+
 	return interfaces, nil
 }

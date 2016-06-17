@@ -513,50 +513,6 @@ var _ = Describe("driver", func() {
 		})
 	})
 
-	Describe("#GetUnusedHostOnlyInterface", func() {
-		Context("when there are unused host-only interfaces", func() {
-			var usedInterface, unusedInterface, otherUnusedInterface string
-
-			BeforeEach(func() {
-				output, err := exec.Command(vBoxManagePath, "hostonlyif", "create").Output()
-				Expect(err).NotTo(HaveOccurred())
-				regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
-				matches := regex.FindStringSubmatch(string(output))
-				usedInterface = matches[1]
-
-				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--nic2", "hostonly", "--hostonlyadapter2", usedInterface).Run()).To(Succeed())
-
-				output, err = exec.Command(vBoxManagePath, "hostonlyif", "create").Output()
-				Expect(err).NotTo(HaveOccurred())
-				regex = regexp.MustCompile(`Interface '(.*)' was successfully created`)
-				matches = regex.FindStringSubmatch(string(output))
-				unusedInterface = matches[1]
-
-				output, err = exec.Command(vBoxManagePath, "hostonlyif", "create").Output()
-				Expect(err).NotTo(HaveOccurred())
-				regex = regexp.MustCompile(`Interface '(.*)' was successfully created`)
-				matches = regex.FindStringSubmatch(string(output))
-				otherUnusedInterface = matches[1]
-			})
-
-			AfterEach(func() {
-				exec.Command(vBoxManagePath, "hostonlyif", "remove", usedInterface).Run()
-				exec.Command(vBoxManagePath, "hostonlyif", "remove", unusedInterface).Run()
-				exec.Command(vBoxManagePath, "hostonlyif", "remove", otherUnusedInterface).Run()
-			})
-
-			It("should return the name of the first unused host-only interface", func() {
-				Expect(driver.GetUnusedHostOnlyInterface()).To(Equal(unusedInterface))
-			})
-		})
-
-		Context("when there are no unused host-only interfaces", func() {
-			It("should return nothing", func() {
-				Expect(driver.GetUnusedHostOnlyInterface()).To(Equal(""))
-			})
-		})
-	})
-
 	Describe("#AttachInterface", func() {
 		var interfaceName string
 

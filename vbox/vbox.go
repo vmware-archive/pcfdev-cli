@@ -30,9 +30,9 @@ type Driver interface {
 	ConfigureHostOnlyInterface(interfaceName string, ip string) error
 	AttachNetworkInterface(interfaceName string, vmName string) error
 	ForwardPort(vmName string, ruleName string, hostPort string, guestPort string) error
+	IsInterfaceInUse(interfaceName string) (bool, error)
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 	GetHostOnlyInterfaces() (interfaces []*network.Interface, err error)
-	GetUnusedHostOnlyInterface() (interfaceName string, err error)
 	GetVMIP(vmName string) (vmIP string, err error)
 	SetCPUs(vmName string, cpuNumber int) error
 	SetMemory(vmName string, memory uint64) error
@@ -175,10 +175,18 @@ func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	interfaceName, err := v.Driver.GetUnusedHostOnlyInterface()
-	if err != nil {
-		return err
+	interfaceName := ""
+	for _, iface := range vboxInterfaces {
+		inUse, err := v.Driver.IsInterfaceInUse(iface.Name)
+		if err != nil {
+			return err
+		}
+		if !inUse {
+			interfaceName = iface.Name
+			break
+		}
 	}
+
 	if interfaceName == "" {
 		interfaceName, err = v.Driver.CreateHostOnlyInterface(ip)
 		if err != nil {

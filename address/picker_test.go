@@ -44,29 +44,6 @@ var _ = Describe("Picker", func() {
 			})
 		})
 
-		Context("when there is a vbox interface on 192.168.11.1 and the interface is not in use", func() {
-			It("should reuse the existing interface", func() {
-				vboxInterfaces := []*network.Interface{
-					&network.Interface{
-						Name: "some-interface",
-						IP:   "192.168.11.1",
-					},
-				}
-				netInterfaces := []*network.Interface{
-					&network.Interface{
-						IP: "192.168.11.1",
-					},
-				}
-
-				gomock.InOrder(
-					mockNetwork.EXPECT().Interfaces().Return(netInterfaces, nil),
-					mockDriver.EXPECT().IsInterfaceInUse("some-interface").Return(false, nil),
-				)
-
-				Expect(picker.SelectAvailableIP(vboxInterfaces)).To(Equal("192.168.11.1"))
-			})
-		})
-
 		Context("when there is not a vbox interface on 192.168.11.1 but there is an interface on 192.168.11.1 in ifconfig", func() {
 			It("should return the next interface", func() {
 				netInterfaces := []*network.Interface{
@@ -83,6 +60,53 @@ var _ = Describe("Picker", func() {
 			})
 		})
 
+		Context("when there is a vbox and non-vbox interface on 192.168.11.1 in ifconfig", func() {
+			It("should return the next interface", func() {
+				vboxInterfaces := []*network.Interface{
+					&network.Interface{
+						Name: "some-interface",
+						IP:   "192.168.11.1",
+					},
+				}
+				netInterfaces := []*network.Interface{
+					&network.Interface{
+						Name: "some-vmware-interface",
+						IP:   "192.168.11.1",
+					},
+				}
+
+				gomock.InOrder(
+					mockNetwork.EXPECT().Interfaces().Return(netInterfaces, nil),
+				)
+
+				Expect(picker.SelectAvailableIP(vboxInterfaces)).To(Equal("192.168.22.1"))
+			})
+		})
+
+		Context("when there is a vbox interface on 192.168.11.1 and the interface is not in use", func() {
+			It("should reuse the existing interface", func() {
+				vboxInterfaces := []*network.Interface{
+					&network.Interface{
+						Name: "some-interface",
+						IP:   "192.168.11.1",
+					},
+				}
+				netInterfaces := []*network.Interface{
+					&network.Interface{
+						Name: "some-interface",
+						IP:   "192.168.11.1",
+					},
+				}
+
+				gomock.InOrder(
+					mockNetwork.EXPECT().Interfaces().Return(netInterfaces, nil),
+					mockDriver.EXPECT().IsInterfaceInUse("some-interface").Return(false, nil),
+				)
+
+				Expect(picker.SelectAvailableIP(vboxInterfaces)).To(Equal("192.168.11.1"))
+			})
+		})
+
 		Context("when there is vbox interface on 192.168.11.1 and it is in use", func() {
 			It("should return the next interface", func() {
 				vboxInterfaces := []*network.Interface{
@@ -93,40 +117,14 @@ var _ = Describe("Picker", func() {
 				}
 				netInterfaces := []*network.Interface{
 					&network.Interface{
-						IP: "192.168.11.1",
+						Name: "some-interface",
+						IP:   "192.168.11.1",
 					},
 				}
 
 				gomock.InOrder(
 					mockNetwork.EXPECT().Interfaces().Return(netInterfaces, nil),
 					mockDriver.EXPECT().IsInterfaceInUse("some-interface").Return(true, nil),
-				)
-
-				Expect(picker.SelectAvailableIP(vboxInterfaces)).To(Equal("192.168.22.1"))
-			})
-		})
-
-		Context("when there is a vbox and other duplicate interface on 192.168.11.1 in ifconfig", func() {
-			It("should return the next interface", func() {
-				vboxInterfaces := []*network.Interface{
-					&network.Interface{
-						Name: "some-interface",
-						IP:   "192.168.11.1",
-					},
-				}
-				netInterfaces := []*network.Interface{
-					&network.Interface{
-						Name: "some-vbox-interface",
-						IP:   "192.168.11.1",
-					},
-					&network.Interface{
-						Name: "some-vmware-interface",
-						IP:   "192.168.11.1",
-					},
-				}
-
-				gomock.InOrder(
-					mockNetwork.EXPECT().Interfaces().Return(netInterfaces, nil),
 				)
 
 				Expect(picker.SelectAvailableIP(vboxInterfaces)).To(Equal("192.168.22.1"))
@@ -162,7 +160,8 @@ var _ = Describe("Picker", func() {
 				}
 				netInterfaces := []*network.Interface{
 					&network.Interface{
-						IP: "192.168.11.1",
+						Name: "some-interface",
+						IP:   "192.168.11.1",
 					},
 				}
 

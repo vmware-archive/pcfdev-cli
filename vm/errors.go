@@ -26,12 +26,6 @@ func (e *ResumeVMError) Error() string {
 	return fmt.Sprintf("failed to resume VM: %s", e.Err)
 }
 
-type OldVMError struct{}
-
-func (e *OldVMError) Error() string {
-	return "old version of PCF Dev already running"
-}
-
 type ImportVMError struct {
 	Err error
 }

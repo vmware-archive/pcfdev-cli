@@ -29,17 +29,6 @@ func (_m *MockVBox) EXPECT() *_MockVBoxRecorder {
 	return _m.recorder
 }
 
-func (_m *MockVBox) ConflictingVMPresent(_param0 *config.VMConfig) (bool, error) {
-	ret := _m.ctrl.Call(_m, "ConflictingVMPresent", _param0)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockVBoxRecorder) ConflictingVMPresent(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ConflictingVMPresent", arg0)
-}
-
 func (_m *MockVBox) ImportVM(_param0 *config.VMConfig) error {
 	ret := _m.ctrl.Call(_m, "ImportVM", _param0)
 	ret0, _ := ret[0].(error)

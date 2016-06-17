@@ -38,6 +38,7 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
 type VBox interface {
+	ConflictingVMPresent(vmConfig *config.VMConfig) (conflict bool, err error)
 	DestroyPCFDevVMs() (err error)
 }
 
@@ -140,6 +141,14 @@ func getErrorText(err error) string {
 }
 
 func (p *Plugin) start(flagContext flags.FlagContext) error {
+	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
+	if err != nil {
+		return err
+	}
+	if conflict {
+		return &OldVMError{}
+	}
+
 	v, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
@@ -159,6 +168,14 @@ func (p *Plugin) start(flagContext flags.FlagContext) error {
 }
 
 func (p *Plugin) status() error {
+	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
+	if err != nil {
+		return err
+	}
+	if conflict {
+		return &OldVMError{}
+	}
+
 	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
@@ -168,6 +185,14 @@ func (p *Plugin) status() error {
 }
 
 func (p *Plugin) stop() error {
+	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
+	if err != nil {
+		return err
+	}
+	if conflict {
+		return &OldVMError{}
+	}
+
 	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
@@ -176,6 +201,13 @@ func (p *Plugin) stop() error {
 }
 
 func (p *Plugin) suspend() error {
+	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
+	if err != nil {
+		return err
+	}
+	if conflict {
+		return &OldVMError{}
+	}
 	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
@@ -185,6 +217,13 @@ func (p *Plugin) suspend() error {
 }
 
 func (p *Plugin) resume() error {
+	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
+	if err != nil {
+		return err
+	}
+	if conflict {
+		return &OldVMError{}
+	}
 	vm, err := p.Builder.VM(p.Config.DefaultVMName)
 	if err != nil {
 		return err
@@ -207,6 +246,14 @@ func (p *Plugin) destroy() error {
 }
 
 func (p *Plugin) download() error {
+	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
+	if err != nil {
+		return err
+	}
+	if conflict {
+		return &OldVMError{}
+	}
+
 	current, err := p.Downloader.IsOVACurrent()
 	if err != nil {
 		return err

@@ -16,14 +16,6 @@ type NotCreated struct {
 }
 
 func (n *NotCreated) Stop() error {
-	conflict, err := n.VBox.ConflictingVMPresent(n.VMConfig)
-	if err != nil {
-		return &StopVMError{err}
-	}
-	if conflict {
-		return &OldVMError{}
-	}
-
 	n.UI.Say("PCF Dev VM has not been created")
 	return nil
 }
@@ -51,14 +43,6 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 }
 
 func (n *NotCreated) Start(opts *StartOpts) error {
-	conflict, err := n.VBox.ConflictingVMPresent(n.VMConfig)
-	if err != nil {
-		return &StartVMError{err}
-	}
-	if conflict {
-		return &OldVMError{}
-	}
-
 	var memory uint64
 	if opts.Memory != uint64(0) {
 		memory = opts.Memory

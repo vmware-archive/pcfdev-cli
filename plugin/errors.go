@@ -15,3 +15,9 @@ type DestroyVMError struct {
 func (e *DestroyVMError) Error() string {
 	return fmt.Sprintf("failed to destroy VM: %s", e.Err)
 }
+
+type OldVMError struct{}
+
+func (e *OldVMError) Error() string {
+	return "old version of PCF Dev already running, please run `cf dev destroy` to continue."
+}

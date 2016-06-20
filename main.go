@@ -28,18 +28,18 @@ var (
 
 func main() {
 	fileSystem := &fs.FS{}
-	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
+	ui := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 	system := &system.System{
 		FS: fileSystem,
 	}
 	config, err := config.New(vmName, system)
 	if err != nil {
-		termUI.Failed("Error: %s", err)
+		ui.Failed("Error: %s", err)
 	}
 	token := &pivnet.Token{
 		Config: config,
 		FS:     fileSystem,
-		UI:     termUI,
+		UI:     ui,
 	}
 	client := &pivnet.Client{
 		Host:          "https://network.pivotal.io",
@@ -57,7 +57,7 @@ func main() {
 			Config:       config,
 			Token:        token,
 		},
-		UI:     &plugin.NonTranslatingUI{termUI},
+		UI:     &plugin.NonTranslatingUI{ui},
 		Config: config,
 		SSH:    &ssh.SSH{},
 		FS:     fileSystem,

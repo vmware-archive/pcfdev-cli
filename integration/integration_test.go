@@ -35,6 +35,8 @@ var (
 )
 
 var _ = BeforeSuite(func() {
+	Expect(os.Getenv("PIVNET_TOKEN")).NotTo(BeEmpty(), "PIVNET_TOKEN must be set")
+
 	oldCFHome = os.Getenv("CF_HOME")
 	oldCFPluginHome = os.Getenv("CF_PLUGIN_HOME")
 	oldPCFDevHome = os.Getenv("PCFDEV_HOME")
@@ -52,11 +54,6 @@ var _ = BeforeSuite(func() {
 	oldHTTPSProxy = os.Getenv("HTTPS_PROXY")
 	oldNoProxy = os.Getenv("NO_PROXY")
 
-	uninstallCommand := exec.Command("cf", "uninstall-plugin", "pcfdev")
-	session, err := gexec.Start(uninstallCommand, GinkgoWriter, GinkgoWriter)
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(session, "10s").Should(gexec.Exit())
-
 	pluginPath, err := gexec.Build(filepath.Join("github.com", "pivotal-cf", "pcfdev-cli"), "-ldflags",
 		"-X main.vmName="+vmName+
 			" -X main.releaseId=1622"+
@@ -65,7 +62,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	installCommand := exec.Command("cf", "install-plugin", "-f", pluginPath)
-	session, err = gexec.Start(installCommand, GinkgoWriter, GinkgoWriter)
+	session, err := gexec.Start(installCommand, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session, "1m").Should(gexec.Exit(0))
 
@@ -83,7 +80,7 @@ var _ = AfterSuite(func() {
 	os.Setenv("NO_PROXY", oldNoProxy)
 })
 
-var _ = Describe("pcfdev", func() {
+var _ = Describe("PCF Dev", func() {
 	AfterEach(func() {
 		output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
 		if err != nil {

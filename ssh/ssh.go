@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pivotal-cf/pcfdev-cli/helpers"
-
 	"golang.org/x/crypto/ssh"
 )
 
@@ -61,15 +59,16 @@ func (s *SSH) RunSSHCommand(command string, port string, timeout time.Duration, 
 }
 
 func (*SSH) waitForSSH(config *ssh.ClientConfig, port string, timeout time.Duration) (client *ssh.Client, err error) {
-	err = helpers.ExecuteWithTimeout(func() error {
-		if client, err = ssh.Dial("tcp", "127.0.0.1:"+port, config); err != nil {
-			return fmt.Errorf("ssh connection timed out: %s", err)
-		}
-		return nil
-	},
-		time.Minute,
-		0,
-	)
+	timeoutChan := time.After(timeout)
 
-	return client, err
+	for {
+		select {
+		case <-timeoutChan:
+			return nil, fmt.Errorf("ssh connection timed out: %s", err)
+		default:
+			if client, err = ssh.Dial("tcp", "127.0.0.1:"+port, config); err == nil {
+				return client, nil
+			}
+		}
+	}
 }

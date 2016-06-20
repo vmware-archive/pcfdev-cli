@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -97,11 +98,18 @@ func confirmInstalled(ui terminal.UI) {
 			ui.Say("Failed to determine plugin path: %s", err)
 			os.Exit(1)
 		}
-		if err := exec.Command("cf", "install-plugin", plugin, "-f").Run(); err != nil {
-			ui.Say("Failed to install plugin. Try running: cf install-plugin %s", plugin)
+
+		operation := "upgraded"
+		if err := exec.Command("cf", "uninstall-plugin", "pcfdev").Run(); err != nil {
+			operation = "installed"
+		}
+
+		if output, err := exec.Command("cf", "install-plugin", plugin, "-f").CombinedOutput(); err != nil {
+			ui.Say(strings.TrimSpace(string(output)))
 			os.Exit(1)
 		}
-		ui.Say("Plugin successfully installed, run: cf dev help")
+
+		ui.Say("Plugin successfully %s, run: cf dev help", operation)
 		os.Exit(0)
 	case "help", "-h", "--help":
 		ui.Say("Usage: %s", os.Args[0])

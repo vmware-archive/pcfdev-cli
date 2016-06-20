@@ -105,12 +105,12 @@ var _ = Describe("PCF Dev", func() {
 		Expect(session).To(gbytes.Say("After installing, run: cf dev help"))
 	})
 
-	It("should output a helpful error message when installation fails", func() {
+	It("should upgrade the plugin if it is already installed", func() {
 		pluginCommand := exec.Command(pluginPath)
 		session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "5s").Should(gexec.Exit(1))
-		Expect(session).To(gbytes.Say("Failed to install plugin. Try running: cf install-plugin"))
+		Eventually(session, "1m").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Plugin successfully upgraded, run: cf dev help"))
 	})
 
 	It("should start, stop, and destroy a virtualbox instance", func() {
@@ -121,7 +121,7 @@ var _ = Describe("PCF Dev", func() {
 		Expect(session).To(gbytes.Say("Waiting for services to start..."))
 		Expect(session).To(gbytes.Say("Services started"))
 		Expect(isVMRunning()).To(BeTrue())
-		Expect(filepath.Join(tempHome, "vms", vmName, vmName+"-disk1.vmdk")).To(BeAnExistingFile())
+		Expect(filepath.Join(tempHome, "pcfdev", "vms", vmName, vmName+"-disk1.vmdk")).To(BeAnExistingFile())
 
 		By("re-running 'cf dev start' with no effect")
 		restartCommand := exec.Command("cf", "dev", "start")

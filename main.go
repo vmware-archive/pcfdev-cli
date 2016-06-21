@@ -2,6 +2,9 @@ package main
 
 import (
 	"os"
+	"os/exec"
+	"strconv"
+	"strings"
 
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -17,6 +20,7 @@ import (
 
 	"github.com/cloudfoundry/cli/cf/terminal"
 	cfplugin "github.com/cloudfoundry/cli/plugin"
+	"github.com/kardianos/osext"
 )
 
 var (
@@ -27,8 +31,11 @@ var (
 )
 
 func main() {
-	fileSystem := &fs.FS{}
 	ui := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
+
+	confirmInstalled(ui)
+
+	fileSystem := &fs.FS{}
 	system := &system.System{
 		FS: fileSystem,
 	}
@@ -76,4 +83,62 @@ func main() {
 			Config: config,
 		},
 	})
+}
+
+func confirmInstalled(ui terminal.UI) {
+	var firstArg string
+	if len(os.Args) > 1 {
+		firstArg = os.Args[1]
+	}
+
+	switch firstArg {
+	case "":
+		plugin, err := osext.Executable()
+		if err != nil {
+			ui.Say("Failed to determine plugin path: %s", err)
+			os.Exit(1)
+		}
+
+		operation := "upgraded"
+		if err := exec.Command("cf", "uninstall-plugin", "pcfdev").Run(); err != nil {
+			operation = "installed"
+		}
+
+		installOpts := []string{"install-plugin", plugin}
+		if needsConfirm := checkCLIVersion(ui); needsConfirm {
+			installOpts = append(installOpts, "-f")
+		}
+		if output, err := exec.Command("cf", installOpts...).CombinedOutput(); err != nil {
+			ui.Say(strings.TrimSpace(string(output)))
+			os.Exit(1)
+		}
+
+		ui.Say("Plugin successfully %s, run: cf dev help", operation)
+		os.Exit(0)
+	case "help", "-h", "--help":
+		ui.Say("Usage: %s", os.Args[0])
+		ui.Say("Running this binary directly will automatically install the PCF Dev cf CLI plugin.")
+		ui.Say("You must have the latest version of the cf CLI and Virtualbox 5.0+ to use PCF Dev.")
+		ui.Say("After installing, run: cf dev help")
+		os.Exit(0)
+	}
+}
+
+func checkCLIVersion(ui terminal.UI) (installNeedsConfirm bool) {
+	cfVersion, err := exec.Command("cf", "--version").Output()
+	versionParts := strings.SplitN(strings.TrimPrefix(string(cfVersion), "cf version "), ".", 3)
+	if err != nil || len(versionParts) < 3 {
+		ui.Say("Failed to determine cf CLI version.")
+		os.Exit(1)
+	}
+	majorVersion, errMajor := strconv.Atoi(versionParts[0])
+	minorVersion, errMinor := strconv.Atoi(versionParts[1])
+	if errMajor != nil || errMinor != nil || majorVersion < 6 || (majorVersion == 6 && minorVersion < 7) {
+		ui.Say("Your cf CLI version is too old. Please install the latest cf CLI.")
+		os.Exit(1)
+	}
+	if majorVersion == 6 && minorVersion < 13 {
+		return false
+	}
+	return true
 }

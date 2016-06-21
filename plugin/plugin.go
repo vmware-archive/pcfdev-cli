@@ -283,14 +283,15 @@ func (p *Plugin) download() error {
 
 func (*Plugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
-		Name: "pcfdev",
+		Name:          "pcfdev",
+		MinCliVersion: plugin.VersionType{6, 7, 0},
 		Commands: []plugin.Command{
 			plugin.Command{
 				Name:     "dev",
 				Alias:    "pcfdev",
 				HelpText: "Control PCF Dev VMs running on your workstation",
 				UsageDetails: plugin.Usage{
-					Usage: `cf dev SUBCOMMAND 
+					Usage: `cf dev SUBCOMMAND
 
 SUBCOMMANDS:
    start                    Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.

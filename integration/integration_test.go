@@ -97,20 +97,31 @@ var _ = Describe("PCF Dev", func() {
 		}
 	})
 
-	It("should output a helpful usage message when run directly with help flags", func() {
-		pluginCommand := exec.Command(pluginPath, "--help")
-		session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "5s").Should(gexec.Exit(0))
-		Expect(session).To(gbytes.Say("After installing, run: cf dev help"))
-	})
+	Context("when run directly", func() {
+		It("should output a helpful usage message when run with help flags", func() {
+			pluginCommand := exec.Command(pluginPath, "--help")
+			session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "5s").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("After installing, run: cf dev help"))
+		})
 
-	It("should upgrade the plugin if it is already installed", func() {
-		pluginCommand := exec.Command(pluginPath)
-		session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "1m").Should(gexec.Exit(0))
-		Expect(session).To(gbytes.Say("Plugin successfully upgraded, run: cf dev help"))
+		It("should upgrade the plugin if it is already installed", func() {
+			pluginCommand := exec.Command(pluginPath)
+			session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "1m").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("Plugin successfully upgraded, run: cf dev help"))
+		})
+
+		It("should output an error message when the cf CLI in unavailable", func() {
+			pluginCommand := exec.Command(pluginPath)
+			pluginCommand.Env = []string{}
+			session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "1m").Should(gexec.Exit(1))
+			Expect(session).To(gbytes.Say("Failed to determine cf CLI version"))
+		})
 	})
 
 	It("should start, stop, and destroy a virtualbox instance", func() {

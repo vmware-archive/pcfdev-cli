@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/pivotal-cf/pcfdev-cli/address"
@@ -104,7 +105,11 @@ func confirmInstalled(ui terminal.UI) {
 			operation = "installed"
 		}
 
-		if output, err := exec.Command("cf", "install-plugin", plugin, "-f").CombinedOutput(); err != nil {
+		installOpts := []string{"install-plugin", plugin}
+		if needsConfirm := checkCLIVersion(ui); needsConfirm {
+			installOpts = append(installOpts, "-f")
+		}
+		if output, err := exec.Command("cf", installOpts...).CombinedOutput(); err != nil {
 			ui.Say(strings.TrimSpace(string(output)))
 			os.Exit(1)
 		}
@@ -118,4 +123,23 @@ func confirmInstalled(ui terminal.UI) {
 		ui.Say("After installing, run: cf dev help")
 		os.Exit(0)
 	}
+}
+
+func checkCLIVersion(ui terminal.UI) (installNeedsConfirm bool) {
+	cfVersion, err := exec.Command("cf", "--version").Output()
+	versionParts := strings.SplitN(strings.TrimPrefix(string(cfVersion), "cf version "), ".", 3)
+	if err != nil || len(versionParts) < 3 {
+		ui.Say("Failed to determine cf CLI version.")
+		os.Exit(1)
+	}
+	majorVersion, errMajor := strconv.Atoi(versionParts[0])
+	minorVersion, errMinor := strconv.Atoi(versionParts[1])
+	if errMajor != nil || errMinor != nil || majorVersion < 6 || (majorVersion == 6 && minorVersion < 7) {
+		ui.Say("Your cf CLI version is too old. Please install the latest cf CLI.")
+		os.Exit(1)
+	}
+	if majorVersion == 6 && minorVersion < 13 {
+		return false
+	}
+	return true
 }

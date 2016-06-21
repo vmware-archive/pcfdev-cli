@@ -298,7 +298,7 @@ func (p *Plugin) download() error {
 func (*Plugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
 		Name:          "pcfdev",
-		MinCliVersion: plugin.VersionType{6, 13, 0},
+		MinCliVersion: plugin.VersionType{6, 7, 0},
 		Commands: []plugin.Command{
 			plugin.Command{
 				Name:     "dev",

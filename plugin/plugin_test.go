@@ -18,7 +18,6 @@ import (
 var _ = Describe("Plugin", func() {
 	var (
 		mockCtrl          *gomock.Controller
-		mockSSH           *mocks.MockSSH
 		mockUI            *mocks.MockUI
 		mockVBox          *mocks.MockVBox
 		mockDownloader    *mocks.MockDownloader
@@ -32,7 +31,6 @@ var _ = Describe("Plugin", func() {
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
-		mockSSH = mocks.NewMockSSH(mockCtrl)
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockDownloader = mocks.NewMockDownloader(mockCtrl)
@@ -42,7 +40,6 @@ var _ = Describe("Plugin", func() {
 		mockFS = mocks.NewMockFS(mockCtrl)
 		fakeCliConnection = &fakes.FakeCliConnection{}
 		pcfdev = &plugin.Plugin{
-			SSH:        mockSSH,
 			UI:         mockUI,
 			VBox:       mockVBox,
 			FS:         mockFS,

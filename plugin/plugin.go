@@ -2,8 +2,6 @@ package plugin
 
 import (
 	"fmt"
-	"io"
-	"time"
 
 	"github.com/cloudfoundry/cli/flags"
 	"github.com/cloudfoundry/cli/plugin"
@@ -12,20 +10,13 @@ import (
 )
 
 type Plugin struct {
-	SSH                 SSH
-	UI                  UI
-	FS                  FS
-	VBox                VBox
-	Client              Client
-	Config              *config.Config
-	Downloader          Downloader
-	Builder             Builder
-	RequirementsChecker RequirementsChecker
-}
-
-//go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/plugin SSH
-type SSH interface {
-	RunSSHCommand(command string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
+	UI         UI
+	FS         FS
+	VBox       VBox
+	Client     Client
+	Config     *config.Config
+	Downloader Downloader
+	Builder    Builder
 }
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/plugin UI
@@ -58,11 +49,6 @@ type Client interface {
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/plugin Builder
 type Builder interface {
 	VM(name string) (vm vm.VM, err error)
-}
-
-//go:generate mockgen -package mocks -destination mocks/requirements_checker.go github.com/pivotal-cf/pcfdev-cli/plugin RequirementsChecker
-type RequirementsChecker interface {
-	CheckMemory(desiredMemory uint64) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin FS

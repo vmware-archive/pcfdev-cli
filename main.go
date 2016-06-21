@@ -59,7 +59,6 @@ func main() {
 		},
 		UI:     &plugin.NonTranslatingUI{ui},
 		Config: config,
-		SSH:    &ssh.SSH{},
 		FS:     fileSystem,
 		Builder: &vm.VBoxBuilder{
 			Driver: &vbox.VBoxDriver{},

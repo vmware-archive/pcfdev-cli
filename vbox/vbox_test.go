@@ -681,50 +681,33 @@ var _ = Describe("vbox", func() {
 		})
 	})
 
-	Describe("#ConflictingVMPresent", func() {
-		Context("when there are no conflicting VMs with the prefix pcfdev-", func() {
-			It("should return false", func() {
-				mockDriver.EXPECT().RunningVMs().Return([]string{"some-other-vm", "pcfdev-our-vm"}, nil)
-				Expect(vbx.ConflictingVMPresent(&config.VMConfig{Name: "pcfdev-our-vm"})).To(BeFalse())
+	Describe("#GetVMName", func() {
+		Context("if there is one PCF Dev VM present", func() {
+			It("should return the name of that VM", func() {
+				mockDriver.EXPECT().VMs().Return([]string{"some-vm-name", "pcfdev-our-vm"}, nil)
+				Expect(vbx.GetVMName()).To(Equal("pcfdev-our-vm"))
 			})
 		})
 
-		Context("when there are conflicting VMs with the prefix pcfdev- running", func() {
-			It("should return true", func() {
-				mockDriver.EXPECT().RunningVMs().Return([]string{"pcfdev-conflicting-vm", "pcfdev-our-vm"}, nil)
-				Expect(vbx.ConflictingVMPresent(&config.VMConfig{Name: "pcfdev-our-vm"})).To(BeTrue())
-			})
-		})
-
-		Context("when getting running vms returns an error", func() {
+		Context("if there is more than one PCF Dev VM present", func() {
 			It("should return an error", func() {
-				mockDriver.EXPECT().RunningVMs().Return(nil, errors.New("some-error"))
-				_, err := vbx.ConflictingVMPresent(&config.VMConfig{Name: "pcfdev-our-vm"})
+				mockDriver.EXPECT().VMs().Return([]string{"some-vm-name", "pcfdev-our-vm", "pcfdev-other-vm"}, nil)
+				_, err := vbx.GetVMName()
+				Expect(err).To(MatchError("multiple PCF Dev VMs found"))
+			})
+		})
+		Context("if Driver.VMs() returns an error", func() {
+			It("should return an error", func() {
+				mockDriver.EXPECT().VMs().Return(nil, errors.New("some-error"))
+				_, err := vbx.GetVMName()
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
-	})
 
-	Describe("#AnyVMPresent", func() {
-		Context("when there are any VMs with the prefix pcfdev-", func() {
-			It("should return false", func() {
-				mockDriver.EXPECT().RunningVMs().Return([]string{"some-other-vm", "pcfdev-our-vm"}, nil)
-				Expect(vbx.AnyVMPresent()).To(BeTrue())
-			})
-		})
-
-		Context("when there are no VMs with the prefix pcfdev-", func() {
-			It("should return false", func() {
-				mockDriver.EXPECT().RunningVMs().Return([]string{"some-other-vm"}, nil)
-				Expect(vbx.AnyVMPresent()).To(BeFalse())
-			})
-		})
-
-		Context("when getting running vms returns an error", func() {
-			It("should return an error", func() {
-				mockDriver.EXPECT().RunningVMs().Return(nil, errors.New("some-error"))
-				_, err := vbx.AnyVMPresent()
-				Expect(err).To(MatchError("some-error"))
+		Context("when there are no PCF Dev VMs present", func() {
+			It("should return an empty string", func() {
+				mockDriver.EXPECT().VMs().Return([]string{"some-vm-name"}, nil)
+				Expect(vbx.GetVMName()).To(Equal(""))
 			})
 		})
 	})

@@ -29,17 +29,6 @@ func (_m *MockVBox) EXPECT() *_MockVBoxRecorder {
 	return _m.recorder
 }
 
-func (_m *MockVBox) AnyVMPresent() (bool, error) {
-	ret := _m.ctrl.Call(_m, "AnyVMPresent")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockVBoxRecorder) AnyVMPresent() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "AnyVMPresent")
-}
-
 func (_m *MockVBox) ConflictingVMPresent(_param0 *config.VMConfig) (bool, error) {
 	ret := _m.ctrl.Call(_m, "ConflictingVMPresent", _param0)
 	ret0, _ := ret[0].(bool)
@@ -59,4 +48,15 @@ func (_m *MockVBox) DestroyPCFDevVMs() error {
 
 func (_mr *_MockVBoxRecorder) DestroyPCFDevVMs() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "DestroyPCFDevVMs")
+}
+
+func (_m *MockVBox) GetVMName() (string, error) {
+	ret := _m.ctrl.Call(_m, "GetVMName")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockVBoxRecorder) GetVMName() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVMName")
 }

@@ -30,8 +30,7 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
 type VBox interface {
-	ConflictingVMPresent(vmConfig *config.VMConfig) (conflict bool, err error)
-	AnyVMPresent() (conflict bool, err error)
+	GetVMName() (name string, err error)
 	DestroyPCFDevVMs() (err error)
 }
 
@@ -133,21 +132,23 @@ func (p *Plugin) start(flagContext flags.FlagContext) error {
 	var name string
 	if flagContext.IsSet("o") {
 		name = "pcfdev-custom"
-		conflict, err := p.VBox.AnyVMPresent()
-		if err != nil {
-			return err
-		}
-		if conflict {
-			return errors.New("you must destroy your existing VM to use a custom OVA.")
-		}
 	} else {
 		name = p.Config.DefaultVMName
-		conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: name})
-		if err != nil {
-			return err
-		}
-		if conflict {
-			return &OldVMError{}
+	}
+
+	existingVMName, err := p.VBox.GetVMName()
+	if err != nil {
+		return err
+	}
+	if existingVMName != "" {
+		if flagContext.IsSet("o") {
+			if existingVMName != "pcfdev-custom" {
+				return errors.New("you must destroy your existing VM to use a custom OVA.")
+			}
+		} else {
+			if existingVMName != p.Config.DefaultVMName {
+				return &OldVMError{}
+			}
 		}
 	}
 
@@ -175,15 +176,7 @@ func (p *Plugin) start(flagContext flags.FlagContext) error {
 }
 
 func (p *Plugin) status() error {
-	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
-	if err != nil {
-		return err
-	}
-	if conflict {
-		return &OldVMError{}
-	}
-
-	vm, err := p.Builder.VM(p.Config.DefaultVMName)
+	vm, err := p.getVM()
 	if err != nil {
 		return err
 	}
@@ -192,15 +185,7 @@ func (p *Plugin) status() error {
 }
 
 func (p *Plugin) stop() error {
-	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
-	if err != nil {
-		return err
-	}
-	if conflict {
-		return &OldVMError{}
-	}
-
-	vm, err := p.Builder.VM(p.Config.DefaultVMName)
+	vm, err := p.getVM()
 	if err != nil {
 		return err
 	}
@@ -208,30 +193,15 @@ func (p *Plugin) stop() error {
 }
 
 func (p *Plugin) suspend() error {
-	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
+	vm, err := p.getVM()
 	if err != nil {
 		return err
 	}
-	if conflict {
-		return &OldVMError{}
-	}
-	vm, err := p.Builder.VM(p.Config.DefaultVMName)
-	if err != nil {
-		return err
-	}
-
 	return vm.Suspend()
 }
 
 func (p *Plugin) resume() error {
-	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
-	if err != nil {
-		return err
-	}
-	if conflict {
-		return &OldVMError{}
-	}
-	vm, err := p.Builder.VM(p.Config.DefaultVMName)
+	vm, err := p.getVM()
 	if err != nil {
 		return err
 	}
@@ -253,11 +223,11 @@ func (p *Plugin) destroy() error {
 }
 
 func (p *Plugin) download() error {
-	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
+	existingVMName, err := p.VBox.GetVMName()
 	if err != nil {
 		return err
 	}
-	if conflict {
+	if existingVMName != "" && existingVMName != p.Config.DefaultVMName {
 		return &OldVMError{}
 	}
 
@@ -300,6 +270,21 @@ func (p *Plugin) download() error {
 
 	p.UI.Say("\nVM downloaded")
 	return nil
+}
+
+func (p *Plugin) getVM() (vm vm.VM, err error) {
+	name, err := p.VBox.GetVMName()
+	if err != nil {
+		return nil, err
+	}
+	if name == "" {
+		name = p.Config.DefaultVMName
+	}
+	if name != p.Config.DefaultVMName && name != "pcfdev-custom" {
+		return nil, &OldVMError{}
+	}
+
+	return p.Builder.VM(name)
 }
 
 func (*Plugin) GetMetadata() plugin.PluginMetadata {

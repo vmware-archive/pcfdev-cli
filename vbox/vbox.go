@@ -231,41 +231,21 @@ func (v *VBox) PowerOffVM(vmConfig *config.VMConfig) error {
 	return v.Driver.PowerOffVM(vmConfig.Name)
 }
 
-func (v *VBox) AnyVMPresent() (conflict bool, err error) {
-	vms, err := v.pcfdevVMs()
+func (v *VBox) GetVMName() (name string, err error) {
+	vms, err := v.Driver.VMs()
 	if err != nil {
-		return false, err
+		return "", err
 	}
-	return len(vms) > 0, nil
-}
-
-func (v *VBox) ConflictingVMPresent(vmConfig *config.VMConfig) (conflict bool, err error) {
-	vms, err := v.pcfdevVMs()
-	if err != nil {
-		return false, err
-	}
-
-	for _, vm := range vms {
-		if vm != vmConfig.Name {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func (v *VBox) pcfdevVMs() ([]string, error) {
-	vms, err := v.Driver.RunningVMs()
-	if err != nil {
-		return nil, err
-	}
-	pcfdevVMs := make([]string, 0, len(vms))
-
 	for _, vm := range vms {
 		if strings.HasPrefix(vm, "pcfdev-") {
-			pcfdevVMs = append(pcfdevVMs, vm)
+			if name == "" {
+				name = vm
+			} else {
+				return "", errors.New("multiple PCF Dev VMs found")
+			}
 		}
 	}
-	return pcfdevVMs, nil
+	return name, nil
 }
 
 func (v *VBox) StopVM(vmConfig *config.VMConfig) error {

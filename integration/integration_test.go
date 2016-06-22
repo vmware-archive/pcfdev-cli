@@ -81,19 +81,21 @@ var _ = AfterSuite(func() {
 
 var _ = Describe("PCF Dev", func() {
 	AfterEach(func() {
-		output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
-		if err != nil {
-			return
-		}
+		for _, vm := range []string{vmName, "pcfdev-custom"} {
+			output, err := exec.Command(vBoxManagePath, "showvminfo", vm, "--machinereadable").Output()
+			if err != nil {
+				continue
+			}
 
-		regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
-		matches := regex.FindStringSubmatch(string(output))
+			regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
+			matches := regex.FindStringSubmatch(string(output))
 
-		exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()
-		exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()
+			exec.Command(vBoxManagePath, "controlvm", vm, "poweroff").Run()
+			exec.Command(vBoxManagePath, "unregistervm", vm, "--delete").Run()
 
-		if len(matches) > 1 {
-			exec.Command(vBoxManagePath, "hostonlyif", "remove", matches[1]).Run()
+			if len(matches) > 1 {
+				exec.Command(vBoxManagePath, "hostonlyif", "remove", matches[1]).Run()
+			}
 		}
 	})
 
@@ -131,7 +133,7 @@ var _ = Describe("PCF Dev", func() {
 		Eventually(session, "10m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("Waiting for services to start..."))
 		Expect(session).To(gbytes.Say("Services started"))
-		Expect(isVMRunning()).To(BeTrue())
+		Expect(isVMRunning(vmName)).To(BeTrue())
 		Expect(filepath.Join(tempHome, "pcfdev", "vms", vmName, vmName+"-disk1.vmdk")).To(BeAnExistingFile())
 
 		By("re-running 'cf dev start' with no effect")
@@ -140,7 +142,7 @@ var _ = Describe("PCF Dev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("PCF Dev is running"))
-		Expect(isVMRunning()).To(BeTrue())
+		Expect(isVMRunning(vmName)).To(BeTrue())
 
 		By("running 'cf dev suspend' should suspend the vm")
 		suspendCommand := exec.Command("cf", "dev", "suspend")
@@ -149,7 +151,7 @@ var _ = Describe("PCF Dev", func() {
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("Suspending VM..."))
 		Expect(session).To(gbytes.Say("PCF Dev is now suspended"))
-		Expect(isVMRunning()).NotTo(BeTrue())
+		Expect(isVMRunning(vmName)).NotTo(BeTrue())
 
 		By("running 'cf dev resume' should resume the vm")
 		resumeCommand := exec.Command("cf", "dev", "resume")
@@ -157,7 +159,7 @@ var _ = Describe("PCF Dev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("Resuming VM..."))
-		Expect(isVMRunning()).To(BeTrue())
+		Expect(isVMRunning(vmName)).To(BeTrue())
 
 		output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
 		Expect(err).NotTo(HaveOccurred())
@@ -173,7 +175,7 @@ var _ = Describe("PCF Dev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("PCF Dev is now stopped"))
-		Expect(isVMRunning()).NotTo(BeTrue())
+		Expect(isVMRunning(vmName)).NotTo(BeTrue())
 
 		pcfdevCommand = exec.Command("cf", "dev", "destroy")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
@@ -198,24 +200,24 @@ var _ = Describe("PCF Dev", func() {
 		os.Setenv("NO_PROXY", "192.168.98.98")
 
 		By("starting after running destroy")
-		pcfdevCommand = exec.Command("cf", "dev", "start", "-m", "3456", "-c", "1")
+		pcfdevCommand = exec.Command("cf", "dev", "start", "-m", "3456", "-c", "1", "-o", filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova"))
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("Waiting for services to start..."))
 		Expect(session).To(gbytes.Say("Services started"))
-		Expect(isVMRunning()).To(BeTrue())
-		Expect(vmMemory()).To(Equal("3456"))
-		Expect(vmCores()).To(Equal("1"))
+		Expect(isVMRunning("pcfdev-custom")).To(BeTrue())
+		Expect(vmMemory("pcfdev-custom")).To(Equal("3456"))
+		Expect(vmCores("pcfdev-custom")).To(Equal("1"))
 
 		stdout := gbytes.NewBuffer()
 		stderr := gbytes.NewBuffer()
 		sshClient := &ssh.SSH{}
-		sshClient.RunSSHCommand("echo $HTTP_PROXY", getForwardedPort(), 5*time.Second, stdout, stderr)
+		sshClient.RunSSHCommand("echo $HTTP_PROXY", getForwardedPort("pcfdev-custom"), 5*time.Second, stdout, stderr)
 		Eventually(stdout).Should(gbytes.Say("192.168.93.23"))
-		sshClient.RunSSHCommand("echo $HTTPS_PROXY", getForwardedPort(), 5*time.Second, stdout, stderr)
+		sshClient.RunSSHCommand("echo $HTTPS_PROXY", getForwardedPort("pcfdev-custom"), 5*time.Second, stdout, stderr)
 		Eventually(stdout).Should(gbytes.Say("192.168.38.29"))
-		sshClient.RunSSHCommand("echo $NO_PROXY", getForwardedPort(), 5*time.Second, stdout, stderr)
+		sshClient.RunSSHCommand("echo $NO_PROXY", getForwardedPort("pcfdev-custom"), 5*time.Second, stdout, stderr)
 		Eventually(stdout).Should(gbytes.Say("192.168.98.98"))
 
 		response, err = getResponseFromFakeServer(interfaceName)
@@ -268,30 +270,30 @@ func cf(args ...string) *gexec.Session {
 	return session
 }
 
-func isVMRunning() bool {
-	vmStatus, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
+func isVMRunning(name string) bool {
+	vmStatus, err := exec.Command(vBoxManagePath, "showvminfo", name, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
 	return strings.Contains(string(vmStatus), `VMState="running"`)
 }
 
-func vmMemory() string {
-	output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
+func vmMemory(name string) string {
+	output, err := exec.Command(vBoxManagePath, "showvminfo", name, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
 
 	regex := regexp.MustCompile(`memory=(\d+)`)
 	return regex.FindStringSubmatch(string(output))[1]
 }
 
-func vmCores() string {
-	output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
+func vmCores(name string) string {
+	output, err := exec.Command(vBoxManagePath, "showvminfo", name, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
 
 	regex := regexp.MustCompile(`cpus=(\d+)`)
 	return regex.FindStringSubmatch(string(output))[1]
 }
 
-func getForwardedPort() string {
-	output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
+func getForwardedPort(name string) string {
+	output, err := exec.Command(vBoxManagePath, "showvminfo", name, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
 
 	regex := regexp.MustCompile(`Forwarding\(\d+\)="ssh,tcp,127.0.0.1,(.*),,22"`)

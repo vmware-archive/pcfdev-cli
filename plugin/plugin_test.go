@@ -46,7 +46,7 @@ var _ = Describe("Plugin", func() {
 			Downloader: mockDownloader,
 			Client:     mockClient,
 			Config: &config.Config{
-				DefaultVMName: "some-vm-name",
+				DefaultVMName: "some-default-vm-name",
 				VMDir:         "some-vm-dir",
 			},
 			Builder: mockBuilder,
@@ -114,10 +114,56 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("download", func() {
+			Context("when OVA is current", func() {
+				It("should not download", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
+						mockUI.EXPECT().Say("Using existing image"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+				})
+			})
+
+			Context("when there is an old vm present", func() {
+				It("should tell the user to destroy pcfdev", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().GetVMName().Return("some-old-pcfdev-ova", nil),
+						mockUI.EXPECT().Failed("Error: old version of PCF Dev already running, please run `cf dev destroy` to continue."),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+				})
+			})
+
+			Context("when there is an error checking for an old vm present", func() {
+				It("should return the error", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
+						mockUI.EXPECT().Failed("Error: some-error"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+				})
+			})
+
+			Context("when calling IsOVACurrent fails", func() {
+				It("should return an error", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloader.EXPECT().IsOVACurrent().Return(false, errors.New("some-error")),
+						mockUI.EXPECT().Failed("Error: some-error"),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+				})
+			})
+
 			Context("when OVA is not current", func() {
 				It("should download the OVA", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
@@ -128,32 +174,10 @@ var _ = Describe("Plugin", func() {
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
 				})
 
-				Context("when there is an old vm present", func() {
-					It("should tell the user to destroy pcfdev", func() {
-						gomock.InOrder(
-							mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(true, nil),
-							mockUI.EXPECT().Failed("Error: old version of PCF Dev already running, please run `cf dev destroy` to continue."),
-						)
-
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
-					})
-				})
-
-				Context("when there is an error checking for an old vm present", func() {
-					It("should return the error", func() {
-						gomock.InOrder(
-							mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
-						)
-
-						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
-					})
-				})
-
 				Context("when EULA check fails", func() {
 					It("should print an error", func() {
 						gomock.InOrder(
-							mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
+							mockVBox.EXPECT().GetVMName().Return("", nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error"),
@@ -167,7 +191,7 @@ var _ = Describe("Plugin", func() {
 				Context("when downloading the OVA fails", func() {
 					It("should print an error", func() {
 						gomock.InOrder(
-							mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
+							mockVBox.EXPECT().GetVMName().Return("", nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
@@ -182,7 +206,7 @@ var _ = Describe("Plugin", func() {
 				Context("when EULA has not been accepted and user accepts the EULA", func() {
 					It("should download the ova", func() {
 						gomock.InOrder(
-							mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
+							mockVBox.EXPECT().GetVMName().Return("", nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
@@ -201,7 +225,7 @@ var _ = Describe("Plugin", func() {
 				Context("when EULA has not been accepted and user denies the EULA", func() {
 					It("should not accept and fail gracefully", func() {
 						gomock.InOrder(
-							mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
+							mockVBox.EXPECT().GetVMName().Return("", nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
@@ -217,7 +241,7 @@ var _ = Describe("Plugin", func() {
 				Context("when EULA has not been accepted and it fails to accept the EULA", func() {
 					It("should return the error", func() {
 						gomock.InOrder(
-							mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
+							mockVBox.EXPECT().GetVMName().Return("", nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
@@ -234,7 +258,7 @@ var _ = Describe("Plugin", func() {
 				Context("when EULA is not accepted and getting the EULA fails", func() {
 					It("should print an error", func() {
 						gomock.InOrder(
-							mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
+							mockVBox.EXPECT().GetVMName().Return("", nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("", errors.New("some-error")),
@@ -243,30 +267,6 @@ var _ = Describe("Plugin", func() {
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
 					})
-				})
-			})
-
-			Context("when OVA is current", func() {
-				It("should not download", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-						mockUI.EXPECT().Say("Using existing image"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
-				})
-			})
-
-			Context("when calling IsOVACurrent fails", func() {
-				It("should return an error", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-						mockDownloader.EXPECT().IsOVACurrent().Return(false, errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
 				})
 			})
 
@@ -281,16 +281,16 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Describe("start", func() {
-			It("validates start options and starts the VM", func() {
+			It("should validate start options and starts the VM", func() {
 				startOpts := &vm.StartOpts{
 					Memory: uint64(3456),
 					CPUs:   2,
 				}
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().VerifyStartOpts(startOpts).Return(nil),
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
+					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 					mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 					mockUI.EXPECT().Say("Downloading VM..."),
@@ -308,7 +308,7 @@ var _ = Describe("Plugin", func() {
 					}
 
 					gomock.InOrder(
-						mockVBox.EXPECT().AnyVMPresent().Return(false, nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockBuilder.EXPECT().VM("pcfdev-custom").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(startOpts).Return(nil),
 						mockVM.EXPECT().Start(startOpts),
@@ -317,21 +317,35 @@ var _ = Describe("Plugin", func() {
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-o", "some-custom-ova"})
 				})
 
-				Context("when there is an error checking for VMs", func() {
-					It("should return an error", func() {
+				Context("when the custom VM is present", func() {
+					It("should start the custom OVA", func() {
+						startOpts := &vm.StartOpts{
+							OVAPath: "some-custom-ova",
+						}
 						gomock.InOrder(
-							mockVBox.EXPECT().AnyVMPresent().Return(false, errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
+							mockVBox.EXPECT().GetVMName().Return("pcfdev-custom", nil),
+							mockBuilder.EXPECT().VM("pcfdev-custom").Return(mockVM, nil),
+							mockVM.EXPECT().VerifyStartOpts(startOpts).Return(nil),
+							mockVM.EXPECT().Start(startOpts),
 						)
-
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-o", "some-custom-ova"})
 					})
 				})
 
-				Context("when there is a conflict checking for VMs", func() {
+				Context("when the default VM is present", func() {
 					It("should return an error", func() {
 						gomock.InOrder(
-							mockVBox.EXPECT().AnyVMPresent().Return(true, nil),
+							mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
+							mockUI.EXPECT().Failed("Error: you must destroy your existing VM to use a custom OVA."),
+						)
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-o", "some-custom-ova"})
+					})
+				})
+
+				Context("when an old VM is present", func() {
+					It("should return an error", func() {
+						gomock.InOrder(
+							mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil),
 							mockUI.EXPECT().Failed("Error: you must destroy your existing VM to use a custom OVA."),
 						)
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-o", "some-custom-ova"})
@@ -342,7 +356,7 @@ var _ = Describe("Plugin", func() {
 			Context("when there is an old vm present", func() {
 				It("should tell the user to destroy pcfdev", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(true, nil),
+						mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil),
 						mockUI.EXPECT().Failed("Error: old version of PCF Dev already running, please run `cf dev destroy` to continue."),
 					)
 
@@ -350,10 +364,21 @@ var _ = Describe("Plugin", func() {
 				})
 			})
 
-			Context("when there is an error checking for an old vm present", func() {
+			Context("when there is a custom vm present", func() {
+				It("should tell the user to destroy pcfdev", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().GetVMName().Return("pcfdev-custom", nil),
+						mockUI.EXPECT().Failed("Error: old version of PCF Dev already running, please run `cf dev destroy` to continue."),
+					)
+
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
+
+			Context("when there is an error getting the VM name", func() {
 				It("should return the error", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, errors.New("some-error")),
+						mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
 						mockUI.EXPECT().Failed("Error: some-error"),
 					)
 
@@ -361,13 +386,13 @@ var _ = Describe("Plugin", func() {
 				})
 			})
 
-			Context("when the user does not use the allocated memory flag", func() {
-				It("should download and start the ova with the builder specified memory", func() {
+			Context("when the user does not use the allocated memory or cores flags", func() {
+				It("should download and start the ova without specifying memory and cores", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-						mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
-						mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
@@ -377,106 +402,106 @@ var _ = Describe("Plugin", func() {
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 				})
+			})
 
-				Context("when ova is current", func() {
-					It("should start without downloading", func() {
+			Context("when ova is current", func() {
+				It("should start without downloading", func() {
+					gomock.InOrder(
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
+						mockUI.EXPECT().Say("Using existing image"),
+						mockVM.EXPECT().Start(&vm.StartOpts{}),
+					)
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+
+				})
+
+				Context("when it fails to get VM", func() {
+					It("should return an error", func() {
 						gomock.InOrder(
-							mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-							mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
-							mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
-							mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-							mockUI.EXPECT().Say("Using existing image"),
-							mockVM.EXPECT().Start(&vm.StartOpts{}),
+							mockVBox.EXPECT().GetVMName().Return("", nil),
+							mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
+							mockUI.EXPECT().Failed("Error: some-error"),
 						)
+
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-
-					})
-
-					Context("when it fails to get VM", func() {
-						It("should return an error", func() {
-							gomock.InOrder(
-								mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-								mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
-								mockUI.EXPECT().Failed("Error: some-error"),
-							)
-
-							pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-						})
-					})
-
-					Context("when verifying start options fails", func() {
-						It("should return an error", func() {
-							gomock.InOrder(
-								mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-								mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
-								mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(errors.New("some-error")),
-								mockUI.EXPECT().Failed("Error: some-error"),
-							)
-
-							pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-						})
-					})
-
-					Context("when it fails to start VM", func() {
-						It("should return an error", func() {
-							gomock.InOrder(
-								mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-								mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
-								mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
-								mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-								mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-								mockUI.EXPECT().Say("Using existing image"),
-								mockVM.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("some-error")),
-								mockUI.EXPECT().Failed("Error: some-error"),
-							)
-
-							pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-						})
 					})
 				})
 
-				Context("when ova is not current", func() {
-					Context("when the OVA fails to download", func() {
-						It("should print an error message", func() {
-							gomock.InOrder(
-								mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-								mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
-								mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
-								mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-								mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
-								mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
-								mockUI.EXPECT().Say("Downloading VM..."),
-								mockDownloader.EXPECT().Download().Return(errors.New("some-error")),
-								mockUI.EXPECT().Failed("Error: some-error"),
-							)
+				Context("when verifying start options fails", func() {
+					It("should return an error", func() {
+						gomock.InOrder(
+							mockVBox.EXPECT().GetVMName().Return("", nil),
+							mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+							mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(errors.New("some-error")),
+							mockUI.EXPECT().Failed("Error: some-error"),
+						)
 
-							pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-						})
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 					})
+				})
 
-					Context("when the EULA is not already accepted", func() {
-						It("should print the EULA", func() {
-							gomock.InOrder(
-								mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-								mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
-								mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
-								mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-								mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
-								mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
-								mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-								mockUI.EXPECT().Say("some-eula"),
-								mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
-								mockClient.EXPECT().AcceptEULA().Return(nil),
+				Context("when it fails to start VM", func() {
+					It("should return an error", func() {
+						gomock.InOrder(
+							mockVBox.EXPECT().GetVMName().Return("", nil),
+							mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+							mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
+							mockVBox.EXPECT().GetVMName().Return("", nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
+							mockUI.EXPECT().Say("Using existing image"),
+							mockVM.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("some-error")),
+							mockUI.EXPECT().Failed("Error: some-error"),
+						)
 
-								mockUI.EXPECT().Say("Downloading VM..."),
-								mockDownloader.EXPECT().Download(),
-								mockUI.EXPECT().Say("\nVM downloaded"),
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+					})
+				})
+			})
 
-								mockVM.EXPECT().Start(&vm.StartOpts{}),
-							)
-							pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-						})
+			Context("when ova is not current", func() {
+				Context("when the OVA fails to download", func() {
+					It("should print an error message", func() {
+						gomock.InOrder(
+							mockVBox.EXPECT().GetVMName().Return("", nil),
+							mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+							mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
+							mockVBox.EXPECT().GetVMName().Return("", nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
+							mockUI.EXPECT().Say("Downloading VM..."),
+							mockDownloader.EXPECT().Download().Return(errors.New("some-error")),
+							mockUI.EXPECT().Failed("Error: some-error"),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+					})
+				})
+
+				Context("when the EULA is not already accepted", func() {
+					It("should print the EULA", func() {
+						gomock.InOrder(
+							mockVBox.EXPECT().GetVMName().Return("", nil),
+							mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+							mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
+							mockVBox.EXPECT().GetVMName().Return("", nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
+							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
+							mockUI.EXPECT().Say("some-eula"),
+							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
+							mockClient.EXPECT().AcceptEULA().Return(nil),
+
+							mockUI.EXPECT().Say("Downloading VM..."),
+							mockDownloader.EXPECT().Download(),
+							mockUI.EXPECT().Say("\nVM downloaded"),
+
+							mockVM.EXPECT().Start(&vm.StartOpts{}),
+						)
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 					})
 				})
 			})
@@ -484,20 +509,46 @@ var _ = Describe("Plugin", func() {
 	})
 
 	Context("stop", func() {
-		It("should stop the VM", func() {
-			gomock.InOrder(
-				mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
-				mockVM.EXPECT().Stop(),
-			)
+		Context("when the default vm is present", func() {
+			It("should stop the VM", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Stop(),
+				)
 
-			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+			})
+		})
+
+		Context("when the custom vm is present", func() {
+			It("should stop the VM", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("pcfdev-custom", nil),
+					mockBuilder.EXPECT().VM("pcfdev-custom").Return(mockVM, nil),
+					mockVM.EXPECT().Stop(),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+			})
+		})
+
+		Context("when there is no vm present", func() {
+			It("should stop the default VM", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Stop(),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+			})
 		})
 
 		Context("when there is an old vm present", func() {
 			It("should tell the user to destroy pcfdev", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(true, nil),
+					mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil),
 					mockUI.EXPECT().Failed("Error: old version of PCF Dev already running, please run `cf dev destroy` to continue."),
 				)
 
@@ -505,10 +556,10 @@ var _ = Describe("Plugin", func() {
 			})
 		})
 
-		Context("when there is an error checking for an old vm present", func() {
+		Context("when there is an getting the VM name", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, errors.New("some-error")),
+					mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
@@ -519,8 +570,8 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
@@ -531,8 +582,8 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to stop VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Stop().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
@@ -552,43 +603,69 @@ var _ = Describe("Plugin", func() {
 	})
 
 	Context("suspend", func() {
-		It("should suspend the VM", func() {
-			gomock.InOrder(
-				mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
-				mockVM.EXPECT().Suspend(),
-			)
+		Context("when the default VM is present", func() {
+			It("should suspend the VM", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Suspend(),
+				)
 
-			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
+			})
+		})
+
+		Context("when the custom vm is present", func() {
+			It("should suspend the VM", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("pcfdev-custom", nil),
+					mockBuilder.EXPECT().VM("pcfdev-custom").Return(mockVM, nil),
+					mockVM.EXPECT().Suspend(),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
+			})
+		})
+
+		Context("when there is no vm present", func() {
+			It("should suspend the default VM", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Suspend(),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
+			})
 		})
 
 		Context("when there is an old vm present", func() {
 			It("should tell the user to destroy pcfdev", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(true, nil),
+					mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil),
 					mockUI.EXPECT().Failed("Error: old version of PCF Dev already running, please run `cf dev destroy` to continue."),
 				)
 
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
 			})
 		})
 
 		Context("when there is an error checking for an old vm present", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, errors.New("some-error")),
+					mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
 			})
 		})
 
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
@@ -599,8 +676,8 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to suspend VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Suspend().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
@@ -620,43 +697,69 @@ var _ = Describe("Plugin", func() {
 	})
 
 	Context("resume", func() {
-		It("should resume the VM", func() {
-			gomock.InOrder(
-				mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
-				mockVM.EXPECT().Resume(),
-			)
+		Context("when the default VM is present", func() {
+			It("should resume the VM", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Resume(),
+				)
 
-			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
+			})
+		})
+
+		Context("when the custom vm is present", func() {
+			It("should resume the VM", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("pcfdev-custom", nil),
+					mockBuilder.EXPECT().VM("pcfdev-custom").Return(mockVM, nil),
+					mockVM.EXPECT().Resume(),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
+			})
+		})
+
+		Context("when there is no vm present", func() {
+			It("should resume the default VM", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Resume(),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
+			})
 		})
 
 		Context("when there is an old vm present", func() {
 			It("should tell the user to destroy pcfdev", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(true, nil),
+					mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil),
 					mockUI.EXPECT().Failed("Error: old version of PCF Dev already running, please run `cf dev destroy` to continue."),
 				)
 
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
 			})
 		})
 
-		Context("when there is an error checking for an old vm present", func() {
+		Context("when there is an error getting the VM name", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, errors.New("some-error")),
+					mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
 			})
 		})
 
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
@@ -667,8 +770,8 @@ var _ = Describe("Plugin", func() {
 		Context("when it fails to resume VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-					mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Resume().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
@@ -688,44 +791,72 @@ var _ = Describe("Plugin", func() {
 	})
 
 	Context("status", func() {
-		It("should return the status", func() {
-			gomock.InOrder(
-				mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-				mockBuilder.EXPECT().VM("some-vm-name").Return(mockVM, nil),
-				mockVM.EXPECT().Status().Return("some-status"),
-				mockUI.EXPECT().Say("some-status"),
-			)
+		Context("when the default vm is present", func() {
+			It("should return the status", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Status().Return("some-status"),
+					mockUI.EXPECT().Say("some-status"),
+				)
 
-			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
+			})
+		})
+
+		Context("when the custom vm is present", func() {
+			It("should return the status", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("pcfdev-custom", nil),
+					mockBuilder.EXPECT().VM("pcfdev-custom").Return(mockVM, nil),
+					mockVM.EXPECT().Status().Return("some-status"),
+					mockUI.EXPECT().Say("some-status"),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
+			})
+		})
+
+		Context("when there is no vm present", func() {
+			It("should return the status of the default VM", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Status().Return("some-status"),
+					mockUI.EXPECT().Say("some-status"),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
+			})
 		})
 
 		Context("when there is an old vm present", func() {
 			It("should tell the user to destroy pcfdev", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(true, nil),
+					mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil),
 					mockUI.EXPECT().Failed("Error: old version of PCF Dev already running, please run `cf dev destroy` to continue."),
 				)
 
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
 			})
 		})
 
-		Context("when there is an error checking for an old vm present", func() {
+		Context("when there is an error getting the VM name", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, errors.New("some-error")),
+					mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 
-				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
 			})
 		})
 
 		Context("when it fails to get VM", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().ConflictingVMPresent(&config.VMConfig{Name: pcfdev.Config.DefaultVMName}).Return(false, nil),
-					mockBuilder.EXPECT().VM("some-vm-name").Return(nil, errors.New("some-error")),
+					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error"),
 				)
 

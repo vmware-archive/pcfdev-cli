@@ -137,7 +137,7 @@ var _ = Describe("driver", func() {
 
 			err = driver.StartVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(driver.VMState(vmName)).To(Equal(vbox.StateRunning))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
 
 			stdout := gbytes.NewBuffer()
 			err = sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)
@@ -149,7 +149,7 @@ var _ = Describe("driver", func() {
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateStopped))
 
 			Expect(driver.StartVM(vmName)).To(Succeed())
-			Expect(driver.VMState(vmName)).To(Equal(vbox.StateRunning))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
 
 			err = driver.SuspendVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
@@ -157,10 +157,10 @@ var _ = Describe("driver", func() {
 
 			err = driver.ResumeVM(vmName)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(driver.VMState(vmName)).To(Equal(vbox.StateRunning))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
 
 			Expect(driver.PowerOffVM(vmName)).To(Succeed())
-			Expect(driver.VMState(vmName)).To(Equal(vbox.StateStopped))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateStopped))
 
 			err = driver.DestroyVM(vmName)
 			Expect(err).NotTo(HaveOccurred())

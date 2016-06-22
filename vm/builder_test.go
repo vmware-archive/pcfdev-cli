@@ -56,7 +56,6 @@ var _ = Describe("Builder", func() {
 				switch u := notCreatedVM.(type) {
 				case *vm.NotCreated:
 					Expect(u.VMConfig.Name).To(Equal("some-vm"))
-					Expect(u.VMConfig.DiskName).To(Equal("some-vm-disk1.vmdk"))
 				default:
 					Fail("wrong type")
 				}
@@ -110,7 +109,6 @@ var _ = Describe("Builder", func() {
 					switch u := stoppedVM.(type) {
 					case *vm.Stopped:
 						Expect(u.VMConfig.Name).To(Equal("some-vm"))
-						Expect(u.VMConfig.DiskName).To(Equal("some-vm-disk1.vmdk"))
 						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
 						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
 						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
@@ -139,7 +137,6 @@ var _ = Describe("Builder", func() {
 					switch u := abortedVM.(type) {
 					case *vm.Stopped:
 						Expect(u.VMConfig.Name).To(Equal("some-vm"))
-						Expect(u.VMConfig.DiskName).To(Equal("some-vm-disk1.vmdk"))
 						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
 						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
 						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
@@ -235,7 +232,6 @@ var _ = Describe("Builder", func() {
 					switch u := notCreatedVM.(type) {
 					case *vm.Running:
 						Expect(u.VMConfig.Name).To(Equal("some-vm"))
-						Expect(u.VMConfig.DiskName).To(Equal("some-vm-disk1.vmdk"))
 						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
 						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
 						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
@@ -263,7 +259,6 @@ var _ = Describe("Builder", func() {
 					switch u := suspendedVM.(type) {
 					case *vm.Suspended:
 						Expect(u.VMConfig.Name).To(Equal("some-vm"))
-						Expect(u.VMConfig.DiskName).To(Equal("some-vm-disk1.vmdk"))
 						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
 						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
 						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
@@ -291,7 +286,6 @@ var _ = Describe("Builder", func() {
 					switch u := suspendedVM.(type) {
 					case *vm.Suspended:
 						Expect(u.VMConfig.Name).To(Equal("some-vm"))
-						Expect(u.VMConfig.DiskName).To(Equal("some-vm-disk1.vmdk"))
 						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
 						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
 						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))

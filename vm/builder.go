@@ -47,7 +47,6 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		},
 		Config: b.Config,
 	}
-	diskName := vmName + "-disk1.vmdk"
 
 	exists, err := b.Driver.VMExists(vmName)
 	if err != nil {
@@ -71,9 +70,9 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			UI:      termUI,
 			Builder: b,
 			Config:  b.Config,
+			FS:      b.FS,
 			VMConfig: &config.VMConfig{
-				Name:     vmName,
-				DiskName: diskName,
+				Name: vmName,
 			},
 		}, nil
 	}
@@ -108,12 +107,11 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	if state == vbox.StateRunning {
 		return &Running{
 			VMConfig: &config.VMConfig{
-				Name:     vmName,
-				DiskName: diskName,
-				IP:       ip,
-				SSHPort:  sshPort,
-				Domain:   domain,
-				Memory:   memory,
+				Name:    vmName,
+				IP:      ip,
+				SSHPort: sshPort,
+				Domain:  domain,
+				Memory:  memory,
 			},
 
 			UI:   termUI,
@@ -124,12 +122,11 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	if state == vbox.StateSaved || state == vbox.StatePaused {
 		return &Suspended{
 			VMConfig: &config.VMConfig{
-				Name:     vmName,
-				DiskName: diskName,
-				IP:       ip,
-				SSHPort:  sshPort,
-				Domain:   domain,
-				Memory:   memory,
+				Name:    vmName,
+				IP:      ip,
+				SSHPort: sshPort,
+				Domain:  domain,
+				Memory:  memory,
 			},
 			Config: b.Config,
 
@@ -141,12 +138,11 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	if state == vbox.StateStopped || state == vbox.StateAborted {
 		return &Stopped{
 			VMConfig: &config.VMConfig{
-				Name:     vmName,
-				DiskName: diskName,
-				IP:       ip,
-				SSHPort:  sshPort,
-				Domain:   domain,
-				Memory:   memory,
+				Name:    vmName,
+				IP:      ip,
+				SSHPort: sshPort,
+				Domain:  domain,
+				Memory:  memory,
 			},
 			Config: b.Config,
 

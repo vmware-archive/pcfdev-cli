@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 type FS struct{}
@@ -113,13 +114,15 @@ func (fs *FS) Move(source string, destination string) error {
 	return nil
 }
 
-func (fs *FS) Extract(archivePath string, destinationPath string, file string) error {
+func (fs *FS) Extract(archivePath string, destinationPath string, pattern string) error {
 	archive, err := os.Open(archivePath)
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %s", archivePath, err)
 	}
 
 	reader := tar.NewReader(archive)
+
+	regex := regexp.MustCompile(pattern)
 	for {
 		header, err := reader.Next()
 		if err == io.EOF {
@@ -128,13 +131,14 @@ func (fs *FS) Extract(archivePath string, destinationPath string, file string) e
 		if err != nil {
 			return fmt.Errorf("malformed tar %s:%s", archivePath, err)
 		}
-		if header.Name == file {
+		matches := regex.FindStringSubmatch(header.Name)
+		if len(matches) > 0 {
 			fs.Write(destinationPath, reader)
 			return nil
 		}
 	}
 
-	return fmt.Errorf("could not find %s in %s", file, archivePath)
+	return fmt.Errorf("could not find file matching %s in %s", regex, archivePath)
 }
 
 func (fs *FS) fileInSet(filenameToFind string, filenames []string) bool {

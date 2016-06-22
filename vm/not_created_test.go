@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	"errors"
+	"path/filepath"
 
 	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -20,6 +21,7 @@ var _ = Describe("Not Created", func() {
 		mockVBox     *mocks.MockVBox
 		mockBuilder  *mocks.MockBuilder
 		mockStopped  *mocks.MockVM
+		mockFS       *mocks.MockFS
 		notCreatedVM vm.NotCreated
 		conf         *config.Config
 	)
@@ -30,17 +32,18 @@ var _ = Describe("Not Created", func() {
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
 		mockStopped = mocks.NewMockVM(mockCtrl)
+		mockFS = mocks.NewMockFS(mockCtrl)
 		conf = &config.Config{}
 
 		notCreatedVM = vm.NotCreated{
 			VMConfig: &config.VMConfig{
-				Name:     "some-vm",
-				DiskName: "some-vm-disk1.vmdk",
+				Name: "some-vm",
 			},
 
 			VBox:    mockVBox,
 			UI:      mockUI,
 			Builder: mockBuilder,
+			FS:      mockFS,
 			Config:  conf,
 		}
 	})
@@ -174,6 +177,35 @@ var _ = Describe("Not Created", func() {
 				})
 			})
 		})
+
+		Context("when OVAPath is passed as an option", func() {
+			It("should skip memory check", func() {
+				conf.FreeMemory = uint64(3000)
+				conf.DefaultMemory = uint64(4000)
+				mockFS.EXPECT().Exists("some-ova-path").Return(true, nil)
+				Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+					OVAPath: "some-ova-path",
+				})).To(Succeed())
+			})
+		})
+
+		Context("when there is no file at the path specified by OVAPath", func() {
+			It("should throw an error", func() {
+				mockFS.EXPECT().Exists("some-ova-path").Return(false, nil)
+				Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+					OVAPath: "some-ova-path",
+				})).To(MatchError("no file found at some-ova-path"))
+			})
+		})
+
+		Context("when checking if ova exists returns an error", func() {
+			It("should throw an error", func() {
+				mockFS.EXPECT().Exists("some-ova-path").Return(false, errors.New("some-error"))
+				Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+					OVAPath: "some-ova-path",
+				})).To(MatchError("some-error"))
+			})
+		})
 	})
 
 	Describe("Start", func() {
@@ -191,10 +223,10 @@ var _ = Describe("Not Created", func() {
 					mockUI.EXPECT().Say("Allocating 4000 MB out of 8000 MB total system memory (5000 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM(&config.VMConfig{
-						Name:     "some-vm",
-						DiskName: "some-vm-disk1.vmdk",
-						Memory:   uint64(4000),
-						CPUs:     3,
+						Name:    "some-vm",
+						Memory:  uint64(4000),
+						CPUs:    3,
+						OVAPath: "some-ova-path",
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(&vm.StartOpts{}),
@@ -203,8 +235,9 @@ var _ = Describe("Not Created", func() {
 				conf.TotalMemory = uint64(8000)
 
 				notCreatedVM.Start(&vm.StartOpts{
-					Memory: uint64(4000),
-					CPUs:   3,
+					Memory:  uint64(4000),
+					CPUs:    3,
+					OVAPath: "some-ova-path",
 				})
 			})
 		})
@@ -215,14 +248,15 @@ var _ = Describe("Not Created", func() {
 					mockUI.EXPECT().Say("Allocating 3500 MB out of 8000 MB total system memory (5000 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM(&config.VMConfig{
-						Name:     "some-vm",
-						DiskName: "some-vm-disk1.vmdk",
-						Memory:   uint64(3500),
-						CPUs:     7,
+						Name:    "some-vm",
+						Memory:  uint64(3500),
+						CPUs:    7,
+						OVAPath: filepath.Join("some-ova-dir", "some-vm.ova"),
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(nil),
 				)
+				conf.OVADir = "some-ova-dir"
 				conf.DefaultCPUs = 7
 				conf.DefaultMemory = uint64(3500)
 				conf.FreeMemory = uint64(5000)
@@ -238,11 +272,12 @@ var _ = Describe("Not Created", func() {
 					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM(&config.VMConfig{
-						Name:     "some-vm",
-						DiskName: "some-vm-disk1.vmdk",
-						Memory:   uint64(3072),
+						Name:    "some-vm",
+						Memory:  uint64(3072),
+						OVAPath: filepath.Join("some-ova-dir", "some-vm.ova"),
 					}).Return(errors.New("some-error")),
 				)
+				conf.OVADir = "some-ova-dir"
 
 				Expect(notCreatedVM.Start(&vm.StartOpts{
 					Memory: uint64(3072),
@@ -256,12 +291,13 @@ var _ = Describe("Not Created", func() {
 					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM(&config.VMConfig{
-						Name:     "some-vm",
-						DiskName: "some-vm-disk1.vmdk",
-						Memory:   uint64(3072),
+						Name:    "some-vm",
+						Memory:  uint64(3072),
+						OVAPath: filepath.Join("some-ova-dir", "some-vm.ova"),
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
+				conf.OVADir = "some-ova-dir"
 
 				Expect(notCreatedVM.Start(&vm.StartOpts{
 					Memory: uint64(3072),
@@ -275,13 +311,14 @@ var _ = Describe("Not Created", func() {
 					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
 					mockVBox.EXPECT().ImportVM(&config.VMConfig{
-						Name:     "some-vm",
-						DiskName: "some-vm-disk1.vmdk",
-						Memory:   uint64(3072),
+						Name:    "some-vm",
+						Memory:  uint64(3072),
+						OVAPath: filepath.Join("some-ova-dir", "some-vm.ova"),
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("failed to start VM: some-error")),
 				)
+				conf.OVADir = "some-ova-dir"
 
 				Expect(notCreatedVM.Start(&vm.StartOpts{
 					Memory: uint64(3072),

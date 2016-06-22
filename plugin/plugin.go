@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cloudfoundry/cli/flags"
@@ -30,6 +31,7 @@ type UI interface {
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
 type VBox interface {
 	ConflictingVMPresent(vmConfig *config.VMConfig) (conflict bool, err error)
+	AnyVMPresent() (conflict bool, err error)
 	DestroyPCFDevVMs() (err error)
 }
 
@@ -74,6 +76,7 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	case "start":
 		flagContext.NewIntFlag("m", "memory", "<memory in MB>")
 		flagContext.NewIntFlag("c", "cpus", "<number of cpus>")
+		flagContext.NewStringFlag("o", "ova", "<path to custom ova>")
 	}
 
 	if err := flagContext.Parse(args...); err != nil {
@@ -127,27 +130,45 @@ func getErrorText(err error) string {
 }
 
 func (p *Plugin) start(flagContext flags.FlagContext) error {
-	conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: p.Config.DefaultVMName})
-	if err != nil {
-		return err
-	}
-	if conflict {
-		return &OldVMError{}
+	var name string
+	if flagContext.IsSet("o") {
+		name = "pcfdev-custom"
+		conflict, err := p.VBox.AnyVMPresent()
+		if err != nil {
+			return err
+		}
+		if conflict {
+			return errors.New("you must destroy your existing VM to use a custom OVA.")
+		}
+	} else {
+		name = p.Config.DefaultVMName
+		conflict, err := p.VBox.ConflictingVMPresent(&config.VMConfig{Name: name})
+		if err != nil {
+			return err
+		}
+		if conflict {
+			return &OldVMError{}
+		}
 	}
 
-	v, err := p.Builder.VM(p.Config.DefaultVMName)
+	v, err := p.Builder.VM(name)
 	if err != nil {
 		return err
 	}
+
 	opts := &vm.StartOpts{
-		Memory: uint64(flagContext.Int("m")),
-		CPUs:   flagContext.Int("c"),
+		Memory:  uint64(flagContext.Int("m")),
+		CPUs:    flagContext.Int("c"),
+		OVAPath: flagContext.String("o"),
 	}
+
 	if err := v.VerifyStartOpts(opts); err != nil {
 		return err
 	}
-	if err := p.download(); err != nil {
-		return err
+	if !flagContext.IsSet("o") {
+		if err := p.download(); err != nil {
+			return err
+		}
 	}
 
 	return v.Start(opts)

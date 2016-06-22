@@ -3,6 +3,7 @@ package vm
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
@@ -13,6 +14,7 @@ type NotCreated struct {
 	Builder  Builder
 	Config   *config.Config
 	VMConfig *config.VMConfig
+	FS       FS
 }
 
 func (n *NotCreated) Stop() error {
@@ -21,6 +23,26 @@ func (n *NotCreated) Stop() error {
 }
 
 func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
+	if opts.OVAPath == "" {
+		if err := n.verifyMemory(opts); err != nil {
+			return err
+		}
+	} else {
+		exists, err := n.FS.Exists(opts.OVAPath)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return fmt.Errorf("no file found at %s", opts.OVAPath)
+		}
+	}
+	if opts.CPUs < 0 {
+		return errors.New("cannot start with less than one core")
+	}
+	return nil
+}
+
+func (n *NotCreated) verifyMemory(opts *StartOpts) error {
 	var memory uint64
 	if opts.Memory != uint64(0) {
 		if opts.Memory < n.Config.MinMemory {
@@ -35,9 +57,6 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 		if !n.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", memory)) {
 			return errors.New("user declined to continue, exiting")
 		}
-	}
-	if opts.CPUs < 0 {
-		return errors.New("cannot start with less than one core")
 	}
 	return nil
 }
@@ -57,13 +76,20 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 		cpus = n.Config.DefaultCPUs
 	}
 
+	var ovaPath string
+	if opts.OVAPath != "" {
+		ovaPath = opts.OVAPath
+	} else {
+		ovaPath = filepath.Join(n.Config.OVADir, n.VMConfig.Name+".ova")
+	}
+
 	n.UI.Say(fmt.Sprintf("Allocating %d MB out of %d MB total system memory (%d MB free).", memory, n.Config.TotalMemory, n.Config.FreeMemory))
 	n.UI.Say("Importing VM...")
 	if err := n.VBox.ImportVM(&config.VMConfig{
-		Name:     n.VMConfig.Name,
-		DiskName: n.VMConfig.DiskName,
-		Memory:   memory,
-		CPUs:     cpus,
+		Name:    n.VMConfig.Name,
+		Memory:  memory,
+		CPUs:    cpus,
+		OVAPath: ovaPath,
 	}); err != nil {
 		return &ImportVMError{err}
 	}

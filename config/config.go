@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"unicode"
 
 	"github.com/pivotal-cf/pcfdev-cli/user"
 )
@@ -83,23 +85,23 @@ func getPCFDevHome() (string, error) {
 
 func getHTTPProxy() string {
 	if proxy := os.Getenv("HTTP_PROXY"); proxy != "" {
-		return proxy
+		return stripWhitespace(proxy)
 	}
-	return os.Getenv("http_proxy")
+	return stripWhitespace(os.Getenv("http_proxy"))
 }
 
 func getHTTPSProxy() string {
 	if proxy := os.Getenv("HTTPS_PROXY"); proxy != "" {
-		return proxy
+		return stripWhitespace(proxy)
 	}
-	return os.Getenv("https_proxy")
+	return stripWhitespace(os.Getenv("https_proxy"))
 }
 
 func getNoProxy() string {
 	if proxy := os.Getenv("NO_PROXY"); proxy != "" {
-		return proxy
+		return stripWhitespace(proxy)
 	}
-	return os.Getenv("no_proxy")
+	return stripWhitespace(os.Getenv("no_proxy"))
 }
 
 func getDefaultMemory(totalMemory, minMemory, maxMemory uint64) uint64 {
@@ -110,4 +112,13 @@ func getDefaultMemory(totalMemory, minMemory, maxMemory uint64) uint64 {
 		return maxMemory
 	}
 	return halfTotal
+}
+
+func stripWhitespace(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, s)
 }

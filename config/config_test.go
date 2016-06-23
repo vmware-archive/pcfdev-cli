@@ -147,6 +147,41 @@ var _ = Describe("Config", func() {
 			})
 		})
 
+		Context("when proxy env vars contain spaces", func() {
+			var (
+				savedLowerHTTPProxy  string
+				savedLowerHTTPSProxy string
+				savedLowerNoProxy    string
+			)
+
+			BeforeEach(func() {
+				savedLowerHTTPProxy = os.Getenv("HTTP_PROXY")
+				savedLowerHTTPSProxy = os.Getenv("HTTPS_PROXY")
+				savedLowerNoProxy = os.Getenv("NO_PROXY")
+
+				os.Setenv("HTTP_PROXY", "   some http\tproxy\nwith\r\nwhitespace   ")
+				os.Setenv("HTTPS_PROXY", "   some https\tproxy\nwith\r\nwhitespace   ")
+				os.Setenv("NO_PROXY", "   some no\tproxy\nwith\r\nwhitespace   ")
+			})
+
+			AfterEach(func() {
+				os.Setenv("HTTP_PROXY", savedLowerHTTPProxy)
+				os.Setenv("HTTPS_PROXY", savedLowerHTTPSProxy)
+				os.Setenv("NO_PROXY", savedLowerNoProxy)
+			})
+
+			It("should strip all whitespace", func() {
+				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
+				mockSystem.EXPECT().TotalMemory().Return(uint64(1000), nil)
+				mockSystem.EXPECT().PhysicalCores().Return(4, nil)
+				conf, err := config.New("some-vm", mockSystem)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(conf.HTTPProxy).To(Equal("somehttpproxywithwhitespace"))
+				Expect(conf.HTTPSProxy).To(Equal("somehttpsproxywithwhitespace"))
+				Expect(conf.NoProxy).To(Equal("somenoproxywithwhitespace"))
+			})
+		})
+
 		Context("when PCFDEV_HOME is not set", func() {
 			It("should use a .pcfdev dir within the user's home", func() {
 				var expectedHome string

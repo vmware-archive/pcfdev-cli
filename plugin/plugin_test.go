@@ -301,6 +301,19 @@ var _ = Describe("Plugin", func() {
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "3456", "-c", "2"})
 			})
 
+			Context("when the custom VM is already present", func() {
+				It("should start the custom VM", func() {
+					startOpts := &vm.StartOpts{}
+					gomock.InOrder(
+						mockVBox.EXPECT().GetVMName().Return("pcfdev-custom", nil),
+						mockBuilder.EXPECT().VM("pcfdev-custom").Return(mockVM, nil),
+						mockVM.EXPECT().VerifyStartOpts(startOpts).Return(nil),
+						mockVM.EXPECT().Start(startOpts),
+					)
+					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
+				})
+			})
+
 			Context("when the user specifies a custom ova", func() {
 				It("should start the custom ova", func() {
 					startOpts := &vm.StartOpts{
@@ -357,17 +370,6 @@ var _ = Describe("Plugin", func() {
 				It("should tell the user to destroy pcfdev", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil),
-						mockUI.EXPECT().Failed("Error: old version of PCF Dev already running, please run `cf dev destroy` to continue."),
-					)
-
-					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
-				})
-			})
-
-			Context("when there is a custom vm present", func() {
-				It("should tell the user to destroy pcfdev", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().GetVMName().Return("pcfdev-custom", nil),
 						mockUI.EXPECT().Failed("Error: old version of PCF Dev already running, please run `cf dev destroy` to continue."),
 					)
 

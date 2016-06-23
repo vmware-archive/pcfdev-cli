@@ -130,6 +130,7 @@ func getErrorText(err error) string {
 
 func (p *Plugin) start(flagContext flags.FlagContext) error {
 	var name string
+
 	if flagContext.IsSet("o") {
 		name = "pcfdev-custom"
 	} else {
@@ -146,10 +147,14 @@ func (p *Plugin) start(flagContext flags.FlagContext) error {
 				return errors.New("you must destroy your existing VM to use a custom OVA.")
 			}
 		} else {
-			if existingVMName != p.Config.DefaultVMName {
+			if existingVMName != p.Config.DefaultVMName && existingVMName != "pcfdev-custom" {
 				return &OldVMError{}
 			}
 		}
+	}
+
+	if existingVMName == "pcfdev-custom" {
+		name = "pcfdev-custom"
 	}
 
 	v, err := p.Builder.VM(name)
@@ -166,7 +171,7 @@ func (p *Plugin) start(flagContext flags.FlagContext) error {
 	if err := v.VerifyStartOpts(opts); err != nil {
 		return err
 	}
-	if !flagContext.IsSet("o") {
+	if !flagContext.IsSet("o") && existingVMName != "pcfdev-custom" {
 		if err := p.download(); err != nil {
 			return err
 		}

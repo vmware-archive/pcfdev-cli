@@ -295,7 +295,6 @@ func (p *Plugin) getVM() (vm vm.VM, err error) {
 func (*Plugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
 		Name:          "pcfdev",
-		MinCliVersion: plugin.VersionType{6, 7, 0},
 		Commands: []plugin.Command{
 			plugin.Command{
 				Name:     "dev",

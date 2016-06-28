@@ -113,7 +113,7 @@ var _ = Describe("Stopped", func() {
 				mockUI.EXPECT().Say("Starting VM..."),
 				mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 				mockUI.EXPECT().Say("Provisioning VM..."),
-				mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+				mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
 			)
 
 			stoppedVM.Start(&vm.StartOpts{})
@@ -136,7 +136,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip '$2a$04$EpJtIJ8w6hfCwbKYBkn3t.GCY18Pk6s7yN66y37fSJlLuDuMkdHtS'", "some-port", 2*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip", "some-port", 2*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
 				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("failed to provision VM: some-error"))

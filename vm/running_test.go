@@ -101,8 +101,8 @@ var _ = Describe("Stopped", func() {
 	})
 
 	Describe("Status", func() {
-		It("should return 'Running'", func() {
-			Expect(runningVM.Status()).To(Equal("Running"))
+		It("should return 'Running' with login instructions", func() {
+			Expect(runningVM.Status()).To(Equal("Running\nLogin: cf login -a https://api.some-domain --skip-ssl-validation\nAdmin user => Email: admin / Password: admin\nRegular user => Email: user / Password: pass"))
 		})
 	})
 

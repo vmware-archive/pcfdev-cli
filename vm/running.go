@@ -2,6 +2,7 @@ package vm
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
@@ -39,7 +40,7 @@ func (r *Running) Start(opts *StartOpts) error {
 }
 
 func (r *Running) Status() string {
-	return "Running"
+	return fmt.Sprintf("Running\nLogin: cf login -a https://api.%s --skip-ssl-validation\nAdmin user => Email: admin / Password: admin\nRegular user => Email: user / Password: pass", r.VMConfig.Domain)
 }
 
 func (r *Running) Suspend() error {

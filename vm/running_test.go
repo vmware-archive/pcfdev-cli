@@ -90,6 +90,14 @@ var _ = Describe("Stopped", func() {
 				Expect(runningVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
 			})
 		})
+
+		Context("when services are passed", func() {
+			It("should return an error", func() {
+				Expect(runningVM.VerifyStartOpts(&vm.StartOpts{
+					Services: "redis",
+				})).To(MatchError("services cannot be changed once the vm has been created"))
+			})
+		})
 	})
 
 	Describe("Start", func() {

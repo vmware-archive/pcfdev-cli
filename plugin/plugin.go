@@ -76,6 +76,7 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 		flagContext.NewIntFlag("m", "memory", "<memory in MB>")
 		flagContext.NewIntFlag("c", "cpus", "<number of cpus>")
 		flagContext.NewStringFlag("o", "ova", "<path to custom ova>")
+		flagContext.NewStringFlag("s", "services", "<services to start with>")
 	}
 
 	if err := flagContext.Parse(args...); err != nil {
@@ -163,9 +164,10 @@ func (p *Plugin) start(flagContext flags.FlagContext) error {
 	}
 
 	opts := &vm.StartOpts{
-		Memory:  uint64(flagContext.Int("m")),
-		CPUs:    flagContext.Int("c"),
-		OVAPath: flagContext.String("o"),
+		Memory:   uint64(flagContext.Int("m")),
+		CPUs:     flagContext.Int("c"),
+		OVAPath:  flagContext.String("o"),
+		Services: flagContext.String("s"),
 	}
 
 	if err := v.VerifyStartOpts(opts); err != nil {
@@ -294,7 +296,7 @@ func (p *Plugin) getVM() (vm vm.VM, err error) {
 
 func (*Plugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
-		Name:          "pcfdev",
+		Name: "pcfdev",
 		Commands: []plugin.Command{
 			plugin.Command{
 				Name:     "dev",
@@ -304,14 +306,17 @@ func (*Plugin) GetMetadata() plugin.PluginMetadata {
 					Usage: `cf dev SUBCOMMAND
 
 SUBCOMMANDS:
-   start                    Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.
-      [-m memory-in-mb]     Memory to allocate for VM. Default: half of system memory, no more than 4 GB.
-      [-c number-of-cores]  Number of processor cores used by VM. Default: number of physical cores.
-   stop                     Shutdown the PCF Dev VM. All data is preserved.
-   suspend                  Save the current state of the PCF Dev VM to disk and then stop the VM.
-   resume                   Resume PCF Dev VM from suspended state.
-   destroy                  Delete the PCF Dev VM. All data is destroyed.
-   status                   Query for the status of the PCF Dev VM.
+   start                       Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.
+      [-m memory-in-mb]        Memory to allocate for VM. Default: half of system memory, no more than 4 GB.
+      [-c number-of-cores]     Number of processor cores used by VM. Default: number of physical cores.
+      [-s service1,service2]   Specify the services started with PCF Dev.
+                                  Options: redis, rabbitmq, all, none
+                                  Default: all
+   stop                        Shutdown the PCF Dev VM. All data is preserved.
+   suspend                     Save the current state of the PCF Dev VM to disk and then stop the VM.
+   resume                      Resume PCF Dev VM from suspended state.
+   destroy                     Delete the PCF Dev VM. All data is destroyed.
+   status                      Query for the status of the PCF Dev VM.
 					`,
 				},
 			},

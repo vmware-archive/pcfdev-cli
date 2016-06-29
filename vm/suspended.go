@@ -27,6 +27,9 @@ func (s *Suspended) VerifyStartOpts(opts *StartOpts) error {
 	if opts.CPUs != 0 {
 		return errors.New("cores cannot be changed once the vm has been created")
 	}
+	if opts.Services != "" {
+		return errors.New("services cannot be changed once the vm has been created")
+	}
 	return s.checkMemory()
 }
 

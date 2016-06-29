@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
@@ -39,6 +40,23 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 	if opts.CPUs < 0 {
 		return errors.New("cannot start with less than one core")
 	}
+
+	if len(opts.Services) != 0 {
+		var disallowedServices []string
+
+		for _, service := range strings.Split(opts.Services, ",") {
+			switch service {
+			case "all", "none", "redis", "rabbitmq", "mysql":
+			default:
+				disallowedServices = append(disallowedServices, service)
+			}
+		}
+
+		if len(disallowedServices) > 0 {
+			return fmt.Errorf("invalid services specified: %s", strings.Join(disallowedServices, ", "))
+		}
+	}
+
 	return nil
 }
 
@@ -58,6 +76,7 @@ func (n *NotCreated) verifyMemory(opts *StartOpts) error {
 			return errors.New("user declined to continue, exiting")
 		}
 	}
+
 	return nil
 }
 
@@ -98,7 +117,7 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 	if err != nil {
 		return &StartVMError{err}
 	}
-	if err := stoppedVM.Start(&StartOpts{}); err != nil {
+	if err := stoppedVM.Start(&StartOpts{Services: opts.Services}); err != nil {
 		return err
 	}
 	return nil

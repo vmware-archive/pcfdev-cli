@@ -120,6 +120,24 @@ var _ = Describe("Not Created", func() {
 			})
 		})
 
+		Context("when initial services are passed in as option", func() {
+			Context("when services specifed are invalid", func() {
+				It("should return an error", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Services: "some-bad-service,redis,mysql,some-bad-service-2",
+					})).To(MatchError("invalid services specified: some-bad-service, some-bad-service-2"))
+				})
+			})
+
+			Context("when empty string service", func() {
+				It("should succeed because it is the default", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Services: "",
+					})).To(Succeed())
+				})
+			})
+		})
+
 		Context("when memory is not passed as an option", func() {
 			Context("when the default memory is equal to free memory", func() {
 				It("should succeed", func() {
@@ -229,15 +247,16 @@ var _ = Describe("Not Created", func() {
 						OVAPath: "some-ova-path",
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
-					mockStopped.EXPECT().Start(&vm.StartOpts{}),
+					mockStopped.EXPECT().Start(&vm.StartOpts{Services: "all"}),
 				)
 				conf.FreeMemory = uint64(5000)
 				conf.TotalMemory = uint64(8000)
 
 				notCreatedVM.Start(&vm.StartOpts{
-					Memory:  uint64(4000),
-					CPUs:    3,
-					OVAPath: "some-ova-path",
+					Memory:   uint64(4000),
+					CPUs:     3,
+					OVAPath:  "some-ova-path",
+					Services: "all",
 				})
 			})
 		})

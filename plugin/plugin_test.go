@@ -428,7 +428,6 @@ var _ = Describe("Plugin", func() {
 							mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error"),
 						)
-
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 					})
 				})

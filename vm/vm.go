@@ -47,7 +47,8 @@ type Builder interface {
 }
 
 type StartOpts struct {
-	Memory uint64
-	CPUs   int
-	OVAPath    string
+	Memory   uint64
+	CPUs     int
+	OVAPath  string
+	Services string
 }

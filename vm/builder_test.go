@@ -3,6 +3,7 @@ package vm_test
 import (
 	"errors"
 	"path/filepath"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -20,6 +21,7 @@ var _ = Describe("Builder", func() {
 			mockCtrl   *gomock.Controller
 			mockDriver *mocks.MockDriver
 			mockFS     *mocks.MockFS
+			mockSSH    *mocks.MockSSH
 			builder    vm.Builder
 		)
 
@@ -27,10 +29,12 @@ var _ = Describe("Builder", func() {
 			mockCtrl = gomock.NewController(GinkgoT())
 			mockDriver = mocks.NewMockDriver(mockCtrl)
 			mockFS = mocks.NewMockFS(mockCtrl)
+			mockSSH = mocks.NewMockSSH(mockCtrl)
 
 			builder = &vm.VBoxBuilder{
 				Driver: mockDriver,
 				FS:     mockFS,
+				SSH:    mockSSH,
 				Config: &config.Config{
 					MinMemory: 100,
 					MaxMemory: 200,
@@ -218,24 +222,52 @@ var _ = Describe("Builder", func() {
 
 			Context("when vm is running", func() {
 				It("should return a running vm", func() {
+					healthCheckCommand := "sudo /var/pcfdev/health-check"
+
 					gomock.InOrder(
 						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
 						mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(3456), nil),
 						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
 						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil),
+						mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", 2*time.Minute).Return("ok\n", nil),
 					)
 
-					notCreatedVM, err := builder.VM("some-vm")
+					runningVM, err := builder.VM("some-vm")
 					Expect(err).NotTo(HaveOccurred())
 
-					switch u := notCreatedVM.(type) {
+					switch u := runningVM.(type) {
 					case *vm.Running:
 						Expect(u.VMConfig.Name).To(Equal("some-vm"))
 						Expect(u.VMConfig.IP).To(Equal("192.168.11.11"))
 						Expect(u.VMConfig.SSHPort).To(Equal("some-port"))
 						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.VBox).NotTo(BeNil())
+						Expect(u.UI).NotTo(BeNil())
+					default:
+						Fail("wrong type")
+					}
+				})
+			})
+
+			Context("when vm is running and in a bad state", func() {
+				It("should return an error", func() {
+					healthCheckCommand := "sudo /var/pcfdev/health-check"
+
+					gomock.InOrder(
+						mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.11.11", nil),
+						mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(3456), nil),
+						mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
+						mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil),
+						mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", 2*time.Minute).Return("", errors.New("some-error")),
+					)
+
+					invalidVM, err := builder.VM("some-vm")
+					Expect(err).NotTo(HaveOccurred())
+
+					switch u := invalidVM.(type) {
+					case *vm.Invalid:
 						Expect(u.UI).NotTo(BeNil())
 					default:
 						Fail("wrong type")

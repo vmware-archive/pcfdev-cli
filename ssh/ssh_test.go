@@ -15,7 +15,13 @@ import (
 	"github.com/onsi/gomega/gbytes"
 )
 
-var vBoxManagePath string
+var (
+	vBoxManagePath string
+	vmName         string
+	port           string
+
+	ssh *SSH
+)
 
 var _ = BeforeSuite(func() {
 	var err error
@@ -26,7 +32,7 @@ var _ = BeforeSuite(func() {
 var _ = Describe("ssh", func() {
 	Describe("GenerateAddress", func() {
 		It("Should return a host and free port", func() {
-			ssh := &SSH{}
+			ssh = &SSH{}
 			host, port, err := ssh.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(host).To(Equal("127.0.0.1"))
@@ -34,13 +40,9 @@ var _ = Describe("ssh", func() {
 		})
 	})
 
-	Describe("RunSSHCommand", func() {
-		var ssh *SSH
-
+	Describe("#RunSSHCommand", func() {
 		Context("when SSH is available", func() {
 			var (
-				vmName string
-				port   string
 				stdout *gbytes.Buffer
 				stderr *gbytes.Buffer
 			)
@@ -91,6 +93,88 @@ var _ = Describe("ssh", func() {
 		Context("when SSH connection times out", func() {
 			It("should return an error", func() {
 				err := ssh.RunSSHCommand("echo -n some-output", "some-bad-port", time.Second, ioutil.Discard, ioutil.Discard)
+				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
+			})
+		})
+	})
+
+	Describe("#WaitForSSH", func() {
+		var ip string
+		Context("when SSH is available", func() {
+			BeforeEach(func() {
+				ssh = &SSH{}
+
+				var err error
+				vmName, err = test_helpers.ImportSnappy()
+				Expect(err).NotTo(HaveOccurred())
+
+				ip, port, err = ssh.GenerateAddress()
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
+				Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
+			})
+
+			AfterEach(func() {
+				Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
+				Expect(exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()).To(Succeed())
+			})
+
+			It("should succeed", func() {
+				Expect(ssh.WaitForSSH(ip, port, 5*time.Minute)).To(Succeed())
+			})
+		})
+
+		Context("when SSH connection times out", func() {
+			It("should return an error", func() {
+				Expect(ssh.WaitForSSH(ip, port, 5*time.Second)).To(MatchError(ContainSubstring("ssh connection timed out:")))
+			})
+		})
+	})
+
+	Describe("#GetSSHOutput", func() {
+		var ip string
+
+		Context("when SSH is available", func() {
+			BeforeEach(func() {
+				ssh = &SSH{}
+
+				var err error
+				vmName, err = test_helpers.ImportSnappy()
+				Expect(err).NotTo(HaveOccurred())
+
+				ip, port, err = ssh.GenerateAddress()
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
+				Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
+			})
+
+			AfterEach(func() {
+				Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
+				Expect(exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()).To(Succeed())
+			})
+
+			It("should return the output of the ssh command", func() {
+				Expect(ssh.GetSSHOutput("echo -n some-output", ip, port, 5*time.Minute)).To(Equal("some-output"))
+			})
+
+			It("should return the stderr of the ssh command", func() {
+				Expect(ssh.GetSSHOutput(">&2 echo -n some-output", ip, port, 5*time.Minute)).To(Equal("some-output"))
+			})
+
+			Context("when the command fails", func() {
+				It("should return an error", func() {
+					output, err := ssh.GetSSHOutput("echo -n some-output; false", ip, port, 5*time.Minute)
+					Expect(output).To(Equal("some-output"))
+					Expect(err).To(MatchError(ContainSubstring("Process exited with: 1")))
+				})
+			})
+		})
+
+		Context("when SSH connection times out", func() {
+			It("should return an error", func() {
+				_, err := ssh.GetSSHOutput("echo -n some-output", ip, "some-bad-port", time.Second)
 				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})

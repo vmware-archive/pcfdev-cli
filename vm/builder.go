@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/network"
-	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
@@ -32,13 +33,13 @@ type VBoxBuilder struct {
 	Config *config.Config
 	Driver Driver
 	FS     FS
+	SSH    SSH
 }
 
 func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
-	ssh := &ssh.SSH{}
 	vbx := &vbox.VBox{
-		SSH:    ssh,
+		SSH:    b.SSH,
 		FS:     &fs.FS{},
 		Driver: &vbox.VBoxDriver{},
 		Picker: &address.Picker{
@@ -105,18 +106,25 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		return nil, err
 	}
 	if state == vbox.StateRunning {
-		return &Running{
-			VMConfig: &config.VMConfig{
-				Name:    vmName,
-				IP:      ip,
-				SSHPort: sshPort,
-				Domain:  domain,
-				Memory:  memory,
-			},
+		healthCheckCommand := "sudo /var/pcfdev/health-check"
+		if output, err := b.SSH.GetSSHOutput(healthCheckCommand, ip, "22", 2*time.Minute); strings.TrimSpace(output) != "ok" || err != nil {
+			return &Invalid{
+				UI: termUI,
+			}, nil
+		} else {
+			return &Running{
+				VMConfig: &config.VMConfig{
+					Name:    vmName,
+					IP:      ip,
+					SSHPort: sshPort,
+					Domain:  domain,
+					Memory:  memory,
+				},
 
-			UI:   termUI,
-			VBox: vbx,
-		}, nil
+				UI:   termUI,
+				VBox: vbx,
+			}, nil
+		}
 	}
 
 	if state == vbox.StateSaved || state == vbox.StatePaused {
@@ -130,6 +138,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			},
 			Config: b.Config,
 
+			SSH:  b.SSH,
 			UI:   termUI,
 			VBox: vbx,
 		}, nil
@@ -147,7 +156,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			Config: b.Config,
 
 			UI:   termUI,
-			SSH:  ssh,
+			SSH:  b.SSH,
 			VBox: vbx,
 		}, nil
 	}

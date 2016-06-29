@@ -7,8 +7,8 @@ if [[ "$1" == "test" ]]
 then
   vm_name="pcfdev-test"
   release_id="1622"
-  product_file_id="4448"
-  md5="05761a420b00028ae5384c6bc460a6ba"
+  product_file_id="5113"
+  md5="3af8ffc82ff6229cd45c27cd0445161f"
 else
   metadata=$(aws s3 cp s3://pcfdev/ci/pivnet-file-metadata -)
   vm_name=pcfdev-$(echo "$metadata" | jq -r .version)

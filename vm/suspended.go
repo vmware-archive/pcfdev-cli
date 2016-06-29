@@ -3,6 +3,7 @@ package vm
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
@@ -13,6 +14,7 @@ type Suspended struct {
 
 	VBox VBox
 	UI   UI
+	SSH  SSH
 }
 
 func (s *Suspended) Stop() error {
@@ -55,6 +57,12 @@ func (s *Suspended) Resume() error {
 	if err := s.VBox.ResumeVM(s.VMConfig); err != nil {
 		return &ResumeVMError{err}
 	}
+
+	if err := s.SSH.WaitForSSH(s.VMConfig.IP, "22", 5*time.Minute); err != nil {
+		return &ResumeVMError{err}
+	}
+
+	s.UI.Say("PCF Dev is now running.")
 
 	return nil
 }

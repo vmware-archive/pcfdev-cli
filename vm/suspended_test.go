@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	"errors"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -17,6 +18,7 @@ var _ = Describe("Suspended", func() {
 		mockCtrl    *gomock.Controller
 		mockUI      *mocks.MockUI
 		mockVBox    *mocks.MockVBox
+		mockSSH     *mocks.MockSSH
 		suspendedVM vm.Suspended
 	)
 
@@ -24,6 +26,7 @@ var _ = Describe("Suspended", func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
+		mockSSH = mocks.NewMockSSH(mockCtrl)
 
 		suspendedVM = vm.Suspended{
 			VMConfig: &config.VMConfig{
@@ -36,6 +39,7 @@ var _ = Describe("Suspended", func() {
 
 			VBox: mockVBox,
 			UI:   mockUI,
+			SSH:  mockSSH,
 		}
 	})
 
@@ -62,6 +66,8 @@ var _ = Describe("Suspended", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumeVM(suspendedVM.VMConfig).Return(nil),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(nil),
+				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
 			Expect(suspendedVM.Start(&vm.StartOpts{})).To(Succeed())
@@ -72,6 +78,18 @@ var _ = Describe("Suspended", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
 					mockVBox.EXPECT().ResumeVM(suspendedVM.VMConfig).Return(errors.New("some-error")),
+				)
+
+				Expect(suspendedVM.Start(&vm.StartOpts{})).To(MatchError("failed to resume VM: some-error"))
+			})
+		})
+
+		Context("when waiting for SSH fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Resuming VM..."),
+					mockVBox.EXPECT().ResumeVM(suspendedVM.VMConfig).Return(nil),
+					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
 				)
 
 				Expect(suspendedVM.Start(&vm.StartOpts{})).To(MatchError("failed to resume VM: some-error"))
@@ -146,9 +164,25 @@ var _ = Describe("Suspended", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumeVM(suspendedVM.VMConfig).Return(nil),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(nil),
+				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
 			Expect(suspendedVM.Resume()).To(Succeed())
+		})
+
+		Context("when waiting for SSH fails", func() {
+			It("should return an error", func() {
+				suspendedVM.Config.FreeMemory = uint64(3000)
+				suspendedVM.VMConfig.Memory = uint64(2000)
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Resuming VM..."),
+					mockVBox.EXPECT().ResumeVM(suspendedVM.VMConfig).Return(nil),
+					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
+				)
+
+				Expect(suspendedVM.Resume()).To(MatchError("failed to resume VM: some-error"))
+			})
 		})
 
 		Context("when starting the vm fails", func() {
@@ -174,6 +208,8 @@ var _ = Describe("Suspended", func() {
 						mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(true),
 						mockUI.EXPECT().Say("Resuming VM..."),
 						mockVBox.EXPECT().ResumeVM(suspendedVM.VMConfig).Return(nil),
+						mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(nil),
+						mockUI.EXPECT().Say("PCF Dev is now running."),
 					)
 
 					Expect(suspendedVM.Resume()).To(Succeed())

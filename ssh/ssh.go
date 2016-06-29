@@ -22,25 +22,24 @@ func (*SSH) GenerateAddress() (host string, port string, err error) {
 	return address[0], address[1], nil
 }
 
-func (s *SSH) RunSSHCommand(command string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) (err error) {
-	config := &ssh.ClientConfig{
-		User: "vcap",
-		Auth: []ssh.AuthMethod{
-			ssh.Password("vcap"),
-		},
-		Timeout: 30 * time.Second,
+func (s *SSH) GetSSHOutput(command string, ip string, port string, timeout time.Duration) (string, error) {
+	client, session, err := s.newSession(ip, port, timeout)
+	if err != nil {
+		return "", err
 	}
+	defer client.Close()
+	defer session.Close()
 
-	client, err := s.waitForSSH(config, port, timeout)
+	output, err := session.CombinedOutput(command)
+	return string(output), err
+}
+
+func (s *SSH) RunSSHCommand(command string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) (err error) {
+	client, session, err := s.newSession("127.0.0.1", port, timeout)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
-
-	session, err := client.NewSession()
-	if err != nil {
-		return err
-	}
 	defer session.Close()
 
 	sessionStdout, err := session.StdoutPipe()
@@ -58,7 +57,35 @@ func (s *SSH) RunSSHCommand(command string, port string, timeout time.Duration, 
 	return session.Run(command)
 }
 
-func (*SSH) waitForSSH(config *ssh.ClientConfig, port string, timeout time.Duration) (client *ssh.Client, err error) {
+func (s *SSH) WaitForSSH(ip string, port string, timeout time.Duration) error {
+	_, err := s.waitForSSH(ip, port, timeout)
+	return err
+}
+
+func (s *SSH) newSession(ip string, port string, timeout time.Duration) (*ssh.Client, *ssh.Session, error) {
+	client, err := s.waitForSSH(ip, port, timeout)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	session, err := client.NewSession()
+	if err != nil {
+		client.Close()
+		return nil, nil, err
+	}
+
+	return client, session, nil
+}
+
+func (*SSH) waitForSSH(ip string, port string, timeout time.Duration) (client *ssh.Client, err error) {
+	config := &ssh.ClientConfig{
+		User: "vcap",
+		Auth: []ssh.AuthMethod{
+			ssh.Password("vcap"),
+		},
+		Timeout: timeout,
+	}
+
 	timeoutChan := time.After(timeout)
 
 	for {
@@ -66,7 +93,7 @@ func (*SSH) waitForSSH(config *ssh.ClientConfig, port string, timeout time.Durat
 		case <-timeoutChan:
 			return nil, fmt.Errorf("ssh connection timed out: %s", err)
 		default:
-			if client, err = ssh.Dial("tcp", "127.0.0.1:"+port, config); err == nil {
+			if client, err = ssh.Dial("tcp", ip+":"+port, config); err == nil {
 				return client, nil
 			}
 		}

@@ -99,7 +99,7 @@ func (v *VBox) StartVM(vmConfig *config.VMConfig) error {
 }
 
 func (v *VBox) configureNetwork(ip string, sshPort string) error {
-	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), sshPort, 2*time.Minute, ioutil.Discard, ioutil.Discard)
+	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), sshPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
 }
 
 func (v *VBox) configureEnvironment(ip string, sshPort string) error {
@@ -108,7 +108,7 @@ func (v *VBox) configureEnvironment(ip string, sshPort string) error {
 		return err
 	}
 
-	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"%s\" | sudo tee -a /etc/environment", proxySettings), sshPort, 2*time.Minute, ioutil.Discard, ioutil.Discard)
+	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"%s\" | sudo tee -a /etc/environment", proxySettings), sshPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
 }
 
 func (v *VBox) proxySettings(ip string) (settings string, err error) {

@@ -490,7 +490,7 @@ var _ = Describe("vbox", func() {
 			It("starts without reimporting", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().StartVM("some-vm"),
-					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.22.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.22.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					mockSSH.EXPECT().RunSSHCommand("echo -e \""+
 						"HTTP_PROXY=some-http-proxy\n"+
 						"HTTPS_PROXY=some-https-proxy\n"+
@@ -500,7 +500,7 @@ var _ = Describe("vbox", func() {
 						"no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy\" "+
 						"| sudo tee -a /etc/environment",
 						"some-port",
-						2*time.Minute,
+						5*time.Minute,
 						ioutil.Discard,
 						ioutil.Discard),
 					mockDriver.EXPECT().StopVM("some-vm"),
@@ -521,7 +521,7 @@ var _ = Describe("vbox", func() {
 
 				gomock.InOrder(
 					mockDriver.EXPECT().StartVM("some-vm"),
-					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.22.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.22.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					mockSSH.EXPECT().RunSSHCommand("echo -e \""+
 						"HTTP_PROXY=192.168.22.1\n"+
 						"HTTPS_PROXY=192.168.22.1:8080\n"+
@@ -531,7 +531,7 @@ var _ = Describe("vbox", func() {
 						"no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy\" "+
 						"| sudo tee -a /etc/environment",
 						"some-port",
-						2*time.Minute,
+						5*time.Minute,
 						ioutil.Discard,
 						ioutil.Discard),
 					mockDriver.EXPECT().StopVM("some-vm"),
@@ -550,7 +550,7 @@ var _ = Describe("vbox", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
-						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress some-bad-ip\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress some-bad-ip\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -581,7 +581,7 @@ var _ = Describe("vbox", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
-						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress some-ip\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces"), "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
+						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress some-ip\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces"), "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -597,7 +597,7 @@ var _ = Describe("vbox", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
-						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "192.168.11.11"), "some-port", 2*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "192.168.11.11"), "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockSSH.EXPECT().RunSSHCommand("echo -e \""+
 							"HTTP_PROXY=some-http-proxy\n"+
 							"HTTPS_PROXY=some-https-proxy\n"+
@@ -607,7 +607,7 @@ var _ = Describe("vbox", func() {
 							"no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,some-no-proxy\" "+
 							"| sudo tee -a /etc/environment",
 							"some-port",
-							2*time.Minute,
+							5*time.Minute,
 							ioutil.Discard,
 							ioutil.Discard),
 						mockDriver.EXPECT().StopVM("some-vm").Return(errors.New("some-error")),

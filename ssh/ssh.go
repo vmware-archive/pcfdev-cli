@@ -28,7 +28,7 @@ func (s *SSH) RunSSHCommand(command string, port string, timeout time.Duration, 
 		Auth: []ssh.AuthMethod{
 			ssh.Password("vcap"),
 		},
-		Timeout: timeout,
+		Timeout: 30 * time.Second,
 	}
 
 	client, err := s.waitForSSH(config, port, timeout)

@@ -32,8 +32,9 @@ func (p *Picker) SelectAvailableIP(reusableInterfaces []*network.Interface) (ip 
 			continue
 		}
 
-		if reusableAddr := p.addrInSet(subnetIP, reusableInterfaces); reusableAddr != nil {
-			inUse, err := p.Driver.IsInterfaceInUse(reusableAddr.Name)
+		matchingAddrs := p.addrsInSet(subnetIP, reusableInterfaces)
+		if len(matchingAddrs) == 1 {
+			inUse, err := p.Driver.IsInterfaceInUse(matchingAddrs[0].Name)
 			if err != nil {
 				return "", err
 			}
@@ -41,7 +42,10 @@ func (p *Picker) SelectAvailableIP(reusableInterfaces []*network.Interface) (ip 
 			if inUse {
 				continue
 			}
-			return reusableAddr.IP, nil
+			return matchingAddrs[0].IP, nil
+		}
+		if len(matchingAddrs) > 1 {
+			continue
 		}
 
 		return subnetIP, nil
@@ -50,14 +54,15 @@ func (p *Picker) SelectAvailableIP(reusableInterfaces []*network.Interface) (ip 
 	return "", fmt.Errorf("all allowed network interfaces are currently taken")
 }
 
-func (p *Picker) addrInSet(ip string, set []*network.Interface) (addr *network.Interface) {
+func (p *Picker) addrsInSet(ip string, set []*network.Interface) (addrs []*network.Interface) {
+	addrs = make([]*network.Interface, 0, 1)
 	for _, addr := range set {
 		if addr.IP == ip {
-			return addr
+			addrs = append(addrs, addr)
 		}
 	}
 
-	return nil
+	return addrs
 }
 
 func (p *Picker) nonReusableInterfaceExists(ip string, reusableInterfaces []*network.Interface, allInterfaces []*network.Interface) bool {

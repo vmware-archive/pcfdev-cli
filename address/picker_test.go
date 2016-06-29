@@ -84,6 +84,30 @@ var _ = Describe("Picker", func() {
 			})
 		})
 
+		Context("when there are two vbox interfaces on 192.168.11.1", func() {
+			It("should return the next interface", func() {
+				vboxInterfaces := []*network.Interface{
+					&network.Interface{
+						Name:            "some-interface",
+						IP:              "192.168.11.1",
+						HardwareAddress: "some-hardware-address",
+					},
+					&network.Interface{
+						Name:            "some-other-interface",
+						IP:              "192.168.11.1",
+						HardwareAddress: "some-other-hardware-address",
+					},
+				}
+				netInterfaces := []*network.Interface{}
+
+				gomock.InOrder(
+					mockNetwork.EXPECT().Interfaces().Return(netInterfaces, nil),
+				)
+
+				Expect(picker.SelectAvailableIP(vboxInterfaces)).To(Equal("192.168.22.1"))
+			})
+		})
+
 		Context("when there is a vbox interface on 192.168.11.1 and the interface is not in use", func() {
 			It("should reuse the existing interface", func() {
 				vboxInterfaces := []*network.Interface{

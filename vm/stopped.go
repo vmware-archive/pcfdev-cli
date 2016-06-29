@@ -67,7 +67,7 @@ func (s *Stopped) Start(opts *StartOpts) error {
 
 	s.UI.Say("Provisioning VM...")
 	provisionCommand := fmt.Sprintf("sudo /var/pcfdev/run %s %s %s", s.VMConfig.Domain, s.VMConfig.IP, strings.Join(services, ","))
-	if err := s.SSH.RunSSHCommand(provisionCommand, s.VMConfig.SSHPort, 2*time.Minute, os.Stdout, os.Stderr); err != nil {
+	if err := s.SSH.RunSSHCommand(provisionCommand, s.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{err}
 	}
 

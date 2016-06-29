@@ -122,7 +122,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "none"})
@@ -135,7 +135,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "all"})
@@ -148,7 +148,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "rabbitmq"})
@@ -161,7 +161,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,redis", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "redis"})
@@ -174,7 +174,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "mysql"})
@@ -187,7 +187,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{})
@@ -211,7 +211,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis", "some-port", 2*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
 				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("failed to provision VM: some-error"))
@@ -223,7 +223,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,redis", "some-port", 2*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 				stoppedVM.Start(&vm.StartOpts{Services: "redis,redis"})
 			})

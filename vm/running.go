@@ -20,7 +20,7 @@ func (r *Running) Stop() error {
 	if err != nil {
 		return &StopVMError{err}
 	}
-	r.UI.Say("PCF Dev is now stopped")
+	r.UI.Say("PCF Dev is now stopped.")
 	return nil
 }
 
@@ -38,7 +38,7 @@ func (r *Running) VerifyStartOpts(opts *StartOpts) error {
 }
 
 func (r *Running) Start(opts *StartOpts) error {
-	r.UI.Say("PCF Dev is running")
+	r.UI.Say("PCF Dev is running.")
 	return nil
 }
 
@@ -52,12 +52,12 @@ func (r *Running) Suspend() error {
 		return &SuspendVMError{err}
 	}
 
-	r.UI.Say("PCF Dev is now suspended")
+	r.UI.Say("PCF Dev is now suspended.")
 	return nil
 }
 
 func (r *Running) Resume() error {
-	r.UI.Say("PCF Dev is running")
+	r.UI.Say("PCF Dev is running.")
 
 	return nil
 }

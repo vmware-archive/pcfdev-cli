@@ -41,7 +41,7 @@ var _ = Describe("Invalid", func() {
 		It("should say a message", func() {
 			Expect(invalid.VerifyStartOpts(
 				&vm.StartOpts{},
-			)).To(MatchError("PCF Dev is in an invalid state. Please run 'cf dev destroy'."))
+			)).To(MatchError("PCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
 

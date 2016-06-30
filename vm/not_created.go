@@ -19,7 +19,7 @@ type NotCreated struct {
 }
 
 func (n *NotCreated) Stop() error {
-	n.UI.Say("PCF Dev VM has not been created")
+	n.UI.Say("PCF Dev VM has not been created.")
 	return nil
 }
 

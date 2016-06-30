@@ -54,7 +54,7 @@ var _ = Describe("Not Created", func() {
 
 	Describe("Stop", func() {
 		It("should print a message", func() {
-			mockUI.EXPECT().Say("PCF Dev VM has not been created")
+			mockUI.EXPECT().Say("PCF Dev VM has not been created.")
 
 			notCreatedVM.Stop()
 		})

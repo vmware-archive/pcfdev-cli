@@ -19,5 +19,5 @@ func (e *DestroyVMError) Error() string {
 type OldVMError struct{}
 
 func (e *OldVMError) Error() string {
-	return "old version of PCF Dev already running, please run `cf dev destroy` to continue."
+	return "old version of PCF Dev already running, please run `cf dev destroy` to continue"
 }

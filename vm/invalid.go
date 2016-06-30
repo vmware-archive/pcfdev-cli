@@ -12,7 +12,7 @@ func (i *Invalid) Stop() error {
 }
 
 func (i *Invalid) VerifyStartOpts(opts *StartOpts) error {
-	return errors.New(i.message())
+	return errors.New(i.err())
 }
 
 func (i *Invalid) Start(opts *StartOpts) error {
@@ -35,5 +35,9 @@ func (i *Invalid) Resume() error {
 }
 
 func (i *Invalid) message() string {
-	return "PCF Dev is in an invalid state. Please run 'cf dev destroy'."
+	return i.err() + "."
+}
+
+func (i *Invalid) err() string {
+	return "PCF Dev is in an invalid state. Please run 'cf dev destroy'"
 }

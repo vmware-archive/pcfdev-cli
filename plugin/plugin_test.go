@@ -106,7 +106,7 @@ var _ = Describe("Plugin", func() {
 			Context("when printing the help text fails", func() {
 				It("should print an error", func() {
 					fakeCliConnection.CliCommandReturns(nil, errors.New("some-error"))
-					mockUI.EXPECT().Failed("Error: some-error")
+					mockUI.EXPECT().Failed("Error: some-error.")
 
 					pcfdev.Run(fakeCliConnection, []string{"dev", "help"})
 				})
@@ -119,7 +119,7 @@ var _ = Describe("Plugin", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-						mockUI.EXPECT().Say("Using existing image"),
+						mockUI.EXPECT().Say("Using existing image."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -141,7 +141,7 @@ var _ = Describe("Plugin", func() {
 				It("should return the error", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
+						mockUI.EXPECT().Failed("Error: some-error."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -153,7 +153,7 @@ var _ = Describe("Plugin", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
+						mockUI.EXPECT().Failed("Error: some-error."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -168,7 +168,7 @@ var _ = Describe("Plugin", func() {
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(),
-						mockUI.EXPECT().Say("\nVM downloaded"),
+						mockUI.EXPECT().Say("\nVM downloaded."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -180,7 +180,7 @@ var _ = Describe("Plugin", func() {
 							mockVBox.EXPECT().GetVMName().Return("", nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
+							mockUI.EXPECT().Failed("Error: some-error."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -196,7 +196,7 @@ var _ = Describe("Plugin", func() {
 							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
 							mockDownloader.EXPECT().Download().Return(errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
+							mockUI.EXPECT().Failed("Error: some-error."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -215,7 +215,7 @@ var _ = Describe("Plugin", func() {
 							mockClient.EXPECT().AcceptEULA().Return(nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
 							mockDownloader.EXPECT().Download(),
-							mockUI.EXPECT().Say("\nVM downloaded"),
+							mockUI.EXPECT().Say("\nVM downloaded."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -231,7 +231,7 @@ var _ = Describe("Plugin", func() {
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
 							mockUI.EXPECT().Say("some-eula"),
 							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(false),
-							mockUI.EXPECT().Failed("Error: you must accept the end user license agreement to use PCF Dev"),
+							mockUI.EXPECT().Failed("Error: you must accept the end user license agreement to use PCF Dev."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -248,7 +248,7 @@ var _ = Describe("Plugin", func() {
 							mockUI.EXPECT().Say("some-eula"),
 							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
 							mockClient.EXPECT().AcceptEULA().Return(errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
+							mockUI.EXPECT().Failed("Error: some-error."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -262,7 +262,7 @@ var _ = Describe("Plugin", func() {
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("", errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
+							mockUI.EXPECT().Failed("Error: some-error."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
@@ -295,7 +295,7 @@ var _ = Describe("Plugin", func() {
 					mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 					mockUI.EXPECT().Say("Downloading VM..."),
 					mockDownloader.EXPECT().Download(),
-					mockUI.EXPECT().Say("\nVM downloaded"),
+					mockUI.EXPECT().Say("\nVM downloaded."),
 					mockVM.EXPECT().Start(startOpts),
 				)
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start", "-m", "3456", "-c", "2"})
@@ -381,7 +381,7 @@ var _ = Describe("Plugin", func() {
 				It("should return the error", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
-						mockUI.EXPECT().Failed("Error: some-error"),
+						mockUI.EXPECT().Failed("Error: some-error."),
 					)
 
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -399,7 +399,7 @@ var _ = Describe("Plugin", func() {
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(),
-						mockUI.EXPECT().Say("\nVM downloaded"),
+						mockUI.EXPECT().Say("\nVM downloaded."),
 						mockVM.EXPECT().Start(&vm.StartOpts{}),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -414,7 +414,7 @@ var _ = Describe("Plugin", func() {
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-						mockUI.EXPECT().Say("Using existing image"),
+						mockUI.EXPECT().Say("Using existing image."),
 						mockVM.EXPECT().Start(&vm.StartOpts{}),
 					)
 					pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -426,7 +426,7 @@ var _ = Describe("Plugin", func() {
 						gomock.InOrder(
 							mockVBox.EXPECT().GetVMName().Return("", nil),
 							mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
+							mockUI.EXPECT().Failed("Error: some-error."),
 						)
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
 					})
@@ -438,7 +438,7 @@ var _ = Describe("Plugin", func() {
 							mockVBox.EXPECT().GetVMName().Return("", nil),
 							mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 							mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
+							mockUI.EXPECT().Failed("Error: some-error."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -453,9 +453,9 @@ var _ = Describe("Plugin", func() {
 							mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(nil),
 							mockVBox.EXPECT().GetVMName().Return("", nil),
 							mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
-							mockUI.EXPECT().Say("Using existing image"),
+							mockUI.EXPECT().Say("Using existing image."),
 							mockVM.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
+							mockUI.EXPECT().Failed("Error: some-error."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -475,7 +475,7 @@ var _ = Describe("Plugin", func() {
 							mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
 							mockDownloader.EXPECT().Download().Return(errors.New("some-error")),
-							mockUI.EXPECT().Failed("Error: some-error"),
+							mockUI.EXPECT().Failed("Error: some-error."),
 						)
 
 						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "start"})
@@ -498,7 +498,7 @@ var _ = Describe("Plugin", func() {
 
 							mockUI.EXPECT().Say("Downloading VM..."),
 							mockDownloader.EXPECT().Download(),
-							mockUI.EXPECT().Say("\nVM downloaded"),
+							mockUI.EXPECT().Say("\nVM downloaded."),
 
 							mockVM.EXPECT().Start(&vm.StartOpts{}),
 						)
@@ -561,7 +561,7 @@ var _ = Describe("Plugin", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
@@ -573,7 +573,7 @@ var _ = Describe("Plugin", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
@@ -586,7 +586,7 @@ var _ = Describe("Plugin", func() {
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Stop().Return(errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "stop"})
@@ -655,7 +655,7 @@ var _ = Describe("Plugin", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
@@ -667,7 +667,7 @@ var _ = Describe("Plugin", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
@@ -680,7 +680,7 @@ var _ = Describe("Plugin", func() {
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Suspend().Return(errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "suspend"})
@@ -749,7 +749,7 @@ var _ = Describe("Plugin", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
@@ -761,7 +761,7 @@ var _ = Describe("Plugin", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
@@ -774,7 +774,7 @@ var _ = Describe("Plugin", func() {
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Resume().Return(errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "resume"})
@@ -846,7 +846,7 @@ var _ = Describe("Plugin", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
@@ -858,7 +858,7 @@ var _ = Describe("Plugin", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
 					mockBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error: some-error"),
+					mockUI.EXPECT().Failed("Error: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "status"})
@@ -879,7 +879,7 @@ var _ = Describe("Plugin", func() {
 		It("should destroy all PCF Dev VMs created by the CLI and the VM dir", func() {
 			gomock.InOrder(
 				mockVBox.EXPECT().DestroyPCFDevVMs().Return(nil),
-				mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
+				mockUI.EXPECT().Say("PCF Dev VM has been destroyed."),
 				mockFS.EXPECT().Remove("some-vm-dir"),
 			)
 
@@ -890,7 +890,7 @@ var _ = Describe("Plugin", func() {
 			It("should print a message and remove the VM dir", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().DestroyPCFDevVMs().Return(errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error destroying PCF Dev VM: some-error"),
+					mockUI.EXPECT().Failed("Error destroying PCF Dev VM: some-error."),
 					mockFS.EXPECT().Remove("some-vm-dir"),
 				)
 
@@ -902,9 +902,9 @@ var _ = Describe("Plugin", func() {
 			It("print a message", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().DestroyPCFDevVMs().Return(nil),
-					mockUI.EXPECT().Say("PCF Dev VM has been destroyed"),
+					mockUI.EXPECT().Say("PCF Dev VM has been destroyed."),
 					mockFS.EXPECT().Remove("some-vm-dir").Return(errors.New("some-error")),
-					mockUI.EXPECT().Failed("Error removing some-vm-dir: some-error"),
+					mockUI.EXPECT().Failed("Error removing some-vm-dir: some-error."),
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "destroy"})

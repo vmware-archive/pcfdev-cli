@@ -50,7 +50,7 @@ var _ = Describe("Stopped", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Stopping VM..."),
 				mockVBox.EXPECT().StopVM(runningVM.VMConfig),
-				mockUI.EXPECT().Say("PCF Dev is now stopped"),
+				mockUI.EXPECT().Say("PCF Dev is now stopped."),
 			)
 
 			runningVM.Stop()
@@ -102,7 +102,7 @@ var _ = Describe("Stopped", func() {
 
 	Describe("Start", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Say("PCF Dev is running")
+			mockUI.EXPECT().Say("PCF Dev is running.")
 
 			runningVM.Start(&vm.StartOpts{})
 		})
@@ -118,7 +118,7 @@ var _ = Describe("Stopped", func() {
 		It("should suspend the vm", func() {
 			mockUI.EXPECT().Say("Suspending VM...")
 			mockVBox.EXPECT().SuspendVM(runningVM.VMConfig).Return(nil)
-			mockUI.EXPECT().Say("PCF Dev is now suspended")
+			mockUI.EXPECT().Say("PCF Dev is now suspended.")
 
 			Expect(runningVM.Suspend()).To(Succeed())
 		})
@@ -135,7 +135,7 @@ var _ = Describe("Stopped", func() {
 
 	Describe("Resume", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Say("PCF Dev is running")
+			mockUI.EXPECT().Say("PCF Dev is running.")
 
 			Expect(runningVM.Resume()).To(Succeed())
 		})

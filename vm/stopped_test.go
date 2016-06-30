@@ -50,7 +50,7 @@ var _ = Describe("Stopped", func() {
 
 	Describe("Stop", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Say("PCF Dev is stopped")
+			mockUI.EXPECT().Say("PCF Dev is stopped.")
 			stoppedVM.Stop()
 		})
 	})

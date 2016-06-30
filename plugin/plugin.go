@@ -126,7 +126,7 @@ func (p *Plugin) showUsageMessage(cliConnection plugin.CliConnection) {
 }
 
 func getErrorText(err error) string {
-	return fmt.Sprintf("Error: %s", err.Error())
+	return fmt.Sprintf("Error: %s.", err.Error())
 }
 
 func (p *Plugin) start(flagContext flags.FlagContext) error {
@@ -145,7 +145,7 @@ func (p *Plugin) start(flagContext flags.FlagContext) error {
 	if existingVMName != "" {
 		if flagContext.IsSet("o") {
 			if existingVMName != "pcfdev-custom" {
-				return errors.New("you must destroy your existing VM to use a custom OVA.")
+				return errors.New("you must destroy your existing VM to use a custom OVA")
 			}
 		} else {
 			if existingVMName != p.Config.DefaultVMName && existingVMName != "pcfdev-custom" {
@@ -217,13 +217,13 @@ func (p *Plugin) resume() error {
 
 func (p *Plugin) destroy() error {
 	if err := p.VBox.DestroyPCFDevVMs(); err != nil {
-		p.UI.Failed(fmt.Sprintf("Error destroying PCF Dev VM: %s", err))
+		p.UI.Failed(fmt.Sprintf("Error destroying PCF Dev VM: %s.", err))
 	} else {
-		p.UI.Say("PCF Dev VM has been destroyed")
+		p.UI.Say("PCF Dev VM has been destroyed.")
 	}
 
 	if err := p.FS.Remove(p.Config.VMDir); err != nil {
-		p.UI.Failed(fmt.Sprintf("Error removing %s: %s", p.Config.VMDir, err))
+		p.UI.Failed(fmt.Sprintf("Error removing %s: %s.", p.Config.VMDir, err))
 	}
 
 	return nil
@@ -243,7 +243,7 @@ func (p *Plugin) download() error {
 		return err
 	}
 	if current {
-		p.UI.Say("Using existing image")
+		p.UI.Say("Using existing image.")
 		return nil
 	}
 
@@ -275,7 +275,7 @@ func (p *Plugin) download() error {
 		return err
 	}
 
-	p.UI.Say("\nVM downloaded")
+	p.UI.Say("\nVM downloaded.")
 	return nil
 }
 

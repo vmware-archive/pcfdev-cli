@@ -21,7 +21,7 @@ type Stopped struct {
 }
 
 func (s *Stopped) Stop() error {
-	s.UI.Say("PCF Dev is stopped")
+	s.UI.Say("PCF Dev is stopped.")
 	return nil
 }
 

@@ -135,6 +135,7 @@ var _ = Describe("PCF Dev", func() {
 		Expect(session).To(gbytes.Say("Services started"))
 		pcfdevCommand = exec.Command("cf", "dev", "status")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Running"))
 		Expect(filepath.Join(tempHome, "pcfdev", "vms", vmName, vmName+"-disk1.vmdk")).To(BeAnExistingFile())
@@ -147,6 +148,8 @@ var _ = Describe("PCF Dev", func() {
 		Expect(session).To(gbytes.Say("PCF Dev is running"))
 		pcfdevCommand = exec.Command("cf", "dev", "status")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Running"))
 
 		By("running 'cf dev suspend' should suspend the vm")
@@ -158,6 +161,8 @@ var _ = Describe("PCF Dev", func() {
 		Expect(session).To(gbytes.Say("PCF Dev is now suspended"))
 		pcfdevCommand = exec.Command("cf", "dev", "status")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Suspended"))
 
 		By("running 'cf dev resume' should resume the vm")
@@ -168,6 +173,7 @@ var _ = Describe("PCF Dev", func() {
 		Expect(session).To(gbytes.Say("Resuming VM..."))
 		pcfdevCommand = exec.Command("cf", "dev", "status")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Running"))
 
@@ -185,8 +191,11 @@ var _ = Describe("PCF Dev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Expect(session).To(gbytes.Say("PCF Dev is now stopped"))
+
 		pcfdevCommand = exec.Command("cf", "dev", "status")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Stopped"))
 
 		pcfdevCommand = exec.Command("cf", "dev", "destroy")
@@ -220,6 +229,7 @@ var _ = Describe("PCF Dev", func() {
 		Expect(session).To(gbytes.Say("Services started"))
 		pcfdevCommand = exec.Command("cf", "dev", "status")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
 		Eventually(session).Should(gbytes.Say("Running"))
 		Expect(vmMemory("pcfdev-custom")).To(Equal("3456"))
 		Expect(vmCores("pcfdev-custom")).To(Equal("1"))

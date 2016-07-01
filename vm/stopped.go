@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -53,16 +54,22 @@ func (s *Stopped) Start(opts *StartOpts) error {
 	if len(opts.Services) == 0 {
 		services = append(services, "rabbitmq", "redis")
 	} else {
-		for _, service := range helpers.RemoveDuplicates(strings.Split(opts.Services, ",")) {
+		for _, service := range strings.Split(opts.Services, ",") {
 			switch service {
 			case "all":
+				services = append(services, "rabbitmq", "redis", "spring-cloud-services")
+			case "default":
 				services = append(services, "rabbitmq", "redis")
 			case "rabbitmq":
 				services = append(services, "rabbitmq")
 			case "redis":
 				services = append(services, "redis")
+			case "spring-cloud-services", "scs":
+				services = append(services, "rabbitmq", "spring-cloud-services")
 			}
 		}
+		services = helpers.RemoveDuplicates(services)
+		sort.Strings(services)
 	}
 
 	s.UI.Say("Provisioning VM...")

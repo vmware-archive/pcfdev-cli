@@ -44,9 +44,13 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 	if len(opts.Services) != 0 {
 		var disallowedServices []string
 
+		if opts.Services == "all" || opts.Services == "none" || opts.Services == "default" {
+			return nil
+		}
+
 		for _, service := range strings.Split(opts.Services, ",") {
 			switch service {
-			case "all", "none", "redis", "rabbitmq", "mysql":
+			case "all", "none", "default", "redis", "rabbitmq", "mysql", "spring-cloud-services", "scs":
 			default:
 				disallowedServices = append(disallowedServices, service)
 			}

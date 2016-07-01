@@ -129,6 +129,14 @@ var _ = Describe("Not Created", func() {
 				})
 			})
 
+			Context("when valid comma separated services are specifed", func() {
+				It("should succeed", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Services: "none,all,default,redis,mysql,rabbitmq,spring-cloud-services,scs",
+					})).To(Succeed())
+				})
+			})
+
 			Context("when empty string service", func() {
 				It("should succeed because it is the default", func() {
 					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{

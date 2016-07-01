@@ -230,6 +230,7 @@ var _ = Describe("PCF Dev", func() {
 		pcfdevCommand = exec.Command("cf", "dev", "status")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Running"))
 		Expect(vmMemory("pcfdev-custom")).To(Equal("3456"))
 		Expect(vmCores("pcfdev-custom")).To(Equal("1"))

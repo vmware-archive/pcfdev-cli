@@ -9,11 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 )
 
-type VBoxDriver struct{}
+type VBoxDriver struct {
+	FS *fs.FS
+}
 
 const (
 	StateRunning = "running"
@@ -343,4 +346,41 @@ func (d *VBoxDriver) CloneDisk(src, dst string) error {
 		return err
 	}
 	return nil
+}
+
+func (d *VBoxDriver) DeleteDisk(diskPath string) error {
+	exists, err := d.FS.Exists(diskPath)
+	if err != nil {
+		return err
+	}
+
+	var args []string
+	if exists {
+		args = []string{"closemedium", "disk", diskPath, "--delete"}
+	} else {
+		args = []string{"closemedium", "disk", diskPath}
+	}
+
+	if _, err := d.VBoxManage(args...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *VBoxDriver) Disks() ([]string, error) {
+	output, err := d.VBoxManage("list", "hdds")
+	if err != nil {
+		return nil, err
+	}
+
+	disks := []string{}
+	for _, line := range strings.Split(strings.Trim(string(output), "\n"), "\n") {
+		regex := regexp.MustCompile(`^Location:\s+(.+)`)
+		if matches := regex.FindStringSubmatch(string(line)); len(matches) > 1 {
+			disks = append(disks, matches[1])
+		}
+	}
+
+	return disks, nil
 }

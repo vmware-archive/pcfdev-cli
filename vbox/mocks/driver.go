@@ -90,6 +90,16 @@ func (_mr *_MockDriverRecorder) CreateVM(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateVM", arg0, arg1)
 }
 
+func (_m *MockDriver) DeleteDisk(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "DeleteDisk", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) DeleteDisk(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DeleteDisk", arg0)
+}
+
 func (_m *MockDriver) DestroyVM(_param0 string) error {
 	ret := _m.ctrl.Call(_m, "DestroyVM", _param0)
 	ret0, _ := ret[0].(error)
@@ -98,6 +108,17 @@ func (_m *MockDriver) DestroyVM(_param0 string) error {
 
 func (_mr *_MockDriverRecorder) DestroyVM(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "DestroyVM", arg0)
+}
+
+func (_m *MockDriver) Disks() ([]string, error) {
+	ret := _m.ctrl.Call(_m, "Disks")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) Disks() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Disks")
 }
 
 func (_m *MockDriver) ForwardPort(_param0 string, _param1 string, _param2 string, _param3 string) error {

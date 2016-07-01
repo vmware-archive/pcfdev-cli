@@ -25,6 +25,7 @@ type Driver interface {
 	ResumeVM(vmName string) error
 	DestroyVM(vmName string) error
 	VMs() (vms []string, err error)
+	Disks() (disks []string, err error)
 	RunningVMs() (vms []string, err error)
 	CreateHostOnlyInterface(ip string) (interfaceName string, err error)
 	ConfigureHostOnlyInterface(interfaceName string, ip string) error
@@ -39,6 +40,7 @@ type Driver interface {
 	CreateVM(vmName string, baseDirectory string) error
 	AttachDisk(vmName string, diskPath string) error
 	CloneDisk(src string, dest string) error
+	DeleteDisk(diskPath string) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vbox FS
@@ -157,7 +159,7 @@ func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	if err := v.FS.Remove(compressedDisk); err != nil {
+	if err := v.Driver.DeleteDisk(compressedDisk); err != nil {
 		return err
 	}
 
@@ -284,5 +286,28 @@ func (v *VBox) DestroyPCFDevVMs() error {
 		}
 	}
 
+	disks, err := v.Driver.Disks()
+	if err != nil {
+		return err
+	}
+
+	for _, disk := range disks {
+		filename := filepath.Base(disk)
+		if strings.HasPrefix(filename, "pcfdev-") {
+			v.Driver.DeleteDisk(disk)
+		}
+	}
+
+	disks, err = v.Driver.Disks()
+	if err != nil {
+		return err
+	}
+
+	for _, disk := range disks {
+		filename := filepath.Base(disk)
+		if strings.HasPrefix(filename, "pcfdev-") {
+			return errors.New("failed to destroy all pcfdev disks")
+		}
+	}
 	return nil
 }

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/test_helpers"
@@ -32,11 +33,15 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = Describe("driver", func() {
-	var driver *vbox.VBoxDriver
-	var vmName string
+	var (
+		driver *vbox.VBoxDriver
+		vmName string
+	)
 
 	BeforeEach(func() {
-		driver = &vbox.VBoxDriver{}
+		driver = &vbox.VBoxDriver{
+			FS: &fs.FS{},
+		}
 
 		var err error
 		vmName, err = test_helpers.ImportSnappy()
@@ -722,6 +727,8 @@ var _ = Describe("driver", func() {
 		BeforeEach(func() {
 			var err error
 			tmpDir, err = ioutil.TempDir("", "pcfdev-vbox-driver")
+
+			tmpDir, err = ioutil.TempDir("", "pcfdev-vbox-driver")
 			Expect(err).NotTo(HaveOccurred())
 
 			archive, err := os.Open(filepath.Join("..", "assets", "snappy.ova"))
@@ -771,6 +778,76 @@ var _ = Describe("driver", func() {
 			It("should return an error", func() {
 				Expect(driver.CloneDisk("some-bad-src", "cloned-Snappy-disk1.vmdk")).To(
 					MatchError(ContainSubstring("failed to execute 'VBoxManage clonemedium disk some-bad-src cloned-Snappy-disk1.vmdk':")))
+			})
+		})
+	})
+
+	Describe("#Disks", func() {
+		var diskPath string
+
+		BeforeEach(func() {
+			diskPath = filepath.Join(os.TempDir(), "some-disk.vmdk")
+			_, err := exec.Command(vBoxManagePath, "createmedium", "--filename", diskPath, "--size", "1024", "--format", "VMDK").CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(diskPath).To(BeAnExistingFile())
+		})
+
+		AfterEach(func() {
+			os.Remove(diskPath)
+			exec.Command(vBoxManagePath, "closemedium", diskPath).Run()
+		})
+
+		It("should return all the disks", func() {
+			Expect(driver.Disks()).To(ContainElement(diskPath))
+		})
+	})
+
+	Describe("#DeleteDisk", func() {
+		var diskPath string
+
+		BeforeEach(func() {
+			diskPath = filepath.Join(os.TempDir(), "some-disk.vmdk")
+			_, err := exec.Command(vBoxManagePath, "createmedium", "--filename", diskPath, "--size", "1024", "--format", "VMDK").CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(diskPath).To(BeAnExistingFile())
+		})
+
+		AfterEach(func() {
+			os.Remove(diskPath)
+			exec.Command(vBoxManagePath, "closemedium", diskPath).Run()
+		})
+
+		Context("when there is a vmdk file present", func() {
+			It("should return true", func() {
+				Expect(driver.DeleteDisk(diskPath)).To(Succeed())
+				Expect(diskPath).NotTo(BeAnExistingFile())
+
+				command := exec.Command(vBoxManagePath, "list", "hdds")
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+				Expect(session).NotTo(gbytes.Say(diskPath))
+
+			})
+		})
+
+		Context("when there is no vmdk file present", func() {
+			It("should return true", func() {
+				Expect(os.Remove(diskPath)).To(Succeed())
+				Expect(diskPath).NotTo(BeAnExistingFile())
+				Expect(driver.DeleteDisk(diskPath)).To(Succeed())
+
+				command := exec.Command(vBoxManagePath, "list", "hdds")
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+				Expect(session).NotTo(gbytes.Say(diskPath))
+			})
+		})
+
+		Context("when there is an error", func() {
+			It("should return an error", func() {
+				Expect(driver.DeleteDisk("some-bad-disk-name")).To(MatchError(ContainSubstring("failed to execute 'VBoxManage closemedium disk some-bad-disk-name'")))
 			})
 		})
 	})

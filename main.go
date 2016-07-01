@@ -36,6 +36,7 @@ func main() {
 	confirmInstalled(ui)
 
 	fileSystem := &fs.FS{}
+	driver := &vbox.VBoxDriver{FS: fileSystem}
 	system := &system.System{
 		FS: fileSystem,
 	}
@@ -69,17 +70,17 @@ func main() {
 		FS:     fileSystem,
 		Builder: &vm.VBoxBuilder{
 			Config: config,
-			Driver: &vbox.VBoxDriver{},
+			Driver: driver,
 			FS:     fileSystem,
 			SSH:    &ssh.SSH{},
 		},
 		VBox: &vbox.VBox{
 			SSH:    &ssh.SSH{},
 			FS:     fileSystem,
-			Driver: &vbox.VBoxDriver{},
+			Driver: driver,
 			Picker: &address.Picker{
 				Network: &network.Network{},
-				Driver:  &vbox.VBoxDriver{},
+				Driver:  driver,
 			},
 			Config: config,
 		},

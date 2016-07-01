@@ -135,6 +135,7 @@ var _ = Describe("PCF Dev", func() {
 		Expect(session).To(gbytes.Say("Services started"))
 		pcfdevCommand = exec.Command("cf", "dev", "status")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Running"))
 		Expect(filepath.Join(tempHome, "pcfdev", "vms", vmName, vmName+"-disk1.vmdk")).To(BeAnExistingFile())
 

@@ -377,7 +377,7 @@ func (d *VBoxDriver) Disks() ([]string, error) {
 	disks := []string{}
 	for _, line := range strings.Split(strings.Trim(string(output), "\n"), "\n") {
 		regex := regexp.MustCompile(`^Location:\s+(.+)`)
-		if matches := regex.FindStringSubmatch(string(line)); len(matches) > 1 {
+		if matches := regex.FindStringSubmatch(strings.TrimSpace(string(line))); len(matches) > 1 {
 			disks = append(disks, matches[1])
 		}
 	}

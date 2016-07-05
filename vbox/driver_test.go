@@ -822,12 +822,9 @@ var _ = Describe("driver", func() {
 				Expect(driver.DeleteDisk(diskPath)).To(Succeed())
 				Expect(diskPath).NotTo(BeAnExistingFile())
 
-				command := exec.Command(vBoxManagePath, "list", "hdds")
-				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				output, err := exec.Command(vBoxManagePath, "list", "hdds").Output()
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
-				Expect(session).NotTo(gbytes.Say(diskPath))
-
+				Expect(string(output)).NotTo(ContainSubstring(diskPath))
 			})
 		})
 
@@ -837,11 +834,9 @@ var _ = Describe("driver", func() {
 				Expect(diskPath).NotTo(BeAnExistingFile())
 				Expect(driver.DeleteDisk(diskPath)).To(Succeed())
 
-				command := exec.Command(vBoxManagePath, "list", "hdds")
-				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				output, err := exec.Command(vBoxManagePath, "list", "hdds").Output()
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
-				Expect(session).NotTo(gbytes.Say(diskPath))
+				Expect(string(output)).NotTo(ContainSubstring(diskPath))
 			})
 		})
 

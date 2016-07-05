@@ -490,15 +490,25 @@ var _ = Describe("vbox", func() {
 			It("starts without reimporting", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().StartVM("some-vm"),
-					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.22.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-					mockSSH.EXPECT().RunSSHCommand("echo -e \""+
-						"HTTP_PROXY=some-http-proxy\n"+
-						"HTTPS_PROXY=some-https-proxy\n"+
-						"NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy\n"+
-						"http_proxy=some-http-proxy\n"+
-						"https_proxy=some-https-proxy\n"+
-						"no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy\" "+
-						"| sudo tee -a /etc/environment",
+					mockSSH.EXPECT().RunSSHCommand(`echo -e '
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address 192.168.22.11
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockSSH.EXPECT().RunSSHCommand(`echo -e '
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+HTTP_PROXY=some-http-proxy
+HTTPS_PROXY=some-https-proxy
+NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy
+http_proxy=some-http-proxy
+https_proxy=some-https-proxy
+no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 						"some-port",
 						5*time.Minute,
 						ioutil.Discard,
@@ -521,15 +531,25 @@ var _ = Describe("vbox", func() {
 
 				gomock.InOrder(
 					mockDriver.EXPECT().StartVM("some-vm"),
-					mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress 192.168.22.11\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-					mockSSH.EXPECT().RunSSHCommand("echo -e \""+
-						"HTTP_PROXY=192.168.22.1\n"+
-						"HTTPS_PROXY=192.168.22.1:8080\n"+
-						"NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy\n"+
-						"http_proxy=192.168.22.1\n"+
-						"https_proxy=192.168.22.1:8080\n"+
-						"no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy\" "+
-						"| sudo tee -a /etc/environment",
+					mockSSH.EXPECT().RunSSHCommand(`echo -e '
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address 192.168.22.11
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockSSH.EXPECT().RunSSHCommand(`echo -e '
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+HTTP_PROXY=192.168.22.1
+HTTPS_PROXY=192.168.22.1:8080
+NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy
+http_proxy=192.168.22.1
+https_proxy=192.168.22.1:8080
+no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 						"some-port",
 						5*time.Minute,
 						ioutil.Discard,
@@ -550,7 +570,17 @@ var _ = Describe("vbox", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
-						mockSSH.EXPECT().RunSSHCommand("echo -e \"auto eth1\niface eth1 inet static\naddress some-bad-ip\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockSSH.EXPECT().RunSSHCommand(`echo -e '
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address some-bad-ip
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -581,7 +611,17 @@ var _ = Describe("vbox", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
-						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress some-ip\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces"), "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
+						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf(`echo -e '
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address some-ip
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -597,22 +637,31 @@ var _ = Describe("vbox", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
-						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", "192.168.11.11"), "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockSSH.EXPECT().RunSSHCommand("echo -e \""+
-							"HTTP_PROXY=some-http-proxy\n"+
-							"HTTPS_PROXY=some-https-proxy\n"+
-							"NO_PROXY=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,some-no-proxy\n"+
-							"http_proxy=some-http-proxy\n"+
-							"https_proxy=some-https-proxy\n"+
-							"no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,some-no-proxy\" "+
-							"| sudo tee -a /etc/environment",
+						mockSSH.EXPECT().RunSSHCommand(`echo -e '
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address 192.168.11.11
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockSSH.EXPECT().RunSSHCommand(`echo -e '
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+HTTP_PROXY=some-http-proxy
+HTTPS_PROXY=some-https-proxy
+NO_PROXY=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,some-no-proxy
+http_proxy=some-http-proxy
+https_proxy=some-https-proxy
+no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 							"some-port",
 							5*time.Minute,
 							ioutil.Discard,
 							ioutil.Discard),
 						mockDriver.EXPECT().StopVM("some-vm").Return(errors.New("some-error")),
 					)
-
 					Expect(vbx.StartVM(&config.VMConfig{
 						Name:    "some-vm",
 						IP:      "192.168.11.11",

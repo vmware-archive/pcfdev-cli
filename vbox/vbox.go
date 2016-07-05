@@ -1,12 +1,14 @@
 package vbox
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/address"
@@ -74,11 +76,44 @@ type VBox struct {
 	Config *config.Config
 }
 
+type VMProperties struct {
+	IPAddress string
+}
+
+type ProxyTypes struct {
+	HTTPProxy  string
+	HTTPSProxy string
+	NOProxy    string
+}
+
 const (
 	StatusRunning    = "Running"
 	StatusSuspended  = "Suspended"
 	StatusStopped    = "Stopped"
 	StatusNotCreated = "Not created"
+)
+
+var (
+	networkTemplate = `
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address {{.IPAddress}}
+netmask 255.255.255.0`
+
+	proxyTemplate = `
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+HTTP_PROXY={{.HTTPProxy}}
+HTTPS_PROXY={{.HTTPSProxy}}
+NO_PROXY={{.NOProxy}}
+http_proxy={{.HTTPProxy}}
+https_proxy={{.HTTPSProxy}}
+no_proxy={{.NOProxy}}`
 )
 
 func (v *VBox) StartVM(vmConfig *config.VMConfig) error {
@@ -101,7 +136,23 @@ func (v *VBox) StartVM(vmConfig *config.VMConfig) error {
 }
 
 func (v *VBox) configureNetwork(ip string, sshPort string) error {
-	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"auto eth1\niface eth1 inet static\naddress %s\nnetmask 255.255.255.0\" | sudo tee -a /etc/network/interfaces", ip), sshPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
+	t, err := template.New("properties template").Parse(networkTemplate)
+	if err != nil {
+		return err
+	}
+
+	var sshCommand bytes.Buffer
+	if err = t.Execute(&sshCommand, VMProperties{IPAddress: ip}); err != nil {
+		return err
+	}
+
+	return v.SSH.RunSSHCommand(
+		fmt.Sprintf("echo -e '%s' | sudo tee /etc/network/interfaces", sshCommand.String()),
+		sshPort,
+		5*time.Minute,
+		ioutil.Discard,
+		ioutil.Discard,
+	)
 }
 
 func (v *VBox) configureEnvironment(ip string, sshPort string) error {
@@ -110,7 +161,7 @@ func (v *VBox) configureEnvironment(ip string, sshPort string) error {
 		return err
 	}
 
-	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e \"%s\" | sudo tee -a /etc/environment", proxySettings), sshPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
+	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings), sshPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
 }
 
 func (v *VBox) proxySettings(ip string) (settings string, err error) {
@@ -134,14 +185,17 @@ func (v *VBox) proxySettings(ip string) (settings string, err error) {
 		domain,
 		v.Config.NoProxy}, ",")
 
-	return strings.Join([]string{
-		"HTTP_PROXY=" + httpProxy,
-		"HTTPS_PROXY=" + httpsProxy,
-		"NO_PROXY=" + noProxy,
-		"http_proxy=" + httpProxy,
-		"https_proxy=" + httpsProxy,
-		"no_proxy=" + noProxy,
-	}, "\n"), nil
+	t, err := template.New("proxy template").Parse(proxyTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	var proxySettings bytes.Buffer
+	if err = t.Execute(&proxySettings, ProxyTypes{HTTPProxy: httpProxy, HTTPSProxy: httpsProxy, NOProxy: noProxy}); err != nil {
+		return "", err
+	}
+
+	return proxySettings.String(), nil
 }
 
 func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {

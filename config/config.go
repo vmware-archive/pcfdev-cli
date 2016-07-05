@@ -53,7 +53,7 @@ func New(defaultVMName string, system System) (*Config, error) {
 	}
 	minMemory := uint64(3072)
 	maxMemory := uint64(4096)
-	springCloudMemoryIncrease := uint64(1024)
+	springCloudMemoryIncrease := uint64(2048)
 
 	return &Config{
 		DefaultVMName:             defaultVMName,

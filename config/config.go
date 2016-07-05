@@ -11,19 +11,20 @@ import (
 )
 
 type Config struct {
-	DefaultVMName string
-	PCFDevHome    string
-	OVADir        string
-	VMDir         string
-	HTTPProxy     string
-	HTTPSProxy    string
-	NoProxy       string
-	MinMemory     uint64
-	MaxMemory     uint64
-	TotalMemory   uint64
-	FreeMemory    uint64
-	DefaultMemory uint64
-	DefaultCPUs   int
+	DefaultVMName             string
+	PCFDevHome                string
+	OVADir                    string
+	VMDir                     string
+	HTTPProxy                 string
+	HTTPSProxy                string
+	NoProxy                   string
+	MinMemory                 uint64
+	MaxMemory                 uint64
+	TotalMemory               uint64
+	FreeMemory                uint64
+	DefaultMemory             uint64
+	SpringCloudMemoryIncrease uint64
+	DefaultCPUs               int
 }
 
 //go:generate mockgen -package mocks -destination mocks/system.go github.com/pivotal-cf/pcfdev-cli/config System
@@ -52,21 +53,23 @@ func New(defaultVMName string, system System) (*Config, error) {
 	}
 	minMemory := uint64(3072)
 	maxMemory := uint64(4096)
+	springCloudMemoryIncrease := uint64(1024)
 
 	return &Config{
-		DefaultVMName: defaultVMName,
-		PCFDevHome:    pcfdevHome,
-		OVADir:        filepath.Join(pcfdevHome, "ova"),
-		VMDir:         filepath.Join(pcfdevHome, "vms"),
-		HTTPProxy:     getHTTPProxy(),
-		HTTPSProxy:    getHTTPSProxy(),
-		NoProxy:       getNoProxy(),
-		MinMemory:     minMemory,
-		MaxMemory:     maxMemory,
-		TotalMemory:   totalMemory,
-		FreeMemory:    freeMemory,
-		DefaultMemory: getDefaultMemory(totalMemory, minMemory, maxMemory),
-		DefaultCPUs:   cores,
+		DefaultVMName:             defaultVMName,
+		PCFDevHome:                pcfdevHome,
+		OVADir:                    filepath.Join(pcfdevHome, "ova"),
+		VMDir:                     filepath.Join(pcfdevHome, "vms"),
+		HTTPProxy:                 getHTTPProxy(),
+		HTTPSProxy:                getHTTPSProxy(),
+		NoProxy:                   getNoProxy(),
+		MinMemory:                 minMemory,
+		MaxMemory:                 maxMemory,
+		TotalMemory:               totalMemory,
+		FreeMemory:                freeMemory,
+		DefaultMemory:             getDefaultMemory(totalMemory, minMemory, maxMemory),
+		SpringCloudMemoryIncrease: springCloudMemoryIncrease,
+		DefaultCPUs:               cores,
 	}, nil
 }
 

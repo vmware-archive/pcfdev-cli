@@ -72,6 +72,42 @@ var _ = Describe("Not Created", func() {
 				})
 			})
 
+			Context("when scs is passed as a service", func() {
+				It("should increase the minimum memory limit", func() {
+					conf.MinMemory = uint64(3000)
+					conf.SpringCloudMemoryIncrease = uint64(1000)
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Memory:   uint64(3500),
+						Services: "scs",
+					})).To(MatchError("PCF Dev requires at least 4000 MB of memory to run"))
+				})
+			})
+
+			Context("when spring-cloud-services is passed as a service", func() {
+				It("should increase the minimum memory limit", func() {
+					conf.MinMemory = uint64(3000)
+					conf.SpringCloudMemoryIncrease = uint64(1000)
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Memory:   uint64(3500),
+						Services: "spring-cloud-services",
+					})).To(MatchError("PCF Dev requires at least 4000 MB of memory to run"))
+				})
+			})
+
+			Context("when all is passed as a service", func() {
+				It("should increase the minimum memory limit", func() {
+					conf.MinMemory = uint64(3000)
+					conf.SpringCloudMemoryIncrease = uint64(1000)
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Memory:   uint64(3500),
+						Services: "all",
+					})).To(MatchError("PCF Dev requires at least 4000 MB of memory to run"))
+				})
+			})
+
 			Context("when the desired memory is equal to the minimum and less than free memory", func() {
 				It("should succeed", func() {
 					conf.FreeMemory = uint64(5000)
@@ -117,6 +153,48 @@ var _ = Describe("Not Created", func() {
 						})).To(MatchError("user declined to continue, exiting"))
 					})
 				})
+			})
+		})
+
+		Context("when scs is passed as a service", func() {
+			It("should increase the default memory", func() {
+				conf.DefaultMemory = uint64(3000)
+				conf.FreeMemory = uint64(3500)
+				conf.SpringCloudMemoryIncrease = uint64(1000)
+
+				mockUI.EXPECT().Confirm("Less than 4000 MB of free memory detected, continue (y/N): ").Return(true)
+
+				Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+					Services: "scs",
+				})).To(Succeed())
+			})
+		})
+
+		Context("when spring-cloud-services is passed as a service", func() {
+			It("should increase the default memory", func() {
+				conf.DefaultMemory = uint64(3000)
+				conf.FreeMemory = uint64(3500)
+				conf.SpringCloudMemoryIncrease = uint64(1000)
+
+				mockUI.EXPECT().Confirm("Less than 4000 MB of free memory detected, continue (y/N): ").Return(true)
+
+				Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+					Services: "spring-cloud-services",
+				})).To(Succeed())
+			})
+		})
+
+		Context("when all is passed as a service", func() {
+			It("should increase the default memory", func() {
+				conf.DefaultMemory = uint64(3000)
+				conf.FreeMemory = uint64(3500)
+				conf.SpringCloudMemoryIncrease = uint64(1000)
+
+				mockUI.EXPECT().Confirm("Less than 4000 MB of free memory detected, continue (y/N): ").Return(true)
+
+				Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+					Services: "all",
+				})).To(Succeed())
 			})
 		})
 
@@ -262,6 +340,87 @@ var _ = Describe("Not Created", func() {
 
 				notCreatedVM.Start(&vm.StartOpts{
 					Memory:   uint64(4000),
+					CPUs:     3,
+					OVAPath:  "some-ova-path",
+					Services: "all",
+				})
+			})
+		})
+
+		Context("when scs is passed as a service", func() {
+			It("should increase the default memory", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Allocating 5000 MB out of 8000 MB total system memory (5000 MB free)."),
+					mockUI.EXPECT().Say("Importing VM..."),
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{
+						Name:    "some-vm",
+						Memory:  uint64(5000),
+						CPUs:    3,
+						OVAPath: "some-ova-path",
+					}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
+					mockStopped.EXPECT().Start(&vm.StartOpts{Services: "scs"}),
+				)
+				conf.DefaultMemory = uint64(2000)
+				conf.SpringCloudMemoryIncrease = uint64(3000)
+				conf.FreeMemory = uint64(5000)
+				conf.TotalMemory = uint64(8000)
+
+				notCreatedVM.Start(&vm.StartOpts{
+					CPUs:     3,
+					OVAPath:  "some-ova-path",
+					Services: "scs",
+				})
+			})
+		})
+
+		Context("when spring-cloud-services is passed as a service", func() {
+			It("should increase the default memory", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Allocating 5000 MB out of 8000 MB total system memory (5000 MB free)."),
+					mockUI.EXPECT().Say("Importing VM..."),
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{
+						Name:    "some-vm",
+						Memory:  uint64(5000),
+						CPUs:    3,
+						OVAPath: "some-ova-path",
+					}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
+					mockStopped.EXPECT().Start(&vm.StartOpts{Services: "spring-cloud-services"}),
+				)
+				conf.DefaultMemory = uint64(2000)
+				conf.SpringCloudMemoryIncrease = uint64(3000)
+				conf.FreeMemory = uint64(5000)
+				conf.TotalMemory = uint64(8000)
+
+				notCreatedVM.Start(&vm.StartOpts{
+					CPUs:     3,
+					OVAPath:  "some-ova-path",
+					Services: "spring-cloud-services",
+				})
+			})
+		})
+
+		Context("when all is passed as a service", func() {
+			It("should increase the default memory", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Allocating 5000 MB out of 8000 MB total system memory (5000 MB free)."),
+					mockUI.EXPECT().Say("Importing VM..."),
+					mockVBox.EXPECT().ImportVM(&config.VMConfig{
+						Name:    "some-vm",
+						Memory:  uint64(5000),
+						CPUs:    3,
+						OVAPath: "some-ova-path",
+					}).Return(nil),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
+					mockStopped.EXPECT().Start(&vm.StartOpts{Services: "all"}),
+				)
+				conf.DefaultMemory = uint64(2000)
+				conf.SpringCloudMemoryIncrease = uint64(3000)
+				conf.FreeMemory = uint64(5000)
+				conf.TotalMemory = uint64(8000)
+
+				notCreatedVM.Start(&vm.StartOpts{
 					CPUs:     3,
 					OVAPath:  "some-ova-path",
 					Services: "all",

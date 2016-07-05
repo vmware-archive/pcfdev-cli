@@ -68,6 +68,7 @@ var _ = Describe("Config", func() {
 			Expect(conf.NoProxy).To(Equal("some-no-proxy"))
 			Expect(conf.MinMemory).To(Equal(uint64(3072)))
 			Expect(conf.MaxMemory).To(Equal(uint64(4096)))
+			Expect(conf.SpringCloudMemoryIncrease).To(Equal(uint64(1024)))
 		})
 
 		Context("when caps proxy env vars are unset", func() {

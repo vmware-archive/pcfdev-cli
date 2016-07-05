@@ -44,10 +44,6 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 	if len(opts.Services) != 0 {
 		var disallowedServices []string
 
-		if opts.Services == "all" || opts.Services == "none" || opts.Services == "default" {
-			return nil
-		}
-
 		for _, service := range strings.Split(opts.Services, ",") {
 			switch service {
 			case "all", "none", "default", "redis", "rabbitmq", "mysql", "spring-cloud-services", "scs":
@@ -65,15 +61,19 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 }
 
 func (n *NotCreated) verifyMemory(opts *StartOpts) error {
-	var memory uint64
+	memory := n.Config.DefaultMemory
+	minMemory := n.Config.MinMemory
+
+	if n.hasSCS(opts.Services) {
+		minMemory += n.Config.SpringCloudMemoryIncrease
+		memory += n.Config.SpringCloudMemoryIncrease
+	}
 	if opts.Memory != uint64(0) {
-		if opts.Memory < n.Config.MinMemory {
-			return fmt.Errorf("PCF Dev requires at least %d MB of memory to run", n.Config.MinMemory)
+		if opts.Memory < minMemory {
+			return fmt.Errorf("PCF Dev requires at least %d MB of memory to run", minMemory)
 		}
 		memory = opts.Memory
 
-	} else {
-		memory = n.Config.DefaultMemory
 	}
 	if memory > n.Config.FreeMemory {
 		if !n.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", memory)) {
@@ -84,10 +84,16 @@ func (n *NotCreated) verifyMemory(opts *StartOpts) error {
 	return nil
 }
 
+func (n *NotCreated) hasSCS(services string) bool {
+	return strings.Contains(services, "scs") || strings.Contains(services, "spring-cloud-services") || strings.Contains(services, "all")
+}
+
 func (n *NotCreated) Start(opts *StartOpts) error {
 	var memory uint64
 	if opts.Memory != uint64(0) {
 		memory = opts.Memory
+	} else if n.hasSCS(opts.Services) {
+		memory = n.Config.DefaultMemory + n.Config.SpringCloudMemoryIncrease
 	} else {
 		memory = n.Config.DefaultMemory
 	}

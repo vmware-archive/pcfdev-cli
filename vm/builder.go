@@ -106,10 +106,18 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		return nil, err
 	}
 	if state == vbox.StateRunning {
-		healthCheckCommand := "sudo /var/pcfdev/health-check"
-		if output, err := b.SSH.GetSSHOutput(healthCheckCommand, ip, "22", 2*time.Minute); strings.TrimSpace(output) != "ok" || err != nil {
-			return &Invalid{
-				UI: termUI,
+		if output, err := b.healthcheck(ip, sshPort); strings.TrimSpace(output) != "ok" || err != nil {
+			return &Recoverable{
+				VMConfig: &config.VMConfig{
+					Name:    vmName,
+					IP:      ip,
+					SSHPort: sshPort,
+					Domain:  domain,
+					Memory:  memory,
+				},
+
+				UI:   termUI,
+				VBox: vbx,
 			}, nil
 		} else {
 			return &Running{
@@ -162,4 +170,31 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	}
 
 	return nil, fmt.Errorf("failed to handle VM state '%s'", state)
+}
+
+func (b *VBoxBuilder) healthcheck(ip string, sshPort string) (string, error) {
+	healthCheckCommand := "sudo /var/pcfdev/health-check"
+
+	forwardPortOutputChan := make(chan string, 1)
+	forwardPortErrChan := make(chan error, 1)
+	sshOutputChan := make(chan string, 1)
+	sshErrChan := make(chan error, 1)
+
+	go func() {
+		output, err := b.SSH.GetSSHOutput(healthCheckCommand, "127.0.0.1", sshPort, 20*time.Second)
+		forwardPortOutputChan <- output
+		forwardPortErrChan <- err
+	}()
+	go func() {
+		output, err := b.SSH.GetSSHOutput(healthCheckCommand, ip, "22", 20*time.Second)
+		sshOutputChan <- output
+		sshErrChan <- err
+	}()
+
+	select {
+	case out := <-sshOutputChan:
+		return out, <-sshErrChan
+	case out := <-forwardPortOutputChan:
+		return out, <-forwardPortErrChan
+	}
 }

@@ -117,12 +117,12 @@ var _ = Describe("Stopped", func() {
 
 	Describe("Start", func() {
 		Context("when 'none' services are specified", func() {
-			It("should start vm with mysql", func() {
+			It("should start vm with no extra services", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip ", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "none"})
@@ -135,7 +135,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip rabbitmq,redis,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "all"})
@@ -143,12 +143,12 @@ var _ = Describe("Stopped", func() {
 		})
 
 		Context("when 'default' services are specified", func() {
-			It("should start the vm with mysql, rabbitmq, and redis", func() {
+			It("should start the vm with rabbitmq and redis", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "default"})
@@ -156,12 +156,12 @@ var _ = Describe("Stopped", func() {
 		})
 
 		Context("when 'spring-cloud-services' services are specified", func() {
-			It("should start the vm with mysql, spring-cloud-services, and rabbitmq", func() {
+			It("should start the vm with spring-cloud-services and rabbitmq", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip rabbitmq,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "spring-cloud-services"})
@@ -169,12 +169,12 @@ var _ = Describe("Stopped", func() {
 		})
 
 		Context("when 'scs' is specified", func() {
-			It("should start the vm with mysql, spring-cloud-services, and rabbitmq", func() {
+			It("should start the vm with spring-cloud-services and rabbitmq", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip rabbitmq,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "scs"})
@@ -182,12 +182,12 @@ var _ = Describe("Stopped", func() {
 		})
 
 		Context("when 'rabbitmq' services are specified", func() {
-			It("should start the vm with mysql and rabbitmq", func() {
+			It("should start the vm with rabbitmq", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip rabbitmq", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "rabbitmq"})
@@ -195,12 +195,12 @@ var _ = Describe("Stopped", func() {
 		})
 
 		Context("when 'redis' services are specified", func() {
-			It("should start the vm with mysql and redis", func() {
+			It("should start the vm with redis", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "redis"})
@@ -208,12 +208,12 @@ var _ = Describe("Stopped", func() {
 		})
 
 		Context("when 'mysql' services are specified", func() {
-			It("should start the vm with mysql", func() {
+			It("should start the vm with no extra services", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip ", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "mysql"})
@@ -226,7 +226,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip rabbitmq,redis,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "default,spring-cloud-services,scs"})
@@ -239,7 +239,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{})
@@ -263,7 +263,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
 				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("failed to provision VM: some-error"))
@@ -275,7 +275,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip mysql,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand("sudo /var/pcfdev/run some-domain some-ip redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 				stoppedVM.Start(&vm.StartOpts{Services: "redis,redis"})
 			})

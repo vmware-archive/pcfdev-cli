@@ -50,7 +50,7 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		return &StartVMError{err}
 	}
 
-	services := []string{"mysql"}
+	services := []string{}
 	if len(opts.Services) == 0 {
 		services = append(services, "rabbitmq", "redis")
 	} else {

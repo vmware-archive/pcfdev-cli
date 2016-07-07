@@ -592,6 +592,136 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.
 				})
 			})
 
+			Context("when the http proxy field is empty", func() {
+				It("should not appear in the environment file", func() {
+					conf.HTTPProxy = ""
+					conf.HTTPSProxy = "127.0.0.1"
+					gomock.InOrder(
+						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().RunSSHCommand(`echo -e '
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address 192.168.22.11
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockSSH.EXPECT().RunSSHCommand(`echo -e '
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+
+HTTPS_PROXY=192.168.22.1
+NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy
+
+https_proxy=192.168.22.1
+no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+							"some-port",
+							5*time.Minute,
+							ioutil.Discard,
+							ioutil.Discard),
+						mockDriver.EXPECT().StopVM("some-vm"),
+						mockDriver.EXPECT().StartVM("some-vm"),
+					)
+
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.22.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(Succeed())
+				})
+
+			})
+
+			Context("when the https proxy field is empty", func() {
+				It("should not appear in the environment file", func() {
+					conf.HTTPProxy = "127.0.0.1"
+					conf.HTTPSProxy = ""
+					gomock.InOrder(
+						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().RunSSHCommand(`echo -e '
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address 192.168.22.11
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockSSH.EXPECT().RunSSHCommand(`echo -e '
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+HTTP_PROXY=192.168.22.1
+
+NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy
+http_proxy=192.168.22.1
+
+no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+							"some-port",
+							5*time.Minute,
+							ioutil.Discard,
+							ioutil.Discard),
+						mockDriver.EXPECT().StopVM("some-vm"),
+						mockDriver.EXPECT().StartVM("some-vm"),
+					)
+
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.22.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(Succeed())
+				})
+
+			})
+
+			Context("when the no proxy field is empty", func() {
+				It("should not have a trailing comma", func() {
+					conf.HTTPProxy = "127.0.0.1"
+					conf.HTTPSProxy = "127.0.0.1"
+					conf.NoProxy = ""
+					gomock.InOrder(
+						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().RunSSHCommand(`echo -e '
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address 192.168.22.11
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockSSH.EXPECT().RunSSHCommand(`echo -e '
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+HTTP_PROXY=192.168.22.1
+HTTPS_PROXY=192.168.22.1
+NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io
+http_proxy=192.168.22.1
+https_proxy=192.168.22.1
+no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io' | sudo tee /etc/environment`,
+							"some-port",
+							5*time.Minute,
+							ioutil.Discard,
+							ioutil.Discard),
+						mockDriver.EXPECT().StopVM("some-vm"),
+						mockDriver.EXPECT().StartVM("some-vm"),
+					)
+
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.22.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(Succeed())
+				})
+
+			})
+
 			Context("when VM fails to start", func() {
 				It("should return an error", func() {
 					gomock.InOrder(

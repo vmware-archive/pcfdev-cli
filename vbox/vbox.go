@@ -108,11 +108,11 @@ netmask 255.255.255.0`
 
 	proxyTemplate = `
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
-HTTP_PROXY={{.HTTPProxy}}
-HTTPS_PROXY={{.HTTPSProxy}}
+{{if .HTTPProxy}}HTTP_PROXY={{.HTTPProxy}}{{end}}
+{{if .HTTPSProxy}}HTTPS_PROXY={{.HTTPSProxy}}{{end}}
 NO_PROXY={{.NOProxy}}
-http_proxy={{.HTTPProxy}}
-https_proxy={{.HTTPSProxy}}
+{{if .HTTPProxy}}http_proxy={{.HTTPProxy}}{{end}}
+{{if .HTTPSProxy}}https_proxy={{.HTTPSProxy}}{{end}}
 no_proxy={{.NOProxy}}`
 )
 
@@ -182,8 +182,10 @@ func (v *VBox) proxySettings(ip string) (settings string, err error) {
 		"127.0.0.1",
 		subnet,
 		ip,
-		domain,
-		v.Config.NoProxy}, ",")
+		domain}, ",")
+	if v.Config.NoProxy != "" {
+		noProxy = strings.Join([]string{noProxy, v.Config.NoProxy}, ",")
+	}
 
 	t, err := template.New("proxy template").Parse(proxyTemplate)
 	if err != nil {

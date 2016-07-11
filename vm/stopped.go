@@ -72,6 +72,11 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		sort.Strings(services)
 	}
 
+	if opts.NoProvision {
+		s.UI.Say("VM will not be provisioned because '-no-provision' flag was specified.")
+		return nil
+	}
+
 	s.UI.Say("Provisioning VM...")
 	provisionCommand := fmt.Sprintf("sudo -H /var/pcfdev/run %s %s %s", s.VMConfig.Domain, s.VMConfig.IP, strings.Join(services, ","))
 	if err := s.SSH.RunSSHCommand(provisionCommand, s.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {

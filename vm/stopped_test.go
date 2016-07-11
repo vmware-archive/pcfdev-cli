@@ -257,6 +257,20 @@ var _ = Describe("Stopped", func() {
 			})
 		})
 
+		Context("when '-no-provision' flag is passed in", func() {
+			It("should not provision the vm", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Starting VM..."),
+					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockUI.EXPECT().Say("VM will not be provisioned because '-no-provision' flag was specified."),
+				)
+
+				stoppedVM.Start(&vm.StartOpts{
+					NoProvision: true,
+				})
+			})
+		})
+
 		Context("when provisioning the vm fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(

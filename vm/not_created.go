@@ -127,7 +127,11 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 	if err != nil {
 		return &StartVMError{err}
 	}
-	if err := stoppedVM.Start(&StartOpts{Services: opts.Services}); err != nil {
+	if err := stoppedVM.Start(
+		&StartOpts{
+			Services:    opts.Services,
+			NoProvision: opts.NoProvision,
+		}); err != nil {
 		return err
 	}
 	return nil

@@ -77,6 +77,7 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 		flagContext.NewIntFlag("c", "cpus", "<number of cpus>")
 		flagContext.NewStringFlag("o", "ova", "<path to custom ova>")
 		flagContext.NewStringFlag("s", "services", "<services to start with>")
+		flagContext.NewBoolFlag("no-provision", "", "<bool for provisioning>")
 	}
 
 	if err := flagContext.Parse(args...); err != nil {
@@ -164,10 +165,11 @@ func (p *Plugin) start(flagContext flags.FlagContext) error {
 	}
 
 	opts := &vm.StartOpts{
-		Memory:   uint64(flagContext.Int("m")),
-		CPUs:     flagContext.Int("c"),
-		OVAPath:  flagContext.String("o"),
-		Services: flagContext.String("s"),
+		Memory:      uint64(flagContext.Int("m")),
+		CPUs:        flagContext.Int("c"),
+		OVAPath:     flagContext.String("o"),
+		Services:    flagContext.String("s"),
+		NoProvision: flagContext.Bool("no-provision"),
 	}
 
 	if err := v.VerifyStartOpts(opts); err != nil {

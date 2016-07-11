@@ -96,7 +96,7 @@ func (s *Stopped) Start(opts *StartOpts) error {
 	}
 
 	if opts.NoProvision {
-		s.UI.Say("VM will not be provisioned because '-no-provision' flag was specified.")
+		s.UI.Say("VM will not be provisioned because '-n' (no-provision) flag was specified.")
 		return nil
 	}
 

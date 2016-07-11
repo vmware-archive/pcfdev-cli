@@ -24,11 +24,6 @@ type Driver interface {
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vm FS
-type FS interface {
-	Exists(path string) (exists bool, err error)
-}
-
 type VBoxBuilder struct {
 	Config *config.Config
 	Driver Driver
@@ -163,6 +158,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			},
 			Config: b.Config,
 
+			FS:   b.FS,
 			UI:   termUI,
 			SSH:  b.SSH,
 			VBox: vbx,

@@ -3,6 +3,7 @@ package vm_test
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/golang/mock/gomock"
@@ -17,6 +18,7 @@ import (
 var _ = Describe("Stopped", func() {
 	var (
 		mockCtrl  *gomock.Controller
+		mockFS    *mocks.MockFS
 		mockUI    *mocks.MockUI
 		mockVBox  *mocks.MockVBox
 		mockSSH   *mocks.MockSSH
@@ -25,6 +27,7 @@ var _ = Describe("Stopped", func() {
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
+		mockFS = mocks.NewMockFS(mockCtrl)
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
@@ -37,10 +40,13 @@ var _ = Describe("Stopped", func() {
 				SSHPort: "some-port",
 			},
 
-			VBox:   mockVBox,
-			UI:     mockUI,
-			SSH:    mockSSH,
-			Config: &config.Config{},
+			VBox: mockVBox,
+			FS:   mockFS,
+			UI:   mockUI,
+			SSH:  mockSSH,
+			Config: &config.Config{
+				VMDir: "some-vm-dir",
+			},
 		}
 	})
 
@@ -121,6 +127,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":""}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip ", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
@@ -134,6 +144,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services"}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip rabbitmq,redis,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
@@ -147,6 +161,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis"}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
@@ -160,6 +178,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services"}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip rabbitmq,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
@@ -173,6 +195,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services"}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip rabbitmq,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
@@ -186,6 +212,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"rabbitmq"}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip rabbitmq", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
@@ -199,6 +229,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"redis"}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
@@ -212,6 +246,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":""}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip ", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
@@ -225,6 +263,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services"}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip rabbitmq,redis,spring-cloud-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
@@ -238,6 +280,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis"}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
@@ -257,11 +303,38 @@ var _ = Describe("Stopped", func() {
 			})
 		})
 
+		Context("when removing the provision options file fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Starting VM..."),
+					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")).Return(errors.New("some-error")),
+				)
+
+				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("failed to start VM: some-error"))
+			})
+		})
+
+		Context("when writing the provision options file fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Starting VM..."),
+					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()).Return(errors.New("some-error")),
+				)
+
+				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("failed to start VM: some-error"))
+			})
+		})
+
 		Context("when '-no-provision' flag is passed in", func() {
 			It("should not provision the vm", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
 					mockUI.EXPECT().Say("VM will not be provisioned because '-no-provision' flag was specified."),
 				)
 
@@ -276,6 +349,10 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis"}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip rabbitmq,redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
@@ -288,10 +365,69 @@ var _ = Describe("Stopped", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"redis"}`), nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
 					mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip redis", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 				)
 				stoppedVM.Start(&vm.StartOpts{Services: "redis,redis"})
+			})
+		})
+	})
+
+	Describe("Provision", func() {
+		It("should provision the VM", func() {
+			gomock.InOrder(
+				mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"some-service"}`), nil),
+				mockUI.EXPECT().Say("Provisioning VM..."),
+				mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip some-service", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+			)
+
+			stoppedVM.Provision()
+		})
+
+		Context("when there is an error finding the provision config", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(false, errors.New("some-error")),
+				)
+
+				Expect(stoppedVM.Provision()).To(MatchError("failed to provision VM: missing provision configuration"))
+			})
+		})
+
+		Context("when provision config is missing", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(false, nil),
+				)
+
+				Expect(stoppedVM.Provision()).To(MatchError("failed to provision VM: missing provision configuration"))
+			})
+		})
+
+		Context("when there is an error reading the provision config", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte{}, errors.New("some-error")),
+				)
+
+				Expect(stoppedVM.Provision()).To(MatchError("failed to provision VM: some-error"))
+			})
+		})
+
+		Context("when there is an error parsing the provision config", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte("some-bad-json"), nil),
+				)
+
+				Expect(stoppedVM.Provision()).To(MatchError(ContainSubstring(`failed to provision VM: invalid character 's'`)))
 			})
 		})
 	})

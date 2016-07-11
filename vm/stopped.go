@@ -1,9 +1,12 @@
 package vm
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -16,6 +19,7 @@ type Stopped struct {
 	Config   *config.Config
 	VMConfig *config.VMConfig
 
+	FS   FS
 	VBox VBox
 	SSH  SSH
 	UI   UI
@@ -72,13 +76,50 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		sort.Strings(services)
 	}
 
+	if err := s.FS.Remove(filepath.Join(s.Config.VMDir, "provision-options")); err != nil {
+		return &StartVMError{err}
+	}
+
+	provisionConfig := &config.ProvisionConfig{
+		Domain:   s.VMConfig.Domain,
+		IP:       s.VMConfig.IP,
+		Services: strings.Join(services, ","),
+	}
+
+	data, err := json.Marshal(provisionConfig)
+	if err != nil {
+		return &StartVMError{err}
+	}
+
+	if err := s.FS.Write(filepath.Join(s.Config.VMDir, "provision-options"), bytes.NewReader(data)); err != nil {
+		return &StartVMError{err}
+	}
+
 	if opts.NoProvision {
 		s.UI.Say("VM will not be provisioned because '-no-provision' flag was specified.")
 		return nil
 	}
 
+	return s.Provision()
+}
+
+func (s *Stopped) Provision() error {
+	if exists, err := s.FS.Exists(filepath.Join(s.Config.VMDir, "provision-options")); !exists || err != nil {
+		return &ProvisionVMError{errors.New("missing provision configuration")}
+	}
+
+	data, err := s.FS.Read(filepath.Join(s.Config.VMDir, "provision-options"))
+	if err != nil {
+		return &ProvisionVMError{err}
+	}
+
+	provisionConfig := &config.ProvisionConfig{}
+	if err := json.Unmarshal(data, provisionConfig); err != nil {
+		return &ProvisionVMError{err}
+	}
+
 	s.UI.Say("Provisioning VM...")
-	provisionCommand := fmt.Sprintf("sudo -H /var/pcfdev/run %s %s %s", s.VMConfig.Domain, s.VMConfig.IP, strings.Join(services, ","))
+	provisionCommand := fmt.Sprintf("sudo -H /var/pcfdev/run %s %s %s", provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services)
 	if err := s.SSH.RunSSHCommand(provisionCommand, s.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{err}
 	}

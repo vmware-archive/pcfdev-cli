@@ -32,6 +32,10 @@ func (r *Recoverable) Status() string {
 	return r.message()
 }
 
+func (r *Recoverable) Provision() error {
+	return nil
+}
+
 func (r *Recoverable) Suspend() error {
 	r.UI.Failed(r.message())
 	return nil

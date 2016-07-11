@@ -29,6 +29,16 @@ func (_m *MockVM) EXPECT() *_MockVMRecorder {
 	return _m.recorder
 }
 
+func (_m *MockVM) Provision() error {
+	ret := _m.ctrl.Call(_m, "Provision")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockVMRecorder) Provision() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Provision")
+}
+
 func (_m *MockVM) Resume() error {
 	ret := _m.ctrl.Call(_m, "Resume")
 	ret0, _ := ret[0].(error)

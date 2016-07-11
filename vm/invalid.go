@@ -20,6 +20,10 @@ func (i *Invalid) Start(opts *StartOpts) error {
 	return nil
 }
 
+func (i *Invalid) Provision() error {
+	return nil
+}
+
 func (i *Invalid) Status() string {
 	return i.message()
 }

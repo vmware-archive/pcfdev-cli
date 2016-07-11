@@ -921,6 +921,31 @@ var _ = Describe("Plugin", func() {
 		})
 	})
 
+	Context("provision", func() {
+		It("should provision the VM", func() {
+			gomock.InOrder(
+				mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
+				mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+				mockVM.EXPECT().Provision(),
+			)
+
+			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "provision"})
+		})
+
+		Context("when there is an error", func() {
+			It("should print the error message", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
+					mockBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Provision().Return(errors.New("some-error")),
+					mockUI.EXPECT().Failed("Error: some-error."),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "provision"})
+			})
+		})
+	})
+
 	Context("uninstalling plugin", func() {
 		It("returns immediately", func() {
 			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"CLI-MESSAGE-UNINSTALL"})

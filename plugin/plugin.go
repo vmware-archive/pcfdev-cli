@@ -94,6 +94,10 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 		if err := p.start(flagContext); err != nil {
 			p.UI.Failed(getErrorText(err))
 		}
+	case "provision":
+		if err := p.provision(); err != nil {
+			p.UI.Failed(getErrorText(err))
+		}
 	case "status":
 		if err := p.status(); err != nil {
 			p.UI.Failed(getErrorText(err))
@@ -182,6 +186,15 @@ func (p *Plugin) start(flagContext flags.FlagContext) error {
 	}
 
 	return v.Start(opts)
+}
+
+func (p *Plugin) provision() error {
+	vm, err := p.getVM()
+	if err != nil {
+		return err
+	}
+
+	return vm.Provision()
 }
 
 func (p *Plugin) status() error {

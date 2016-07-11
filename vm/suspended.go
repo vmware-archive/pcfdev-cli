@@ -39,6 +39,11 @@ func (s *Suspended) Start(opts *StartOpts) error {
 	return s.Resume()
 }
 
+func (s *Suspended) Provision() error {
+	return nil
+}
+
+
 func (s *Suspended) Status() string {
 	return "Suspended"
 }

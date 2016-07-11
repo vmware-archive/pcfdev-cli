@@ -24,6 +24,10 @@ func (r *Running) Stop() error {
 	return nil
 }
 
+func (r *Running) Provision() error {
+	return nil
+}
+
 func (r *Running) VerifyStartOpts(opts *StartOpts) error {
 	if opts.Memory != uint64(0) {
 		return errors.New("memory cannot be changed once the vm has been created")

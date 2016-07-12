@@ -15,14 +15,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Recoverable", func() {
+var _ = Describe("Unprovisioned", func() {
 	var (
-		mockCtrl    *gomock.Controller
-		mockFS      *mocks.MockFS
-		mockUI      *mocks.MockUI
-		mockVBox    *mocks.MockVBox
-		mockSSH     *mocks.MockSSH
-		recoverable vm.Recoverable
+		mockCtrl      *gomock.Controller
+		mockFS        *mocks.MockFS
+		mockUI        *mocks.MockUI
+		mockVBox      *mocks.MockVBox
+		mockSSH       *mocks.MockSSH
+		unprovisioned vm.Unprovisioned
 	)
 
 	BeforeEach(func() {
@@ -32,7 +32,7 @@ var _ = Describe("Recoverable", func() {
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
 
-		recoverable = vm.Recoverable{
+		unprovisioned = vm.Unprovisioned{
 			UI:   mockUI,
 			VBox: mockVBox,
 			FS:   mockFS,
@@ -57,17 +57,17 @@ var _ = Describe("Recoverable", func() {
 		It("should stop the VM", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Stopping VM..."),
-				mockVBox.EXPECT().StopVM(recoverable.VMConfig),
+				mockVBox.EXPECT().StopVM(unprovisioned.VMConfig),
 				mockUI.EXPECT().Say("PCF Dev is now stopped."),
 			)
 
-			recoverable.Stop()
+			unprovisioned.Stop()
 		})
 	})
 
 	Describe("VerifyStartOpts", func() {
 		It("should say a message", func() {
-			Expect(recoverable.VerifyStartOpts(
+			Expect(unprovisioned.VerifyStartOpts(
 				&vm.StartOpts{},
 			)).To(MatchError("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again"))
 		})
@@ -77,7 +77,7 @@ var _ = Describe("Recoverable", func() {
 		It("should start vm", func() {
 			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
 
-			recoverable.Start(&vm.StartOpts{})
+			unprovisioned.Start(&vm.StartOpts{})
 		})
 	})
 
@@ -90,7 +90,7 @@ var _ = Describe("Recoverable", func() {
 				mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip some-service", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 			)
 
-			recoverable.Provision()
+			unprovisioned.Provision()
 		})
 
 		Context("when there is an error finding the provision config", func() {
@@ -99,7 +99,7 @@ var _ = Describe("Recoverable", func() {
 					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(false, errors.New("some-error")),
 				)
 
-				Expect(recoverable.Provision()).To(MatchError("failed to provision VM: missing provision configuration"))
+				Expect(unprovisioned.Provision()).To(MatchError("failed to provision VM: missing provision configuration"))
 			})
 		})
 
@@ -109,7 +109,7 @@ var _ = Describe("Recoverable", func() {
 					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(false, nil),
 				)
 
-				Expect(recoverable.Provision()).To(MatchError("failed to provision VM: missing provision configuration"))
+				Expect(unprovisioned.Provision()).To(MatchError("failed to provision VM: missing provision configuration"))
 			})
 		})
 
@@ -120,7 +120,7 @@ var _ = Describe("Recoverable", func() {
 					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte{}, errors.New("some-error")),
 				)
 
-				Expect(recoverable.Provision()).To(MatchError("failed to provision VM: some-error"))
+				Expect(unprovisioned.Provision()).To(MatchError("failed to provision VM: some-error"))
 			})
 		})
 
@@ -131,14 +131,14 @@ var _ = Describe("Recoverable", func() {
 					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte("some-bad-json"), nil),
 				)
 
-				Expect(recoverable.Provision()).To(MatchError(ContainSubstring(`failed to provision VM: invalid character 's'`)))
+				Expect(unprovisioned.Provision()).To(MatchError(ContainSubstring(`failed to provision VM: invalid character 's'`)))
 			})
 		})
 	})
 
 	Describe("Status", func() {
 		It("should return 'Stopped'", func() {
-			Expect(recoverable.Status()).To(Equal("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again."))
+			Expect(unprovisioned.Status()).To(Equal("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again."))
 		})
 	})
 
@@ -146,7 +146,7 @@ var _ = Describe("Recoverable", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
 
-			recoverable.Suspend()
+			unprovisioned.Suspend()
 		})
 	})
 
@@ -154,7 +154,7 @@ var _ = Describe("Recoverable", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
 
-			recoverable.Resume()
+			unprovisioned.Resume()
 		})
 	})
 })

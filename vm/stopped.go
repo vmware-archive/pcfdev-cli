@@ -99,12 +99,12 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		return nil
 	}
 
-	recoverableVM, err := s.Builder.VM(s.VMConfig.Name)
+	unprovisionedVM, err := s.Builder.VM(s.VMConfig.Name)
 	if err != nil {
 		return &StartVMError{err}
 	}
 
-	return recoverableVM.Provision()
+	return unprovisionedVM.Provision()
 }
 
 func (s *Stopped) Provision() error {

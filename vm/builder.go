@@ -102,7 +102,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	}
 	if state == vbox.StateRunning {
 		if output, err := b.healthcheck(ip, sshPort); strings.TrimSpace(output) != "ok" || err != nil {
-			return &Recoverable{
+			return &Unprovisioned{
 				VMConfig: &config.VMConfig{
 					Name:    vmName,
 					IP:      ip,

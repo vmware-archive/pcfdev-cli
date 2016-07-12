@@ -287,7 +287,7 @@ var _ = Describe("Builder", func() {
 			})
 
 			Context("when vm is running and healthcheck fails on regular ssh port", func() {
-				It("should return a recoverable vm", func() {
+				It("should return a unprovisioned vm", func() {
 					healthCheckCommand := "sudo /var/pcfdev/health-check"
 					done := make(chan bool, 1)
 
@@ -301,12 +301,12 @@ var _ = Describe("Builder", func() {
 					)
 					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", 20*time.Second).Return("", nil)
 
-					recoverableVM, err := builder.VM("some-vm")
+					unprovisionedVM, err := builder.VM("some-vm")
 					done <- true
 					Expect(err).NotTo(HaveOccurred())
 
-					switch u := recoverableVM.(type) {
-					case *vm.Recoverable:
+					switch u := unprovisionedVM.(type) {
+					case *vm.Unprovisioned:
 						Expect(u.UI).NotTo(BeNil())
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.VMConfig.Name).To(Equal("some-vm"))
@@ -320,7 +320,7 @@ var _ = Describe("Builder", func() {
 			})
 
 			Context("when vm is running and healthcheck fails on forwarded port", func() {
-				It("should return a recoverable vm", func() {
+				It("should return a unprovisioned vm", func() {
 					healthCheckCommand := "sudo /var/pcfdev/health-check"
 
 					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
@@ -333,11 +333,11 @@ var _ = Describe("Builder", func() {
 					)
 					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", 20*time.Second).Return("", nil)
 
-					recoverableVM, err := builder.VM("some-vm")
+					unprovisionedVM, err := builder.VM("some-vm")
 					Expect(err).NotTo(HaveOccurred())
 
-					switch u := recoverableVM.(type) {
-					case *vm.Recoverable:
+					switch u := unprovisionedVM.(type) {
+					case *vm.Unprovisioned:
 						Expect(u.UI).NotTo(BeNil())
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.VMConfig.Name).To(Equal("some-vm"))

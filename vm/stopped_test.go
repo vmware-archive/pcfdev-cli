@@ -15,14 +15,14 @@ import (
 
 var _ = Describe("Stopped", func() {
 	var (
-		mockCtrl        *gomock.Controller
-		mockFS          *mocks.MockFS
-		mockUI          *mocks.MockUI
-		mockVBox        *mocks.MockVBox
-		mockSSH         *mocks.MockSSH
-		mockBuilder     *mocks.MockBuilder
-		mockRecoverable *mocks.MockVM
-		stoppedVM       vm.Stopped
+		mockCtrl          *gomock.Controller
+		mockFS            *mocks.MockFS
+		mockUI            *mocks.MockUI
+		mockVBox          *mocks.MockVBox
+		mockSSH           *mocks.MockSSH
+		mockBuilder       *mocks.MockBuilder
+		mockUnprovisioned *mocks.MockVM
+		stoppedVM         vm.Stopped
 	)
 
 	BeforeEach(func() {
@@ -32,7 +32,7 @@ var _ = Describe("Stopped", func() {
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
-		mockRecoverable = mocks.NewMockVM(mockCtrl)
+		mockUnprovisioned = mocks.NewMockVM(mockCtrl)
 
 		stoppedVM = vm.Stopped{
 			VMConfig: &config.VMConfig{
@@ -132,8 +132,8 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision(),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision(),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "none"})
@@ -147,8 +147,8 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision(),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision(),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "all"})
@@ -162,8 +162,8 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision(),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision(),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "default"})
@@ -177,8 +177,8 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision(),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision(),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "spring-cloud-services"})
@@ -192,8 +192,8 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision(),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision(),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "scs"})
@@ -207,8 +207,8 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision(),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision(),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "rabbitmq"})
@@ -222,8 +222,8 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision(),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision(),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "redis"})
@@ -237,8 +237,8 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision(),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision(),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "mysql"})
@@ -252,8 +252,8 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision(),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision(),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "default,spring-cloud-services,scs"})
@@ -267,8 +267,8 @@ var _ = Describe("Stopped", func() {
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision(),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision(),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{})
@@ -327,7 +327,7 @@ var _ = Describe("Stopped", func() {
 			})
 		})
 
-		Context("when retrieving the recoverable vm fails", func() {
+		Context("when retrieving the unprovisioned vm fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
@@ -341,15 +341,15 @@ var _ = Describe("Stopped", func() {
 			})
 		})
 
-		Context("when provisioning the recoverable vm fails", func() {
+		Context("when provisioning the unprovisioned vm fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig).Return(nil),
 					mockFS.EXPECT().Remove(filepath.Join("some-vm-dir", "provision-options")),
 					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "provision-options"), gomock.Any()),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockRecoverable, nil),
-					mockRecoverable.EXPECT().Provision().Return(errors.New("some-error")),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockUnprovisioned.EXPECT().Provision().Return(errors.New("some-error")),
 				)
 
 				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("some-error"))

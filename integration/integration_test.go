@@ -57,7 +57,7 @@ var _ = BeforeSuite(func() {
 		"-X main.vmName="+vmName+
 			" -X main.releaseId=1622"+
 			" -X main.productFileId=5113"+
-			" -X main.md5=3af8ffc82ff6229cd45c27cd0445161f")
+			" -X main.md5=fefd8bdfcb44fed417bf5e9d57355664")
 	Expect(err).NotTo(HaveOccurred())
 
 	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)

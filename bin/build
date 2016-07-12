@@ -8,7 +8,7 @@ then
   vm_name="pcfdev-test"
   release_id="1622"
   product_file_id="5113"
-  md5="3af8ffc82ff6229cd45c27cd0445161f"
+  md5="fefd8bdfcb44fed417bf5e9d57355664"
 else
   metadata=$(aws s3 cp s3://pcfdev/ci/pivnet-file-metadata -)
   vm_name=pcfdev-$(echo "$metadata" | jq -r .version)

@@ -277,6 +277,22 @@ var _ = Describe("PCF Dev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "3m").Should(gexec.Exit(0))
 	})
+
+	It("should provision or not provision the VM depending on the command", func() {
+		noProvisionCommand := exec.Command("cf", "dev", "start", "-n")
+		session, err := gexec.Start(noProvisionCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "1h").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("VM will not be provisioned .*"))
+
+		provisionCommand := exec.Command("cf", "dev", "provision")
+		session, err = gexec.Start(provisionCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "1h").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Provisioning VM..."))
+		Expect(session).To(gbytes.Say("Waiting for services to start..."))
+		Expect(session).To(gbytes.Say("Services started"))
+	})
 })
 
 func loadEnv(name string) string {

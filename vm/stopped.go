@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
@@ -19,10 +17,11 @@ type Stopped struct {
 	Config   *config.Config
 	VMConfig *config.VMConfig
 
-	FS   FS
-	VBox VBox
-	SSH  SSH
-	UI   UI
+	FS      FS
+	VBox    VBox
+	SSH     SSH
+	UI      UI
+	Builder Builder
 }
 
 func (s *Stopped) Stop() error {
@@ -100,30 +99,15 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		return nil
 	}
 
-	return s.Provision()
+	recoverableVM, err := s.Builder.VM(s.VMConfig.Name)
+	if err != nil {
+		return &StartVMError{err}
+	}
+
+	return recoverableVM.Provision()
 }
 
 func (s *Stopped) Provision() error {
-	if exists, err := s.FS.Exists(filepath.Join(s.Config.VMDir, "provision-options")); !exists || err != nil {
-		return &ProvisionVMError{errors.New("missing provision configuration")}
-	}
-
-	data, err := s.FS.Read(filepath.Join(s.Config.VMDir, "provision-options"))
-	if err != nil {
-		return &ProvisionVMError{err}
-	}
-
-	provisionConfig := &config.ProvisionConfig{}
-	if err := json.Unmarshal(data, provisionConfig); err != nil {
-		return &ProvisionVMError{err}
-	}
-
-	s.UI.Say("Provisioning VM...")
-	provisionCommand := fmt.Sprintf("sudo -H /var/pcfdev/run %s %s %s", provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services)
-	if err := s.SSH.RunSSHCommand(provisionCommand, s.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
-		return &ProvisionVMError{err}
-	}
-
 	return nil
 }
 

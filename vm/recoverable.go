@@ -1,14 +1,22 @@
 package vm
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
 
 type Recoverable struct {
+	FS       FS
+	SSH      SSH
 	UI       UI
 	VBox     VBox
+	Config   *config.Config
 	VMConfig *config.VMConfig
 }
 
@@ -33,6 +41,26 @@ func (r *Recoverable) Status() string {
 }
 
 func (r *Recoverable) Provision() error {
+	if exists, err := r.FS.Exists(filepath.Join(r.Config.VMDir, "provision-options")); !exists || err != nil {
+		return &ProvisionVMError{errors.New("missing provision configuration")}
+	}
+
+	data, err := r.FS.Read(filepath.Join(r.Config.VMDir, "provision-options"))
+	if err != nil {
+		return &ProvisionVMError{err}
+	}
+
+	provisionConfig := &config.ProvisionConfig{}
+	if err := json.Unmarshal(data, provisionConfig); err != nil {
+		return &ProvisionVMError{err}
+	}
+
+	r.UI.Say("Provisioning VM...")
+	provisionCommand := fmt.Sprintf("sudo -H /var/pcfdev/run %s %s %s", provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services)
+	if err := r.SSH.RunSSHCommand(provisionCommand, r.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
+		return &ProvisionVMError{err}
+	}
+
 	return nil
 }
 

@@ -110,9 +110,14 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 					Domain:  domain,
 					Memory:  memory,
 				},
+				Config: &config.Config{
+					VMDir: b.Config.VMDir,
+				},
 
 				UI:   termUI,
 				VBox: vbx,
+				FS:   b.FS,
+				SSH:  b.SSH,
 			}, nil
 		} else {
 			return &Running{
@@ -158,10 +163,11 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			},
 			Config: b.Config,
 
-			FS:   b.FS,
-			UI:   termUI,
-			SSH:  b.SSH,
-			VBox: vbx,
+			FS:      b.FS,
+			UI:      termUI,
+			SSH:     b.SSH,
+			VBox:    vbx,
+			Builder: b,
 		}, nil
 	}
 

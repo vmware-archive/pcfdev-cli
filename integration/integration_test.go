@@ -55,7 +55,7 @@ var _ = BeforeSuite(func() {
 
 	pluginPath, err = gexec.Build(filepath.Join("github.com", "pivotal-cf", "pcfdev-cli"), "-ldflags",
 		"-X main.vmName="+vmName+
-			" -X main.buildVersion=some-cli-version"+
+			" -X main.buildVersion=0.0.0"+
 			" -X main.buildSHA=some-cli-sha"+
 			" -X main.ovaBuildVersion=some-ova-version"+
 			" -X main.releaseId=1622"+
@@ -264,11 +264,11 @@ var _ = Describe("PCF Dev", func() {
 	It("should respond to 'version' and '--version' commands", func() {
 		output, err := exec.Command("cf", "dev", "version").Output()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(string(output)).To(Equal("PCF Dev version some-cli-version (CLI: some-cli-sha, OVA: some-ova-version)\n"))
+		Expect(string(output)).To(Equal("PCF Dev version 0.0.0 (CLI: some-cli-sha, OVA: some-ova-version)\n"))
 
 		output, err = exec.Command("cf", "dev", "--version").Output()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(string(output)).To(Equal("PCF Dev version some-cli-version (CLI: some-cli-sha, OVA: some-ova-version)\n"))
+		Expect(string(output)).To(Equal("PCF Dev version 0.0.0 (CLI: some-cli-sha, OVA: some-ova-version)\n"))
 	})
 
 	It("should download a VM without importing it", func() {

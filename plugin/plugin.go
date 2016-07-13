@@ -15,6 +15,7 @@ type Plugin struct {
 	FS         FS
 	VBox       VBox
 	Client     Client
+	Version    *Version
 	Config     *config.Config
 	Downloader Downloader
 	Builder    Builder
@@ -72,6 +73,9 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	flagContext := flags.New()
 
 	switch subcommand {
+	case "version", "--version":
+		p.UI.Say(p.Version.getFullVersion())
+		return
 	case "start":
 		flagContext.NewIntFlag("m", "memory", "<memory in MB>")
 		flagContext.NewIntFlag("c", "cpus", "<number of cpus>")
@@ -332,6 +336,7 @@ SUBCOMMANDS:
    resume                      Resume PCF Dev VM from suspended state.
    destroy                     Delete the PCF Dev VM. All data is destroyed.
    status                      Query for the status of the PCF Dev VM.
+   version                     Display the release version of the CLI.
 					`,
 				},
 			},

@@ -9,18 +9,23 @@ then
   release_id="1622"
   product_file_id="5113"
   md5="fefd8bdfcb44fed417bf5e9d57355664"
+  ova_version="v0"
 else
   metadata=$(aws s3 cp s3://pcfdev/ci/pivnet-file-metadata -)
   vm_name=pcfdev-$(echo "$metadata" | jq -r .version)
   release_id=$(echo "$metadata" | jq -r .release_id)
   product_file_id=$(echo "$metadata" | jq -r .id)
   md5=$(echo "$metadata" | jq -r .md5)
+  ova_version=$(echo "$metadata" | jq -r .version)
 fi
 
 pushd "$pcfdev_cli_path" >/dev/null
   go build \
     -ldflags \
-    "-X main.vmName=${vm_name}
+    "-X main.buildVersion=v0
+     -X main.buildSHA=$(git rev-parse --short $(git rev-parse HEAD))
+     -X main.ovaBuildVersion=${ova_version}
+     -X main.vmName=${vm_name}
      -X main.releaseId=${release_id}
      -X main.productFileId=${product_file_id}
      -X main.md5=${md5}"

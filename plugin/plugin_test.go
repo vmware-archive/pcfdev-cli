@@ -45,6 +45,11 @@ var _ = Describe("Plugin", func() {
 			FS:         mockFS,
 			Downloader: mockDownloader,
 			Client:     mockClient,
+			Version: &plugin.Version{
+				BuildVersion: "some-build-version",
+				BuildSHA:     "some-build-sha",
+				OVAVersion:   "some-ova-version",
+			},
 			Config: &config.Config{
 				DefaultVMName: "some-default-vm-name",
 				VMDir:         "some-vm-dir",
@@ -918,6 +923,22 @@ var _ = Describe("Plugin", func() {
 				Expect(fakeCliConnection.CliCommandArgsForCall(0)[0]).To(Equal("help"))
 				Expect(fakeCliConnection.CliCommandArgsForCall(0)[1]).To(Equal("dev"))
 			})
+		})
+	})
+
+	Context("version", func() {
+		It("should report the version", func() {
+			mockUI.EXPECT().Say("some-build-version (CLI: some-build-sha, OVA: some-ova-version)")
+
+			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "version"})
+		})
+	})
+
+	Context("--version", func() {
+		It("should report the version", func() {
+			mockUI.EXPECT().Say("some-build-version (CLI: some-build-sha, OVA: some-ova-version)")
+
+			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "--version"})
 		})
 	})
 

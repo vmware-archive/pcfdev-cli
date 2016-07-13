@@ -24,10 +24,13 @@ import (
 )
 
 var (
-	releaseId     string
-	productFileId string
-	md5           string
-	vmName        string
+	buildVersion    string
+	buildSHA        string
+	ovaBuildVersion string
+	releaseId       string
+	productFileId   string
+	md5             string
+	vmName          string
 )
 
 func main() {
@@ -83,6 +86,11 @@ func main() {
 				Driver:  driver,
 			},
 			Config: config,
+		},
+		Version: &plugin.Version{
+			BuildVersion:    buildVersion,
+			BuildSHA:        buildSHA,
+			OVABuildVersion: ovaBuildVersion,
 		},
 	})
 }

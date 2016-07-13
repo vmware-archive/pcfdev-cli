@@ -182,7 +182,9 @@ func (v *VBox) proxySettings(ip string) (settings string, err error) {
 		"127.0.0.1",
 		subnet,
 		ip,
-		domain}, ",")
+		domain,
+		"." + domain,
+	}, ",")
 	if v.Config.NoProxy != "" {
 		noProxy = strings.Join([]string{noProxy, v.Config.NoProxy}, ",")
 	}

@@ -505,10 +505,10 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=some-http-proxy
 HTTPS_PROXY=some-https-proxy
-NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy
+NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy
 http_proxy=some-http-proxy
 https_proxy=some-https-proxy
-no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 						"some-port",
 						5*time.Minute,
 						ioutil.Discard,
@@ -546,10 +546,10 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
 HTTPS_PROXY=192.168.22.1:8080
-NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy
+NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy
 http_proxy=192.168.22.1
 https_proxy=192.168.22.1:8080
-no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 						"some-port",
 						5*time.Minute,
 						ioutil.Discard,
@@ -613,10 +613,10 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 
 HTTPS_PROXY=192.168.22.1
-NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy
+NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy
 
 https_proxy=192.168.22.1
-no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 							"some-port",
 							5*time.Minute,
 							ioutil.Discard,
@@ -656,10 +656,10 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
 
-NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy
+NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy
 http_proxy=192.168.22.1
 
-no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 							"some-port",
 							5*time.Minute,
 							ioutil.Discard,
@@ -700,10 +700,10 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
 HTTPS_PROXY=192.168.22.1
-NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io
+NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io
 http_proxy=192.168.22.1
 https_proxy=192.168.22.1
-no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io' | sudo tee /etc/environment`,
+no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io' | sudo tee /etc/environment`,
 							"some-port",
 							5*time.Minute,
 							ioutil.Discard,
@@ -782,10 +782,10 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=some-http-proxy
 HTTPS_PROXY=some-https-proxy
-NO_PROXY=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,some-no-proxy
+NO_PROXY=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.pcfdev.io,some-no-proxy
 http_proxy=some-http-proxy
 https_proxy=some-https-proxy
-no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 							"some-port",
 							5*time.Minute,
 							ioutil.Discard,

@@ -313,9 +313,10 @@ func (p *Plugin) getVM() (vm vm.VM, err error) {
 	return p.Builder.VM(name)
 }
 
-func (*Plugin) GetMetadata() plugin.PluginMetadata {
+func (p *Plugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
-		Name: "pcfdev",
+		Name:    "pcfdev",
+		Version: p.Version.getVersionForCLIMetadata(),
 		Commands: []plugin.Command{
 			plugin.Command{
 				Name:     "dev",

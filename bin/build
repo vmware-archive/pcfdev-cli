@@ -22,7 +22,7 @@ fi
 pushd "$pcfdev_cli_path" >/dev/null
   go build \
     -ldflags \
-    "-X main.buildVersion=0
+    "-X main.buildVersion=0.0.0
      -X main.buildSHA=$(git rev-parse --short HEAD)
      -X main.ovaBuildVersion=${ova_version}
      -X main.vmName=${vm_name}

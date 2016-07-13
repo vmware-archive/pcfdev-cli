@@ -65,8 +65,8 @@ func (n *NotCreated) verifyMemory(opts *StartOpts) error {
 	minMemory := n.Config.MinMemory
 
 	if n.hasSCS(opts.Services) {
-		minMemory += n.Config.SpringCloudMemoryIncrease
-		memory += n.Config.SpringCloudMemoryIncrease
+		minMemory = n.Config.SpringCloudMinMemory
+		memory = n.Config.SpringCloudDefaultMemory
 	}
 	if opts.Memory != uint64(0) {
 		if opts.Memory < minMemory {
@@ -97,7 +97,7 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 	if opts.Memory != uint64(0) {
 		memory = opts.Memory
 	} else if n.hasSCS(opts.Services) {
-		memory = n.Config.DefaultMemory + n.Config.SpringCloudMemoryIncrease
+		memory = n.Config.SpringCloudDefaultMemory
 	} else {
 		memory = n.Config.DefaultMemory
 	}

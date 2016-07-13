@@ -68,7 +68,8 @@ var _ = Describe("Config", func() {
 			Expect(conf.NoProxy).To(Equal("some-no-proxy"))
 			Expect(conf.MinMemory).To(Equal(uint64(3072)))
 			Expect(conf.MaxMemory).To(Equal(uint64(4096)))
-			Expect(conf.SpringCloudMemoryIncrease).To(Equal(uint64(2048)))
+			Expect(conf.SpringCloudMinMemory).To(Equal(uint64(6144)))
+			Expect(conf.SpringCloudMaxMemory).To(Equal(uint64(8192)))
 		})
 
 		Context("when caps proxy env vars are unset", func() {
@@ -225,39 +226,77 @@ var _ = Describe("Config", func() {
 				Expect(conf.FreeMemory).To(Equal(uint64(2000)))
 			})
 
-			Context("when half of the total system memory is between the minimum and maximum", func() {
-				It("should give the VM half the total memory", func() {
+			Context("DefaultMemory", func() {
+				BeforeEach(func() {
 					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
-					mockSystem.EXPECT().TotalMemory().Return(uint64(7000), nil)
 					mockSystem.EXPECT().PhysicalCores().Return(4, nil)
+				})
 
-					conf, err := config.New("some-vm", mockSystem)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(conf.DefaultMemory).To(Equal(uint64(3500)))
+				Context("when half of the total system memory is between the minimum and maximum", func() {
+					It("should give the VM half the total memory", func() {
+						mockSystem.EXPECT().TotalMemory().Return(uint64(7000), nil)
+
+						conf, err := config.New("some-vm", mockSystem)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(conf.DefaultMemory).To(Equal(uint64(3500)))
+					})
+				})
+
+				Context("when half of the total system memory is less than the minimum", func() {
+					It("should give the VM the minimum amount of memory", func() {
+						mockSystem.EXPECT().TotalMemory().Return(uint64(6000), nil)
+
+						conf, err := config.New("some-vm", mockSystem)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(conf.DefaultMemory).To(Equal(uint64(3072)))
+					})
+				})
+
+				Context("when half of the total system memory is more than the maximum", func() {
+					It("should give the VM the maximum amount of memory", func() {
+						mockSystem.EXPECT().TotalMemory().Return(uint64(60000), nil)
+
+						conf, err := config.New("some-vm", mockSystem)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(conf.DefaultMemory).To(Equal(uint64(4096)))
+					})
 				})
 			})
 
-			Context("when half of the total system memory is less than the minimum", func() {
-				It("should give the VM the minimum amount of memory", func() {
+			Context("SpringCloudDefaultMemory", func() {
+				BeforeEach(func() {
 					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
-					mockSystem.EXPECT().TotalMemory().Return(uint64(6000), nil)
 					mockSystem.EXPECT().PhysicalCores().Return(4, nil)
-
-					conf, err := config.New("some-vm", mockSystem)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(conf.DefaultMemory).To(Equal(uint64(3072)))
 				})
-			})
 
-			Context("when half of the total system memory is more than the maximum", func() {
-				It("should give the VM the maximum amount of memory", func() {
-					mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)
-					mockSystem.EXPECT().TotalMemory().Return(uint64(60000), nil)
-					mockSystem.EXPECT().PhysicalCores().Return(4, nil)
+				Context("when half of the total system memory is between the minimum and maximum", func() {
+					It("should give the VM half the total memory", func() {
+						mockSystem.EXPECT().TotalMemory().Return(uint64(14000), nil)
 
-					conf, err := config.New("some-vm", mockSystem)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(conf.DefaultMemory).To(Equal(uint64(4096)))
+						conf, err := config.New("some-vm", mockSystem)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(conf.SpringCloudDefaultMemory).To(Equal(uint64(7000)))
+					})
+				})
+
+				Context("when half of the total system memory is less than the minimum", func() {
+					It("should give the VM the minimum amount of memory", func() {
+						mockSystem.EXPECT().TotalMemory().Return(uint64(12000), nil)
+
+						conf, err := config.New("some-vm", mockSystem)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(conf.SpringCloudDefaultMemory).To(Equal(uint64(6144)))
+					})
+				})
+
+				Context("when half of the total system memory is more than the maximum", func() {
+					It("should give the VM the maximum amount of memory", func() {
+						mockSystem.EXPECT().TotalMemory().Return(uint64(60000), nil)
+
+						conf, err := config.New("some-vm", mockSystem)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(conf.SpringCloudDefaultMemory).To(Equal(uint64(8192)))
+					})
 				})
 			})
 
@@ -280,6 +319,7 @@ var _ = Describe("Config", func() {
 				})
 			})
 		})
+
 		Context("DefaultCPUs", func() {
 			It("should use the number of physical cores", func() {
 				mockSystem.EXPECT().FreeMemory().Return(uint64(2000), nil)

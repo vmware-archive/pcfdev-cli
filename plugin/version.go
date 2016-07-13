@@ -9,5 +9,5 @@ type Version struct {
 }
 
 func (v *Version) getFullVersion() string {
-	return fmt.Sprintf("%s (CLI: %s, OVA: %s)", v.BuildVersion, v.BuildSHA, v.OVABuildVersion)
+	return fmt.Sprintf("PCF Dev version %s (CLI: %s, OVA: %s)", v.BuildVersion, v.BuildSHA, v.OVABuildVersion)
 }

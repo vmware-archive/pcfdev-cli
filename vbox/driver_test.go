@@ -67,6 +67,34 @@ var _ = Describe("driver", func() {
 		})
 	})
 
+	Describe("#UseDNSProxy", func() {
+		It("should turn on natdnshostresolver1", func() {
+			Expect(driver.UseDNSProxy(vmName)).To(Succeed())
+
+			sshClient := &ssh.SSH{}
+			_, port, err := sshClient.GenerateAddress()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = driver.ForwardPort(vmName, "some-rule-name", port, "22")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = driver.StartVM(vmName)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
+
+			stdout := gbytes.NewBuffer()
+			err = sshClient.RunSSHCommand("cat /etc/resolv.conf", port, 5*time.Minute, stdout, ioutil.Discard)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(stdout.Contents())).To(ContainSubstring("10.0.2.3"))
+		})
+
+		Context("when it fails to turn on dns proxy", func() {
+			It("should return an error", func() {
+				Expect(driver.UseDNSProxy("some-bad-vm-name")).To(MatchError(ContainSubstring("failed to execute 'VBoxManage modifyvm some-bad-vm-name --natdnshostresolver1 on': exit status 1")))
+			})
+		})
+	})
+
 	Describe("#GetVMIP", func() {
 		Context("when interface exists", func() {
 			var interfaceName string

@@ -43,6 +43,7 @@ type Driver interface {
 	AttachDisk(vmName string, diskPath string) error
 	CloneDisk(src string, dest string) error
 	DeleteDisk(diskPath string) error
+	UseDNSProxy(vmName string) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vbox FS
@@ -260,6 +261,10 @@ func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {
 	}
 
 	if err := v.Driver.AttachNetworkInterface(interfaceName, vmConfig.Name); err != nil {
+		return err
+	}
+
+	if err := v.Driver.UseDNSProxy(vmConfig.Name); err != nil {
 		return err
 	}
 

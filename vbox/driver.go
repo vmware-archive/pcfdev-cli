@@ -49,6 +49,11 @@ func (d *VBoxDriver) CreateVM(vmName string, basedir string) error {
 	return err
 }
 
+func (d *VBoxDriver) UseDNSProxy(vmName string) error {
+	_, err := d.VBoxManage("modifyvm", vmName, "--natdnshostresolver1", "on")
+	return err
+}
+
 func (d *VBoxDriver) AttachDisk(vmName string, diskPath string) error {
 	_, err := d.VBoxManage("storagectl", vmName, "--name", "SATA", "--add", "sata")
 	if err != nil {

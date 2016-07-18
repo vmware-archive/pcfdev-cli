@@ -256,6 +256,16 @@ func (_mr *_MockDriverRecorder) SuspendVM(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "SuspendVM", arg0)
 }
 
+func (_m *MockDriver) UseDNSProxy(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "UseDNSProxy", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockDriverRecorder) UseDNSProxy(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "UseDNSProxy", arg0)
+}
+
 func (_m *MockDriver) VBoxManage(_param0 ...string) ([]byte, error) {
 	_s := []interface{}{}
 	for _, _x := range _param0 {

@@ -36,7 +36,6 @@ type Downloader struct {
 	PivnetClient Client
 	Config       *config.Config
 	Token        Token
-	ExpectedMD5  string
 }
 
 func (d *Downloader) partialFile(path string) string {
@@ -58,7 +57,7 @@ func (d *Downloader) IsOVACurrent() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if md5 != d.ExpectedMD5 {
+	if md5 != d.Config.ExpectedMD5 {
 		return false, nil
 	}
 
@@ -95,7 +94,7 @@ func (d *Downloader) Download() error {
 		return err
 	}
 
-	if md5 != d.ExpectedMD5 {
+	if md5 != d.Config.ExpectedMD5 {
 		return errors.New("download failed")
 	}
 
@@ -113,7 +112,7 @@ func (d *Downloader) resumeDownload(path string) (md5 string, err error) {
 	}
 
 	md5, err = d.download(path, startAtByte)
-	if md5 != d.ExpectedMD5 {
+	if md5 != d.Config.ExpectedMD5 {
 		if err := d.FS.Remove(d.partialFile(path)); err != nil {
 			return "", err
 		}

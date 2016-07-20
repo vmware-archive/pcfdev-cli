@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 type FS struct{}
@@ -109,6 +110,30 @@ func (fs *FS) Length(path string) (int64, error) {
 func (fs *FS) Move(source string, destination string) error {
 	if err := os.Rename(source, destination); err != nil {
 		return fmt.Errorf("failed to move %s to %s: %s", source, destination, err)
+	}
+
+	return nil
+}
+
+func (fs *FS) Copy(source string, destination string) error {
+	data, err := ioutil.ReadFile(source)
+	if err != nil {
+		return fmt.Errorf("failed to copy %s to %s: %s", source, destination, err)
+	}
+
+	os.Remove(destination)
+	if err != nil {
+		return fmt.Errorf("failed to copy %s to %s: %s", source, destination, err)
+	}
+
+	file, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to copy %s to %s: %s", source, destination, err)
+	}
+	defer file.Close()
+
+	if _, err = io.Copy(file, ioutil.NopCloser(strings.NewReader(string(data)))); err != nil {
+		return fmt.Errorf("failed to copy %s to %s: %s", source, destination, err)
 	}
 
 	return nil

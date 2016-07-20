@@ -2,6 +2,7 @@ package plugin_test
 
 import (
 	"errors"
+	"path/filepath"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
@@ -53,6 +54,8 @@ var _ = Describe("Plugin", func() {
 			Config: &config.Config{
 				DefaultVMName: "some-default-vm-name",
 				VMDir:         "some-vm-dir",
+				OVADir:        "some-ova-dir",
+				ExpectedMD5:   "some-md5",
 			},
 			Builder: mockBuilder,
 		}
@@ -963,6 +966,76 @@ var _ = Describe("Plugin", func() {
 				)
 
 				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "provision"})
+			})
+		})
+	})
+	Context("import", func() {
+		It("should copy an ova to the specified path", func() {
+			gomock.InOrder(
+				mockFS.EXPECT().MD5("/some/ova/path").Return("some-md5", nil),
+				mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+				mockFS.EXPECT().Copy("/some/ova/path", filepath.Join("some-ova-dir", "some-default-vm-name.ova")),
+				mockUI.EXPECT().Say("OVA version some-ova-version imported successfully."),
+			)
+
+			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import", "/some/ova/path"})
+		})
+
+		Context("when move returns an error", func() {
+			It("should print an error message", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().MD5("/some/ova/path").Return("some-md5", nil),
+					mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+					mockFS.EXPECT().Copy("/some/ova/path", filepath.Join("some-ova-dir", "some-default-vm-name.ova")).Return(errors.New("some-error")),
+					mockUI.EXPECT().Failed("Error: some-error."),
+				)
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import", "/some/ova/path"})
+			})
+		})
+
+		Context("when the ova is not the correct ova for the plugin", func() {
+			It("should print an error message", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().MD5("/some/ova/path").Return("some-bad-md5", nil),
+					mockUI.EXPECT().Failed("Error: specified OVA version does not match the expected OVA version (some-ova-version) for this version of the cf CLI plugin."),
+				)
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import", "/some/ova/path"})
+			})
+		})
+
+		Context("when the checksum returns an error", func() {
+			It("should print an error message", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().MD5("/some/ova/path").Return("some-bad-md5", errors.New("some-error")),
+					mockUI.EXPECT().Failed("Error: some-error."),
+				)
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import", "/some/ova/path"})
+			})
+		})
+
+		Context("when the ova is already installed", func() {
+			It("should print a message", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().MD5("/some/ova/path").Return("some-md5", nil),
+					mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
+
+					mockUI.EXPECT().Say("PCF Dev OVA is already installed."),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import", "/some/ova/path"})
+			})
+		})
+
+		Context("when there is an error checking if the ova is current", func() {
+			It("should print an error message", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().MD5("/some/ova/path").Return("some-md5", nil),
+					mockDownloader.EXPECT().IsOVACurrent().Return(true, errors.New("some-error")),
+
+					mockUI.EXPECT().Failed("Error: some-error."),
+				)
+
+				pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "import", "/some/ova/path"})
 			})
 		})
 	})

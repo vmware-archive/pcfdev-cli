@@ -271,40 +271,84 @@ var _ = Describe("PCF Dev", func() {
 		Expect(string(output)).To(Equal("PCF Dev version 0.0.0 (CLI: some-cli-sha, OVA: some-ova-version)\n"))
 	})
 
-	It("should download a VM without importing it", func() {
-		pcfdevCommand := exec.Command("cf", "dev", "download")
-		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "1h").Should(gexec.Exit(0))
+	Context("when ova is on pivnet or in a temp dir", func() {
+		var (
+			tempOVALocation string
+			wrongOVA        *os.File
+		)
 
-		Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test2.ova")).To(BeAnExistingFile())
+		BeforeEach(func() {
+			tempOVALocation, err := ioutil.TempDir("", "ova-to-import")
+			wrongOVA, err = ioutil.TempFile(tempOVALocation, "wrong-ova.ova")
+			Expect(err).NotTo(HaveOccurred())
+		})
 
-		listVmsCommand := exec.Command(vBoxManagePath, "list", "vms")
-		session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session).Should(gexec.Exit(0))
-		Expect(session).NotTo(gbytes.Say(vmName))
+		AfterEach(func() {
+			Expect(os.RemoveAll(tempOVALocation)).To(Succeed())
+		})
 
-		pcfdevCommand = exec.Command("cf", "dev", "download")
-		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "3m").Should(gexec.Exit(0))
-	})
+		It("should download or import an ova", func() {
+			By("running download")
+			pcfdevCommand := exec.Command("cf", "dev", "download")
+			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "1h").Should(gexec.Exit(0))
 
-	It("should provision or not provision the VM depending on the command", func() {
-		noProvisionCommand := exec.Command("cf", "dev", "start", "-n")
-		session, err := gexec.Start(noProvisionCommand, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "1h").Should(gexec.Exit(0))
-		Expect(session).To(gbytes.Say("VM will not be provisioned .*"))
+			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test2.ova")).To(BeAnExistingFile())
 
-		provisionCommand := exec.Command("cf", "dev", "provision")
-		session, err = gexec.Start(provisionCommand, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "1h").Should(gexec.Exit(0))
-		Expect(session).To(gbytes.Say("Provisioning VM..."))
-		Expect(session).To(gbytes.Say("Waiting for services to start..."))
-		Expect(session).To(gbytes.Say("Services started"))
+			listVmsCommand := exec.Command(vBoxManagePath, "list", "vms")
+			session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session).Should(gexec.Exit(0))
+			Expect(session).NotTo(gbytes.Say(vmName))
+
+			By("rerunning download with no effect")
+			pcfdevCommand = exec.Command("cf", "dev", "download")
+			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "3m").Should(gexec.Exit(0))
+
+			By("removing")
+			os.Rename(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test2.ova"), filepath.Join(tempOVALocation, "pcfdev-test2.ova"))
+			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test2.ova")).NotTo(BeAnExistingFile())
+
+			By("running import")
+			importCommand := exec.Command("cf", "dev", "import", filepath.Join(tempOVALocation, "pcfdev-test2.ova"))
+			session, err = gexec.Start(importCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "5m").Should(gexec.Exit(0))
+			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test2.ova")).To(BeAnExistingFile())
+			Eventually(session).Should(gbytes.Say("OVA version some-ova-version imported successfully."))
+
+			By("rerunning import")
+			importCommand = exec.Command("cf", "dev", "import", filepath.Join(tempOVALocation, "pcfdev-test2.ova"))
+			session, err = gexec.Start(importCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "3m").Should(gexec.Exit(0))
+			Eventually(session).Should(gbytes.Say("PCF Dev OVA is already installed."))
+
+			By("running import with incorrect ova")
+			importCommand = exec.Command("cf", "dev", "import", filepath.Join(tempOVALocation, wrongOVA.Name()))
+			session, err = gexec.Start(importCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "3m").Should(gexec.Exit(1))
+
+			By("running start without provision")
+			noProvisionCommand := exec.Command("cf", "dev", "start", "-n")
+			session, err = gexec.Start(noProvisionCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "1h").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("VM will not be provisioned .*"))
+
+			By("running provision")
+			provisionCommand := exec.Command("cf", "dev", "provision")
+			session, err = gexec.Start(provisionCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "1h").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("Provisioning VM..."))
+			Expect(session).To(gbytes.Say("Waiting for services to start..."))
+			Expect(session).To(gbytes.Say("Services started"))
+		})
 	})
 })
 

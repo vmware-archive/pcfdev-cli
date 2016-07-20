@@ -43,7 +43,7 @@ func main() {
 	system := &system.System{
 		FS: fileSystem,
 	}
-	config, err := config.New(vmName, system)
+	config, err := config.New(vmName, md5, system)
 	if err != nil {
 		ui.Failed("Error: %s", err)
 	}
@@ -64,7 +64,6 @@ func main() {
 		Downloader: &downloader.Downloader{
 			PivnetClient: client,
 			FS:           fileSystem,
-			ExpectedMD5:  md5,
 			Config:       config,
 			Token:        token,
 		},

@@ -3,6 +3,7 @@ package plugin
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/cloudfoundry/cli/flags"
 	"github.com/cloudfoundry/cli/plugin"
@@ -56,6 +57,8 @@ type Builder interface {
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin FS
 type FS interface {
 	Remove(path string) error
+	Copy(source string, destination string) error
+	MD5(path string) (md5 string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM
@@ -120,6 +123,10 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 		}
 	case "destroy":
 		if err := p.destroy(); err != nil {
+			p.UI.Failed(getErrorText(err))
+		}
+	case "import":
+		if err := p.importOVA(args[2]); err != nil {
 			p.UI.Failed(getErrorText(err))
 		}
 	default:
@@ -248,6 +255,29 @@ func (p *Plugin) destroy() error {
 	return nil
 }
 
+func (p *Plugin) importOVA(path string) error {
+	md5, err := p.FS.MD5(path)
+	if err != nil {
+		return err
+	}
+	if md5 != p.Config.ExpectedMD5 {
+		return fmt.Errorf("specified OVA version does not match the expected OVA version (%s) for this version of the cf CLI plugin", p.Version.OVABuildVersion)
+	}
+	ovaIsCurrent, err := p.Downloader.IsOVACurrent()
+	if err != nil {
+		return err
+	}
+	if ovaIsCurrent {
+		p.UI.Say("PCF Dev OVA is already installed.")
+		return nil
+	}
+	if err := p.FS.Copy(path, filepath.Join(p.Config.OVADir, p.Config.DefaultVMName+".ova")); err != nil {
+		return err
+	}
+	p.UI.Say(fmt.Sprintf("OVA version %s imported successfully.", p.Version.OVABuildVersion))
+	return nil
+}
+
 func (p *Plugin) download() error {
 	existingVMName, err := p.VBox.GetVMName()
 	if err != nil {
@@ -337,6 +367,7 @@ SUBCOMMANDS:
    resume                      Resume PCF Dev VM from suspended state.
    destroy                     Delete the PCF Dev VM. All data is destroyed.
    status                      Query for the status of the PCF Dev VM.
+   import [path/to/ova]        Import OVA from local filesystem.
    version                     Display the release version of the CLI.
 					`,
 				},

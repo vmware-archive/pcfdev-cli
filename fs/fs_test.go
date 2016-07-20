@@ -230,6 +230,43 @@ var _ = Describe("Filesystem", func() {
 		})
 	})
 
+	Describe("#Copy", func() {
+		Context("when the source exists and destination does not exist", func() {
+			BeforeEach(func() {
+				Expect(ioutil.WriteFile(filepath.Join(tmpDir, "some-file"), []byte("some-contents"), 0644)).To(Succeed())
+			})
+
+			It("should move the source to the destination", func() {
+				fs.Copy(filepath.Join(tmpDir, "some-file"), filepath.Join(tmpDir, "some-other-file"))
+				Expect(fs.Exists(filepath.Join(tmpDir, "some-file"))).To(BeTrue())
+				data, err := ioutil.ReadFile(filepath.Join(tmpDir, "some-other-file"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(data)).To(Equal("some-contents"))
+			})
+		})
+
+		Context("when the source exists and destination exists", func() {
+			BeforeEach(func() {
+				Expect(ioutil.WriteFile(filepath.Join(tmpDir, "some-file"), []byte("some-contents"), 0644)).To(Succeed())
+				Expect(ioutil.WriteFile(filepath.Join(tmpDir, "some-other-file"), []byte("some-other-contents"), 0644)).To(Succeed())
+			})
+
+			It("should replace the destination file", func() {
+				fs.Copy(filepath.Join(tmpDir, "some-file"), filepath.Join(tmpDir, "some-other-file"))
+				Expect(fs.Exists(filepath.Join(tmpDir, "some-file"))).To(BeTrue())
+				data, err := ioutil.ReadFile(filepath.Join(tmpDir, "some-other-file"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(data)).To(Equal("some-contents"))
+			})
+		})
+
+		Context("when the source does not exist", func() {
+			It("should return an error", func() {
+				Expect(fs.Copy(filepath.Join(tmpDir, "some-bad-file"), filepath.Join(tmpDir, "some-other-file"))).To(MatchError(ContainSubstring(fmt.Sprintf("failed to copy %s to %s:", filepath.Join(tmpDir, "some-bad-file"), filepath.Join(tmpDir, "some-other-file")))))
+			})
+		})
+	})
+
 	Describe("#Extract", func() {
 		BeforeEach(func() {
 			file := struct{ Name, Body string }{"some-file.txt", "some-contents"}

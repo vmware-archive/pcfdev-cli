@@ -37,9 +37,9 @@ var _ = Describe("Downloader", func() {
 			Config: &config.Config{
 				OVADir:        "some-ova-dir",
 				DefaultVMName: "some-vm",
+				ExpectedMD5:   "some-md5",
 			},
-			Token:       mockToken,
-			ExpectedMD5: "some-md5",
+			Token: mockToken,
 		}
 	})
 

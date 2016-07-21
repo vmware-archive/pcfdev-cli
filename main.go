@@ -15,6 +15,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/system"
+	"github.com/pivotal-cf/pcfdev-cli/ui"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 
@@ -34,9 +35,9 @@ var (
 )
 
 func main() {
-	ui := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
+	cfui := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 
-	confirmInstalled(ui)
+	confirmInstalled(cfui)
 
 	fileSystem := &fs.FS{}
 	driver := &vbox.VBoxDriver{FS: fileSystem}
@@ -45,12 +46,12 @@ func main() {
 	}
 	config, err := config.New(vmName, md5, system)
 	if err != nil {
-		ui.Failed("Error: %s", err)
+		cfui.Failed("Error: %s", err)
 	}
 	token := &pivnet.Token{
 		Config: config,
 		FS:     fileSystem,
-		UI:     ui,
+		UI:     cfui,
 	}
 	client := &pivnet.Client{
 		Host:          "https://network.pivotal.io",
@@ -67,7 +68,8 @@ func main() {
 			Config:       config,
 			Token:        token,
 		},
-		UI:     &plugin.NonTranslatingUI{ui},
+		UI:     &plugin.NonTranslatingUI{cfui},
+		EULAUI: &ui.UI{},
 		Config: config,
 		FS:     fileSystem,
 		Builder: &vm.VBoxBuilder{

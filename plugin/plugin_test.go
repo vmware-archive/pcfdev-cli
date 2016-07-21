@@ -20,6 +20,7 @@ var _ = Describe("Plugin", func() {
 	var (
 		mockCtrl          *gomock.Controller
 		mockUI            *mocks.MockUI
+		mockEULAUI        *mocks.MockEULAUI
 		mockVBox          *mocks.MockVBox
 		mockDownloader    *mocks.MockDownloader
 		mockClient        *mocks.MockClient
@@ -33,6 +34,7 @@ var _ = Describe("Plugin", func() {
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = mocks.NewMockUI(mockCtrl)
+		mockEULAUI = mocks.NewMockEULAUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockDownloader = mocks.NewMockDownloader(mockCtrl)
 		mockClient = mocks.NewMockClient(mockCtrl)
@@ -42,6 +44,7 @@ var _ = Describe("Plugin", func() {
 		fakeCliConnection = &fakes.FakeCliConnection{}
 		pcfdev = &plugin.Plugin{
 			UI:         mockUI,
+			EULAUI:     mockEULAUI,
 			VBox:       mockVBox,
 			FS:         mockFS,
 			Downloader: mockDownloader,
@@ -218,8 +221,9 @@ var _ = Describe("Plugin", func() {
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-							mockUI.EXPECT().Say("some-eula"),
-							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
+							mockEULAUI.EXPECT().Init(),
+							mockEULAUI.EXPECT().ConfirmText("some-eula").Return(true),
+							mockEULAUI.EXPECT().Close(),
 							mockClient.EXPECT().AcceptEULA().Return(nil),
 							mockUI.EXPECT().Say("Downloading VM..."),
 							mockDownloader.EXPECT().Download(),
@@ -237,8 +241,9 @@ var _ = Describe("Plugin", func() {
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-							mockUI.EXPECT().Say("some-eula"),
-							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(false),
+							mockEULAUI.EXPECT().Init(),
+							mockEULAUI.EXPECT().ConfirmText("some-eula").Return(false),
+							mockEULAUI.EXPECT().Close(),
 							mockUI.EXPECT().Failed("Error: you must accept the end user license agreement to use PCF Dev."),
 						)
 
@@ -253,9 +258,44 @@ var _ = Describe("Plugin", func() {
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-							mockUI.EXPECT().Say("some-eula"),
-							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
+							mockEULAUI.EXPECT().Init(),
+							mockEULAUI.EXPECT().ConfirmText("some-eula").Return(true),
+							mockEULAUI.EXPECT().Close(),
 							mockClient.EXPECT().AcceptEULA().Return(errors.New("some-error")),
+							mockUI.EXPECT().Failed("Error: some-error."),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+					})
+				})
+
+				Context("when EULA fails to close after not being accepted", func() {
+					It("should return the error", func() {
+						gomock.InOrder(
+							mockVBox.EXPECT().GetVMName().Return("", nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
+							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
+							mockEULAUI.EXPECT().Init(),
+							mockEULAUI.EXPECT().ConfirmText("some-eula").Return(false),
+							mockEULAUI.EXPECT().Close().Return(errors.New("some-error")),
+							mockUI.EXPECT().Failed("Error: some-error."),
+						)
+
+						pcfdev.Run(&fakes.FakeCliConnection{}, []string{"dev", "download"})
+					})
+				})
+
+				Context("when EULA fails to close after being accepted", func() {
+					It("should return the error", func() {
+						gomock.InOrder(
+							mockVBox.EXPECT().GetVMName().Return("", nil),
+							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
+							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
+							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
+							mockEULAUI.EXPECT().Init(),
+							mockEULAUI.EXPECT().ConfirmText("some-eula").Return(true),
+							mockEULAUI.EXPECT().Close().Return(errors.New("some-error")),
 							mockUI.EXPECT().Failed("Error: some-error."),
 						)
 
@@ -500,8 +540,9 @@ var _ = Describe("Plugin", func() {
 							mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 							mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 							mockClient.EXPECT().GetEULA().Return("some-eula", nil),
-							mockUI.EXPECT().Say("some-eula"),
-							mockUI.EXPECT().Confirm("Accept (yes/no):").Return(true),
+							mockEULAUI.EXPECT().Init(),
+							mockEULAUI.EXPECT().ConfirmText("some-eula").Return(true),
+							mockEULAUI.EXPECT().Close(),
 							mockClient.EXPECT().AcceptEULA().Return(nil),
 
 							mockUI.EXPECT().Say("Downloading VM..."),

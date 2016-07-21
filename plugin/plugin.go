@@ -13,6 +13,7 @@ import (
 
 type Plugin struct {
 	UI         UI
+	EULAUI     EULAUI
 	FS         FS
 	VBox       VBox
 	Client     Client
@@ -28,6 +29,13 @@ type UI interface {
 	Say(message string, args ...interface{})
 	Confirm(message string, args ...interface{}) bool
 	Ask(prompt string, args ...interface{}) (answer string)
+}
+
+//go:generate mockgen -package mocks -destination mocks/eula_ui.go github.com/pivotal-cf/pcfdev-cli/plugin EULAUI
+type EULAUI interface {
+	ConfirmText(string) bool
+	Init() error
+	Close() error
 }
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
@@ -302,17 +310,9 @@ func (p *Plugin) download() error {
 	}
 
 	if !accepted {
-		eula, err := p.Client.GetEULA()
-		if err != nil {
+		if err := p.confirmEULA(); err != nil {
 			return err
 		}
-
-		p.UI.Say(eula)
-
-		if accepted := p.UI.Confirm("Accept (yes/no):"); !accepted {
-			return &EULARefusedError{}
-		}
-
 		if err := p.Client.AcceptEULA(); err != nil {
 			return err
 		}
@@ -326,6 +326,24 @@ func (p *Plugin) download() error {
 
 	p.UI.Say("\nVM downloaded.")
 	return nil
+}
+
+func (p *Plugin) confirmEULA() error {
+	eula, err := p.Client.GetEULA()
+	if err != nil {
+		return err
+	}
+
+	if err := p.EULAUI.Init(); err != nil {
+		return err
+	}
+	if accepted := p.EULAUI.ConfirmText(eula); !accepted {
+		if err := p.EULAUI.Close(); err != nil {
+			return err
+		}
+		return &EULARefusedError{}
+	}
+	return p.EULAUI.Close()
 }
 
 func (p *Plugin) getVM() (vm vm.VM, err error) {

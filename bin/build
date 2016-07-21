@@ -5,7 +5,7 @@ set -ex
 pcfdev_cli_path=$(cd `dirname $0` && cd .. && pwd)
 if [[ "$1" == "test" ]]
 then
-  vm_name="pcfdev-test"
+  vm_name="pcfdev-test2"
   release_id="1622"
   product_file_id="5113"
   md5="fefd8bdfcb44fed417bf5e9d57355664"

@@ -66,7 +66,7 @@ var _ = BeforeSuite(func() {
 	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session, "1m").Should(gexec.Exit(0))
-	Expect(session).To(gbytes.Say("Plugin successfully installed, run: cf dev help"))
+	Expect(session).To(gbytes.Say("Plugin successfully upgraded/installed. Current version 0.0.0. For more info run: cf dev help"))
 
 	vBoxManagePath, err = helpers.VBoxManagePath()
 	Expect(err).NotTo(HaveOccurred())
@@ -116,7 +116,7 @@ var _ = Describe("PCF Dev", func() {
 			session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1m").Should(gexec.Exit(0))
-			Expect(session).To(gbytes.Say("Plugin successfully upgraded, run: cf dev help"))
+			Expect(session).To(gbytes.Say("Plugin successfully upgraded/installed. Current version 0.0.0. For more info run: cf dev help"))
 		})
 
 		It("should output an error message when the cf CLI in unavailable", func() {

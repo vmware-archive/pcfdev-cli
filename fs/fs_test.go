@@ -252,7 +252,7 @@ var _ = Describe("Filesystem", func() {
 
 		Context("when the source does not exist", func() {
 			It("should return an error", func() {
-				Expect(fs.Copy(filepath.Join(tmpDir, "some-bad-file"), filepath.Join(tmpDir, "some-other-file"))).To(MatchError(fmt.Sprintf("open %s: no such file or directory", filepath.Join(tmpDir, "some-bad-file"))))
+				Expect(fs.Copy(filepath.Join(tmpDir, "some-bad-file"), filepath.Join(tmpDir, "some-other-file"))).To(MatchError(ContainSubstring(fmt.Sprintf("open %s:", filepath.Join(tmpDir, "some-bad-file")))))
 			})
 		})
 
@@ -264,7 +264,7 @@ var _ = Describe("Filesystem", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(fs.Copy(filepath.Join(tmpDir, "some-file"), filepath.Join(tmpDir, "some-dir"))).To(MatchError(fmt.Sprintf("failed to open file: open %s: is a directory", filepath.Join(tmpDir, "some-dir"))))
+				Expect(fs.Copy(filepath.Join(tmpDir, "some-file"), filepath.Join(tmpDir, "some-dir"))).To(MatchError(ContainSubstring(fmt.Sprintf("open %s: is a directory", filepath.Join(tmpDir, "some-dir")))))
 			})
 		})
 	})

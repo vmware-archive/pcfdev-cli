@@ -110,7 +110,10 @@ func confirmInstalled(ui terminal.UI) {
 			os.Exit(1)
 		}
 
-		exec.Command("cf", "uninstall-plugin", "pcfdev").Run()
+		operation := "upgraded"
+		if err := exec.Command("cf", "uninstall-plugin", "pcfdev").Run(); err != nil {
+			operation = "installed"
+		}
 
 		installOpts := []string{"install-plugin", plugin}
 		if needsConfirm := checkCLIVersion(ui); needsConfirm {
@@ -121,7 +124,7 @@ func confirmInstalled(ui terminal.UI) {
 			os.Exit(1)
 		}
 
-		ui.Say("Plugin successfully upgraded/installed. Current version %s. For more info run: cf dev help", buildVersion)
+		ui.Say("Plugin successfully %s. Current version: %s. For more info run: cf dev help", operation, buildVersion)
 		os.Exit(0)
 	case "help", "-h", "--help":
 		ui.Say("Usage: %s", os.Args[0])

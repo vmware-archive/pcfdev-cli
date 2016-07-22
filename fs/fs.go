@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 )
 
 type FS struct{}
@@ -57,8 +56,7 @@ func (fs *FS) DeleteAllExcept(path string, filenames []string) error {
 
 	for _, file := range files {
 		if !fs.fileInSet(file.Name(), filenames) {
-			err := fs.Remove(filepath.Join(path, file.Name()))
-			if err != nil {
+			if err := fs.Remove(filepath.Join(path, file.Name())); err != nil {
 				return err
 			}
 		}
@@ -116,27 +114,15 @@ func (fs *FS) Move(source string, destination string) error {
 }
 
 func (fs *FS) Copy(source string, destination string) error {
-	data, err := ioutil.ReadFile(source)
+	sourceFile, err := os.Open(source)
 	if err != nil {
-		return fmt.Errorf("failed to copy %s to %s: %s", source, destination, err)
+		return err
 	}
+	defer sourceFile.Close()
 
 	os.Remove(destination)
-	if err != nil {
-		return fmt.Errorf("failed to copy %s to %s: %s", source, destination, err)
-	}
 
-	file, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to copy %s to %s: %s", source, destination, err)
-	}
-	defer file.Close()
-
-	if _, err = io.Copy(file, ioutil.NopCloser(strings.NewReader(string(data)))); err != nil {
-		return fmt.Errorf("failed to copy %s to %s: %s", source, destination, err)
-	}
-
-	return nil
+	return fs.Write(destination, sourceFile)
 }
 
 func (fs *FS) Extract(archivePath string, destinationPath string, pattern string) error {

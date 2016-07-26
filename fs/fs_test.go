@@ -232,9 +232,9 @@ var _ = Describe("Filesystem", func() {
 				Expect(ioutil.WriteFile(filepath.Join(tmpDir, "some-file"), []byte("some-contents"), 0644)).To(Succeed())
 			})
 
-			It("should move the source to the destination", func() {
-				Expect(fs.Copy(filepath.Join(tmpDir, "some-file"), filepath.Join(tmpDir, "some-other-file"))).To(Succeed())
-				Expect(ioutil.ReadFile(filepath.Join(tmpDir, "some-other-file"))).To(Equal([]byte("some-contents")))
+			It("should create the destination directory and copy the file", func() {
+				Expect(fs.Copy(filepath.Join(tmpDir, "some-file"), filepath.Join(tmpDir, "some-dir", "some-file"))).To(Succeed())
+				Expect(ioutil.ReadFile(filepath.Join(tmpDir, "some-dir", "some-file"))).To(Equal([]byte("some-contents")))
 			})
 		})
 

@@ -120,6 +120,10 @@ func (fs *FS) Copy(source string, destination string) error {
 	}
 	defer sourceFile.Close()
 
+	destinationDir := filepath.Dir(destination)
+	if err := fs.CreateDir(destinationDir); err != nil {
+		return err
+	}
 	os.Remove(destination)
 
 	return fs.Write(destination, sourceFile)

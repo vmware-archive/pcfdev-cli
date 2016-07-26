@@ -387,8 +387,7 @@ SUBCOMMANDS:
    destroy                     Delete the PCF Dev VM. All data is destroyed.
    status                      Query for the status of the PCF Dev VM.
    import [path/to/ova]        Import OVA from local filesystem.
-   version                     Display the release version of the CLI.
-					`,
+   version                     Display the release version of the CLI.`,
 				},
 			},
 		},

@@ -278,13 +278,14 @@ var _ = Describe("PCF Dev", func() {
 		)
 
 		BeforeEach(func() {
-			tempOVALocation, err := ioutil.TempDir("", "ova-to-import")
+			var err error
+			tempOVALocation, err = ioutil.TempDir("", "ova-to-import")
 			wrongOVA, err = ioutil.TempFile(tempOVALocation, "wrong-ova.ova")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			Expect(os.RemoveAll(tempOVALocation)).To(Succeed())
+			os.RemoveAll(tempOVALocation)
 		})
 
 		It("should download or import an ova", func() {

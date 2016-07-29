@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -57,7 +58,8 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 
 		if dirExists {
 			return &Invalid{
-				UI: termUI,
+				Err: errors.New("VM files need to be purged"),
+				UI:  termUI,
 			}, nil
 		}
 
@@ -76,13 +78,15 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	ip, err := b.Driver.GetVMIP(vmName)
 	if err != nil {
 		return &Invalid{
-			UI: termUI,
+			Err: err,
+			UI:  termUI,
 		}, nil
 	}
 	domain, err := address.DomainForIP(ip)
 	if err != nil {
 		return &Invalid{
-			UI: termUI,
+			Err: err,
+			UI:  termUI,
 		}, nil
 	}
 	memory, err := b.Driver.GetMemory(vmName)
@@ -92,7 +96,8 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	sshPort, err := b.Driver.GetHostForwardPort(vmName, "ssh")
 	if err != nil {
 		return &Invalid{
-			UI: termUI,
+			Err: err,
+			UI:  termUI,
 		}, nil
 	}
 

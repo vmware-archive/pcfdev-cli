@@ -3,7 +3,8 @@ package vm
 import "errors"
 
 type Invalid struct {
-	UI UI
+	Err error
+	UI  UI
 }
 
 func (i *Invalid) Stop() error {
@@ -43,5 +44,5 @@ func (i *Invalid) message() string {
 }
 
 func (i *Invalid) err() string {
-	return "PCF Dev is in an invalid state. Please run 'cf dev destroy'"
+	return "Error: " + i.Err.Error() + ".\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"
 }

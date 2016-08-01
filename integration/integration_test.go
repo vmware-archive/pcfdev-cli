@@ -85,20 +85,8 @@ var _ = AfterSuite(func() {
 var _ = Describe("PCF Dev", func() {
 	AfterEach(func() {
 		for _, vm := range []string{vmName, "pcfdev-custom"} {
-			output, err := exec.Command(vBoxManagePath, "showvminfo", vm, "--machinereadable").Output()
-			if err != nil {
-				continue
-			}
-
-			regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
-			matches := regex.FindStringSubmatch(string(output))
-
 			exec.Command(vBoxManagePath, "controlvm", vm, "poweroff").Run()
 			exec.Command(vBoxManagePath, "unregistervm", vm, "--delete").Run()
-
-			if len(matches) > 1 {
-				exec.Command(vBoxManagePath, "hostonlyif", "remove", matches[1]).Run()
-			}
 		}
 	})
 

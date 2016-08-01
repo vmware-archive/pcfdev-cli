@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	"errors"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	conf "github.com/pivotal-cf/pcfdev-cli/config"
@@ -14,9 +15,12 @@ import (
 
 var _ = Describe("Stopped", func() {
 	var (
-		mockCtrl *gomock.Controller
-		mockUI   *mocks.MockUI
-		mockVBox *mocks.MockVBox
+		mockCtrl    *gomock.Controller
+		mockUI      *mocks.MockUI
+		mockVBox    *mocks.MockVBox
+		mockBuilder *mocks.MockBuilder
+		mockSSH     *mocks.MockSSH
+		mockVM      *mocks.MockVM
 
 		runningVM vm.Running
 		config    *conf.VMConfig
@@ -26,6 +30,9 @@ var _ = Describe("Stopped", func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
+		mockSSH = mocks.NewMockSSH(mockCtrl)
+		mockVM = mocks.NewMockVM(mockCtrl)
+		mockBuilder = mocks.NewMockBuilder(mockCtrl)
 		config = &conf.VMConfig{}
 
 		runningVM = vm.Running{
@@ -36,8 +43,10 @@ var _ = Describe("Stopped", func() {
 				SSHPort: "some-port",
 			},
 
-			VBox: mockVBox,
-			UI:   mockUI,
+			VBox:    mockVBox,
+			UI:      mockUI,
+			Builder: mockBuilder,
+			SSH:     mockSSH,
 		}
 	})
 
@@ -105,6 +114,49 @@ var _ = Describe("Stopped", func() {
 			mockUI.EXPECT().Say("PCF Dev is running.")
 
 			runningVM.Start(&vm.StartOpts{})
+		})
+	})
+
+	Describe("Provision", func() {
+		It("should provision the VM", func() {
+			gomock.InOrder(
+				mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", 30*time.Second).Return("", nil),
+				mockBuilder.EXPECT().VM("some-vm").Return(mockVM, nil),
+				mockVM.EXPECT().Provision(),
+			)
+
+			runningVM.Provision()
+		})
+
+		Context("when removing healthcheck file fails", func() {
+			It("should return an error", func() {
+				mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", 30*time.Second).Return("", errors.New("some-error"))
+
+				Expect(runningVM.Provision()).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when building unprovisioned vm fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", 30*time.Second).Return("", nil),
+					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
+				)
+
+				Expect(runningVM.Provision()).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when running the provision command fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", 30*time.Second).Return("", nil),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockVM, nil),
+					mockVM.EXPECT().Provision().Return(errors.New("some-error")),
+				)
+
+				Expect(runningVM.Provision()).To(MatchError("some-error"))
+			})
 		})
 	})
 

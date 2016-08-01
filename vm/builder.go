@@ -134,8 +134,10 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 					Memory:  memory,
 				},
 
-				UI:   termUI,
-				VBox: vbx,
+				UI:      termUI,
+				VBox:    vbx,
+				SSH:     b.SSH,
+				Builder: b,
 			}, nil
 		}
 	}

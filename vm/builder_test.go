@@ -251,6 +251,8 @@ var _ = Describe("Builder", func() {
 						Expect(u.VMConfig.Domain).To(Equal("local.pcfdev.io"))
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
+						Expect(u.SSH).NotTo(BeNil())
+						Expect(u.Builder).NotTo(BeNil())
 					default:
 						Fail("wrong type")
 					}

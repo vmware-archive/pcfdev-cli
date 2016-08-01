@@ -3,6 +3,7 @@ package vm
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
@@ -10,8 +11,10 @@ import (
 type Running struct {
 	VMConfig *config.VMConfig
 
-	VBox VBox
-	UI   UI
+	VBox    VBox
+	UI      UI
+	SSH     SSH
+	Builder Builder
 }
 
 func (r *Running) Stop() error {
@@ -25,7 +28,14 @@ func (r *Running) Stop() error {
 }
 
 func (r *Running) Provision() error {
-	return nil
+	if _, err := r.SSH.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", r.VMConfig.IP, "22", 30*time.Second); err != nil {
+		return err
+	}
+	unprovisionedVM, err := r.Builder.VM(r.VMConfig.Name)
+	if err != nil {
+		return err
+	}
+	return unprovisionedVM.Provision()
 }
 
 func (r *Running) VerifyStartOpts(opts *StartOpts) error {

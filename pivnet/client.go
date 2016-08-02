@@ -68,7 +68,7 @@ func (c *Client) DownloadOVA(startAtByte int64) (ova *DownloadReader, err error)
 	}
 
 	switch resp.StatusCode {
-	case http.StatusPartialContent:
+	case http.StatusPartialContent, http.StatusOK:
 		return &DownloadReader{ReadCloser: resp.Body, Writer: os.Stdout, ContentLength: resp.ContentLength, ExistingLength: startAtByte}, nil
 	case http.StatusUnauthorized:
 		c.Token.Destroy()
@@ -85,7 +85,7 @@ func (c *Client) IsEULAAccepted() (bool, error) {
 	}
 
 	switch resp.StatusCode {
-	case http.StatusPartialContent:
+	case http.StatusPartialContent, http.StatusOK:
 		return true, nil
 	case 451:
 		return false, nil

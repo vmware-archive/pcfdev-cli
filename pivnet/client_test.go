@@ -67,6 +67,37 @@ var _ = Describe("Pivnet Client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(buf)).To(Equal("ova contents"))
 			})
+
+			It("should accept a 200 during download", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+
+					switch r.URL.Path {
+					case "/api/v2/products/pcfdev/releases/some-release-id/product_files/some-product-file-id/download":
+						Expect(r.Method).To(Equal("POST"))
+						Expect(r.Header["Authorization"][0]).To(Equal("Token some-token"))
+						w.Header().Add("Location", "http://"+r.Host+"/some-path")
+						w.WriteHeader(302)
+					case "/some-path":
+						Expect(r.Method).To(Equal("GET"))
+						Expect(r.Header["Range"][0]).To(Equal("bytes=4-"))
+						w.WriteHeader(200)
+						w.Write([]byte("ova contents"))
+					default:
+						Fail("unexpected server request")
+					}
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+
+				mockToken.EXPECT().Get().Return("some-token", nil)
+				ova, err := client.DownloadOVA(int64(4))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(ova.ExistingLength).To(Equal(int64(4)))
+				Expect(ova.ContentLength).To(Equal(int64(12)))
+				buf, err := ioutil.ReadAll(ova.ReadCloser)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(buf)).To(Equal("ova contents"))
+			})
 		})
 
 		Context("when Pivnet is unreachable", func() {
@@ -314,6 +345,34 @@ var _ = Describe("Pivnet Client", func() {
 						Expect(r.Method).To(Equal("GET"))
 						Expect(r.Header["Range"][0]).To(Equal("bytes=0-0"))
 						w.WriteHeader(206)
+						w.Write([]byte("o"))
+					default:
+						Fail("unexpected server request")
+					}
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+				mockToken.EXPECT().Get().Return("some-token", nil)
+				accepted, err := client.IsEULAAccepted()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(accepted).To(BeTrue())
+			})
+		})
+
+		Context("when EULA returns a 200", func() {
+			It("should return true", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+
+					switch r.URL.Path {
+					case "/api/v2/products/pcfdev/releases/some-release-id/product_files/some-product-file-id/download":
+						Expect(r.Method).To(Equal("POST"))
+						Expect(r.Header["Authorization"][0]).To(Equal("Token some-token"))
+						w.Header().Add("Location", "http://"+r.Host+"/some-path")
+						w.WriteHeader(302)
+					case "/some-path":
+						Expect(r.Method).To(Equal("GET"))
+						Expect(r.Header["Range"][0]).To(Equal("bytes=0-0"))
+						w.WriteHeader(200)
 						w.Write([]byte("o"))
 					default:
 						Fail("unexpected server request")

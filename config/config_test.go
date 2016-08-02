@@ -21,7 +21,6 @@ var _ = Describe("Config", func() {
 			savedHTTPProxy  string
 			savedHTTPSProxy string
 			savedNoProxy    string
-			savedVMMemory   string
 			mockCtrl        *gomock.Controller
 			mockSystem      *mocks.MockSystem
 		)
@@ -31,13 +30,11 @@ var _ = Describe("Config", func() {
 			savedHTTPProxy = os.Getenv("HTTP_PROXY")
 			savedHTTPSProxy = os.Getenv("HTTPS_PROXY")
 			savedNoProxy = os.Getenv("NO_PROXY")
-			savedVMMemory = os.Getenv("VM_MEMORY")
 
 			os.Setenv("PCFDEV_HOME", "some-pcfdev-home")
 			os.Setenv("HTTP_PROXY", "some-http-proxy")
 			os.Setenv("HTTPS_PROXY", "some-https-proxy")
 			os.Setenv("NO_PROXY", "some-no-proxy")
-			os.Setenv("VM_MEMORY", "1024")
 
 			mockCtrl = gomock.NewController(GinkgoT())
 			mockSystem = mocks.NewMockSystem(mockCtrl)
@@ -48,7 +45,6 @@ var _ = Describe("Config", func() {
 			os.Setenv("HTTP_PROXY", savedHTTPProxy)
 			os.Setenv("HTTPS_PROXY", savedHTTPSProxy)
 			os.Setenv("NO_PROXY", savedNoProxy)
-			os.Setenv("VM_MEMORY", savedVMMemory)
 
 			mockCtrl.Finish()
 		})

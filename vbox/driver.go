@@ -125,7 +125,7 @@ func (d *VBoxDriver) SuspendVM(vmName string) error {
 		}
 		return nil
 	},
-		time.Minute,
+		2*time.Minute,
 		time.Second,
 	)
 }

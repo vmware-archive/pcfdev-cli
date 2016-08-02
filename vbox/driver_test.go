@@ -283,12 +283,10 @@ var _ = Describe("driver", func() {
 				_, port, err := sshClient.GenerateAddress()
 				Expect(err).NotTo(HaveOccurred())
 
-				err = driver.ForwardPort(vmName, "some-rule-name", port, "22")
-				Expect(err).NotTo(HaveOccurred())
+				Expect(driver.ForwardPort(vmName, "some-rule-name", port, "22")).To(Succeed())
 
-				err = driver.StartVM(vmName)
-				Expect(err).NotTo(HaveOccurred())
-				err = driver.SuspendVM(vmName)
+				Expect(driver.StartVM(vmName)).To(Succeed())
+				Expect(driver.SuspendVM(vmName)).To(Succeed())
 
 				Expect(driver.VMState(vmName)).To(Equal(vbox.StateSaved))
 			})

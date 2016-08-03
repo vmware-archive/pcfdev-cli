@@ -1,75 +1,34 @@
 package plugin
 
 import (
-	"errors"
 	"fmt"
-	"path/filepath"
+	"strconv"
+	"strings"
 
-	"github.com/cloudfoundry/cli/flags"
 	"github.com/cloudfoundry/cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/config"
-	"github.com/pivotal-cf/pcfdev-cli/vm"
+	"github.com/pivotal-cf/pcfdev-cli/plugin/cmd"
 )
 
 type Plugin struct {
 	UI         UI
-	EULAUI     EULAUI
-	FS         FS
-	VBox       VBox
-	Client     Client
-	Version    *Version
+	CmdBuilder CmdBuilder
 	Config     *config.Config
-	Downloader Downloader
-	Builder    Builder
 }
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/plugin UI
 type UI interface {
 	Failed(message string, args ...interface{})
 	Say(message string, args ...interface{})
-	Confirm(message string, args ...interface{}) bool
 	Ask(prompt string, args ...interface{}) (answer string)
 }
 
-//go:generate mockgen -package mocks -destination mocks/eula_ui.go github.com/pivotal-cf/pcfdev-cli/plugin EULAUI
-type EULAUI interface {
-	ConfirmText(string) bool
-	Init() error
-	Close() error
+//go:generate mockgen -package mocks -destination mocks/cmd_builder.go github.com/pivotal-cf/pcfdev-cli/plugin CmdBuilder
+type CmdBuilder interface {
+	Cmd(subcommand string) (cmd.Cmd, error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin VBox
-type VBox interface {
-	GetVMName() (name string, err error)
-	DestroyPCFDevVMs() (err error)
-}
-
-//go:generate mockgen -package mocks -destination mocks/downloader.go github.com/pivotal-cf/pcfdev-cli/plugin Downloader
-type Downloader interface {
-	Download() error
-	IsOVACurrent() (bool, error)
-}
-
-//go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/plugin Client
-type Client interface {
-	AcceptEULA() error
-	IsEULAAccepted() (bool, error)
-	GetEULA() (eula string, err error)
-}
-
-//go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/plugin Builder
-type Builder interface {
-	VM(name string) (vm vm.VM, err error)
-}
-
-//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin FS
-type FS interface {
-	Remove(path string) error
-	Copy(source string, destination string) error
-	MD5(path string) (md5 string, err error)
-}
-
-//go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM
+//go:generate mockgen -package mocks -destination mocks/cmd.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd Cmd
 
 func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
@@ -77,68 +36,24 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 
 	var subcommand string
+	var cmdArgs []string
+
 	if len(args) > 1 {
 		subcommand = args[1]
+		cmdArgs = args[2:]
 	}
 
-	flagContext := flags.New()
-
-	switch subcommand {
-	case "version", "--version":
-		p.UI.Say(p.Version.getFullVersion())
-		return
-	case "start":
-		flagContext.NewIntFlag("m", "memory", "<memory in MB>")
-		flagContext.NewIntFlag("c", "cpus", "<number of cpus>")
-		flagContext.NewStringFlag("o", "ova", "<path to custom ova>")
-		flagContext.NewStringFlag("s", "services", "<services to start with>")
-		flagContext.NewBoolFlag("n", "", "<bool for provisioning>")
-	}
-
-	if err := flagContext.Parse(args...); err != nil {
+	cmd, err := p.CmdBuilder.Cmd(subcommand)
+	if err != nil {
 		p.showUsageMessage(cliConnection)
 		return
 	}
-
-	switch subcommand {
-	case "download":
-		if err := p.download(); err != nil {
-			p.UI.Failed(getErrorText(err))
-		}
-	case "start":
-		if err := p.start(flagContext); err != nil {
-			p.UI.Failed(getErrorText(err))
-		}
-	case "provision":
-		if err := p.provision(); err != nil {
-			p.UI.Failed(getErrorText(err))
-		}
-	case "status":
-		if err := p.status(); err != nil {
-			p.UI.Failed(getErrorText(err))
-		}
-	case "stop":
-		if err := p.stop(); err != nil {
-			p.UI.Failed(getErrorText(err))
-		}
-	case "suspend":
-		if err := p.suspend(); err != nil {
-			p.UI.Failed(getErrorText(err))
-		}
-	case "resume":
-		if err := p.resume(); err != nil {
-			p.UI.Failed(getErrorText(err))
-		}
-	case "destroy":
-		if err := p.destroy(); err != nil {
-			p.UI.Failed(getErrorText(err))
-		}
-	case "import":
-		if err := p.importOVA(args[2]); err != nil {
-			p.UI.Failed(getErrorText(err))
-		}
-	default:
+	if cmd.Parse(cmdArgs) != nil {
 		p.showUsageMessage(cliConnection)
+		return
+	}
+	if err := cmd.Run(); err != nil {
+		p.UI.Failed(getErrorText(err))
 	}
 }
 
@@ -153,218 +68,32 @@ func getErrorText(err error) string {
 	return fmt.Sprintf("Error: %s.", err.Error())
 }
 
-func (p *Plugin) start(flagContext flags.FlagContext) error {
-	var name string
+func (p *Plugin) getPluginVersion() plugin.VersionType {
+	var majorVersion, minorVersion, buildVersion int
+	var errMajor, errMinor, errBuild error
 
-	if flagContext.IsSet("o") {
-		name = "pcfdev-custom"
-	} else {
-		name = p.Config.DefaultVMName
-	}
+	versionParts := strings.SplitN(p.Config.Version.BuildVersion, ".", 3)
 
-	existingVMName, err := p.VBox.GetVMName()
-	if err != nil {
-		return err
-	}
-	if existingVMName != "" {
-		if flagContext.IsSet("o") {
-			if existingVMName != "pcfdev-custom" {
-				return errors.New("you must destroy your existing VM to use a custom OVA")
-			}
-		} else {
-			if existingVMName != p.Config.DefaultVMName && existingVMName != "pcfdev-custom" {
-				return &OldVMError{}
-			}
+	if len(versionParts) == 3 {
+		majorVersion, errMajor = strconv.Atoi(versionParts[0])
+		minorVersion, errMinor = strconv.Atoi(versionParts[1])
+		buildVersion, errBuild = strconv.Atoi(versionParts[2])
+		if errMajor != nil || errMinor != nil || errBuild != nil {
+			return plugin.VersionType{}
 		}
 	}
 
-	if existingVMName == "pcfdev-custom" {
-		name = "pcfdev-custom"
+	return plugin.VersionType{
+		Major: majorVersion,
+		Minor: minorVersion,
+		Build: buildVersion,
 	}
-
-	v, err := p.Builder.VM(name)
-	if err != nil {
-		return err
-	}
-
-	opts := &vm.StartOpts{
-		Memory:      uint64(flagContext.Int("m")),
-		CPUs:        flagContext.Int("c"),
-		OVAPath:     flagContext.String("o"),
-		Services:    flagContext.String("s"),
-		NoProvision: flagContext.Bool("n"),
-	}
-
-	if err := v.VerifyStartOpts(opts); err != nil {
-		return err
-	}
-	if !flagContext.IsSet("o") && existingVMName != "pcfdev-custom" {
-		if err := p.download(); err != nil {
-			return err
-		}
-	}
-
-	return v.Start(opts)
-}
-
-func (p *Plugin) provision() error {
-	vm, err := p.getVM()
-	if err != nil {
-		return err
-	}
-
-	return vm.Provision()
-}
-
-func (p *Plugin) status() error {
-	vm, err := p.getVM()
-	if err != nil {
-		return err
-	}
-	p.UI.Say(vm.Status())
-	return nil
-}
-
-func (p *Plugin) stop() error {
-	vm, err := p.getVM()
-	if err != nil {
-		return err
-	}
-	return vm.Stop()
-}
-
-func (p *Plugin) suspend() error {
-	vm, err := p.getVM()
-	if err != nil {
-		return err
-	}
-	return vm.Suspend()
-}
-
-func (p *Plugin) resume() error {
-	vm, err := p.getVM()
-	if err != nil {
-		return err
-	}
-	return vm.Resume()
-}
-
-func (p *Plugin) destroy() error {
-	if err := p.VBox.DestroyPCFDevVMs(); err != nil {
-		p.UI.Failed(fmt.Sprintf("Error destroying PCF Dev VM: %s.", err))
-	} else {
-		p.UI.Say("PCF Dev VM has been destroyed.")
-	}
-
-	if err := p.FS.Remove(p.Config.VMDir); err != nil {
-		p.UI.Failed(fmt.Sprintf("Error removing %s: %s.", p.Config.VMDir, err))
-	}
-
-	return nil
-}
-
-func (p *Plugin) importOVA(path string) error {
-	md5, err := p.FS.MD5(path)
-	if err != nil {
-		return err
-	}
-	if md5 != p.Config.ExpectedMD5 {
-		return fmt.Errorf("specified OVA version does not match the expected OVA version (%s) for this version of the cf CLI plugin", p.Version.OVABuildVersion)
-	}
-	ovaIsCurrent, err := p.Downloader.IsOVACurrent()
-	if err != nil {
-		return err
-	}
-	if ovaIsCurrent {
-		p.UI.Say("PCF Dev OVA is already installed.")
-		return nil
-	}
-	if err := p.FS.Copy(path, filepath.Join(p.Config.OVADir, p.Config.DefaultVMName+".ova")); err != nil {
-		return err
-	}
-	p.UI.Say(fmt.Sprintf("OVA version %s imported successfully.", p.Version.OVABuildVersion))
-	return nil
-}
-
-func (p *Plugin) download() error {
-	existingVMName, err := p.VBox.GetVMName()
-	if err != nil {
-		return err
-	}
-	if existingVMName != "" && existingVMName != p.Config.DefaultVMName {
-		return &OldVMError{}
-	}
-
-	current, err := p.Downloader.IsOVACurrent()
-	if err != nil {
-		return err
-	}
-	if current {
-		p.UI.Say("Using existing image.")
-		return nil
-	}
-
-	accepted, err := p.Client.IsEULAAccepted()
-	if err != nil {
-		return err
-	}
-
-	if !accepted {
-		if err := p.confirmEULA(); err != nil {
-			return err
-		}
-		if err := p.Client.AcceptEULA(); err != nil {
-			return err
-		}
-	}
-
-	p.UI.Say("Downloading VM...")
-
-	if err := p.Downloader.Download(); err != nil {
-		return err
-	}
-
-	p.UI.Say("\nVM downloaded.")
-	return nil
-}
-
-func (p *Plugin) confirmEULA() error {
-	eula, err := p.Client.GetEULA()
-	if err != nil {
-		return err
-	}
-
-	if err := p.EULAUI.Init(); err != nil {
-		return err
-	}
-	if accepted := p.EULAUI.ConfirmText(eula); !accepted {
-		if err := p.EULAUI.Close(); err != nil {
-			return err
-		}
-		return &EULARefusedError{}
-	}
-	return p.EULAUI.Close()
-}
-
-func (p *Plugin) getVM() (vm vm.VM, err error) {
-	name, err := p.VBox.GetVMName()
-	if err != nil {
-		return nil, err
-	}
-	if name == "" {
-		name = p.Config.DefaultVMName
-	}
-	if name != p.Config.DefaultVMName && name != "pcfdev-custom" {
-		return nil, &OldVMError{}
-	}
-
-	return p.Builder.VM(name)
 }
 
 func (p *Plugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
 		Name:    "pcfdev",
-		Version: p.Version.getVersionForCLIMetadata(),
+		Version: p.getPluginVersion(),
 		Commands: []plugin.Command{
 			plugin.Command{
 				Name:     "dev",

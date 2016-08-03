@@ -13,6 +13,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
+	"github.com/pivotal-cf/pcfdev-cli/plugin/cmd"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/system"
 	"github.com/pivotal-cf/pcfdev-cli/ui"
@@ -44,7 +45,11 @@ func main() {
 	system := &system.System{
 		FS: fileSystem,
 	}
-	config, err := config.New(vmName, md5, system)
+	config, err := config.New(vmName, md5, system, &config.Version{
+		BuildVersion:    buildVersion,
+		BuildSHA:        buildSHA,
+		OVABuildVersion: ovaBuildVersion,
+	})
 	if err != nil {
 		cfui.Failed("Error: %s", err)
 	}
@@ -61,37 +66,36 @@ func main() {
 	}
 
 	cfplugin.Start(&plugin.Plugin{
-		Client: client,
-		Downloader: &downloader.Downloader{
-			PivnetClient: client,
-			FS:           fileSystem,
-			Config:       config,
-			Token:        token,
-		},
 		UI:     &plugin.NonTranslatingUI{cfui},
-		EULAUI: &ui.UI{},
 		Config: config,
-		FS:     fileSystem,
-		Builder: &vm.VBoxBuilder{
+		CmdBuilder: &cmd.Builder{
+			Client: client,
 			Config: config,
-			Driver: driver,
-			FS:     fileSystem,
-			SSH:    &ssh.SSH{},
-		},
-		VBox: &vbox.VBox{
-			SSH:    &ssh.SSH{},
-			FS:     fileSystem,
-			Driver: driver,
-			Picker: &address.Picker{
-				Network: &network.Network{},
-				Driver:  driver,
+			Downloader: &downloader.Downloader{
+				PivnetClient: client,
+				FS:           fileSystem,
+				Config:       config,
+				Token:        token,
 			},
-			Config: config,
-		},
-		Version: &plugin.Version{
-			BuildVersion:    buildVersion,
-			BuildSHA:        buildSHA,
-			OVABuildVersion: ovaBuildVersion,
+			EULAUI: &ui.UI{},
+			FS:     fileSystem,
+			UI:     &plugin.NonTranslatingUI{cfui},
+			VBox: &vbox.VBox{
+				SSH:    &ssh.SSH{},
+				FS:     fileSystem,
+				Driver: driver,
+				Picker: &address.Picker{
+					Network: &network.Network{},
+					Driver:  driver,
+				},
+				Config: config,
+			},
+			VMBuilder: &vm.VBoxBuilder{
+				Config: config,
+				Driver: driver,
+				FS:     fileSystem,
+				SSH:    &ssh.SSH{},
+			},
 		},
 	})
 }

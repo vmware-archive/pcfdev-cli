@@ -28,6 +28,13 @@ type Config struct {
 	SpringCloudMaxMemory     uint64
 	DefaultCPUs              int
 	ExpectedMD5              string
+	Version                  *Version
+}
+
+type Version struct {
+	BuildVersion    string
+	BuildSHA        string
+	OVABuildVersion string
 }
 
 //go:generate mockgen -package mocks -destination mocks/system.go github.com/pivotal-cf/pcfdev-cli/config System
@@ -37,7 +44,7 @@ type System interface {
 	PhysicalCores() (int, error)
 }
 
-func New(defaultVMName string, expectedMD5 string, system System) (*Config, error) {
+func New(defaultVMName string, expectedMD5 string, system System, version *Version) (*Config, error) {
 	pcfdevHome, err := getPCFDevHome()
 	if err != nil {
 		return nil, err
@@ -77,6 +84,7 @@ func New(defaultVMName string, expectedMD5 string, system System) (*Config, erro
 		SpringCloudMinMemory:     springCloudMinMemory,
 		SpringCloudMaxMemory:     springCloudMaxMemory,
 		DefaultCPUs:              cores,
+		Version:                  version,
 	}, nil
 }
 

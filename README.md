@@ -1,6 +1,8 @@
-# PCF Dev `cf` CLI Plugin
+# PCF Dev cf CLI Plugin
 
-This repository contains the source code for the PCF Dev `cf` CLI plugin.
+This repository contains the source code for the PCF Dev cf CLI plugin.
+
+Please open issues at the [PCF Dev Github issues page](https://github.com/pivotal-cf/pcfdev/issues).
 
 ## Custom OVAs
 

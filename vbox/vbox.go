@@ -88,6 +88,7 @@ const (
 	StatusSuspended  = "Suspended"
 	StatusStopped    = "Stopped"
 	StatusNotCreated = "Not created"
+	StatusUnknown    = "Unknown"
 )
 
 var (
@@ -398,10 +399,29 @@ func (v *VBox) VMConfig(vmName string) (*config.VMConfig, error) {
 	}, nil
 }
 
-func (v *VBox) VMExists(vmName string) (exists bool, err error) {
-	return v.Driver.VMExists(vmName)
-}
+func (v *VBox) VMStatus(vmName string) (status string, err error) {
+	exists, err := v.Driver.VMExists(vmName)
+	if err != nil {
+		return "", err
+	}
 
-func (v *VBox) VMState(vmName string) (state string, err error) {
-	return v.Driver.VMState(vmName)
+	if !exists {
+		return StatusNotCreated, nil
+	}
+
+	state, err := v.Driver.VMState(vmName)
+	if err != nil {
+		return "", err
+	}
+
+	switch state {
+	case StateRunning:
+		return StatusRunning, nil
+	case StateStopped, StateAborted:
+		return StatusStopped, nil
+	case StateSaved, StatePaused:
+		return StatusSuspended, nil
+	default:
+		return StatusUnknown, nil
+	}
 }

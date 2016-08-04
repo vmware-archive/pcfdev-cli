@@ -50,7 +50,7 @@ var _ = Describe("Builder", func() {
 		Context("when vm is not created", func() {
 			It("should return a not created VM", func() {
 				gomock.InOrder(
-					mockVBox.EXPECT().VMExists("some-vm").Return(false, nil),
+					mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusNotCreated, nil),
 					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "some-vm")).Return(false, nil),
 				)
 
@@ -67,7 +67,7 @@ var _ = Describe("Builder", func() {
 			Context("when the disk exists", func() {
 				It("should return an invalid vm", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().VMExists("some-vm").Return(false, nil),
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusNotCreated, nil),
 						mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "some-vm")).Return(true, nil),
 					)
 
@@ -84,10 +84,10 @@ var _ = Describe("Builder", func() {
 				})
 			})
 
-			Context("when the disk exists", func() {
+			Context("when the disk does not exist", func() {
 				It("should return an invalid vm", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().VMExists("some-vm").Return(false, nil),
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusNotCreated, nil),
 						mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "some-vm")).Return(false, errors.New("some-error")),
 					)
 
@@ -102,9 +102,8 @@ var _ = Describe("Builder", func() {
 				It("should return a stopped vm", func() {
 					expectedVMConfig := &config.VMConfig{}
 					gomock.InOrder(
-						mockVBox.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusStopped, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockVBox.EXPECT().VMState("some-vm").Return(vbox.StateStopped, nil),
 					)
 
 					stoppedVM, err := builder.VM("some-vm")
@@ -122,42 +121,10 @@ var _ = Describe("Builder", func() {
 				})
 			})
 
-			Context("when vm is aborted", func() {
-				It("should return a stopped vm", func() {
-					expectedVMConfig := &config.VMConfig{}
-					gomock.InOrder(
-						mockVBox.EXPECT().VMExists("some-vm").Return(true, nil),
-						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockVBox.EXPECT().VMState("some-vm").Return(vbox.StateAborted, nil),
-					)
-
-					abortedVM, err := builder.VM("some-vm")
-					Expect(err).NotTo(HaveOccurred())
-
-					switch u := abortedVM.(type) {
-					case *vm.Stopped:
-						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
-						Expect(u.SSH).NotTo(BeNil())
-						Expect(u.VBox).NotTo(BeNil())
-						Expect(u.UI).NotTo(BeNil())
-					default:
-						Fail("wrong type")
-					}
-				})
-			})
-
-			Context("when there is an error seeing if vm exists", func() {
-				It("should return an error", func() {
-					mockVBox.EXPECT().VMExists("some-vm").Return(false, errors.New("some-error"))
-					_, err := builder.VM("some-vm")
-					Expect(err).To(MatchError("some-error"))
-				})
-			})
-
 			Context("when there is an error getting the vm config", func() {
 				It("should return an invalid vm", func() {
 					gomock.InOrder(
-						mockVBox.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusStopped, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(nil, errors.New("some-error")),
 					)
 
@@ -185,9 +152,8 @@ var _ = Describe("Builder", func() {
 					}
 
 					gomock.InOrder(
-						mockVBox.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockVBox.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil),
 					)
 					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", 20*time.Second).AnyTimes().Do(
 						func(string, string, string, time.Duration) { time.Sleep(time.Minute) },
@@ -221,9 +187,8 @@ var _ = Describe("Builder", func() {
 					}
 
 					gomock.InOrder(
-						mockVBox.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockVBox.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil),
 					)
 					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", 20*time.Second).AnyTimes().Do(
 						func(string, string, string, time.Duration) { time.Sleep(time.Minute) },
@@ -254,9 +219,8 @@ var _ = Describe("Builder", func() {
 						Domain:  "local.pcfdev.io",
 					}
 
-					mockVBox.EXPECT().VMExists("some-vm").Return(true, nil)
+					mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil)
 					mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil)
-					mockVBox.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil)
 					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", 20*time.Second).AnyTimes().Do(
 						func(string, string, string, time.Duration) { time.Sleep(time.Minute) },
 					)
@@ -285,9 +249,8 @@ var _ = Describe("Builder", func() {
 						SSHPort: "some-port",
 						Domain:  "local.pcfdev.io",
 					}
-					mockVBox.EXPECT().VMExists("some-vm").Return(true, nil)
+					mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil)
 					mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil)
-					mockVBox.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil)
 					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", 20*time.Second).AnyTimes().Do(
 						func(string, string, string, time.Duration) { time.Sleep(time.Minute) },
 					)
@@ -307,7 +270,7 @@ var _ = Describe("Builder", func() {
 				})
 			})
 
-			Context("when vm is saved", func() {
+			Context("when vm is suspended", func() {
 				It("should return a suspended vm", func() {
 					expectedVMConfig := &config.VMConfig{
 						IP:      "192.168.11.11",
@@ -316,37 +279,8 @@ var _ = Describe("Builder", func() {
 						Domain:  "local.pcfdev.io",
 					}
 					gomock.InOrder(
-						mockVBox.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusSuspended, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockVBox.EXPECT().VMState("some-vm").Return(vbox.StateSaved, nil),
-					)
-
-					suspendedVM, err := builder.VM("some-vm")
-					Expect(err).NotTo(HaveOccurred())
-
-					switch u := suspendedVM.(type) {
-					case *vm.Suspended:
-						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
-						Expect(u.VBox).NotTo(BeNil())
-						Expect(u.UI).NotTo(BeNil())
-					default:
-						Fail("wrong type")
-					}
-				})
-			})
-
-			Context("when vm is paused", func() {
-				It("should return a suspended vm", func() {
-					expectedVMConfig := &config.VMConfig{
-						IP:      "192.168.11.11",
-						Memory:  uint64(3456),
-						SSHPort: "some-port",
-						Domain:  "local.pcfdev.io",
-					}
-					gomock.InOrder(
-						mockVBox.EXPECT().VMExists("some-vm").Return(true, nil),
-						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockVBox.EXPECT().VMState("some-vm").Return(vbox.StatePaused, nil),
 					)
 
 					suspendedVM, err := builder.VM("some-vm")
@@ -372,16 +306,32 @@ var _ = Describe("Builder", func() {
 						Domain:  "local.pcfdev.io",
 					}
 					gomock.InOrder(
-						mockVBox.EXPECT().VMExists("some-vm").Return(true, nil),
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusUnknown, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockVBox.EXPECT().VMState("some-vm").Return("some-unexpected-state", nil),
 					)
 
-					vm, err := builder.VM("some-vm")
-					Expect(err).To(MatchError("failed to handle VM state 'some-unexpected-state'"))
-					Expect(vm).To(BeNil())
+					invalidVM, err := builder.VM("some-vm")
+					Expect(err).NotTo(HaveOccurred())
+
+					switch u := invalidVM.(type) {
+					case *vm.Invalid:
+						Expect(u.Err).NotTo(BeNil())
+					default:
+						Fail("wrong type")
+					}
 				})
 			})
+
+			Context("when there is an error retrieving vm status", func() {
+				It("should return an error", func() {
+
+					mockVBox.EXPECT().VMStatus("some-vm").Return("", errors.New("some-error"))
+
+					_, err := builder.VM("some-vm")
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
+
 		})
 	})
 })

@@ -878,38 +878,100 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 		})
 	})
 
-	Describe("#VMState", func() {
-		It("should get the vm state", func() {
-			mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil)
+	Describe("#VMStatus", func() {
+		Context("when vm is running", func() {
+			It("should return a running status", func() {
+				gomock.InOrder(
+					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil),
+				)
+				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusRunning))
+			})
 
-			Expect(vbx.VMState("some-vm")).To(Equal(vbox.StateRunning))
 		})
 
-		Context("when the driver fails to get the vm state", func() {
-			It("should return an error", func() {
-				mockDriver.EXPECT().VMState("some-vm").Return("", errors.New("some-error"))
+		Context("when vm is stopped", func() {
+			It("should return a stopped status", func() {
+				gomock.InOrder(
+					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateStopped, nil),
+				)
 
-				_, err := vbx.VMState("some-vm")
+				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusStopped))
+			})
+		})
+
+		Context("when vm is aborted", func() {
+			It("should return a stopped status", func() {
+				gomock.InOrder(
+					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateAborted, nil),
+				)
+
+				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusStopped))
+			})
+		})
+
+		Context("when vm is saved", func() {
+			It("should return a suspended status", func() {
+				gomock.InOrder(
+					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateSaved, nil),
+				)
+
+				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusSuspended))
+			})
+		})
+
+		Context("when vm is paused", func() {
+			It("should return a suspended status", func() {
+				gomock.InOrder(
+					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StatePaused, nil),
+				)
+
+				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusSuspended))
+			})
+		})
+
+		Context("when vm is in an unknown state", func() {
+			It("should return a status unknown", func() {
+				gomock.InOrder(
+					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return("some-unknown-status", nil),
+				)
+
+				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusUnknown))
+			})
+		})
+
+		Context("when vm does not exist", func() {
+			It("should return a not created status", func() {
+				mockDriver.EXPECT().VMExists("some-vm").Return(false, nil)
+
+				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusNotCreated))
+			})
+		})
+
+		Context("when there is an error seeing if vm exists", func() {
+			It("should return an error", func() {
+				mockDriver.EXPECT().VMExists("some-vm").Return(false, errors.New("some-error"))
+
+				status, err := vbx.VMStatus("some-vm")
+				Expect(status).To(BeEmpty())
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
-	})
 
-	Describe("#VMExists", func() {
-		It("should return true if vm exists", func() {
-			mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
-			Expect(vbx.VMExists("some-vm")).To(BeTrue())
-		})
-
-		It("should return false if vm does not exist", func() {
-			mockDriver.EXPECT().VMExists("some-vm").Return(false, nil)
-			Expect(vbx.VMExists("some-vm")).To(BeFalse())
-		})
-
-		Context("when the driver fails to get the vm state", func() {
+		Context("when there is an error retrieving vm state", func() {
 			It("should return an error", func() {
-				mockDriver.EXPECT().VMExists("some-vm").Return(false, errors.New("some-error"))
-				_, err := vbx.VMExists("some-vm")
+				gomock.InOrder(
+					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return("", errors.New("some-error")),
+				)
+
+				status, err := vbx.VMStatus("some-vm")
+				Expect(status).To(BeEmpty())
 				Expect(err).To(MatchError("some-error"))
 			})
 		})

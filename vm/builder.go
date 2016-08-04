@@ -2,7 +2,6 @@ package vm
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,12 +22,21 @@ type VBoxBuilder struct {
 func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
 
-	exists, err := b.VBox.VMExists(vmName)
+	status, err := b.VBox.VMStatus(vmName)
 	if err != nil {
 		return nil, err
 	}
 
-	if !exists {
+	vmConfig, err := b.getVMConfig(vmName, status)
+	if err != nil {
+		return &Invalid{
+			Err: err,
+			UI:  termUI,
+		}, nil
+	}
+
+	switch status {
+	case vbox.StatusNotCreated:
 		dirExists, err := b.FS.Exists(filepath.Join(b.Config.VMDir, vmName))
 		if err != nil {
 			return nil, err
@@ -42,34 +50,14 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		}
 
 		return &NotCreated{
-			VBox:    b.VBox,
-			UI:      termUI,
-			Builder: b,
-			Config:  b.Config,
-			FS:      b.FS,
-			VMConfig: &config.VMConfig{
-				Name: vmName,
-			},
+			VBox:     b.VBox,
+			UI:       termUI,
+			Builder:  b,
+			Config:   b.Config,
+			FS:       b.FS,
+			VMConfig: vmConfig,
 		}, nil
-	}
-
-	vmConfig, err := b.VBox.VMConfig(vmName)
-	if err != nil {
-		return &Invalid{
-			Err: err,
-			UI:  termUI,
-		}, nil
-	}
-
-	state, err := b.VBox.VMState(vmName)
-	if err != nil {
-		return &Invalid{
-			Err: err,
-			UI:  termUI,
-		}, nil
-	}
-
-	if state == vbox.StateRunning {
+	case vbox.StatusRunning:
 		if output, err := b.healthcheck(vmConfig.IP, vmConfig.SSHPort); strings.TrimSpace(output) != "ok" || err != nil {
 			return &Unprovisioned{
 				VMConfig: vmConfig,
@@ -90,19 +78,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				Builder:  b,
 			}, nil
 		}
-	}
-
-	if state == vbox.StateSaved || state == vbox.StatePaused {
-		return &Suspended{
-			VMConfig: vmConfig,
-			Config:   b.Config,
-			SSH:      b.SSH,
-			UI:       termUI,
-			VBox:     b.VBox,
-		}, nil
-	}
-
-	if state == vbox.StateStopped || state == vbox.StateAborted {
+	case vbox.StatusStopped:
 		return &Stopped{
 			VMConfig: vmConfig,
 			Config:   b.Config,
@@ -113,9 +89,29 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			VBox:    b.VBox,
 			Builder: b,
 		}, nil
+	case vbox.StatusSuspended:
+		return &Suspended{
+			VMConfig: vmConfig,
+			Config:   b.Config,
+			SSH:      b.SSH,
+			UI:       termUI,
+			VBox:     b.VBox,
+		}, nil
+	default:
+		return &Invalid{
+			Err: errors.New("vm in unknown state"),
+			UI:  termUI,
+		}, nil
 	}
+}
 
-	return nil, fmt.Errorf("failed to handle VM state '%s'", state)
+func (b *VBoxBuilder) getVMConfig(vmName string, status string) (*config.VMConfig, error) {
+	if status == vbox.StatusNotCreated {
+		return &config.VMConfig{
+			Name: vmName,
+		}, nil
+	}
+	return b.VBox.VMConfig(vmName)
 }
 
 func (b *VBoxBuilder) healthcheck(ip string, sshPort string) (string, error) {

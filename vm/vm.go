@@ -15,8 +15,7 @@ type VBox interface {
 	SuspendVM(vmConfig *config.VMConfig) error
 	PowerOffVM(vmConfig *config.VMConfig) error
 	ImportVM(vmConfig *config.VMConfig) error
-	VMExists(vmName string) (exists bool, err error)
-	VMState(vmName string) (state string, err error)
+	VMStatus(vmName string) (state string, err error)
 	VMConfig(vmName string) (vmConfig *config.VMConfig, err error)
 }
 

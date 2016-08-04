@@ -44,6 +44,8 @@ type Driver interface {
 	CloneDisk(src string, dest string) error
 	DeleteDisk(diskPath string) error
 	UseDNSProxy(vmName string) error
+	GetMemory(vmName string) (uint64, error)
+	VMState(vmName string) (string, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vbox FS
@@ -63,18 +65,12 @@ type NetworkPicker interface {
 	SelectAvailableIP(vboxnets []*network.Interface) (ip string, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/address.go github.com/pivotal-cf/pcfdev-cli/vbox Address
-type Address interface {
-	DomainForIP(vmIP string) (domain string, err error)
-	SubnetForIP(vmIP string) (subnetIP string, err error)
-}
-
 type VBox struct {
+	Config *config.Config
 	Driver Driver
-	SSH    SSH
 	FS     FS
 	Picker NetworkPicker
-	Config *config.Config
+	SSH    SSH
 }
 
 type VMProperties struct {
@@ -373,4 +369,39 @@ func (v *VBox) DestroyPCFDevVMs() error {
 		}
 	}
 	return nil
+}
+
+func (v *VBox) VMConfig(vmName string) (*config.VMConfig, error) {
+	memory, err := v.Driver.GetMemory(vmName)
+	if err != nil {
+		return nil, err
+	}
+	port, err := v.Driver.GetHostForwardPort(vmName, "ssh")
+	if err != nil {
+		return nil, err
+	}
+	ip, err := v.Driver.GetVMIP(vmName)
+	if err != nil {
+		return nil, err
+	}
+	domain, err := address.DomainForIP(ip)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config.VMConfig{
+		Domain:  domain,
+		IP:      ip,
+		Memory:  memory,
+		Name:    vmName,
+		SSHPort: port,
+	}, nil
+}
+
+func (v *VBox) VMExists(vmName string) (exists bool, err error) {
+	return v.Driver.VMExists(vmName)
+}
+
+func (v *VBox) VMState(vmName string) (state string, err error) {
+	return v.Driver.VMState(vmName)
 }

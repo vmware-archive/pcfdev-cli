@@ -878,6 +878,108 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 		})
 	})
 
+	Describe("#VMState", func() {
+		It("should get the vm state", func() {
+			mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil)
+
+			Expect(vbx.VMState("some-vm")).To(Equal(vbox.StateRunning))
+		})
+
+		Context("when the driver fails to get the vm state", func() {
+			It("should return an error", func() {
+				mockDriver.EXPECT().VMState("some-vm").Return("", errors.New("some-error"))
+
+				_, err := vbx.VMState("some-vm")
+				Expect(err).To(MatchError("some-error"))
+			})
+		})
+	})
+
+	Describe("#VMExists", func() {
+		It("should return true if vm exists", func() {
+			mockDriver.EXPECT().VMExists("some-vm").Return(true, nil)
+			Expect(vbx.VMExists("some-vm")).To(BeTrue())
+		})
+
+		It("should return false if vm does not exist", func() {
+			mockDriver.EXPECT().VMExists("some-vm").Return(false, nil)
+			Expect(vbx.VMExists("some-vm")).To(BeFalse())
+		})
+
+		Context("when the driver fails to get the vm state", func() {
+			It("should return an error", func() {
+				mockDriver.EXPECT().VMExists("some-vm").Return(false, errors.New("some-error"))
+				_, err := vbx.VMExists("some-vm")
+				Expect(err).To(MatchError("some-error"))
+			})
+		})
+	})
+
+	Describe("#VMConfig", func() {
+		It("should get the vm config", func() {
+			gomock.InOrder(
+				mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(4000), nil),
+				mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
+				mockDriver.EXPECT().GetVMIP("some-vm").Return("192.168.22.11", nil),
+			)
+
+			Expect(vbx.VMConfig("some-vm")).To(Equal(&config.VMConfig{
+				Domain:  "local2.pcfdev.io",
+				IP:      "192.168.22.11",
+				Memory:  uint64(4000),
+				Name:    "some-vm",
+				SSHPort: "some-port",
+			}))
+		})
+
+		Context("when the driver fails to get the memory", func() {
+			It("should return an error", func() {
+				mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(0), errors.New("some-error"))
+
+				_, err := vbx.VMConfig("some-vm")
+				Expect(err).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when the driver fails to get the SSHPort", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(4000), nil),
+					mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("", errors.New("some-error")),
+				)
+
+				_, err := vbx.VMConfig("some-vm")
+				Expect(err).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when the driver fails to get the IP", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(4000), nil),
+					mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
+					mockDriver.EXPECT().GetVMIP("some-vm").Return("", errors.New("some-error")),
+				)
+
+				_, err := vbx.VMConfig("some-vm")
+				Expect(err).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when the address has no domain for the ip", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockDriver.EXPECT().GetMemory("some-vm").Return(uint64(4000), nil),
+					mockDriver.EXPECT().GetHostForwardPort("some-vm", "ssh").Return("some-port", nil),
+					mockDriver.EXPECT().GetVMIP("some-vm").Return("some-bad-ip", nil),
+				)
+
+				_, err := vbx.VMConfig("some-vm")
+				Expect(err).To(MatchError("some-bad-ip is not one of the allowed PCF Dev ips"))
+			})
+		})
+	})
+
 	Describe("#ResumeVM", func() {
 		It("should resume the VM", func() {
 			mockDriver.EXPECT().ResumeVM("some-vm")

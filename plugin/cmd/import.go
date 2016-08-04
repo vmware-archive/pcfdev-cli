@@ -8,7 +8,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
 
-const IMPORT_ARGS=1
+const IMPORT_ARGS = 1
 
 type ImportCmd struct {
 	OVAPath    string

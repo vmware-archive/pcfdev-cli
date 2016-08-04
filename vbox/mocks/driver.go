@@ -153,6 +153,17 @@ func (_mr *_MockDriverRecorder) GetHostOnlyInterfaces() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetHostOnlyInterfaces")
 }
 
+func (_m *MockDriver) GetMemory(_param0 string) (uint64, error) {
+	ret := _m.ctrl.Call(_m, "GetMemory", _param0)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) GetMemory(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetMemory", arg0)
+}
+
 func (_m *MockDriver) GetVMIP(_param0 string) (string, error) {
 	ret := _m.ctrl.Call(_m, "GetVMIP", _param0)
 	ret0, _ := ret[0].(string)
@@ -290,6 +301,17 @@ func (_m *MockDriver) VMExists(_param0 string) (bool, error) {
 
 func (_mr *_MockDriverRecorder) VMExists(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "VMExists", arg0)
+}
+
+func (_m *MockDriver) VMState(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "VMState", _param0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) VMState(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "VMState", arg0)
 }
 
 func (_m *MockDriver) VMs() ([]string, error) {

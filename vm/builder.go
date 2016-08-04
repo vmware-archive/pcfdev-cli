@@ -9,43 +9,21 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
-	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
-	"github.com/pivotal-cf/pcfdev-cli/fs"
-	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
-//go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vm Driver
-type Driver interface {
-	VMExists(vmName string) (exists bool, err error)
-	VMState(vmName string) (state string, err error)
-	GetVMIP(vmName string) (vmIP string, err error)
-	GetMemory(vmName string) (memory uint64, err error)
-	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
-}
-
 type VBoxBuilder struct {
 	Config *config.Config
-	Driver Driver
+	VBox   VBox
 	FS     FS
 	SSH    SSH
 }
 
 func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
-	vbx := &vbox.VBox{
-		SSH:    b.SSH,
-		FS:     &fs.FS{},
-		Driver: &vbox.VBoxDriver{},
-		Picker: &address.Picker{
-			Driver:  &vbox.VBoxDriver{},
-			Network: &network.Network{},
-		},
-		Config: b.Config,
-	}
 
-	exists, err := b.Driver.VMExists(vmName)
+	exists, err := b.VBox.VMExists(vmName)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +42,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		}
 
 		return &NotCreated{
-			VBox:    vbx,
+			VBox:    b.VBox,
 			UI:      termUI,
 			Builder: b,
 			Config:  b.Config,
@@ -75,25 +53,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		}, nil
 	}
 
-	ip, err := b.Driver.GetVMIP(vmName)
-	if err != nil {
-		return &Invalid{
-			Err: err,
-			UI:  termUI,
-		}, nil
-	}
-	domain, err := address.DomainForIP(ip)
-	if err != nil {
-		return &Invalid{
-			Err: err,
-			UI:  termUI,
-		}, nil
-	}
-	memory, err := b.Driver.GetMemory(vmName)
-	if err != nil {
-		return nil, err
-	}
-	sshPort, err := b.Driver.GetHostForwardPort(vmName, "ssh")
+	vmConfig, err := b.VBox.VMConfig(vmName)
 	if err != nil {
 		return &Invalid{
 			Err: err,
@@ -101,79 +61,56 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		}, nil
 	}
 
-	state, err := b.Driver.VMState(vmName)
+	state, err := b.VBox.VMState(vmName)
 	if err != nil {
-		return nil, err
+		return &Invalid{
+			Err: err,
+			UI:  termUI,
+		}, nil
 	}
+
 	if state == vbox.StateRunning {
-		if output, err := b.healthcheck(ip, sshPort); strings.TrimSpace(output) != "ok" || err != nil {
+		if output, err := b.healthcheck(vmConfig.IP, vmConfig.SSHPort); strings.TrimSpace(output) != "ok" || err != nil {
 			return &Unprovisioned{
-				VMConfig: &config.VMConfig{
-					Name:    vmName,
-					IP:      ip,
-					SSHPort: sshPort,
-					Domain:  domain,
-					Memory:  memory,
-				},
+				VMConfig: vmConfig,
 				Config: &config.Config{
 					VMDir: b.Config.VMDir,
 				},
-
 				UI:   termUI,
-				VBox: vbx,
+				VBox: b.VBox,
 				FS:   b.FS,
 				SSH:  b.SSH,
 			}, nil
 		} else {
 			return &Running{
-				VMConfig: &config.VMConfig{
-					Name:    vmName,
-					IP:      ip,
-					SSHPort: sshPort,
-					Domain:  domain,
-					Memory:  memory,
-				},
-
-				UI:      termUI,
-				VBox:    vbx,
-				SSH:     b.SSH,
-				Builder: b,
+				VMConfig: vmConfig,
+				UI:       termUI,
+				VBox:     b.VBox,
+				SSH:      b.SSH,
+				Builder:  b,
 			}, nil
 		}
 	}
 
 	if state == vbox.StateSaved || state == vbox.StatePaused {
 		return &Suspended{
-			VMConfig: &config.VMConfig{
-				Name:    vmName,
-				IP:      ip,
-				SSHPort: sshPort,
-				Domain:  domain,
-				Memory:  memory,
-			},
-			Config: b.Config,
-
-			SSH:  b.SSH,
-			UI:   termUI,
-			VBox: vbx,
+			VMConfig: vmConfig,
+			Config:   b.Config,
+			SSH:      b.SSH,
+			UI:       termUI,
+			VBox:     b.VBox,
 		}, nil
 	}
 
 	if state == vbox.StateStopped || state == vbox.StateAborted {
 		return &Stopped{
-			VMConfig: &config.VMConfig{
-				Name:    vmName,
-				IP:      ip,
-				SSHPort: sshPort,
-				Domain:  domain,
-				Memory:  memory,
-			},
-			Config: b.Config,
+			VMConfig: vmConfig,
+			Config:   b.Config,
 
 			FS:      b.FS,
 			UI:      termUI,
 			SSH:     b.SSH,
-			VBox:    vbx,
+			VBox:    b.VBox,
 			Builder: b,
 		}, nil
 	}

@@ -42,19 +42,19 @@ func main() {
 
 	fileSystem := &fs.FS{}
 	driver := &vbox.VBoxDriver{FS: fileSystem}
-	system := &system.System{
-		FS: fileSystem,
-	}
-	config, err := config.New(vmName, md5, system, &config.Version{
-		BuildVersion:    buildVersion,
-		BuildSHA:        buildSHA,
-		OVABuildVersion: ovaBuildVersion,
-	})
+	conf, err := config.New(vmName, md5,
+		&system.System{
+			FS: fileSystem,
+		}, &config.Version{
+			BuildVersion:    buildVersion,
+			BuildSHA:        buildSHA,
+			OVABuildVersion: ovaBuildVersion,
+		})
 	if err != nil {
 		cfui.Failed("Error: %s", err)
 	}
 	token := &pivnet.Token{
-		Config: config,
+		Config: conf,
 		FS:     fileSystem,
 		UI:     cfui,
 	}
@@ -64,35 +64,36 @@ func main() {
 		ProductFileId: productFileId,
 		Token:         token,
 	}
+	vbx := &vbox.VBox{
+		SSH:    &ssh.SSH{},
+		FS:     fileSystem,
+		Driver: driver,
+		Picker: &address.Picker{
+			Network: &network.Network{},
+			Driver:  driver,
+		},
+		Config: conf,
+	}
 
 	cfplugin.Start(&plugin.Plugin{
 		UI:     &plugin.NonTranslatingUI{cfui},
-		Config: config,
+		Config: conf,
 		CmdBuilder: &cmd.Builder{
 			Client: client,
-			Config: config,
+			Config: conf,
 			Downloader: &downloader.Downloader{
 				PivnetClient: client,
 				FS:           fileSystem,
-				Config:       config,
+				Config:       conf,
 				Token:        token,
 			},
 			EULAUI: &ui.UI{},
 			FS:     fileSystem,
 			UI:     &plugin.NonTranslatingUI{cfui},
-			VBox: &vbox.VBox{
-				SSH:    &ssh.SSH{},
-				FS:     fileSystem,
-				Driver: driver,
-				Picker: &address.Picker{
-					Network: &network.Network{},
-					Driver:  driver,
-				},
-				Config: config,
-			},
+			VBox:   vbx,
 			VMBuilder: &vm.VBoxBuilder{
-				Config: config,
-				Driver: driver,
+				VBox:   vbx,
+				Config: conf,
 				FS:     fileSystem,
 				SSH:    &ssh.SSH{},
 			},

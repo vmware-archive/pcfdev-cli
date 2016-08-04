@@ -245,14 +245,3 @@ var _ = Describe("scroller", func() {
 		})
 	})
 })
-
-// func printBuffer(buf termui.Buffer) {
-// cellMap := buf.CellMap
-// area := buf.Area
-// for y := area.Min.Y; y < area.Max.Y; y++ {
-// for x := area.Min.X; x < area.Max.X; x++ {
-// fmt.Printf("%c", cellMap[image.Point{Y: y, X: x}].Ch)
-// }
-// fmt.Printf("\n")
-// }
-// }

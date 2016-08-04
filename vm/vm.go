@@ -15,6 +15,9 @@ type VBox interface {
 	SuspendVM(vmConfig *config.VMConfig) error
 	PowerOffVM(vmConfig *config.VMConfig) error
 	ImportVM(vmConfig *config.VMConfig) error
+	VMExists(vmName string) (exists bool, err error)
+	VMState(vmName string) (state string, err error)
+	VMConfig(vmName string) (vmConfig *config.VMConfig, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/vm UI

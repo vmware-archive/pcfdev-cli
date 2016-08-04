@@ -317,10 +317,11 @@ var _ = Describe("PCF Dev", func() {
 			Eventually(session).Should(gbytes.Say("PCF Dev OVA is already installed."))
 
 			By("running import with incorrect ova")
-			importCommand = exec.Command("cf", "dev", "import", filepath.Join(tempOVALocation, wrongOVA.Name()))
+			importCommand = exec.Command("cf", "dev", "import", wrongOVA.Name())
 			session, err = gexec.Start(importCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "3m").Should(gexec.Exit(1))
+			Eventually(session).Should(gbytes.Say("Error: specified OVA version does not match the expected OVA version \\(some-ova-version\\) for this version of the cf CLI plugin."))
 
 			By("running start without provision")
 			noProvisionCommand := exec.Command("cf", "dev", "start", "-n")

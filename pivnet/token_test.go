@@ -86,7 +86,7 @@ var _ = Describe("Pivnet Token", func() {
 				It("should prompt the user to enter their Pivnet token", func() {
 					gomock.InOrder(
 						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(false, nil),
-						mockUI.EXPECT().Say("Please retrieve your Pivotal Network API from:"),
+						mockUI.EXPECT().Say("Please retrieve your Pivotal Network API token from:"),
 						mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile"),
 						mockUI.EXPECT().AskForPassword("API token").Return("some-user-provided-token"),
 					)
@@ -99,7 +99,7 @@ var _ = Describe("Pivnet Token", func() {
 				It("should return the same value", func() {
 					gomock.InOrder(
 						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Times(1),
-						mockUI.EXPECT().Say("Please retrieve your Pivotal Network API from:").Times(1),
+						mockUI.EXPECT().Say("Please retrieve your Pivotal Network API token from:").Times(1),
 						mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile").Times(1),
 						mockUI.EXPECT().AskForPassword("API token").Return("some-user-provided-token").Times(1),
 					)

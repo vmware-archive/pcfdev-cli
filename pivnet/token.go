@@ -41,7 +41,7 @@ func (t *Token) Get() (string, error) {
 		return t.token, nil
 	}
 
-	t.UI.Say("Please retrieve your Pivotal Network API from:")
+	t.UI.Say("Please retrieve your Pivotal Network API token from:")
 	t.UI.Say("https://network.pivotal.io/users/dashboard/edit-profile")
 	t.token = t.UI.AskForPassword("API token")
 	return t.token, nil

@@ -104,7 +104,7 @@ func (p *Plugin) GetMetadata() plugin.PluginMetadata {
 
 SUBCOMMANDS:
    start                       Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.
-      [-m memory-in-mb]        Memory to allocate for VM. Default: half of system memory, no more than 4 GB.
+      [-m memory-in-mb]        Memory to allocate for VM. Default: half of total memory, max 4 GB, max 8 GB with SCS.
       [-c number-of-cores]     Number of processor cores used by VM. Default: number of physical cores.
       [-s service1,service2]   Specify the services started with PCF Dev.
                                   Options: redis, rabbitmq, spring-cloud-services (scs), default, all, none

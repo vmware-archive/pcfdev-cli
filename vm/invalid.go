@@ -1,7 +1,5 @@
 package vm
 
-import "errors"
-
 type Invalid struct {
 	Err error
 	UI  UI
@@ -13,7 +11,7 @@ func (i *Invalid) Stop() error {
 }
 
 func (i *Invalid) VerifyStartOpts(opts *StartOpts) error {
-	return errors.New(i.err())
+	return nil
 }
 
 func (i *Invalid) Start(opts *StartOpts) error {
@@ -22,6 +20,7 @@ func (i *Invalid) Start(opts *StartOpts) error {
 }
 
 func (i *Invalid) Provision() error {
+	i.UI.Failed(i.message())
 	return nil
 }
 

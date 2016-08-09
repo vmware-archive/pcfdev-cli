@@ -72,13 +72,13 @@ var _ = Describe("ssh", func() {
 				It("should stream stdout to the terminal", func() {
 					err := ssh.RunSSHCommand("echo -n some-output", port, 5*time.Minute, stdout, stderr)
 					Expect(err).NotTo(HaveOccurred())
-					Eventually(string(stdout.Contents()), 10*time.Second).Should(Equal("some-output"))
+					Eventually(string(stdout.Contents()), 20*time.Second).Should(Equal("some-output"))
 				})
 
 				It("should stream stderr to the terminal", func() {
 					err := ssh.RunSSHCommand(">&2 echo -n some-output", port, 5*time.Minute, stdout, stderr)
 					Expect(err).NotTo(HaveOccurred())
-					Eventually(string(stderr.Contents()), 10*time.Second).Should(Equal("some-output"))
+					Eventually(string(stderr.Contents()), 20*time.Second).Should(Equal("some-output"))
 				})
 			})
 

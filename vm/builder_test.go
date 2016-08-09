@@ -23,6 +23,7 @@ var _ = Describe("Builder", func() {
 			mockFS   *mocks.MockFS
 			mockSSH  *mocks.MockSSH
 			builder  vm.Builder
+			conf     *config.Config
 		)
 
 		BeforeEach(func() {
@@ -30,16 +31,17 @@ var _ = Describe("Builder", func() {
 			mockVBox = mocks.NewMockVBox(mockCtrl)
 			mockFS = mocks.NewMockFS(mockCtrl)
 			mockSSH = mocks.NewMockSSH(mockCtrl)
+			conf = &config.Config{
+				MinMemory: 100,
+				MaxMemory: 200,
+				VMDir:     "some-vm-dir",
+			}
 
 			builder = &vm.VBoxBuilder{
-				VBox: mockVBox,
-				FS:   mockFS,
-				SSH:  mockSSH,
-				Config: &config.Config{
-					MinMemory: 100,
-					MaxMemory: 200,
-					VMDir:     "some-vm-dir",
-				},
+				VBox:   mockVBox,
+				FS:     mockFS,
+				SSH:    mockSSH,
+				Config: conf,
 			}
 		})
 
@@ -270,7 +272,35 @@ var _ = Describe("Builder", func() {
 				})
 			})
 
-			Context("when vm is suspended", func() {
+			Context("when vm is suspended in memory", func() {
+				It("should return a paused vm", func() {
+					expectedVMConfig := &config.VMConfig{
+						IP:      "192.168.11.11",
+						Memory:  uint64(3456),
+						SSHPort: "some-port",
+						Domain:  "local.pcfdev.io",
+					}
+					gomock.InOrder(
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusPaused, nil),
+						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
+					)
+
+					pausedVM, err := builder.VM("some-vm")
+					Expect(err).NotTo(HaveOccurred())
+
+					switch u := pausedVM.(type) {
+					case *vm.Paused:
+						Expect(u.SuspendedVM.VMConfig).To(BeIdenticalTo(expectedVMConfig))
+						Expect(u.SuspendedVM.VBox).NotTo(BeNil())
+						Expect(u.SuspendedVM.UI).NotTo(BeNil())
+						Expect(u.UI).NotTo(BeNil())
+					default:
+						Fail("wrong type")
+					}
+				})
+			})
+
+			Context("when vm is suspended to disk", func() {
 				It("should return a suspended vm", func() {
 					expectedVMConfig := &config.VMConfig{
 						IP:      "192.168.11.11",
@@ -279,18 +309,19 @@ var _ = Describe("Builder", func() {
 						Domain:  "local.pcfdev.io",
 					}
 					gomock.InOrder(
-						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusSuspended, nil),
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusSaved, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
 					)
 
-					suspendedVM, err := builder.VM("some-vm")
+					savedVM, err := builder.VM("some-vm")
 					Expect(err).NotTo(HaveOccurred())
 
-					switch u := suspendedVM.(type) {
-					case *vm.Suspended:
-						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
-						Expect(u.VBox).NotTo(BeNil())
+					switch u := savedVM.(type) {
+					case *vm.Saved:
+						Expect(u.SuspendedVM.VMConfig).To(BeIdenticalTo(expectedVMConfig))
+						Expect(u.SuspendedVM.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
+						Expect(u.Config).To(BeIdenticalTo(conf))
 					default:
 						Fail("wrong type")
 					}

@@ -85,7 +85,8 @@ type ProxyTypes struct {
 
 const (
 	StatusRunning    = "Running"
-	StatusSuspended  = "Suspended"
+	StatusSaved      = "Saved"
+	StatusPaused     = "Paused"
 	StatusStopped    = "Stopped"
 	StatusNotCreated = "Not created"
 	StatusUnknown    = "Unknown"
@@ -419,8 +420,10 @@ func (v *VBox) VMStatus(vmName string) (status string, err error) {
 		return StatusRunning, nil
 	case StateStopped, StateAborted:
 		return StatusStopped, nil
-	case StateSaved, StatePaused:
-		return StatusSuspended, nil
+	case StateSaved:
+		return StatusSaved, nil
+	case StatePaused:
+		return StatusPaused, nil
 	default:
 		return StatusUnknown, nil
 	}

@@ -61,13 +61,11 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		if output, err := b.healthcheck(vmConfig.IP, vmConfig.SSHPort); strings.TrimSpace(output) != "ok" || err != nil {
 			return &Unprovisioned{
 				VMConfig: vmConfig,
-				Config: &config.Config{
-					VMDir: b.Config.VMDir,
-				},
-				UI:   termUI,
-				VBox: b.VBox,
-				FS:   b.FS,
-				SSH:  b.SSH,
+				Config:   b.Config,
+				UI:       termUI,
+				VBox:     b.VBox,
+				FS:       b.FS,
+				SSH:      b.SSH,
 			}, nil
 		} else {
 			return &Running{
@@ -89,13 +87,26 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			VBox:    b.VBox,
 			Builder: b,
 		}, nil
-	case vbox.StatusSuspended:
-		return &Suspended{
-			VMConfig: vmConfig,
-			Config:   b.Config,
-			SSH:      b.SSH,
-			UI:       termUI,
-			VBox:     b.VBox,
+	case vbox.StatusPaused:
+		return &Paused{
+			SuspendedVM: &Suspended{
+				VMConfig: vmConfig,
+				SSH:      b.SSH,
+				UI:       termUI,
+				VBox:     b.VBox,
+			},
+			UI: termUI,
+		}, nil
+	case vbox.StatusSaved:
+		return &Saved{
+			SuspendedVM: &Suspended{
+				VMConfig: vmConfig,
+				SSH:      b.SSH,
+				UI:       termUI,
+				VBox:     b.VBox,
+			},
+			UI:     termUI,
+			Config: b.Config,
 		}, nil
 	default:
 		return &Invalid{

@@ -913,24 +913,24 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 		})
 
 		Context("when vm is saved", func() {
-			It("should return a suspended status", func() {
+			It("should return a saved status", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateSaved, nil),
 				)
 
-				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusSuspended))
+				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusSaved))
 			})
 		})
 
 		Context("when vm is paused", func() {
-			It("should return a suspended status", func() {
+			It("should return a paused status", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
 					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StatePaused, nil),
 				)
 
-				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusSuspended))
+				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusPaused))
 			})
 		})
 

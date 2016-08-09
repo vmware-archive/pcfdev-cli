@@ -66,4 +66,5 @@ type StartOpts struct {
 	OVAPath     string
 	Services    string
 	NoProvision bool
+	Registries  string
 }

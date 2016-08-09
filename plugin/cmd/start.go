@@ -25,6 +25,7 @@ func (s *StartCmd) Parse(args []string) error {
 	flagContext.NewStringFlag("o", "ova", "<path to custom ova>")
 	flagContext.NewStringFlag("s", "services", "<services to start with>")
 	flagContext.NewBoolFlag("n", "", "<skip provisioning>")
+	flagContext.NewStringFlag("p", "", "<private docker registries>")
 	if err := parse(flagContext, args, START_ARGS); err != nil {
 		return err
 	}
@@ -35,6 +36,7 @@ func (s *StartCmd) Parse(args []string) error {
 		OVAPath:     flagContext.String("o"),
 		Services:    flagContext.String("s"),
 		NoProvision: flagContext.Bool("n"),
+		Registries:  flagContext.String("p"),
 	}
 	return nil
 }

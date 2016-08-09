@@ -1,13 +1,13 @@
 package vm
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
+	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
@@ -38,6 +38,9 @@ func (s *Stopped) VerifyStartOpts(opts *StartOpts) error {
 	}
 	if opts.Services != "" {
 		return errors.New("services cannot be changed once the vm has been created")
+	}
+	if opts.Registries != "" {
+		return errors.New("private registries cannot be changed once the vm has been created")
 	}
 	if s.VMConfig.Memory > s.Config.FreeMemory {
 		if !s.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", s.VMConfig.Memory)) {
@@ -75,14 +78,16 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		sort.Strings(services)
 	}
 
-	if err := s.FS.Remove(filepath.Join(s.Config.VMDir, "provision-options")); err != nil {
-		return &StartVMError{err}
+	registries := []string{}
+	if opts.Registries != "" {
+		registries = strings.Split(opts.Registries, ",")
 	}
 
 	provisionConfig := &config.ProvisionConfig{
-		Domain:   s.VMConfig.Domain,
-		IP:       s.VMConfig.IP,
-		Services: strings.Join(services, ","),
+		Domain:     s.VMConfig.Domain,
+		IP:         s.VMConfig.IP,
+		Services:   strings.Join(services, ","),
+		Registries: registries,
 	}
 
 	data, err := json.Marshal(provisionConfig)
@@ -90,18 +95,18 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		return &StartVMError{err}
 	}
 
-	if err := s.FS.Write(filepath.Join(s.Config.VMDir, "provision-options"), bytes.NewReader(data)); err != nil {
+	unprovisionedVM, err := s.Builder.VM(s.VMConfig.Name)
+	if err != nil {
+		return &StartVMError{err}
+	}
+
+	if err := s.SSH.RunSSHCommand(`echo '`+string(data)+`' > /var/pcfdev/provision-options.json`, s.VMConfig.SSHPort, 30*time.Second, os.Stdout, os.Stderr); err != nil {
 		return &StartVMError{err}
 	}
 
 	if opts.NoProvision {
 		s.UI.Say("VM will not be provisioned because '-n' (no-provision) flag was specified.")
 		return nil
-	}
-
-	unprovisionedVM, err := s.Builder.VM(s.VMConfig.Name)
-	if err != nil {
-		return &StartVMError{err}
 	}
 
 	return unprovisionedVM.Provision()

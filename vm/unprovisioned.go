@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -41,17 +40,17 @@ func (u *Unprovisioned) Status() string {
 }
 
 func (u *Unprovisioned) Provision() error {
-	if exists, err := u.FS.Exists(filepath.Join(u.Config.VMDir, "provision-options")); !exists || err != nil {
+	if err := u.SSH.RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", u.VMConfig.SSHPort, 30*time.Second, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{errors.New("missing provision configuration")}
 	}
 
-	data, err := u.FS.Read(filepath.Join(u.Config.VMDir, "provision-options"))
+	data, err := u.SSH.GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", u.VMConfig.SSHPort, 30*time.Second)
 	if err != nil {
 		return &ProvisionVMError{err}
 	}
 
 	provisionConfig := &config.ProvisionConfig{}
-	if err := json.Unmarshal(data, provisionConfig); err != nil {
+	if err := json.Unmarshal([]byte(data), provisionConfig); err != nil {
 		return &ProvisionVMError{err}
 	}
 

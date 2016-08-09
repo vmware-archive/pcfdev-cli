@@ -317,6 +317,12 @@ var _ = Describe("Not Created", func() {
 
 		Context("when opts are provided", func() {
 			It("should import and start the vm with given options", func() {
+				startOpts := &vm.StartOpts{
+					Memory:   uint64(4000),
+					CPUs:     3,
+					OVAPath:  "some-ova-path",
+					Services: "all",
+				}
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Allocating 4000 MB out of 8000 MB total system memory (5000 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
@@ -327,22 +333,22 @@ var _ = Describe("Not Created", func() {
 						OVAPath: "some-ova-path",
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
-					mockStopped.EXPECT().Start(&vm.StartOpts{Services: "all"}),
+					mockStopped.EXPECT().Start(startOpts),
 				)
 				conf.FreeMemory = uint64(5000)
 				conf.TotalMemory = uint64(8000)
 
-				notCreatedVM.Start(&vm.StartOpts{
-					Memory:   uint64(4000),
-					CPUs:     3,
-					OVAPath:  "some-ova-path",
-					Services: "all",
-				})
+				notCreatedVM.Start(startOpts)
 			})
 		})
 
 		Context("when scs is passed as a service", func() {
 			It("should use the spring cloud default memory", func() {
+				startOpts := &vm.StartOpts{
+					CPUs:     3,
+					OVAPath:  "some-ova-path",
+					Services: "scs",
+				}
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Allocating 6000 MB out of 8000 MB total system memory (7000 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
@@ -353,22 +359,23 @@ var _ = Describe("Not Created", func() {
 						OVAPath: "some-ova-path",
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
-					mockStopped.EXPECT().Start(&vm.StartOpts{Services: "scs"}),
+					mockStopped.EXPECT().Start(startOpts),
 				)
 				conf.SpringCloudDefaultMemory = uint64(6000)
 				conf.FreeMemory = uint64(7000)
 				conf.TotalMemory = uint64(8000)
 
-				notCreatedVM.Start(&vm.StartOpts{
-					CPUs:     3,
-					OVAPath:  "some-ova-path",
-					Services: "scs",
-				})
+				notCreatedVM.Start(startOpts)
 			})
 		})
 
 		Context("when spring-cloud-services is passed as a service", func() {
 			It("should use the spring cloud default memory", func() {
+				startOpts := &vm.StartOpts{
+					CPUs:     3,
+					OVAPath:  "some-ova-path",
+					Services: "spring-cloud-services",
+				}
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Allocating 6000 MB out of 8000 MB total system memory (7000 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
@@ -379,22 +386,23 @@ var _ = Describe("Not Created", func() {
 						OVAPath: "some-ova-path",
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
-					mockStopped.EXPECT().Start(&vm.StartOpts{Services: "spring-cloud-services"}),
+					mockStopped.EXPECT().Start(startOpts),
 				)
 				conf.SpringCloudDefaultMemory = uint64(6000)
 				conf.FreeMemory = uint64(7000)
 				conf.TotalMemory = uint64(8000)
 
-				notCreatedVM.Start(&vm.StartOpts{
-					CPUs:     3,
-					OVAPath:  "some-ova-path",
-					Services: "spring-cloud-services",
-				})
+				notCreatedVM.Start(startOpts)
 			})
 		})
 
 		Context("when all is passed as a service", func() {
 			It("should use the spring cloud default memory", func() {
+				startOpts := &vm.StartOpts{
+					CPUs:     3,
+					OVAPath:  "some-ova-path",
+					Services: "all",
+				}
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Allocating 6000 MB out of 8000 MB total system memory (7000 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
@@ -405,17 +413,13 @@ var _ = Describe("Not Created", func() {
 						OVAPath: "some-ova-path",
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
-					mockStopped.EXPECT().Start(&vm.StartOpts{Services: "all"}),
+					mockStopped.EXPECT().Start(startOpts),
 				)
 				conf.SpringCloudDefaultMemory = uint64(6000)
 				conf.FreeMemory = uint64(7000)
 				conf.TotalMemory = uint64(8000)
 
-				notCreatedVM.Start(&vm.StartOpts{
-					CPUs:     3,
-					OVAPath:  "some-ova-path",
-					Services: "all",
-				})
+				notCreatedVM.Start(startOpts)
 			})
 		})
 
@@ -484,6 +488,9 @@ var _ = Describe("Not Created", func() {
 
 		Context("when there is an error starting the stopped VM", func() {
 			It("should return an error", func() {
+				startOpts := &vm.StartOpts{
+					Memory: uint64(3072),
+				}
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Allocating 3072 MB out of 0 MB total system memory (0 MB free)."),
 					mockUI.EXPECT().Say("Importing VM..."),
@@ -493,13 +500,11 @@ var _ = Describe("Not Created", func() {
 						OVAPath: filepath.Join("some-ova-dir", "some-vm.ova"),
 					}).Return(nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
-					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("failed to start VM: some-error")),
+					mockStopped.EXPECT().Start(startOpts).Return(errors.New("failed to start VM: some-error")),
 				)
 				conf.OVADir = "some-ova-dir"
 
-				Expect(notCreatedVM.Start(&vm.StartOpts{
-					Memory: uint64(3072),
-				})).To(MatchError("failed to start VM: some-error"))
+				Expect(notCreatedVM.Start(startOpts)).To(MatchError("failed to start VM: some-error"))
 			})
 		})
 	})

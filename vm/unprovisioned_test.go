@@ -3,7 +3,6 @@ package vm_test
 import (
 	"errors"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/golang/mock/gomock"
@@ -84,10 +83,10 @@ var _ = Describe("Unprovisioned", func() {
 	Describe("Provision", func() {
 		It("should provision the VM", func() {
 			gomock.InOrder(
-				mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte(`{"domain":"some-domain","ip":"some-ip","services":"some-service"}`), nil),
+				mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "some-port", 30*time.Second, os.Stdout, os.Stderr),
+				mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", 30*time.Second).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-services"}`, nil),
 				mockUI.EXPECT().Say("Provisioning VM..."),
-				mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip some-service", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+				mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip some-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 			)
 
 			unprovisioned.Provision()
@@ -96,17 +95,7 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when there is an error finding the provision config", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(false, errors.New("some-error")),
-				)
-
-				Expect(unprovisioned.Provision()).To(MatchError("failed to provision VM: missing provision configuration"))
-			})
-		})
-
-		Context("when provision config is missing", func() {
-			It("should return an error", func() {
-				gomock.InOrder(
-					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(false, nil),
+					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "some-port", 30*time.Second, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
 				Expect(unprovisioned.Provision()).To(MatchError("failed to provision VM: missing provision configuration"))
@@ -116,8 +105,8 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when there is an error reading the provision config", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte{}, errors.New("some-error")),
+					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "some-port", 30*time.Second, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", 30*time.Second).Return("", errors.New("some-error")),
 				)
 
 				Expect(unprovisioned.Provision()).To(MatchError("failed to provision VM: some-error"))
@@ -127,8 +116,8 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when there is an error parsing the provision config", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Exists(filepath.Join("some-vm-dir", "provision-options")).Return(true, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "provision-options")).Return([]byte("some-bad-json"), nil),
+					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "some-port", 30*time.Second, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", 30*time.Second).Return("{some-bad-json}", nil),
 				)
 
 				Expect(unprovisioned.Provision()).To(MatchError(ContainSubstring(`failed to provision VM: invalid character 's'`)))

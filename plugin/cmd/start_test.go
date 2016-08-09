@@ -52,13 +52,15 @@ var _ = Describe("StartCmd", func() {
 					"-c", "2",
 					"-o", "some-ova-path",
 					"-s", "some-services",
-					"-n"})).To(Succeed())
+					"-n",
+					"-p", "some-private-registries"})).To(Succeed())
 
 				Expect(startCmd.Opts.Memory).To(Equal(uint64(3456)))
 				Expect(startCmd.Opts.CPUs).To(Equal(2))
 				Expect(startCmd.Opts.OVAPath).To(Equal("some-ova-path"))
 				Expect(startCmd.Opts.Services).To(Equal("some-services"))
 				Expect(startCmd.Opts.NoProvision).To(BeTrue())
+				Expect(startCmd.Opts.Registries).To(Equal("some-private-registries"))
 			})
 		})
 
@@ -74,7 +76,6 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Opts.CPUs).To(Equal(2))
 				Expect(startCmd.Opts.OVAPath).To(Equal("some-ova-path"))
 				Expect(startCmd.Opts.Services).To(Equal("some-services"))
-				Expect(startCmd.Opts.NoProvision).To(BeFalse())
 			})
 		})
 
@@ -86,6 +87,7 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Opts.OVAPath).To(Equal(""))
 				Expect(startCmd.Opts.Services).To(Equal(""))
 				Expect(startCmd.Opts.NoProvision).To(BeFalse())
+				Expect(startCmd.Opts.Registries).To(Equal(""))
 			})
 		})
 

@@ -60,7 +60,7 @@ var _ = Describe("Unprovisioned", func() {
 				mockUI.EXPECT().Say("PCF Dev is now stopped."),
 			)
 
-			unprovisioned.Stop()
+			Expect(unprovisioned.Stop()).To(Succeed())
 		})
 	})
 
@@ -76,7 +76,7 @@ var _ = Describe("Unprovisioned", func() {
 		It("should start vm", func() {
 			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
 
-			unprovisioned.Start(&vm.StartOpts{})
+			Expect(unprovisioned.Start(&vm.StartOpts{})).To(Succeed())
 		})
 	})
 
@@ -84,12 +84,17 @@ var _ = Describe("Unprovisioned", func() {
 		It("should provision the VM", func() {
 			gomock.InOrder(
 				mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "some-port", 30*time.Second, os.Stdout, os.Stderr),
-				mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", 30*time.Second).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-service,some-other-service"}`, nil),
+				mockSSH.EXPECT().GetSSHOutput(
+					"cat /var/pcfdev/provision-options.json",
+					"127.0.0.1",
+					"some-port",
+					30*time.Second,
+				).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-service,some-other-service","registries":["some-registry","some-other-registry"]}`, nil),
 				mockUI.EXPECT().Say("Provisioning VM..."),
-				mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip some-service,some-other-service", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+				mockSSH.EXPECT().RunSSHCommand(`sudo -H /var/pcfdev/run "some-domain" "some-ip" "some-service,some-other-service" "some-registry,some-other-registry"`, "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 			)
 
-			unprovisioned.Provision()
+			Expect(unprovisioned.Provision()).To(Succeed())
 		})
 
 		Context("when there is an error finding the provision config", func() {
@@ -135,7 +140,7 @@ var _ = Describe("Unprovisioned", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
 
-			unprovisioned.Suspend()
+			Expect(unprovisioned.Suspend()).To(Succeed())
 		})
 	})
 
@@ -143,7 +148,7 @@ var _ = Describe("Unprovisioned", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
 
-			unprovisioned.Resume()
+			Expect(unprovisioned.Resume()).To(Succeed())
 		})
 	})
 })

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -55,7 +56,7 @@ func (u *Unprovisioned) Provision() error {
 	}
 
 	u.UI.Say("Provisioning VM...")
-	provisionCommand := fmt.Sprintf("sudo -H /var/pcfdev/run %s %s %s", provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services)
+	provisionCommand := fmt.Sprintf(`sudo -H /var/pcfdev/run "%s" "%s" "%s" "%s"`, provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services, strings.Join(provisionConfig.Registries, ","))
 	if err := u.SSH.RunSSHCommand(provisionCommand, u.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{err}
 	}

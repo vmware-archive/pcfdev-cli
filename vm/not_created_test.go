@@ -331,7 +331,7 @@ var _ = Describe("Not Created", func() {
 						Memory:  uint64(4000),
 						CPUs:    3,
 						OVAPath: "some-ova-path",
-					}).Return(nil),
+					}),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(startOpts),
 				)
@@ -357,7 +357,7 @@ var _ = Describe("Not Created", func() {
 						Memory:  uint64(6000),
 						CPUs:    3,
 						OVAPath: "some-ova-path",
-					}).Return(nil),
+					}),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(startOpts),
 				)
@@ -384,7 +384,7 @@ var _ = Describe("Not Created", func() {
 						Memory:  uint64(6000),
 						CPUs:    3,
 						OVAPath: "some-ova-path",
-					}).Return(nil),
+					}),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(startOpts),
 				)
@@ -411,7 +411,7 @@ var _ = Describe("Not Created", func() {
 						Memory:  uint64(6000),
 						CPUs:    3,
 						OVAPath: "some-ova-path",
-					}).Return(nil),
+					}),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(startOpts),
 				)
@@ -433,9 +433,9 @@ var _ = Describe("Not Created", func() {
 						Memory:  uint64(3500),
 						CPUs:    7,
 						OVAPath: filepath.Join("some-ova-dir", "some-vm.ova"),
-					}).Return(nil),
+					}),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
-					mockStopped.EXPECT().Start(&vm.StartOpts{}).Return(nil),
+					mockStopped.EXPECT().Start(&vm.StartOpts{}),
 				)
 				conf.OVADir = "some-ova-dir"
 				conf.DefaultCPUs = 7
@@ -475,7 +475,7 @@ var _ = Describe("Not Created", func() {
 						Name:    "some-vm",
 						Memory:  uint64(3072),
 						OVAPath: filepath.Join("some-ova-dir", "some-vm.ova"),
-					}).Return(nil),
+					}),
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
 				conf.OVADir = "some-ova-dir"
@@ -498,7 +498,7 @@ var _ = Describe("Not Created", func() {
 						Name:    "some-vm",
 						Memory:  uint64(3072),
 						OVAPath: filepath.Join("some-ova-dir", "some-vm.ova"),
-					}).Return(nil),
+					}),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(startOpts).Return(errors.New("failed to start VM: some-error")),
 				)

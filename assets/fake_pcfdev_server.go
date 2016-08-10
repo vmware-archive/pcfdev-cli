@@ -10,8 +10,7 @@ func main() {
 		w.Write([]byte("PCF Dev Test VM"))
 	})
 
-	err := http.ListenAndServe(":80", nil)
-	if err != nil {
+	if err := http.ListenAndServe(":80", nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }

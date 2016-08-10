@@ -211,7 +211,7 @@ var _ = Describe("Pivnet Token", func() {
 			It("should delete the token file", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(true, nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-pcfdev-home", "token")).Return(nil),
+					mockFS.EXPECT().Remove(filepath.Join("some-pcfdev-home", "token")),
 				)
 				Expect(token.Destroy()).To(Succeed())
 			})

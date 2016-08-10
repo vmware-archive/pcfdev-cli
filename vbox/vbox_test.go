@@ -91,13 +91,12 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().SetCPUs("some-vm", 7),
 					mockDriver.EXPECT().SetMemory("some-vm", uint64(2000)),
 				)
-				err := vbx.ImportVM(&config.VMConfig{
+				Expect(vbx.ImportVM(&config.VMConfig{
 					Name:    "some-vm",
 					Memory:  uint64(2000),
 					CPUs:    7,
 					OVAPath: "some-ova-path",
-				})
-				Expect(err).NotTo(HaveOccurred())
+				})).To(Succeed())
 			})
 		})
 
@@ -143,7 +142,7 @@ var _ = Describe("vbox", func() {
 		Context("when extracting the file returns an error", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`).Return(errors.New("some-error")),
 				)
 				Expect(vbx.ImportVM(
@@ -157,7 +156,7 @@ var _ = Describe("vbox", func() {
 		Context("when cloning the disk fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")).Return(errors.New("some-error")),
 				)
@@ -172,7 +171,7 @@ var _ = Describe("vbox", func() {
 		Context("when removing the compressed disk fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")).Return(errors.New("some-error")),
@@ -188,7 +187,7 @@ var _ = Describe("vbox", func() {
 		Context("when attaching the disk fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -205,7 +204,7 @@ var _ = Describe("vbox", func() {
 		Context("when geting vbox host-only interfaces fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -230,7 +229,7 @@ var _ = Describe("vbox", func() {
 					},
 				}
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -256,7 +255,7 @@ var _ = Describe("vbox", func() {
 					},
 				}
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -283,7 +282,7 @@ var _ = Describe("vbox", func() {
 					},
 				}
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -311,7 +310,7 @@ var _ = Describe("vbox", func() {
 					},
 				}
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -339,7 +338,7 @@ var _ = Describe("vbox", func() {
 					},
 				}
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -368,7 +367,7 @@ var _ = Describe("vbox", func() {
 					},
 				}
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -399,7 +398,7 @@ var _ = Describe("vbox", func() {
 					},
 				}
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -431,7 +430,7 @@ var _ = Describe("vbox", func() {
 					},
 				}
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -463,7 +462,7 @@ var _ = Describe("vbox", func() {
 					},
 				}
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -496,7 +495,7 @@ var _ = Describe("vbox", func() {
 					},
 				}
 				gomock.InOrder(
-					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir").Return(nil),
+					mockDriver.EXPECT().CreateVM("some-vm", "some-vm-dir"),
 					mockFS.EXPECT().Extract("some-ova-path", filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), `\w+\.vmdk`),
 					mockDriver.EXPECT().CloneDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed"), filepath.Join("some-vm-dir", "some-vm", "some-vm-disk1.vmdk")),
 					mockDriver.EXPECT().DeleteDisk(filepath.Join("some-vm-dir", "some-vm-disk1.vmdk.compressed")),
@@ -844,8 +843,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 		It("should stop the VM", func() {
 			mockDriver.EXPECT().StopVM("some-vm")
 
-			err := vbx.StopVM(&config.VMConfig{Name: "some-vm"})
-			Expect(err).NotTo(HaveOccurred())
+			Expect(vbx.StopVM(&config.VMConfig{Name: "some-vm"})).To(Succeed())
 		})
 
 		Context("Driver fails to stop VM", func() {
@@ -853,8 +851,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 				expectedError := errors.New("some-error")
 
 				mockDriver.EXPECT().StopVM("some-vm").Return(expectedError)
-				err := vbx.StopVM(&config.VMConfig{Name: "some-vm"})
-				Expect(err).To(MatchError(expectedError))
+				Expect(vbx.StopVM(&config.VMConfig{Name: "some-vm"})).To(MatchError(expectedError))
 			})
 		})
 	})
@@ -863,8 +860,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 		It("should suspend the VM", func() {
 			mockDriver.EXPECT().SuspendVM("some-vm")
 
-			err := vbx.SuspendVM(&config.VMConfig{Name: "some-vm"})
-			Expect(err).NotTo(HaveOccurred())
+			Expect(vbx.SuspendVM(&config.VMConfig{Name: "some-vm"})).To(Succeed())
 		})
 
 		Context("when the Driver fails to suspend the VM", func() {
@@ -872,8 +868,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 				expectedError := errors.New("some-error")
 
 				mockDriver.EXPECT().SuspendVM("some-vm").Return(expectedError)
-				err := vbx.SuspendVM(&config.VMConfig{Name: "some-vm"})
-				Expect(err).To(MatchError(expectedError))
+				Expect(vbx.SuspendVM(&config.VMConfig{Name: "some-vm"})).To(MatchError(expectedError))
 			})
 		})
 	})
@@ -1046,8 +1041,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 		It("should resume the VM", func() {
 			mockDriver.EXPECT().ResumeVM("some-vm")
 
-			err := vbx.ResumeVM(&config.VMConfig{Name: "some-vm"})
-			Expect(err).NotTo(HaveOccurred())
+			Expect(vbx.ResumeVM(&config.VMConfig{Name: "some-vm"})).To(Succeed())
 		})
 
 		Context("when the Driver fails to resume the VM", func() {
@@ -1055,8 +1049,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 				expectedError := errors.New("some-error")
 
 				mockDriver.EXPECT().ResumeVM("some-vm").Return(expectedError)
-				err := vbx.ResumeVM(&config.VMConfig{Name: "some-vm"})
-				Expect(err).To(MatchError(expectedError))
+				Expect(vbx.ResumeVM(&config.VMConfig{Name: "some-vm"})).To(MatchError(expectedError))
 			})
 		})
 	})

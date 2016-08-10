@@ -68,8 +68,8 @@ var _ = Describe("Saved", func() {
 		It("should start vm", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
-				mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig).Return(nil),
-				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(nil),
+				mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
@@ -91,7 +91,7 @@ var _ = Describe("Saved", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig).Return(nil),
+					mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig),
 					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
 				)
 
@@ -166,8 +166,8 @@ var _ = Describe("Saved", func() {
 			savedVM.SuspendedVM.VMConfig.Memory = uint64(2000)
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
-				mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig).Return(nil),
-				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(nil),
+				mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
@@ -180,7 +180,7 @@ var _ = Describe("Saved", func() {
 				savedVM.SuspendedVM.VMConfig.Memory = uint64(2000)
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig).Return(nil),
+					mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig),
 					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
 				)
 
@@ -210,8 +210,8 @@ var _ = Describe("Saved", func() {
 					gomock.InOrder(
 						mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(true),
 						mockUI.EXPECT().Say("Resuming VM..."),
-						mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig).Return(nil),
-						mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(nil),
+						mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig),
+						mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
 						mockUI.EXPECT().Say("PCF Dev is now running."),
 					)
 

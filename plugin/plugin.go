@@ -58,8 +58,7 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 }
 
 func (p *Plugin) showUsageMessage(cliConnection plugin.CliConnection) {
-	_, err := cliConnection.CliCommand("help", "dev")
-	if err != nil {
+	if _, err := cliConnection.CliCommand("help", "dev"); err != nil {
 		p.UI.Failed(getErrorText(err))
 	}
 }

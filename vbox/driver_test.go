@@ -75,16 +75,13 @@ var _ = Describe("driver", func() {
 			_, port, err := sshClient.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.ForwardPort(vmName, "some-rule-name", port, "22")
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.ForwardPort(vmName, "some-rule-name", port, "22")).To(Succeed())
 
-			err = driver.StartVM(vmName)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.StartVM(vmName)).To(Succeed())
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
 
 			stdout := gbytes.NewBuffer()
-			err = sshClient.RunSSHCommand("cat /etc/resolv.conf", port, 5*time.Minute, stdout, ioutil.Discard)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(sshClient.RunSSHCommand("cat /etc/resolv.conf", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
 			Expect(string(stdout.Contents())).To(ContainSubstring("10.0.2.3"))
 		})
 
@@ -104,8 +101,7 @@ var _ = Describe("driver", func() {
 				interfaceName, err = driver.CreateHostOnlyInterface("192.168.88.1")
 				Expect(err).NotTo(HaveOccurred())
 
-				err = driver.AttachNetworkInterface(interfaceName, vmName)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(driver.AttachNetworkInterface(interfaceName, vmName)).To(Succeed())
 			})
 
 			AfterEach(func() {
@@ -116,9 +112,7 @@ var _ = Describe("driver", func() {
 			})
 
 			It("should return the ip of the vm", func() {
-				ip, err := driver.GetVMIP(vmName)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(ip).To(Equal("192.168.88.11"))
+				Expect(driver.GetVMIP(vmName)).To(Equal("192.168.88.11"))
 			})
 		})
 
@@ -140,14 +134,11 @@ var _ = Describe("driver", func() {
 
 	Describe("#GetMemory", func() {
 		BeforeEach(func() {
-			err := exec.Command(vBoxManagePath, "modifyvm", vmName, "--memory", "4567").Run()
-			Expect(err).NotTo(HaveOccurred())
+			Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--memory", "4567").Run()).To(Succeed())
 		})
 
 		It("should return the vm memory", func() {
-			memory, err := driver.GetMemory(vmName)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(memory).To(Equal(uint64(4567)))
+			Expect(driver.GetMemory(vmName)).To(Equal(uint64(4567)))
 		})
 
 		Context("when VBoxManage command fails", func() {
@@ -165,38 +156,31 @@ var _ = Describe("driver", func() {
 			_, port, err := sshClient.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.ForwardPort(vmName, "some-rule-name", port, "22")
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.ForwardPort(vmName, "some-rule-name", port, "22")).To(Succeed())
 
-			err = driver.StartVM(vmName)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.StartVM(vmName)).To(Succeed())
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
 
 			stdout := gbytes.NewBuffer()
-			err = sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
 			Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
 
-			err = driver.StopVM(vmName)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.StopVM(vmName)).To(Succeed())
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateStopped))
 
 			Expect(driver.StartVM(vmName)).To(Succeed())
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
 
-			err = driver.SuspendVM(vmName)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.SuspendVM(vmName)).To(Succeed())
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateSaved))
 
-			err = driver.ResumeVM(vmName)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.ResumeVM(vmName)).To(Succeed())
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
 
 			Expect(driver.PowerOffVM(vmName)).To(Succeed())
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateStopped))
 
-			err = driver.DestroyVM(vmName)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.DestroyVM(vmName)).To(Succeed())
 
 			Eventually(func() bool {
 				exists, err := driver.VMExists(vmName)
@@ -242,17 +226,13 @@ var _ = Describe("driver", func() {
 	Describe("#VMExists", func() {
 		Context("when VM exists", func() {
 			It("should return true", func() {
-				exists, err := driver.VMExists(vmName)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(exists).To(BeTrue())
+				Expect(driver.VMExists(vmName)).To(BeTrue())
 			})
 		})
 
 		Context("when VM does not exist", func() {
 			It("should return false", func() {
-				exists, err := driver.VMExists("does-not-exist")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(exists).To(BeFalse())
+				Expect(driver.VMExists("does-not-exist")).To(BeFalse())
 			})
 		})
 	})
@@ -265,14 +245,11 @@ var _ = Describe("driver", func() {
 				_, port, err := sshClient.GenerateAddress()
 				Expect(err).NotTo(HaveOccurred())
 
-				err = driver.ForwardPort(vmName, "some-rule-name", port, "22")
-				Expect(err).NotTo(HaveOccurred())
+				Expect(driver.ForwardPort(vmName, "some-rule-name", port, "22")).To(Succeed())
 
-				err = driver.StartVM(vmName)
-				Expect(err).NotTo(HaveOccurred())
-				state, err := driver.VMState(vmName)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(state).To(Equal(vbox.StateRunning))
+				Expect(driver.StartVM(vmName)).To(Succeed())
+
+				Expect(driver.VMState(vmName)).To(Equal(vbox.StateRunning))
 			})
 		})
 
@@ -422,14 +399,13 @@ var _ = Describe("driver", func() {
 		})
 
 		It("should configure a preexisting hostonlyif", func() {
-			err := driver.ConfigureHostOnlyInterface(interfaceName, "192.168.11.1")
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.ConfigureHostOnlyInterface(interfaceName, "192.168.11.1")).To(Succeed())
 
 			var name string
 			var ipAddress string
 			var netMask string
 			var output []byte
-			output, err = exec.Command(vBoxManagePath, "list", "hostonlyifs").Output()
+			output, err := exec.Command(vBoxManagePath, "list", "hostonlyifs").Output()
 			Expect(err).NotTo(HaveOccurred())
 
 			nameRegex := regexp.MustCompile(`(?m:^Name:\s+(.*))`)
@@ -580,8 +556,7 @@ var _ = Describe("driver", func() {
 		})
 
 		It("should attach a hostonlyif to the vm", func() {
-			err := driver.AttachNetworkInterface(interfaceName, vmName)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.AttachNetworkInterface(interfaceName, vmName)).To(Succeed())
 
 			showvmInfoCommand := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable")
 			session, err := gexec.Start(showvmInfoCommand, GinkgoWriter, GinkgoWriter)
@@ -606,14 +581,11 @@ var _ = Describe("driver", func() {
 			_, port, err := sshClient.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.ForwardPort(vmName, "some-rule-name", port, "22")
-			Expect(err).NotTo(HaveOccurred())
-			err = driver.StartVM(vmName)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.ForwardPort(vmName, "some-rule-name", port, "22")).To(Succeed())
+			Expect(driver.StartVM(vmName)).To(Succeed())
 
 			stdout := gbytes.NewBuffer()
-			err = sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
 			Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
 		})
 
@@ -632,13 +604,9 @@ var _ = Describe("driver", func() {
 			_, expectedPort, err := sshClient.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = driver.ForwardPort(vmName, "some-rule-name", expectedPort, "22")
-			Expect(err).NotTo(HaveOccurred())
+			Expect(driver.ForwardPort(vmName, "some-rule-name", expectedPort, "22")).To(Succeed())
 
-			port, err := driver.GetHostForwardPort(vmName, "some-rule-name")
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(port).To(Equal(expectedPort))
+			Expect(driver.GetHostForwardPort(vmName, "some-rule-name")).To(Equal(expectedPort))
 		})
 
 		Context("when no port is forwarded", func() {
@@ -724,8 +692,7 @@ var _ = Describe("driver", func() {
 				interfaceName, err = driver.CreateHostOnlyInterface("192.168.88.1")
 				Expect(err).NotTo(HaveOccurred())
 
-				err = driver.AttachNetworkInterface(interfaceName, vmName)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(driver.AttachNetworkInterface(interfaceName, vmName)).To(Succeed())
 			})
 
 			AfterEach(func() {

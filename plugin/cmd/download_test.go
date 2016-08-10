@@ -159,7 +159,7 @@ var _ = Describe("DownloadCmd", func() {
 						mockEULAUI.EXPECT().Init(),
 						mockEULAUI.EXPECT().ConfirmText("some-eula").Return(true),
 						mockEULAUI.EXPECT().Close(),
-						mockClient.EXPECT().AcceptEULA().Return(nil),
+						mockClient.EXPECT().AcceptEULA(),
 						mockUI.EXPECT().Say("Downloading VM..."),
 						mockDownloader.EXPECT().Download(),
 						mockUI.EXPECT().Say("\nVM downloaded."),

@@ -66,8 +66,7 @@ func (fs *FS) DeleteAllExcept(path string, filenames []string) error {
 }
 
 func (fs *FS) Remove(path string) error {
-	err := os.RemoveAll(path)
-	if err != nil {
+	if err := os.RemoveAll(path); err != nil {
 		return fmt.Errorf("failed to remove file %s: %s", path, err)
 	}
 

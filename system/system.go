@@ -15,8 +15,7 @@ type System struct {
 
 func (s *System) FreeMemory() (uint64, error) {
 	mem := &sigar.Mem{}
-	err := mem.Get()
-	if err != nil {
+	if err := mem.Get(); err != nil {
 		return 0, err
 	}
 	return mem.ActualFree / BYTES_IN_MEGABYTE, nil
@@ -24,8 +23,7 @@ func (s *System) FreeMemory() (uint64, error) {
 
 func (s *System) TotalMemory() (uint64, error) {
 	mem := &sigar.Mem{}
-	err := mem.Get()
-	if err != nil {
+	if err := mem.Get(); err != nil {
 		return 0, err
 	}
 	return mem.Total / BYTES_IN_MEGABYTE, nil

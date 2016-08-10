@@ -57,8 +57,7 @@ func (t *Token) Save() error {
 		return err
 	}
 	if exists {
-		err := t.FS.Remove(filepath.Join(t.Config.PCFDevHome, "token"))
-		if err != nil {
+		if err := t.FS.Remove(filepath.Join(t.Config.PCFDevHome, "token")); err != nil {
 			return err
 		}
 	}
@@ -75,8 +74,7 @@ func (t *Token) Destroy() error {
 		return err
 	}
 	if exists {
-		err := t.FS.Remove(filepath.Join(t.Config.PCFDevHome, "token"))
-		if err != nil {
+		if err := t.FS.Remove(filepath.Join(t.Config.PCFDevHome, "token")); err != nil {
 			return err
 		}
 	}

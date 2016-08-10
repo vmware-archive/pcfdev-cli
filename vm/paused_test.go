@@ -66,8 +66,8 @@ var _ = Describe("Paused", func() {
 		It("should start vm", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
-				mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig).Return(nil),
-				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(nil),
+				mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
@@ -89,7 +89,7 @@ var _ = Describe("Paused", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig).Return(nil),
+					mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig),
 					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
 				)
 
@@ -134,8 +134,8 @@ var _ = Describe("Paused", func() {
 		It("should start vm", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
-				mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig).Return(nil),
-				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(nil),
+				mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
@@ -146,7 +146,7 @@ var _ = Describe("Paused", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig).Return(nil),
+					mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig),
 					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
 				)
 

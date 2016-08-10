@@ -55,12 +55,10 @@ func (d *VBoxDriver) UseDNSProxy(vmName string) error {
 }
 
 func (d *VBoxDriver) AttachDisk(vmName string, diskPath string) error {
-	_, err := d.VBoxManage("storagectl", vmName, "--name", "SATA", "--add", "sata")
-	if err != nil {
+	if _, err := d.VBoxManage("storagectl", vmName, "--name", "SATA", "--add", "sata"); err != nil {
 		return err
 	}
-	_, err = d.VBoxManage("storageattach", vmName, "--storagectl", "SATA", "--medium", diskPath, "--type", "hdd", "--port", "0", "--device", "0")
-	if err != nil {
+	if _, err := d.VBoxManage("storageattach", vmName, "--storagectl", "SATA", "--medium", diskPath, "--type", "hdd", "--port", "0", "--device", "0"); err != nil {
 		return err
 	}
 	return nil

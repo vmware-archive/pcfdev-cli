@@ -242,9 +242,7 @@ power management:
 			FS: mockFS,
 		}
 		mockFS.EXPECT().Read("/proc/cpuinfo").Return([]byte(cpuinfo), nil)
-		cores, err := sys.PhysicalCores()
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cores).To(Equal(4))
+		Expect(sys.PhysicalCores()).To(Equal(4))
 	})
 
 	Context("when it cannot read cpuinfo", func() {

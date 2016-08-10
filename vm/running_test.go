@@ -169,7 +169,7 @@ var _ = Describe("Stopped", func() {
 	Describe("Suspend", func() {
 		It("should suspend the vm", func() {
 			mockUI.EXPECT().Say("Suspending VM...")
-			mockVBox.EXPECT().SuspendVM(runningVM.VMConfig).Return(nil)
+			mockVBox.EXPECT().SuspendVM(runningVM.VMConfig)
 			mockUI.EXPECT().Say("PCF Dev is now suspended.")
 
 			Expect(runningVM.Suspend()).To(Succeed())

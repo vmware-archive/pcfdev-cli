@@ -48,46 +48,32 @@ var _ = Describe("StartCmd", func() {
 		Context("when flags are passed", func() {
 			It("should set start options", func() {
 				Expect(startCmd.Parse([]string{
-					"-m", "3456",
 					"-c", "2",
-					"-o", "some-ova-path",
-					"-s", "some-services",
+					"-m", "3456",
 					"-n",
-					"-p", "some-private-registries"})).To(Succeed())
+					"-o", "some-ova-path",
+					"-p", "some-private-registry,some-other-private-registry",
+					"-s", "some-service,some-other-service",
+				})).To(Succeed())
 
-				Expect(startCmd.Opts.Memory).To(Equal(uint64(3456)))
 				Expect(startCmd.Opts.CPUs).To(Equal(2))
-				Expect(startCmd.Opts.OVAPath).To(Equal("some-ova-path"))
-				Expect(startCmd.Opts.Services).To(Equal("some-services"))
+				Expect(startCmd.Opts.Memory).To(Equal(uint64(3456)))
 				Expect(startCmd.Opts.NoProvision).To(BeTrue())
-				Expect(startCmd.Opts.Registries).To(Equal("some-private-registries"))
-			})
-		})
-
-		Context("when flags are passed in the long format", func() {
-			It("should set start options", func() {
-				Expect(startCmd.Parse([]string{
-					"--memory", "3456",
-					"--cpus", "2",
-					"--ova", "some-ova-path",
-					"--services", "some-services"})).To(Succeed())
-
-				Expect(startCmd.Opts.Memory).To(Equal(uint64(3456)))
-				Expect(startCmd.Opts.CPUs).To(Equal(2))
 				Expect(startCmd.Opts.OVAPath).To(Equal("some-ova-path"))
-				Expect(startCmd.Opts.Services).To(Equal("some-services"))
+				Expect(startCmd.Opts.Registries).To(Equal("some-private-registry,some-other-private-registry"))
+				Expect(startCmd.Opts.Services).To(Equal("some-service,some-other-service"))
 			})
 		})
 
 		Context("when no flags are passed", func() {
 			It("should set start options", func() {
 				Expect(startCmd.Parse([]string{})).To(Succeed())
-				Expect(startCmd.Opts.Memory).To(Equal(uint64(0)))
 				Expect(startCmd.Opts.CPUs).To(Equal(0))
-				Expect(startCmd.Opts.OVAPath).To(Equal(""))
-				Expect(startCmd.Opts.Services).To(Equal(""))
+				Expect(startCmd.Opts.Memory).To(Equal(uint64(0)))
 				Expect(startCmd.Opts.NoProvision).To(BeFalse())
+				Expect(startCmd.Opts.OVAPath).To(Equal(""))
 				Expect(startCmd.Opts.Registries).To(Equal(""))
+				Expect(startCmd.Opts.Services).To(Equal(""))
 			})
 		})
 

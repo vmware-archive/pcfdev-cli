@@ -20,23 +20,23 @@ type StartCmd struct {
 
 func (s *StartCmd) Parse(args []string) error {
 	flagContext := flags.New()
-	flagContext.NewIntFlag("m", "memory", "<memory in MB>")
-	flagContext.NewIntFlag("c", "cpus", "<number of cpus>")
-	flagContext.NewStringFlag("o", "ova", "<path to custom ova>")
-	flagContext.NewStringFlag("s", "services", "<services to start with>")
 	flagContext.NewBoolFlag("n", "", "<skip provisioning>")
+	flagContext.NewIntFlag("c", "", "<number of cpus>")
+	flagContext.NewIntFlag("m", "", "<memory in MB>")
+	flagContext.NewStringFlag("o", "", "<path to custom ova>")
 	flagContext.NewStringFlag("p", "", "<private docker registries>")
+	flagContext.NewStringFlag("s", "", "<services to start with>")
 	if err := parse(flagContext, args, START_ARGS); err != nil {
 		return err
 	}
 
 	s.Opts = &vm.StartOpts{
-		Memory:      uint64(flagContext.Int("m")),
 		CPUs:        flagContext.Int("c"),
-		OVAPath:     flagContext.String("o"),
-		Services:    flagContext.String("s"),
+		Memory:      uint64(flagContext.Int("m")),
 		NoProvision: flagContext.Bool("n"),
+		OVAPath:     flagContext.String("o"),
 		Registries:  flagContext.String("p"),
+		Services:    flagContext.String("s"),
 	}
 	return nil
 }

@@ -84,9 +84,9 @@ var _ = Describe("Unprovisioned", func() {
 		It("should provision the VM", func() {
 			gomock.InOrder(
 				mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "some-port", 30*time.Second, os.Stdout, os.Stderr),
-				mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", 30*time.Second).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-services"}`, nil),
+				mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", 30*time.Second).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-service,some-other-service"}`, nil),
 				mockUI.EXPECT().Say("Provisioning VM..."),
-				mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip some-services", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+				mockSSH.EXPECT().RunSSHCommand("sudo -H /var/pcfdev/run some-domain some-ip some-service,some-other-service", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 			)
 
 			unprovisioned.Provision()

@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -162,7 +163,7 @@ var _ = Describe("driver", func() {
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
 
 			stdout := gbytes.NewBuffer()
-			Expect(sshClient.RunSSHCommand("hostname","127.0.0.1", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
+			Expect(sshClient.RunSSHCommand("hostname", "127.0.0.1", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
 			Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
 
 			Expect(driver.StopVM(vmName)).To(Succeed())
@@ -230,6 +231,9 @@ var _ = Describe("driver", func() {
 
 		Context("when it fails to create vm", func() {
 			It("should return an error", func() {
+				if runtime.GOOS == "windows" {
+					Skip("not running on windows")
+				}
 				basedir := filepath.Join("/some", "bad", "dir")
 				err := driver.CreateVM(createdVMName, basedir)
 				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage createvm --name some-created-vm --ostype Ubuntu_64 --basefolder " + basedir + " --register': exit status 1")))
@@ -599,7 +603,7 @@ var _ = Describe("driver", func() {
 			Expect(driver.StartVM(vmName)).To(Succeed())
 
 			stdout := gbytes.NewBuffer()
-			Expect(sshClient.RunSSHCommand("hostname", "127.0.0.1",port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
+			Expect(sshClient.RunSSHCommand("hostname", "127.0.0.1", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
 			Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
 		})
 

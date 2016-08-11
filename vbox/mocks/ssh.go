@@ -42,12 +42,12 @@ func (_mr *_MockSSHRecorder) GenerateAddress() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GenerateAddress")
 }
 
-func (_m *MockSSH) RunSSHCommand(_param0 string, _param1 string, _param2 time.Duration, _param3 io.Writer, _param4 io.Writer) error {
-	ret := _m.ctrl.Call(_m, "RunSSHCommand", _param0, _param1, _param2, _param3, _param4)
+func (_m *MockSSH) RunSSHCommand(_param0 string, _param1 string, _param2 string, _param3 time.Duration, _param4 io.Writer, _param5 io.Writer) error {
+	ret := _m.ctrl.Call(_m, "RunSSHCommand", _param0, _param1, _param2, _param3, _param4, _param5)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockSSHRecorder) RunSSHCommand(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunSSHCommand", arg0, arg1, arg2, arg3, arg4)
+func (_mr *_MockSSHRecorder) RunSSHCommand(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunSSHCommand", arg0, arg1, arg2, arg3, arg4, arg5)
 }

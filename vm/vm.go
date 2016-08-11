@@ -31,7 +31,7 @@ type UI interface {
 type SSH interface {
 	GenerateAddress() (host string, port string, err error)
 	WaitForSSH(ip string, port string, timeout time.Duration) error
-	RunSSHCommand(command string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
+	RunSSHCommand(command string, ip string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
 	GetSSHOutput(command string, ip string, port string, timeout time.Duration) (combinedOutput string, err error)
 }
 

@@ -34,8 +34,8 @@ func (s *SSH) GetSSHOutput(command string, ip string, port string, timeout time.
 	return string(output), err
 }
 
-func (s *SSH) RunSSHCommand(command string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) (err error) {
-	client, session, err := s.newSession("127.0.0.1", port, timeout)
+func (s *SSH) RunSSHCommand(command string, ip string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) (err error) {
+	client, session, err := s.newSession(ip, port, timeout)
 	if err != nil {
 		return err
 	}

@@ -229,11 +229,11 @@ var _ = Describe("PCF Dev", func() {
 		stdout := gbytes.NewBuffer()
 		stderr := gbytes.NewBuffer()
 		sshClient := &ssh.SSH{}
-		sshClient.RunSSHCommand("echo $HTTP_PROXY", getForwardedPort("pcfdev-custom"), 5*time.Second, stdout, stderr)
+		sshClient.RunSSHCommand("echo $HTTP_PROXY", getVMIP(), "22", 5*time.Second, stdout, stderr)
 		Eventually(stdout).Should(gbytes.Say("192.168.93.23"))
-		sshClient.RunSSHCommand("echo $HTTPS_PROXY", getForwardedPort("pcfdev-custom"), 5*time.Second, stdout, stderr)
+		sshClient.RunSSHCommand("echo $HTTPS_PROXY", getVMIP(), "22", 5*time.Second, stdout, stderr)
 		Eventually(stdout).Should(gbytes.Say("192.168.38.29"))
-		sshClient.RunSSHCommand("echo $NO_PROXY", getForwardedPort("pcfdev-custom"), 5*time.Second, stdout, stderr)
+		sshClient.RunSSHCommand("echo $NO_PROXY", getVMIP(), "22", 5*time.Second, stdout, stderr)
 		Eventually(stdout).Should(gbytes.Say("192.168.98.98"))
 
 		response, err = getResponseFromFakeServer(interfaceName)
@@ -373,11 +373,10 @@ func vmCores(name string) string {
 	return regex.FindStringSubmatch(string(output))[1]
 }
 
-func getForwardedPort(name string) string {
-	output, err := exec.Command(vBoxManagePath, "showvminfo", name, "--machinereadable").Output()
+func getVMIP() string {
+	output, err := exec.Command("cf", "dev", "status").Output()
 	Expect(err).NotTo(HaveOccurred())
-
-	regex := regexp.MustCompile(`Forwarding\(\d+\)="ssh,tcp,127.0.0.1,(.*),,22"`)
+	regex := regexp.MustCompile(`api.(\S+)`)
 	return regex.FindStringSubmatch(string(output))[1]
 }
 

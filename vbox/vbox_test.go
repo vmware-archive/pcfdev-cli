@@ -536,7 +536,7 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=some-http-proxy
@@ -545,6 +545,7 @@ NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 http_proxy=some-http-proxy
 https_proxy=some-https-proxy
 no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+						"127.0.0.1",
 						"some-port",
 						5*time.Minute,
 						ioutil.Discard,
@@ -577,7 +578,7 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
@@ -586,6 +587,7 @@ NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 http_proxy=192.168.22.1
 https_proxy=192.168.22.1:8080
 no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+						"127.0.0.1",
 						"some-port",
 						5*time.Minute,
 						ioutil.Discard,
@@ -616,7 +618,7 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address some-bad-ip
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -644,7 +646,7 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 
@@ -653,6 +655,7 @@ NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 
 https_proxy=192.168.22.1
 no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+							"127.0.0.1",
 							"some-port",
 							5*time.Minute,
 							ioutil.Discard,
@@ -687,7 +690,7 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
@@ -696,6 +699,7 @@ NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 http_proxy=192.168.22.1
 
 no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+							"127.0.0.1",
 							"some-port",
 							5*time.Minute,
 							ioutil.Discard,
@@ -731,7 +735,7 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
@@ -740,6 +744,7 @@ NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 http_proxy=192.168.22.1
 https_proxy=192.168.22.1
 no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io' | sudo tee /etc/environment`,
+							"127.0.0.1",
 							"some-port",
 							5*time.Minute,
 							ioutil.Discard,
@@ -787,7 +792,7 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address some-ip
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -813,7 +818,7 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.11.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=some-http-proxy
@@ -822,6 +827,7 @@ NO_PROXY=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 http_proxy=some-http-proxy
 https_proxy=some-https-proxy
 no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
+							"127.0.0.1",
 							"some-port",
 							5*time.Minute,
 							ioutil.Discard,

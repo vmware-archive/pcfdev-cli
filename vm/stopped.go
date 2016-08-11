@@ -100,7 +100,7 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		return &StartVMError{err}
 	}
 
-	if err := s.SSH.RunSSHCommand("echo '"+string(data)+"' | sudo tee /var/pcfdev/provision-options.json >/dev/null", s.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
+	if err := s.SSH.RunSSHCommand("echo '"+string(data)+"' | sudo tee /var/pcfdev/provision-options.json >/dev/null", "127.0.0.1", s.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &StartVMError{err}
 	}
 

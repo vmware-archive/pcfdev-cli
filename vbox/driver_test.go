@@ -81,7 +81,7 @@ var _ = Describe("driver", func() {
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
 
 			stdout := gbytes.NewBuffer()
-			Expect(sshClient.RunSSHCommand("cat /etc/resolv.conf", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
+			Expect(sshClient.RunSSHCommand("cat /etc/resolv.conf", "127.0.0.1", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
 			Expect(string(stdout.Contents())).To(ContainSubstring("10.0.2.3"))
 		})
 
@@ -162,7 +162,7 @@ var _ = Describe("driver", func() {
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
 
 			stdout := gbytes.NewBuffer()
-			Expect(sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
+			Expect(sshClient.RunSSHCommand("hostname","127.0.0.1", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
 			Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
 
 			Expect(driver.StopVM(vmName)).To(Succeed())
@@ -599,7 +599,7 @@ var _ = Describe("driver", func() {
 			Expect(driver.StartVM(vmName)).To(Succeed())
 
 			stdout := gbytes.NewBuffer()
-			Expect(sshClient.RunSSHCommand("hostname", port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
+			Expect(sshClient.RunSSHCommand("hostname", "127.0.0.1",port, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
 			Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
 		})
 

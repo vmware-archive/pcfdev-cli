@@ -57,7 +57,7 @@ type FS interface {
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
 type SSH interface {
 	GenerateAddress() (host string, port string, err error)
-	RunSSHCommand(command string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
+	RunSSHCommand(command string, ip string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/picker.go github.com/pivotal-cf/pcfdev-cli/vbox NetworkPicker
@@ -147,6 +147,7 @@ func (v *VBox) configureNetwork(ip string, sshPort string) error {
 
 	return v.SSH.RunSSHCommand(
 		fmt.Sprintf("echo -e '%s' | sudo tee /etc/network/interfaces", sshCommand.String()),
+"127.0.0.1",
 		sshPort,
 		5*time.Minute,
 		ioutil.Discard,
@@ -160,7 +161,7 @@ func (v *VBox) configureEnvironment(ip string, sshPort string) error {
 		return err
 	}
 
-	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings), sshPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
+	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings),"127.0.0.1", sshPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
 }
 
 func (v *VBox) proxySettings(ip string) (settings string, err error) {

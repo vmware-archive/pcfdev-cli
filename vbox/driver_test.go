@@ -212,7 +212,7 @@ var _ = Describe("driver", func() {
 			exec.Command(vBoxManagePath, "unregistervm", createdVMName, "--delete").Run()
 		})
 
-		It("should create VM", func() {
+		It("should create VM and set paravirtprovider to minimal", func() {
 			basedir := os.TempDir()
 			err := driver.CreateVM(createdVMName, basedir)
 			command := exec.Command(vBoxManagePath, "list", "vms")
@@ -220,6 +220,20 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say(createdVMName))
+
+			command = exec.Command(vBoxManagePath, "showvminfo", createdVMName, "--machinereadable")
+			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say(`paravirtprovider="minimal"`))
+		})
+
+		Context("when it fails to create vm", func() {
+			It("should return an error", func() {
+				basedir := filepath.Join("/some", "bad", "dir")
+				err := driver.CreateVM(createdVMName, basedir)
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage createvm --name some-created-vm --ostype Ubuntu_64 --basefolder " + basedir + " --register': exit status 1")))
+			})
 		})
 	})
 

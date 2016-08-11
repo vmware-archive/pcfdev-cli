@@ -45,7 +45,10 @@ func (d *VBoxDriver) StartVM(vmName string) error {
 }
 
 func (d *VBoxDriver) CreateVM(vmName string, basedir string) error {
-	_, err := d.VBoxManage("createvm", "--name", vmName, "--ostype", "Ubuntu_64", "--basefolder", basedir, "--register")
+	if _, err := d.VBoxManage("createvm", "--name", vmName, "--ostype", "Ubuntu_64", "--basefolder", basedir, "--register"); err != nil {
+		return err
+	}
+	_, err := d.VBoxManage("modifyvm", vmName, "--paravirtprovider", "minimal")
 	return err
 }
 

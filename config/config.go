@@ -26,7 +26,7 @@ type Config struct {
 	SpringCloudDefaultMemory uint64
 	SpringCloudMinMemory     uint64
 	SpringCloudMaxMemory     uint64
-	DefaultCPUs              int
+	DefaultCPUs              func() (int, error)
 	ExpectedMD5              string
 	Version                  *Version
 }
@@ -57,10 +57,6 @@ func New(defaultVMName string, expectedMD5 string, system System, version *Versi
 	if err != nil {
 		return nil, err
 	}
-	cores, err := system.PhysicalCores()
-	if err != nil {
-		return nil, err
-	}
 	minMemory := uint64(3072)
 	maxMemory := uint64(4096)
 	springCloudMinMemory := uint64(6144)
@@ -83,7 +79,7 @@ func New(defaultVMName string, expectedMD5 string, system System, version *Versi
 		SpringCloudDefaultMemory: getDefaultMemory(totalMemory, springCloudMinMemory, springCloudMaxMemory),
 		SpringCloudMinMemory:     springCloudMinMemory,
 		SpringCloudMaxMemory:     springCloudMaxMemory,
-		DefaultCPUs:              cores,
+		DefaultCPUs:              system.PhysicalCores,
 		Version:                  version,
 	}, nil
 }

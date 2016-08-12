@@ -33,7 +33,9 @@ var _ = Describe("Not Created", func() {
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
 		mockStopped = mocks.NewMockVM(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
-		conf = &config.Config{}
+		conf = &config.Config{
+			DefaultCPUs: func() (int, error) { return 0, nil },
+		}
 
 		notCreatedVM = vm.NotCreated{
 			VMConfig: &config.VMConfig{
@@ -438,12 +440,19 @@ var _ = Describe("Not Created", func() {
 					mockStopped.EXPECT().Start(&vm.StartOpts{}),
 				)
 				conf.OVADir = "some-ova-dir"
-				conf.DefaultCPUs = 7
+				conf.DefaultCPUs = func() (int, error) { return 7, nil }
 				conf.DefaultMemory = uint64(3500)
 				conf.FreeMemory = uint64(5000)
 				conf.TotalMemory = uint64(8000)
 
 				Expect(notCreatedVM.Start(&vm.StartOpts{})).To(Succeed())
+			})
+
+			Context("and checking number of CPUs returns an error", func() {
+				It("should return an error", func() {
+					conf.DefaultCPUs = func() (int, error) { return 0, errors.New("some-error") }
+					Expect(notCreatedVM.Start(&vm.StartOpts{})).To(MatchError("some-error"))
+				})
 			})
 		})
 

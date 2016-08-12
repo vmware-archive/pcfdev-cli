@@ -106,7 +106,11 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 	if opts.CPUs != 0 {
 		cpus = opts.CPUs
 	} else {
-		cpus = n.Config.DefaultCPUs
+		var err error
+		cpus, err = n.Config.DefaultCPUs()
+		if err != nil {
+			return err
+		}
 	}
 
 	var ovaPath string

@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"time"
 
@@ -227,17 +226,6 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say(`paravirtprovider="minimal"`))
-		})
-
-		Context("when it fails to create vm", func() {
-			It("should return an error", func() {
-				if runtime.GOOS == "windows" {
-					Skip("not running on windows")
-				}
-				basedir := filepath.Join("/some", "bad", "dir")
-				err := driver.CreateVM(createdVMName, basedir)
-				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage createvm --name some-created-vm --ostype Ubuntu_64 --basefolder " + basedir + " --register': exit status 1")))
-			})
 		})
 	})
 

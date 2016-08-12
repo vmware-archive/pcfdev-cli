@@ -3,19 +3,29 @@ package vm
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
 
 type Saved struct {
-	Config      *config.Config
-	SuspendedVM *Suspended
-	UI          UI
+	VMConfig *config.VMConfig
+
+	Config *config.Config
+	UI     UI
+	VBox   VBox
+	SSH    SSH
 }
 
 func (s *Saved) VerifyStartOpts(opts *StartOpts) error {
-	if err := s.SuspendedVM.VerifyStartOpts(opts); err != nil {
-		return err
+	if opts.Memory != uint64(0) {
+		return errors.New("memory cannot be changed once the vm has been created")
+	}
+	if opts.CPUs != 0 {
+		return errors.New("cores cannot be changed once the vm has been created")
+	}
+	if opts.Services != "" {
+		return errors.New("services cannot be changed once the vm has been created")
 	}
 	if err := s.checkMemory(); err != nil {
 		return err
@@ -24,15 +34,16 @@ func (s *Saved) VerifyStartOpts(opts *StartOpts) error {
 }
 
 func (s *Saved) Start(opts *StartOpts) error {
-	return s.SuspendedVM.Start(opts)
+	return s.Resume()
 }
 
 func (s *Saved) Provision() error {
-	return s.SuspendedVM.Provision()
+	return nil
 }
 
 func (s *Saved) Stop() error {
-	return s.SuspendedVM.Stop()
+	s.UI.Say("Your VM is currently suspended. You must resume your VM with `cf dev resume` to shut it down.")
+	return nil
 }
 
 func (s *Saved) Status() string {
@@ -48,12 +59,23 @@ func (s *Saved) Resume() error {
 	if err := s.checkMemory(); err != nil {
 		return err
 	}
-	return s.SuspendedVM.Resume()
+	s.UI.Say("Resuming VM...")
+	if err := s.VBox.ResumeSavedVM(s.VMConfig); err != nil {
+		return &ResumeVMError{err}
+	}
+
+	if err := s.SSH.WaitForSSH(s.VMConfig.IP, "22", 5*time.Minute); err != nil {
+		return &ResumeVMError{err}
+	}
+
+	s.UI.Say("PCF Dev is now running.")
+
+	return nil
 }
 
 func (s *Saved) checkMemory() error {
-	if s.SuspendedVM.VMConfig.Memory > s.Config.FreeMemory {
-		if !s.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", s.SuspendedVM.VMConfig.Memory)) {
+	if s.VMConfig.Memory > s.Config.FreeMemory {
+		if !s.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", s.VMConfig.Memory)) {
 			return errors.New("user declined to continue, exiting")
 		}
 	}

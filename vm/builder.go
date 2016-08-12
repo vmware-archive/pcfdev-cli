@@ -89,24 +89,18 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		}, nil
 	case vbox.StatusPaused:
 		return &Paused{
-			SuspendedVM: &Suspended{
-				VMConfig: vmConfig,
-				SSH:      b.SSH,
-				UI:       termUI,
-				VBox:     b.VBox,
-			},
-			UI: termUI,
+			VMConfig: vmConfig,
+			SSH:      b.SSH,
+			UI:       termUI,
+			VBox:     b.VBox,
 		}, nil
 	case vbox.StatusSaved:
 		return &Saved{
-			SuspendedVM: &Suspended{
-				VMConfig: vmConfig,
-				SSH:      b.SSH,
-				UI:       termUI,
-				VBox:     b.VBox,
-			},
-			UI:     termUI,
-			Config: b.Config,
+			VMConfig: vmConfig,
+			SSH:      b.SSH,
+			UI:       termUI,
+			VBox:     b.VBox,
+			Config:   b.Config,
 		}, nil
 	default:
 		return &Invalid{

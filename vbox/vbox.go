@@ -147,7 +147,7 @@ func (v *VBox) configureNetwork(ip string, sshPort string) error {
 
 	return v.SSH.RunSSHCommand(
 		fmt.Sprintf("echo -e '%s' | sudo tee /etc/network/interfaces", sshCommand.String()),
-"127.0.0.1",
+		"127.0.0.1",
 		sshPort,
 		5*time.Minute,
 		ioutil.Discard,
@@ -161,7 +161,7 @@ func (v *VBox) configureEnvironment(ip string, sshPort string) error {
 		return err
 	}
 
-	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings),"127.0.0.1", sshPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
+	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings), "127.0.0.1", sshPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
 }
 
 func (v *VBox) proxySettings(ip string) (settings string, err error) {
@@ -320,8 +320,12 @@ func (v *VBox) SuspendVM(vmConfig *config.VMConfig) error {
 	return v.Driver.SuspendVM(vmConfig.Name)
 }
 
-func (v *VBox) ResumeVM(vmConfig *config.VMConfig) error {
+func (v *VBox) ResumePausedVM(vmConfig *config.VMConfig) error {
 	return v.Driver.ResumeVM(vmConfig.Name)
+}
+
+func (v *VBox) ResumeSavedVM(vmConfig *config.VMConfig) error {
+	return v.Driver.StartVM(vmConfig.Name)
 }
 
 func (v *VBox) DestroyPCFDevVMs() error {

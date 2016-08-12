@@ -1,24 +1,44 @@
 package vm
 
+import (
+	"errors"
+	"time"
+
+	"github.com/pivotal-cf/pcfdev-cli/config"
+)
+
 type Paused struct {
-	UI          UI
-	SuspendedVM *Suspended
+	VMConfig *config.VMConfig
+
+	UI   UI
+	VBox VBox
+	SSH  SSH
 }
 
 func (p *Paused) Stop() error {
-	return p.SuspendedVM.Stop()
+	p.UI.Say("Your VM is currently suspended. You must resume your VM with `cf dev resume` to shut it down.")
+	return nil
 }
 
 func (p *Paused) VerifyStartOpts(opts *StartOpts) error {
-	return p.SuspendedVM.VerifyStartOpts(opts)
+	if opts.Memory != uint64(0) {
+		return errors.New("memory cannot be changed once the vm has been created")
+	}
+	if opts.CPUs != 0 {
+		return errors.New("cores cannot be changed once the vm has been created")
+	}
+	if opts.Services != "" {
+		return errors.New("services cannot be changed once the vm has been created")
+	}
+	return nil
 }
 
 func (p *Paused) Start(opts *StartOpts) error {
-	return p.SuspendedVM.Start(opts)
+	return p.Resume()
 }
 
 func (p *Paused) Provision() error {
-	return p.SuspendedVM.Provision()
+	return nil
 }
 
 func (p *Paused) Status() string {
@@ -31,5 +51,16 @@ func (p *Paused) Suspend() error {
 }
 
 func (p *Paused) Resume() error {
-	return p.SuspendedVM.Resume()
+	p.UI.Say("Resuming VM...")
+	if err := p.VBox.ResumePausedVM(p.VMConfig); err != nil {
+		return &ResumeVMError{err}
+	}
+
+	if err := p.SSH.WaitForSSH(p.VMConfig.IP, "22", 5*time.Minute); err != nil {
+		return &ResumeVMError{err}
+	}
+
+	p.UI.Say("PCF Dev is now running.")
+
+	return nil
 }

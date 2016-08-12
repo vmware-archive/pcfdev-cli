@@ -132,7 +132,8 @@ func (d *VBoxDriver) SuspendVM(vmName string) error {
 }
 
 func (d *VBoxDriver) ResumeVM(vmName string) error {
-	return d.StartVM(vmName)
+	_, err := d.VBoxManage("controlvm", vmName, "resume")
+	return err
 }
 
 func (d *VBoxDriver) PowerOffVM(vmName string) error {

@@ -29,18 +29,15 @@ var _ = Describe("Paused", func() {
 		mockSSH = mocks.NewMockSSH(mockCtrl)
 
 		pausedVM = vm.Paused{
-			SuspendedVM: &vm.Suspended{
-				VMConfig: &config.VMConfig{
-					Name:    "some-vm",
-					Domain:  "some-domain",
-					IP:      "some-ip",
-					SSHPort: "some-port",
-				},
-				VBox: mockVBox,
-				UI:   mockUI,
-				SSH:  mockSSH,
+			VMConfig: &config.VMConfig{
+				Name:    "some-vm",
+				Domain:  "some-domain",
+				IP:      "some-ip",
+				SSHPort: "some-port",
 			},
-			UI: mockUI,
+			VBox: mockVBox,
+			UI:   mockUI,
+			SSH:  mockSSH,
 		}
 	})
 
@@ -66,7 +63,7 @@ var _ = Describe("Paused", func() {
 		It("should start vm", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
-				mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig),
+				mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
 				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
@@ -78,7 +75,7 @@ var _ = Describe("Paused", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig).Return(errors.New("some-error")),
+					mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig).Return(errors.New("some-error")),
 				)
 
 				Expect(pausedVM.Start(&vm.StartOpts{})).To(MatchError("failed to resume VM: some-error"))
@@ -89,7 +86,7 @@ var _ = Describe("Paused", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig),
+					mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
 					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
 				)
 
@@ -131,10 +128,10 @@ var _ = Describe("Paused", func() {
 	})
 
 	Describe("Resume", func() {
-		It("should start vm", func() {
+		It("should resume vm", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
-				mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig),
+				mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
 				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
@@ -146,7 +143,7 @@ var _ = Describe("Paused", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig),
+					mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
 					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
 				)
 
@@ -158,7 +155,7 @@ var _ = Describe("Paused", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(pausedVM.SuspendedVM.VMConfig).Return(errors.New("some-error")),
+					mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig).Return(errors.New("some-error")),
 				)
 
 				Expect(pausedVM.Resume()).To(MatchError("failed to resume VM: some-error"))

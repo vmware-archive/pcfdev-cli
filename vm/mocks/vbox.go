@@ -49,14 +49,24 @@ func (_mr *_MockVBoxRecorder) PowerOffVM(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "PowerOffVM", arg0)
 }
 
-func (_m *MockVBox) ResumeVM(_param0 *config.VMConfig) error {
-	ret := _m.ctrl.Call(_m, "ResumeVM", _param0)
+func (_m *MockVBox) ResumePausedVM(_param0 *config.VMConfig) error {
+	ret := _m.ctrl.Call(_m, "ResumePausedVM", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockVBoxRecorder) ResumeVM(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ResumeVM", arg0)
+func (_mr *_MockVBoxRecorder) ResumePausedVM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ResumePausedVM", arg0)
+}
+
+func (_m *MockVBox) ResumeSavedVM(_param0 *config.VMConfig) error {
+	ret := _m.ctrl.Call(_m, "ResumeSavedVM", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockVBoxRecorder) ResumeSavedVM(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ResumeSavedVM", arg0)
 }
 
 func (_m *MockVBox) StartVM(_param0 *config.VMConfig) error {

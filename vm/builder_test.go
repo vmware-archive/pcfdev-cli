@@ -290,9 +290,8 @@ var _ = Describe("Builder", func() {
 
 					switch u := pausedVM.(type) {
 					case *vm.Paused:
-						Expect(u.SuspendedVM.VMConfig).To(BeIdenticalTo(expectedVMConfig))
-						Expect(u.SuspendedVM.VBox).NotTo(BeNil())
-						Expect(u.SuspendedVM.UI).NotTo(BeNil())
+						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
+						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
 					default:
 						Fail("wrong type")
@@ -318,8 +317,8 @@ var _ = Describe("Builder", func() {
 
 					switch u := savedVM.(type) {
 					case *vm.Saved:
-						Expect(u.SuspendedVM.VMConfig).To(BeIdenticalTo(expectedVMConfig))
-						Expect(u.SuspendedVM.VBox).NotTo(BeNil())
+						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
+						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
 						Expect(u.Config).To(BeIdenticalTo(conf))
 					default:

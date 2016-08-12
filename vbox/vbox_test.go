@@ -1043,11 +1043,28 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 		})
 	})
 
-	Describe("#ResumeVM", func() {
+	Describe("#ResumeSavedVM", func() {
+		It("should start the VM", func() {
+			mockDriver.EXPECT().StartVM("some-vm")
+
+			Expect(vbx.ResumeSavedVM(&config.VMConfig{Name: "some-vm"})).To(Succeed())
+		})
+
+		Context("when the Driver fails to start the VM", func() {
+			It("should return the error", func() {
+				expectedError := errors.New("some-error")
+
+				mockDriver.EXPECT().StartVM("some-vm").Return(expectedError)
+				Expect(vbx.ResumeSavedVM(&config.VMConfig{Name: "some-vm"})).To(MatchError(expectedError))
+			})
+		})
+	})
+
+	Describe("#ResumePausedVM", func() {
 		It("should resume the VM", func() {
 			mockDriver.EXPECT().ResumeVM("some-vm")
 
-			Expect(vbx.ResumeVM(&config.VMConfig{Name: "some-vm"})).To(Succeed())
+			Expect(vbx.ResumePausedVM(&config.VMConfig{Name: "some-vm"})).To(Succeed())
 		})
 
 		Context("when the Driver fails to resume the VM", func() {
@@ -1055,7 +1072,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 				expectedError := errors.New("some-error")
 
 				mockDriver.EXPECT().ResumeVM("some-vm").Return(expectedError)
-				Expect(vbx.ResumeVM(&config.VMConfig{Name: "some-vm"})).To(MatchError(expectedError))
+				Expect(vbx.ResumePausedVM(&config.VMConfig{Name: "some-vm"})).To(MatchError(expectedError))
 			})
 		})
 	})

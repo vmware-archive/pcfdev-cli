@@ -11,7 +11,8 @@ import (
 type VBox interface {
 	StartVM(vmConfig *config.VMConfig) error
 	StopVM(vmConfig *config.VMConfig) error
-	ResumeVM(vmConfig *config.VMConfig) error
+	ResumeSavedVM(vmConfig *config.VMConfig) error
+	ResumePausedVM(vmConfig *config.VMConfig) error
 	SuspendVM(vmConfig *config.VMConfig) error
 	PowerOffVM(vmConfig *config.VMConfig) error
 	ImportVM(vmConfig *config.VMConfig) error

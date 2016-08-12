@@ -29,20 +29,17 @@ var _ = Describe("Saved", func() {
 		mockSSH = mocks.NewMockSSH(mockCtrl)
 
 		savedVM = vm.Saved{
-			SuspendedVM: &vm.Suspended{
-				VMConfig: &config.VMConfig{
-					Name:    "some-vm",
-					Domain:  "some-domain",
-					IP:      "some-ip",
-					SSHPort: "some-port",
-				},
-				VBox: mockVBox,
-				UI:   mockUI,
-				SSH:  mockSSH,
+			VMConfig: &config.VMConfig{
+				Name:    "some-vm",
+				Domain:  "some-domain",
+				IP:      "some-ip",
+				SSHPort: "some-port",
 			},
+			VBox: mockVBox,
+			UI:   mockUI,
+			SSH:  mockSSH,
 
 			Config: &config.Config{},
-			UI:     mockUI,
 		}
 	})
 
@@ -68,7 +65,7 @@ var _ = Describe("Saved", func() {
 		It("should start vm", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
-				mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig),
+				mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig),
 				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
@@ -80,7 +77,7 @@ var _ = Describe("Saved", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig).Return(errors.New("some-error")),
+					mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig).Return(errors.New("some-error")),
 				)
 
 				Expect(savedVM.Start(&vm.StartOpts{})).To(MatchError("failed to resume VM: some-error"))
@@ -91,7 +88,7 @@ var _ = Describe("Saved", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig),
+					mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig),
 					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
 				)
 
@@ -129,7 +126,7 @@ var _ = Describe("Saved", func() {
 			Context("when free memory is greater than or equal to the VM's memory", func() {
 				It("should succeed", func() {
 					savedVM.Config.FreeMemory = uint64(3000)
-					savedVM.SuspendedVM.VMConfig.Memory = uint64(2000)
+					savedVM.VMConfig.Memory = uint64(2000)
 					Expect(savedVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
 				})
 			})
@@ -138,7 +135,7 @@ var _ = Describe("Saved", func() {
 				Context("when the user accepts to continue", func() {
 					It("should succeed", func() {
 						savedVM.Config.FreeMemory = uint64(2000)
-						savedVM.SuspendedVM.VMConfig.Memory = uint64(3000)
+						savedVM.VMConfig.Memory = uint64(3000)
 
 						mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(true)
 
@@ -149,7 +146,7 @@ var _ = Describe("Saved", func() {
 				Context("when the user declines to continue", func() {
 					It("should return an error", func() {
 						savedVM.Config.FreeMemory = uint64(2000)
-						savedVM.SuspendedVM.VMConfig.Memory = uint64(3000)
+						savedVM.VMConfig.Memory = uint64(3000)
 
 						mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(false)
 
@@ -163,10 +160,10 @@ var _ = Describe("Saved", func() {
 	Describe("Resume", func() {
 		It("should start vm", func() {
 			savedVM.Config.FreeMemory = uint64(3000)
-			savedVM.SuspendedVM.VMConfig.Memory = uint64(2000)
+			savedVM.VMConfig.Memory = uint64(2000)
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
-				mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig),
+				mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig),
 				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
@@ -177,10 +174,10 @@ var _ = Describe("Saved", func() {
 		Context("when waiting for SSH fails", func() {
 			It("should return an error", func() {
 				savedVM.Config.FreeMemory = uint64(3000)
-				savedVM.SuspendedVM.VMConfig.Memory = uint64(2000)
+				savedVM.VMConfig.Memory = uint64(2000)
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig),
+					mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig),
 					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
 				)
 
@@ -191,10 +188,10 @@ var _ = Describe("Saved", func() {
 		Context("when starting the vm fails", func() {
 			It("should return an error", func() {
 				savedVM.Config.FreeMemory = uint64(3000)
-				savedVM.SuspendedVM.VMConfig.Memory = uint64(2000)
+				savedVM.VMConfig.Memory = uint64(2000)
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
-					mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig).Return(errors.New("some-error")),
+					mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig).Return(errors.New("some-error")),
 				)
 
 				Expect(savedVM.Resume()).To(MatchError("failed to resume VM: some-error"))
@@ -205,12 +202,12 @@ var _ = Describe("Saved", func() {
 			Context("when the user accepts to continue", func() {
 				It("should succeed", func() {
 					savedVM.Config.FreeMemory = uint64(2000)
-					savedVM.SuspendedVM.VMConfig.Memory = uint64(3000)
+					savedVM.VMConfig.Memory = uint64(3000)
 
 					gomock.InOrder(
 						mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(true),
 						mockUI.EXPECT().Say("Resuming VM..."),
-						mockVBox.EXPECT().ResumeVM(savedVM.SuspendedVM.VMConfig),
+						mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig),
 						mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
 						mockUI.EXPECT().Say("PCF Dev is now running."),
 					)
@@ -222,7 +219,7 @@ var _ = Describe("Saved", func() {
 			Context("when the user declines to continue", func() {
 				It("should return an error", func() {
 					savedVM.Config.FreeMemory = uint64(2000)
-					savedVM.SuspendedVM.VMConfig.Memory = uint64(3000)
+					savedVM.VMConfig.Memory = uint64(3000)
 
 					mockUI.EXPECT().Confirm("Less than 3000 MB of free memory detected, continue (y/N): ").Return(false)
 

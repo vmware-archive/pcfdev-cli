@@ -151,7 +151,7 @@ var _ = Describe("driver", func() {
 	})
 
 	Describe("when starting and stopping and suspending and resuming and destroying the VM", func() {
-		It("should start, stop, suspend, resume, and then destroy a VBox VM", func() {
+		It("should start, stop, suspend, start, pause, resume and then destroy a VBox VM", func() {
 			sshClient := &ssh.SSH{}
 			_, port, err := sshClient.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
@@ -173,6 +173,13 @@ var _ = Describe("driver", func() {
 
 			Expect(driver.SuspendVM(vmName)).To(Succeed())
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateSaved))
+
+			Expect(driver.StartVM(vmName)).To(Succeed())
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
+
+			_, err = driver.VBoxManage("controlvm", vmName, "pause")
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StatePaused))
 
 			Expect(driver.ResumeVM(vmName)).To(Succeed())
 			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
@@ -314,7 +321,7 @@ var _ = Describe("driver", func() {
 		Context("when VM with the given name does not exist", func() {
 			It("should return an error", func() {
 				err := driver.ResumeVM("some-bad-vm-name")
-				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage startvm some-bad-vm-name --type headless': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage controlvm some-bad-vm-name resume': exit status 1")))
 				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
 			})
 		})

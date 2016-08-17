@@ -1,0 +1,35 @@
+#!/bin/bash
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/../assets
+
+set -ex
+
+cd $dir
+
+cat > fake_pcfdev_server.conf <<EOF
+description "fake PCF Dev server"
+
+exec /var/pcfdev/fake_pcfdev_server
+EOF
+
+cat > fake_pcfdev_server.go <<EOF
+package main
+
+import (
+  "log"
+  "net/http"
+)
+
+func main() {
+  http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("PCF Dev Test VM"))
+  })
+
+  if err := http.ListenAndServe(":80", nil); err != nil {
+    log.Fatal("ListenAndServe: ", err)
+  }
+}
+EOF
+
+GOOS=linux go build fake_pcfdev_server.go
+packer build -force pcfdev-test.json

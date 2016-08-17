@@ -65,3 +65,8 @@ fixtures/config/plugin-config/.cf/plugins/empty_plugin
 *NERD_tree_*
 
 *cli-artifacts*
+
+assets/packer_cache
+assets/output-virtualbox-iso
+assets/*.box
+assets/fake*

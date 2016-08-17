@@ -1,0 +1,98 @@
+{
+    "variables": {
+        "cpus": "1",
+        "memory": "1024",
+        "disk_size": "10"
+    },
+    "builders": [
+        {
+            "type": "virtualbox-iso",
+            "headless": true,
+            "vm_name": "pcfdev-test",
+            "guest_os_type": "Ubuntu_64",
+            "disk_size": "{{user `disk_size`}}000",
+            "ssh_username": "vagrant",
+            "ssh_password": "vagrant",
+            "iso_url": "https://pcfdev.s3.amazonaws.com/artifacts/ubuntu-14.04.3-server-amd64.iso",
+            "iso_checksum": "9e5fecc94b3925bededed0fdca1bd417",
+            "iso_checksum_type": "md5",
+            "http_directory": "http",
+            "ssh_timeout": "20m",
+            "shutdown_command": "echo vagrant | sudo -S shutdown -P now",
+            "format": "ova",
+            "boot_command": [
+                "<esc><esc><enter><wait>",
+                "/install/vmlinuz noapic ",
+                "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
+                "debian-installer=en_US auto locale=en_US kbd-chooser/method=us ",
+                "hostname=pcfdev ",
+                "fb=false debconf/frontend=noninteractive ",
+                "keyboard-configuration/modelcode=SKIP keyboard-configuration/layout=USA ",
+                "keyboard-configuration/variant=USA console-setup/ask_detect=false ",
+                "initrd=/install/initrd.gz -- <enter>"
+            ],
+            "vboxmanage": [
+                [ "modifyvm", "{{.Name}}", "--cpus", "{{user `cpus`}}" ],
+                [ "modifyvm", "{{.Name}}", "--memory", "{{user `memory`}}" ],
+                [ "modifyvm", "{{.Name}}", "--natdnshostresolver1", "on" ],
+                [ "modifyvm", "{{.Name}}", "--nic1", "nat" ],
+                [ "modifyvm", "{{.Name}}", "--paravirtprovider", "minimal" ]
+            ]
+        }
+    ],
+
+    "provisioners": [
+        {
+            "type": "file",
+            "source": "fake_pcfdev_server",
+            "destination": "/tmp/fake_pcfdev_server"
+        },
+        {
+            "type": "file",
+            "source": "fake_pcfdev_server.conf",
+            "destination": "/tmp/fake_pcfdev_server.conf"
+        },
+        {
+            "type": "shell",
+            "execute_command": "echo vagrant | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "inline": [ "echo 'vagrant ALL=(ALL) NOPASSWD: ALL\nvcap ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers" ]
+        },
+        {
+            "type": "shell",
+            "execute_command": "{{ .Vars }} sudo -E sh '{{ .Path }}'",
+            "inline": [
+                "useradd -m --comment 'BOSH System User' vcap",
+                "echo 'vcap:vcap' | chpasswd",
+                "usermod -s /bin/bash vcap"
+            ]
+        },
+        {
+            "type": "shell",
+            "execute_command": "{{ .Vars }} sudo -E sh '{{ .Path }}'",
+            "inline": [
+                "mkdir -p /var/pcfdev",
+
+                "mv /tmp/fake_pcfdev_server /var/pcfdev",
+                "mv /tmp/fake_pcfdev_server.conf /etc/init",
+
+                "echo '#!/bin/bash' > /var/pcfdev/run",
+                "echo \"echo 'Waiting for services to start...'; echo -n 'ok' > /var/pcfdev/status; service fake_pcfdev_server start; echo 'Services started'\" >> /var/pcfdev/run",
+                "chmod +x /var/pcfdev/run",
+
+                "echo '#!/bin/bash' > /var/pcfdev/health-check",
+                "echo 'if [ -f /var/pcfdev/status ]; then cat /var/pcfdev/status; fi' >> /var/pcfdev/health-check",
+                "chmod +x /var/pcfdev/health-check",
+
+                "echo 'some-pcfdev-run-log' > /var/pcfdev/run.log",
+                "echo 'some-pcfdev-reset-log' > /var/pcfdev/reset.log"
+            ]
+        }
+    ],
+    "post-processors": [
+        {
+            "type": "vagrant",
+            "output": "pcfdev-test-{{.Provider}}-v0.box",
+            "keep_input_artifact": true
+        }
+    ]
+}

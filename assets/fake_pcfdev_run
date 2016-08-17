@@ -1,5 +1,0 @@
-#!/bin/sh
-
-echo "Waiting for services to start..."
-service fake_pcfdev_server start
-echo "Services started"

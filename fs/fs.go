@@ -2,6 +2,7 @@ package fs
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	cMD5 "crypto/md5"
 	"fmt"
 	"io"
@@ -162,4 +163,44 @@ func (fs *FS) fileInSet(filenameToFind string, filenames []string) bool {
 		}
 	}
 	return false
+}
+
+func (fs *FS) Compress(name string, path string, contentPaths []string) error {
+	tarFile, err := os.Create(filepath.Join(path, name+".tgz"))
+	if err != nil {
+		return err
+	}
+	defer tarFile.Close()
+	gzipWriter := gzip.NewWriter(tarFile)
+	defer gzipWriter.Close()
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer tarWriter.Close()
+
+	for i := range contentPaths {
+		contentFile, err := os.Open(contentPaths[i])
+		if err != nil {
+			return err
+		}
+		defer contentFile.Close()
+		contentStat, err := contentFile.Stat()
+		if err != nil {
+			return err
+		}
+		if err := tarWriter.WriteHeader(&tar.Header{
+			Name:    contentStat.Name(),
+			Size:    contentStat.Size(),
+			ModTime: contentStat.ModTime(),
+			Mode:    int64(contentStat.Mode())}); err != nil {
+			return err
+		}
+		if _, err := io.Copy(tarWriter, contentFile); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (fs *FS) TempDir() (string, error) {
+	return ioutil.TempDir("", "")
 }

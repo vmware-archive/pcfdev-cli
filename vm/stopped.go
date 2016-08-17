@@ -129,3 +129,8 @@ func (s *Stopped) Resume() error {
 	s.UI.Say("Your VM is currently stopped. Only a suspended VM can be resumed.")
 	return nil
 }
+
+func (s *Stopped) GetDebugLogs() error {
+	s.UI.Say("Your VM is currently stopped. Start vm to retrieve debug logs.")
+	return nil
+}

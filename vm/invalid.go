@@ -38,6 +38,11 @@ func (i *Invalid) Resume() error {
 	return nil
 }
 
+func (i *Invalid) GetDebugLogs() error {
+	i.UI.Failed(i.message())
+	return nil
+}
+
 func (i *Invalid) message() string {
 	return i.err() + "."
 }

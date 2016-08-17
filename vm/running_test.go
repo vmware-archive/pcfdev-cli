@@ -13,14 +13,16 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Stopped", func() {
+var _ = Describe("Running", func() {
 	var (
-		mockCtrl    *gomock.Controller
-		mockUI      *mocks.MockUI
-		mockVBox    *mocks.MockVBox
-		mockBuilder *mocks.MockBuilder
-		mockSSH     *mocks.MockSSH
-		mockVM      *mocks.MockVM
+		mockCtrl       *gomock.Controller
+		mockFS         *mocks.MockFS
+		mockUI         *mocks.MockUI
+		mockVBox       *mocks.MockVBox
+		mockBuilder    *mocks.MockBuilder
+		mockSSH        *mocks.MockSSH
+		mockVM         *mocks.MockVM
+		mockLogFetcher *mocks.MockLogFetcher
 
 		runningVM vm.Running
 		config    *conf.VMConfig
@@ -28,11 +30,13 @@ var _ = Describe("Stopped", func() {
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
+		mockFS = mocks.NewMockFS(mockCtrl)
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
 		mockVM = mocks.NewMockVM(mockCtrl)
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
+		mockLogFetcher = mocks.NewMockLogFetcher(mockCtrl)
 		config = &conf.VMConfig{}
 
 		runningVM = vm.Running{
@@ -43,10 +47,12 @@ var _ = Describe("Stopped", func() {
 				SSHPort: "some-port",
 			},
 
-			VBox:    mockVBox,
-			UI:      mockUI,
-			Builder: mockBuilder,
-			SSH:     mockSSH,
+			VBox:       mockVBox,
+			FS:         mockFS,
+			UI:         mockUI,
+			Builder:    mockBuilder,
+			SSH:        mockSSH,
+			LogFetcher: mockLogFetcher,
 		}
 	})
 
@@ -192,4 +198,21 @@ var _ = Describe("Stopped", func() {
 			Expect(runningVM.Resume()).To(Succeed())
 		})
 	})
+
+	Describe("GetDebugLogs", func() {
+		It("should succeed", func() {
+			mockLogFetcher.EXPECT().FetchLogs()
+
+			Expect(runningVM.GetDebugLogs()).To(Succeed())
+		})
+
+		Context("when fetching logs fails", func() {
+			It("should return the error", func() {
+				mockLogFetcher.EXPECT().FetchLogs().Return(errors.New("some-error"))
+
+				Expect(runningVM.GetDebugLogs()).To(MatchError("failed to retrieve logs: some-error"))
+			})
+		})
+	})
+
 })

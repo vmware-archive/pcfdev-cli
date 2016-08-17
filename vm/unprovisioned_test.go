@@ -16,12 +16,13 @@ import (
 
 var _ = Describe("Unprovisioned", func() {
 	var (
-		mockCtrl      *gomock.Controller
-		mockFS        *mocks.MockFS
-		mockUI        *mocks.MockUI
-		mockVBox      *mocks.MockVBox
-		mockSSH       *mocks.MockSSH
-		unprovisioned vm.Unprovisioned
+		mockCtrl       *gomock.Controller
+		mockFS         *mocks.MockFS
+		mockUI         *mocks.MockUI
+		mockVBox       *mocks.MockVBox
+		mockSSH        *mocks.MockSSH
+		mockLogFetcher *mocks.MockLogFetcher
+		unprovisioned  vm.Unprovisioned
 	)
 
 	BeforeEach(func() {
@@ -30,12 +31,14 @@ var _ = Describe("Unprovisioned", func() {
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
+		mockLogFetcher = mocks.NewMockLogFetcher(mockCtrl)
 
 		unprovisioned = vm.Unprovisioned{
-			UI:   mockUI,
-			VBox: mockVBox,
-			FS:   mockFS,
-			SSH:  mockSSH,
+			UI:         mockUI,
+			VBox:       mockVBox,
+			FS:         mockFS,
+			SSH:        mockSSH,
+			LogFetcher: mockLogFetcher,
 			Config: &conf.Config{
 				VMDir: "some-vm-dir",
 			},
@@ -151,4 +154,21 @@ var _ = Describe("Unprovisioned", func() {
 			Expect(unprovisioned.Resume()).To(Succeed())
 		})
 	})
+
+	Describe("GetDebugLogs", func() {
+		It("should succeed", func() {
+			mockLogFetcher.EXPECT().FetchLogs()
+
+			Expect(unprovisioned.GetDebugLogs()).To(Succeed())
+		})
+
+		Context("when fetching logs fails", func() {
+			It("should return the error", func() {
+				mockLogFetcher.EXPECT().FetchLogs().Return(errors.New("some-error"))
+
+				Expect(unprovisioned.GetDebugLogs()).To(MatchError("failed to retrieve logs: some-error"))
+			})
+		})
+	})
+
 })

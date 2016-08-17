@@ -12,12 +12,13 @@ import (
 )
 
 type Unprovisioned struct {
-	FS       FS
-	SSH      SSH
-	UI       UI
-	VBox     VBox
-	Config   *config.Config
-	VMConfig *config.VMConfig
+	FS         FS
+	SSH        SSH
+	UI         UI
+	VBox       VBox
+	LogFetcher LogFetcher
+	Config     *config.Config
+	VMConfig   *config.VMConfig
 }
 
 func (u *Unprovisioned) Stop() error {
@@ -41,7 +42,7 @@ func (u *Unprovisioned) Status() string {
 }
 
 func (u *Unprovisioned) Provision() error {
-	if err := u.SSH.RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi","127.0.0.1",  u.VMConfig.SSHPort, 30*time.Second, os.Stdout, os.Stderr); err != nil {
+	if err := u.SSH.RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", u.VMConfig.SSHPort, 30*time.Second, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{errors.New("missing provision configuration")}
 	}
 
@@ -57,7 +58,7 @@ func (u *Unprovisioned) Provision() error {
 
 	u.UI.Say("Provisioning VM...")
 	provisionCommand := fmt.Sprintf(`sudo -H /var/pcfdev/run "%s" "%s" "%s" "%s"`, provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services, strings.Join(provisionConfig.Registries, ","))
-	if err := u.SSH.RunSSHCommand(provisionCommand,"127.0.0.1",  u.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
+	if err := u.SSH.RunSSHCommand(provisionCommand, "127.0.0.1", u.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{err}
 	}
 
@@ -80,4 +81,12 @@ func (u *Unprovisioned) message() string {
 
 func (u *Unprovisioned) err() string {
 	return "PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again"
+}
+
+func (u *Unprovisioned) GetDebugLogs() error {
+	if err := u.LogFetcher.FetchLogs(); err != nil {
+		return &FetchLogsError{err}
+	}
+
+	return nil
 }

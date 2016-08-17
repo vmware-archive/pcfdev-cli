@@ -168,4 +168,11 @@ var _ = Describe("Paused", func() {
 			Expect(pausedVM.Status()).To(Equal("Suspended - system memory for the VM is still allocated. Resume and suspend to suspend pcfdev VM to the disk."))
 		})
 	})
+
+	Describe("GetDebugLogs", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("Your VM is suspended. Resume to retrieve debug logs.")
+			Expect(pausedVM.GetDebugLogs()).To(Succeed())
+		})
+	})
 })

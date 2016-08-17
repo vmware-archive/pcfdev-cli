@@ -5,6 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	config "github.com/pivotal-cf/pcfdev-cli/config"
 )
 
 // Mock of VBox interface
@@ -47,4 +48,15 @@ func (_m *MockVBox) GetVMName() (string, error) {
 
 func (_mr *_MockVBoxRecorder) GetVMName() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVMName")
+}
+
+func (_m *MockVBox) VMConfig(_param0 string) (*config.VMConfig, error) {
+	ret := _m.ctrl.Call(_m, "VMConfig", _param0)
+	ret0, _ := ret[0].(*config.VMConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockVBoxRecorder) VMConfig(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "VMConfig", arg0)
 }

@@ -404,4 +404,11 @@ var _ = Describe("Stopped", func() {
 			Expect(stoppedVM.Resume()).To(Succeed())
 		})
 	})
+
+	Describe("GetDebugLogs", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("Your VM is currently stopped. Start vm to retrieve debug logs.")
+			Expect(stoppedVM.GetDebugLogs()).To(Succeed())
+		})
+	})
 })

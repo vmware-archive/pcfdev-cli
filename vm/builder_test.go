@@ -171,6 +171,8 @@ var _ = Describe("Builder", func() {
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
 						Expect(u.SSH).NotTo(BeNil())
+						Expect(u.FS).NotTo(BeNil())
+						Expect(u.LogFetcher).NotTo(BeNil())
 						Expect(u.Builder).NotTo(BeNil())
 					default:
 						Fail("wrong type")
@@ -205,6 +207,10 @@ var _ = Describe("Builder", func() {
 						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
+						Expect(u.SSH).NotTo(BeNil())
+						Expect(u.FS).NotTo(BeNil())
+						Expect(u.LogFetcher).NotTo(BeNil())
+						Expect(u.Builder).NotTo(BeNil())
 					default:
 						Fail("wrong type")
 					}
@@ -235,6 +241,7 @@ var _ = Describe("Builder", func() {
 					case *vm.Unprovisioned:
 						Expect(u.UI).NotTo(BeNil())
 						Expect(u.VBox).NotTo(BeNil())
+						Expect(u.LogFetcher).NotTo(BeNil())
 						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
 					default:
 						Fail("wrong type")
@@ -265,6 +272,7 @@ var _ = Describe("Builder", func() {
 					case *vm.Unprovisioned:
 						Expect(u.UI).NotTo(BeNil())
 						Expect(u.VBox).NotTo(BeNil())
+						Expect(u.LogFetcher).NotTo(BeNil())
 						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
 					default:
 						Fail("wrong type")

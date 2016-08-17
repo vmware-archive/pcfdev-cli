@@ -64,3 +64,8 @@ func (p *Paused) Resume() error {
 
 	return nil
 }
+
+func (p *Paused) GetDebugLogs() error {
+	p.UI.Say("Your VM is suspended. Resume to retrieve debug logs.")
+	return nil
+}

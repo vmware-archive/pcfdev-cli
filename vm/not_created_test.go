@@ -539,4 +539,12 @@ var _ = Describe("Not Created", func() {
 			Expect(notCreatedVM.Resume()).To(Succeed())
 		})
 	})
+
+	Describe("GetDebugLogs", func() {
+		It("should say message", func() {
+			mockUI.EXPECT().Say("No VM created, cannot retrieve debug logs.")
+
+			Expect(notCreatedVM.GetDebugLogs()).To(Succeed())
+		})
+	})
 })

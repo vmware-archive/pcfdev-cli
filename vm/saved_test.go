@@ -234,4 +234,11 @@ var _ = Describe("Saved", func() {
 			Expect(savedVM.Status()).To(Equal("Suspended"))
 		})
 	})
+
+	Describe("GetDebugLogs", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("Your VM is suspended. Resume to retrieve debug logs.")
+			Expect(savedVM.GetDebugLogs()).To(Succeed())
+		})
+	})
 })

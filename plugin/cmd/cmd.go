@@ -17,6 +17,7 @@ type UI interface {
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd VBox
 type VBox interface {
 	GetVMName() (name string, err error)
+	VMConfig(vmName string) (vmConfig *config.VMConfig, err error)
 	DestroyPCFDevVMs() (err error)
 }
 
@@ -60,6 +61,7 @@ type Builder struct {
 	Downloader Downloader
 	EULAUI     EULAUI
 	FS         FS
+	SSH        SSH
 	UI         UI
 	VBox       VBox
 	VMBuilder  VMBuilder
@@ -141,6 +143,12 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 		return &VersionCmd{
 			UI:     b.UI,
 			Config: b.Config,
+		}, nil
+	case "debug":
+		return &DebugCmd{
+			VMBuilder: b.VMBuilder,
+			VBox:      b.VBox,
+			Config:    b.Config,
 		}, nil
 	default:
 		return nil, errors.New("")

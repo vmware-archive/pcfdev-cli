@@ -29,6 +29,16 @@ func (_m *MockFS) EXPECT() *_MockFSRecorder {
 	return _m.recorder
 }
 
+func (_m *MockFS) Compress(_param0 string, _param1 string, _param2 []string) error {
+	ret := _m.ctrl.Call(_m, "Compress", _param0, _param1, _param2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockFSRecorder) Compress(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Compress", arg0, arg1, arg2)
+}
+
 func (_m *MockFS) Exists(_param0 string) (bool, error) {
 	ret := _m.ctrl.Call(_m, "Exists", _param0)
 	ret0, _ := ret[0].(bool)
@@ -59,6 +69,17 @@ func (_m *MockFS) Remove(_param0 string) error {
 
 func (_mr *_MockFSRecorder) Remove(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Remove", arg0)
+}
+
+func (_m *MockFS) TempDir() (string, error) {
+	ret := _m.ctrl.Call(_m, "TempDir")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockFSRecorder) TempDir() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "TempDir")
 }
 
 func (_m *MockFS) Write(_param0 string, _param1 io.Reader) error {

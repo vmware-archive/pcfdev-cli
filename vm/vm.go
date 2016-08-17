@@ -44,6 +44,7 @@ type VM interface {
 	Status() string
 	Suspend() error
 	Resume() error
+	GetDebugLogs() error
 
 	VerifyStartOpts(*StartOpts) error
 }
@@ -59,6 +60,18 @@ type FS interface {
 	Exists(path string) (exists bool, err error)
 	Write(path string, contents io.Reader) error
 	Read(path string) (contents []byte, err error)
+	Compress(name string, path string, contentPaths []string) error
+	TempDir() (tempDir string, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/log_fetcher.go github.com/pivotal-cf/pcfdev-cli/vm LogFetcher
+type LogFetcher interface {
+	FetchLogs() error
+}
+
+//go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vm Driver
+type Driver interface {
+	VBoxManage(arg ...string) (output []byte, err error)
 }
 
 type StartOpts struct {

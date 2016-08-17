@@ -57,3 +57,11 @@ type DestroyVMError struct {
 func (e *DestroyVMError) Error() string {
 	return fmt.Sprintf("failed to destroy VM: %s", e.Err)
 }
+
+type FetchLogsError struct {
+	Err error
+}
+
+func (e *FetchLogsError) Error() string {
+	return fmt.Sprintf("failed to retrieve logs: %s", e.Err)
+}

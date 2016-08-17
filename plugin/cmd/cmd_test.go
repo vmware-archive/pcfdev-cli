@@ -221,6 +221,22 @@ var _ = Describe("Builder", func() {
 			})
 		})
 
+		Context("when it is passed debug", func() {
+			It("should return a debug command", func() {
+				debugCmd, err := builder.Cmd("debug")
+				Expect(err).NotTo(HaveOccurred())
+
+				switch c := debugCmd.(type) {
+				case *cmd.DebugCmd:
+					Expect(c.VBox).To(BeIdenticalTo(builder.VBox))
+					Expect(c.VMBuilder).To(BeIdenticalTo(builder.VMBuilder))
+					Expect(c.Config).To(BeIdenticalTo(builder.Config))
+				default:
+					Fail("wrong type")
+				}
+			})
+		})
+
 		Context("when it is passed an unknown subcommand", func() {
 			It("should return an error", func() {
 				_, err := builder.Cmd("some-bad-subcommand")

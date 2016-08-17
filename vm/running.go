@@ -11,10 +11,12 @@ import (
 type Running struct {
 	VMConfig *config.VMConfig
 
-	VBox    VBox
-	UI      UI
-	SSH     SSH
-	Builder Builder
+	VBox       VBox
+	FS         FS
+	UI         UI
+	SSH        SSH
+	Builder    Builder
+	LogFetcher LogFetcher
 }
 
 func (r *Running) Stop() error {
@@ -72,6 +74,14 @@ func (r *Running) Suspend() error {
 
 func (r *Running) Resume() error {
 	r.UI.Say("PCF Dev is running.")
+
+	return nil
+}
+
+func (r *Running) GetDebugLogs() error {
+	if err := r.LogFetcher.FetchLogs(); err != nil {
+		return &FetchLogsError{err}
+	}
 
 	return nil
 }

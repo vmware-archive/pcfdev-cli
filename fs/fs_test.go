@@ -343,4 +343,34 @@ var _ = Describe("Filesystem", func() {
 			})
 		})
 	})
+	Describe("#Compress", func() {
+		BeforeEach(func() {
+			_, err := os.Create(filepath.Join(tmpDir, "some-file"))
+			_, err = os.Create(filepath.Join(tmpDir, "some-other-file"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should create a tgz with the specified files", func() {
+			Expect(fs.Compress("some-tgz-name", tmpDir, []string{filepath.Join(tmpDir, "some-file"), filepath.Join(tmpDir, "some-other-file")})).To(Succeed())
+		})
+
+		Context("when the specified path does not exist", func() {
+			It("should return an error", func() {
+				err := fs.Compress("some-tgz-name", "some-bad-path", []string{filepath.Join(tmpDir, "some-file"), filepath.Join(tmpDir, "some-other-file")})
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when a specified content file does not exist", func() {
+			It("should return an error", func() {
+				err := fs.Compress("some-tgz-name", tmpDir, []string{filepath.Join(tmpDir, "some-file"), filepath.Join(tmpDir, "some-bad-file")})
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+	Describe("#TempDir", func() {
+		It("should create a temp directory", func() {
+			Expect(fs.TempDir()).To(BeAnExistingFile())
+		})
+	})
 })

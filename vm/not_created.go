@@ -154,3 +154,8 @@ func (n *NotCreated) Resume() error {
 	n.UI.Say("No VM suspended, cannot resume.")
 	return nil
 }
+
+func (n *NotCreated) GetDebugLogs() error {
+	n.UI.Say("No VM created, cannot retrieve debug logs.")
+	return nil
+}

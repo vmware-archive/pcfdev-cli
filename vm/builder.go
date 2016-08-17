@@ -9,6 +9,7 @@ import (
 
 	"github.com/cloudfoundry/cli/cf/terminal"
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
@@ -66,14 +67,33 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				VBox:     b.VBox,
 				FS:       b.FS,
 				SSH:      b.SSH,
+				LogFetcher: &ConcreteLogFetcher{
+					VMConfig: vmConfig,
+					UI:       termUI,
+					FS:       b.FS,
+					SSH:      b.SSH,
+					Driver: &vbox.VBoxDriver{
+						FS: &fs.FS{},
+					},
+				},
 			}, nil
 		} else {
 			return &Running{
 				VMConfig: vmConfig,
+				FS:       b.FS,
 				UI:       termUI,
 				VBox:     b.VBox,
 				SSH:      b.SSH,
 				Builder:  b,
+				LogFetcher: &ConcreteLogFetcher{
+					VMConfig: vmConfig,
+					UI:       termUI,
+					FS:       b.FS,
+					SSH:      b.SSH,
+					Driver: &vbox.VBoxDriver{
+						FS: &fs.FS{},
+					},
+				},
 			}, nil
 		}
 	case vbox.StatusStopped:

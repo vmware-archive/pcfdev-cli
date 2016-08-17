@@ -54,11 +54,6 @@
         },
         {
             "type": "shell",
-            "execute_command": "echo vagrant | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
-            "inline": [ "echo 'vagrant ALL=(ALL) NOPASSWD: ALL\nvcap ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers" ]
-        },
-        {
-            "type": "shell",
             "execute_command": "{{ .Vars }} sudo -E sh '{{ .Path }}'",
             "inline": [
                 "useradd -m --comment 'BOSH System User' vcap",
@@ -68,19 +63,25 @@
         },
         {
             "type": "shell",
+            "execute_command": "echo vagrant | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "inline": [ "echo 'vagrant ALL=(ALL) NOPASSWD: ALL\nvcap ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers" ]
+        },
+        {
+            "type": "shell",
             "execute_command": "{{ .Vars }} sudo -E sh '{{ .Path }}'",
             "inline": [
                 "mkdir -p /var/pcfdev",
 
-                "mv /tmp/fake_pcfdev_server /var/pcfdev",
                 "mv /tmp/fake_pcfdev_server.conf /etc/init",
+                "mv /tmp/fake_pcfdev_server /var/pcfdev",
+                "chmod +x /var/pcfdev/fake_pcfdev_server",
 
                 "echo '#!/bin/bash' > /var/pcfdev/run",
-                "echo \"echo 'Waiting for services to start...'; echo -n 'ok' > /var/pcfdev/status; service fake_pcfdev_server start; echo 'Services started'\" >> /var/pcfdev/run",
+                "echo \"echo 'Waiting for services to start...'\necho -n 'ok' > /var/pcfdev/status\nservice fake_pcfdev_server start\necho 'Services started'\" >> /var/pcfdev/run",
                 "chmod +x /var/pcfdev/run",
 
                 "echo '#!/bin/bash' > /var/pcfdev/health-check",
-                "echo 'if [ -f /var/pcfdev/status ]; then cat /var/pcfdev/status; fi' >> /var/pcfdev/health-check",
+                "echo \"if [ -f /var/pcfdev/status ]\nthen\ncat /var/pcfdev/status\nfi\" >> /var/pcfdev/health-check",
                 "chmod +x /var/pcfdev/health-check",
 
                 "echo 'some-pcfdev-run-log' > /var/pcfdev/run.log",

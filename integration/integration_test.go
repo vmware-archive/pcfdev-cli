@@ -59,8 +59,8 @@ var _ = BeforeSuite(func() {
 			" -X main.buildSHA=some-cli-sha"+
 			" -X main.ovaBuildVersion=some-ova-version"+
 			" -X main.releaseId=1622"+
-			" -X main.productFileId=5646"+
-			" -X main.md5=c2ca51982b0f709393f2ee3fd117eaf7")
+			" -X main.productFileId=5657"+
+			" -X main.md5=029b97e79d21a56dd820be8dab5ce0ee")
 	Expect(err).NotTo(HaveOccurred())
 
 	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)
@@ -176,15 +176,6 @@ var _ = Describe("PCF Dev", func() {
 		response, err := getResponseFromFakeServer(interfaceName)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(response).To(Equal("PCF Dev Test VM"))
-
-		By("running 'cf dev debug' should show debug information")
-		pcfdevCommand = exec.Command("cf", "dev", "debug")
-		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "2m").Should(gexec.Exit(0))
-		Expect(session).To(gbytes.Say("Debug logs written to pcfdev-debug.tgz.*"))
-		Expect("pcfdev-debug.tgz").To(BeAnExistingFile())
-		Expect(os.RemoveAll("pcfdev-debug.tgz")).To(Succeed())
 
 		pcfdevCommand = exec.Command("cf", "dev", "stop")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
@@ -347,6 +338,16 @@ var _ = Describe("PCF Dev", func() {
 			Expect(session).To(gbytes.Say("Provisioning VM..."))
 			Expect(session).To(gbytes.Say("Waiting for services to start..."))
 			Expect(session).To(gbytes.Say("Services started"))
+
+			By("running 'cf dev debug'")
+			pcfdevCommand = exec.Command("cf", "dev", "debug")
+			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "2m").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("Debug logs written to pcfdev-debug.tgz.*"))
+			Expect("pcfdev-debug.tgz").To(BeAnExistingFile())
+			Expect(os.RemoveAll("pcfdev-debug.tgz")).To(Succeed())
+
 		})
 	})
 })

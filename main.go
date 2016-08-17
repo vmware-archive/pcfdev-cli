@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -82,10 +83,12 @@ func main() {
 			Client: client,
 			Config: conf,
 			Downloader: &downloader.Downloader{
-				PivnetClient: client,
-				FS:           fileSystem,
-				Config:       conf,
-				Token:        token,
+				PivnetClient:         client,
+				FS:                   fileSystem,
+				Token:                token,
+				Config:               conf,
+				DownloadAttempts:     10,
+				DownloadAttemptDelay: time.Second,
 			},
 			EULAUI: &ui.UI{},
 			FS:     fileSystem,

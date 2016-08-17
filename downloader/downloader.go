@@ -4,10 +4,13 @@ import (
 	"errors"
 	"io"
 	"path/filepath"
+	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 )
+
+const DOWNLOAD_ATTEMPTS = 3
 
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/downloader Client
 type Client interface {
@@ -32,10 +35,12 @@ type Token interface {
 }
 
 type Downloader struct {
-	FS           FS
-	PivnetClient Client
-	Config       *config.Config
-	Token        Token
+	FS                   FS
+	PivnetClient         Client
+	Config               *config.Config
+	Token                Token
+	DownloadAttempts     int
+	DownloadAttemptDelay time.Duration
 }
 
 func (d *Downloader) partialFile(path string) string {
@@ -132,7 +137,13 @@ func (d *Downloader) download(path string, startAtBytes int64) (md5 string, err 
 		return "", err
 	}
 
-	if err := d.FS.Write(d.partialFile(path), ova); err != nil {
+	for attempts := 0; attempts < d.DownloadAttempts; attempts++ {
+		if err = d.FS.Write(d.partialFile(path), ova); err == nil {
+			break
+		}
+		time.Sleep(d.DownloadAttemptDelay)
+	}
+	if err != nil {
 		return "", err
 	}
 

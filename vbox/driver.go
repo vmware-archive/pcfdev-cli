@@ -48,7 +48,10 @@ func (d *VBoxDriver) CreateVM(vmName string, basedir string) error {
 	if _, err := d.VBoxManage("createvm", "--name", vmName, "--ostype", "Ubuntu_64", "--basefolder", basedir, "--register"); err != nil {
 		return err
 	}
-	_, err := d.VBoxManage("modifyvm", vmName, "--paravirtprovider", "minimal")
+	if _, err := d.VBoxManage("modifyvm", vmName, "--paravirtprovider", "minimal"); err != nil {
+		return err
+	}
+	_, err := d.VBoxManage("modifyvm", vmName, "--nic1", "nat", "--nictype1", "virtio")
 	return err
 }
 
@@ -256,7 +259,7 @@ func (d *VBoxDriver) GetVMIP(vmName string) (string, error) {
 }
 
 func (d *VBoxDriver) AttachNetworkInterface(interfaceName string, vmName string) error {
-	_, err := d.VBoxManage("modifyvm", vmName, "--nic2", "hostonly", "--hostonlyadapter2", interfaceName)
+	_, err := d.VBoxManage("modifyvm", vmName, "--nic2", "hostonly", "--nictype2", "virtio", "--hostonlyadapter2", interfaceName)
 	return err
 }
 

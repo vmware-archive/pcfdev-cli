@@ -219,7 +219,7 @@ var _ = Describe("driver", func() {
 			exec.Command(vBoxManagePath, "unregistervm", createdVMName, "--delete").Run()
 		})
 
-		It("should create VM and set paravirtprovider to minimal", func() {
+		It("should create VM, set paravirtprovider to minimal, and set NAT to use virtio", func() {
 			basedir := os.TempDir()
 			err := driver.CreateVM(createdVMName, basedir)
 			command := exec.Command(vBoxManagePath, "list", "vms")
@@ -233,6 +233,8 @@ var _ = Describe("driver", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say(`paravirtprovider="minimal"`))
+			Expect(session).To(gbytes.Say(`nic1="nat"`))
+			Expect(session).To(gbytes.Say(`nictype1="virtio"`))
 		})
 	})
 
@@ -552,7 +554,7 @@ var _ = Describe("driver", func() {
 		})
 	})
 
-	Describe("#AttachInterface", func() {
+	Describe("#AttachNetworkInterface", func() {
 		var interfaceName string
 
 		BeforeEach(func() {
@@ -577,12 +579,13 @@ var _ = Describe("driver", func() {
 			Eventually(session).Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say(`hostonlyadapter2="` + interfaceName + `"`))
 			Expect(session).To(gbytes.Say(`nic2="hostonly"`))
+			Expect(session).To(gbytes.Say(`nictype2="virtio"`))
 		})
 
 		Context("when attaching a hostonlyif fails", func() {
 			It("should return an error", func() {
 				err := driver.AttachNetworkInterface("some-interface-name", "some-bad-vm-name")
-				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage modifyvm some-bad-vm-name --nic2 hostonly --hostonlyadapter2 some-interface-name': exit status 1")))
+				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage modifyvm some-bad-vm-name --nic2 hostonly --nictype2 virtio --hostonlyadapter2 some-interface-name': exit status 1")))
 				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
 			})
 		})

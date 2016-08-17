@@ -141,27 +141,19 @@ func (b *VBoxBuilder) getVMConfig(vmName string, status string) (*config.VMConfi
 
 func (b *VBoxBuilder) healthcheck(ip string, sshPort string) (string, error) {
 	healthCheckCommand := "sudo /var/pcfdev/health-check"
-
-	forwardPortOutputChan := make(chan string, 1)
-	forwardPortErrChan := make(chan error, 1)
-	sshOutputChan := make(chan string, 1)
-	sshErrChan := make(chan error, 1)
+	outputChan := make(chan string, 1)
+	errChan := make(chan error, 1)
 
 	go func() {
 		output, err := b.SSH.GetSSHOutput(healthCheckCommand, "127.0.0.1", sshPort, 20*time.Second)
-		forwardPortOutputChan <- output
-		forwardPortErrChan <- err
+		outputChan <- output
+		errChan <- err
 	}()
 	go func() {
 		output, err := b.SSH.GetSSHOutput(healthCheckCommand, ip, "22", 20*time.Second)
-		sshOutputChan <- output
-		sshErrChan <- err
+		outputChan <- output
+		errChan <- err
 	}()
 
-	select {
-	case out := <-sshOutputChan:
-		return out, <-sshErrChan
-	case out := <-forwardPortOutputChan:
-		return out, <-forwardPortErrChan
-	}
+	return <-outputChan, <-errChan
 }

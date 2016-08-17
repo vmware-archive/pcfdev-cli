@@ -7,8 +7,8 @@ if [[ "$1" == "test" ]]
 then
   vm_name="pcfdev-test2"
   release_id="1622"
-  product_file_id="5113"
-  md5="fefd8bdfcb44fed417bf5e9d57355664"
+  product_file_id="5646"
+  md5="c2ca51982b0f709393f2ee3fd117eaf7"
   ova_version="0"
 else
   metadata=$(aws s3 cp s3://pcfdev/ci/pivnet-file-metadata -)

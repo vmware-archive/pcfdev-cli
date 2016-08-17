@@ -61,7 +61,6 @@ type Builder struct {
 	Downloader Downloader
 	EULAUI     EULAUI
 	FS         FS
-	SSH        SSH
 	UI         UI
 	VBox       VBox
 	VMBuilder  VMBuilder

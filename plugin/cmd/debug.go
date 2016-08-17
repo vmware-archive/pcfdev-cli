@@ -1,29 +1,18 @@
 package cmd
 
 import (
-	"io"
-	"time"
-
 	"github.com/cloudfoundry/cli/flags"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
-
-//go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vm SSH
-type SSH interface {
-	GenerateAddress() (host string, port string, err error)
-	WaitForSSH(ip string, port string, timeout time.Duration) error
-	RunSSHCommand(command string, ip string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
-	GetSSHOutput(command string, ip string, port string, timeout time.Duration) (combinedOutput string, err error)
-}
-
-const DEBUG_ARGS = 0
 
 type DebugCmd struct {
 	VBox      VBox
 	VMBuilder VMBuilder
 	Config    *config.Config
 }
+
+const DEBUG_ARGS = 0
 
 func (d *DebugCmd) Parse(args []string) error {
 	return parse(flags.New(), args, DEBUG_ARGS)

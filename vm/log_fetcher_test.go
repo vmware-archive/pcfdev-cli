@@ -1,7 +1,6 @@
 package vm_test
 
 import (
-	"bytes"
 	"errors"
 	"path/filepath"
 	"strings"
@@ -67,11 +66,11 @@ var _ = Describe("LogFetcher", func() {
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log")),
 
 				mockDriver.EXPECT().VBoxManage("list", "vms").Return([]byte("some-vm-list"), nil),
-				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), bytes.NewReader([]byte("some-vm-list"))),
+				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), strings.NewReader("some-vm-list")),
 				mockDriver.EXPECT().VBoxManage("showvminfo", "some-vm-name").Return([]byte("some-vm-info"), nil),
-				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-info"), bytes.NewReader([]byte("some-vm-info"))),
+				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-info"), strings.NewReader("some-vm-info")),
 				mockDriver.EXPECT().VBoxManage("list", "hostonlyifs", "--long").Return([]byte("some-vm-hostonlyifs"), nil),
-				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-hostonlyifs"), bytes.NewReader([]byte("some-vm-hostonlyifs"))),
+				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-hostonlyifs"), strings.NewReader("some-vm-hostonlyifs")),
 
 				mockFS.EXPECT().Compress(
 					"pcfdev-debug",
@@ -92,6 +91,52 @@ var _ = Describe("LogFetcher", func() {
 			)
 
 			Expect(logFetcher.FetchLogs()).To(Succeed())
+		})
+
+		Context("when there is sensitive information", func() {
+			It("should remove the sensitive information", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/run.log", "127.0.0.1", "some-port", 20*time.Second).Return("http://some-private-domain.com", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "run.log"), strings.NewReader("<redacted uri>")),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log")),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "kern.log"), strings.NewReader("some-kern-log")),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", 20*time.Second).Return("some-dmesg-log", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "dmesg"), strings.NewReader("some-dmesg-log")),
+					mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", 20*time.Second).Return("some-ifconfig-log", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "ifconfig"), strings.NewReader("some-ifconfig-log")),
+					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("http://some-private-domain.com", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("http://some-private-domain.com")),
+
+					mockDriver.EXPECT().VBoxManage("list", "vms").Return([]byte("http://some-private-domain.com"), nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), strings.NewReader("http://some-private-domain.com")),
+					mockDriver.EXPECT().VBoxManage("showvminfo", "some-vm-name").Return([]byte("some-vm-info"), nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-info"), strings.NewReader("some-vm-info")),
+					mockDriver.EXPECT().VBoxManage("list", "hostonlyifs", "--long").Return([]byte("http://some-private-domain.com"), nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-hostonlyifs"), strings.NewReader("http://some-private-domain.com")),
+
+					mockFS.EXPECT().Compress(
+						"pcfdev-debug",
+						".",
+						[]string{
+							filepath.Join("some-temp-dir", "run.log"),
+							filepath.Join("some-temp-dir", "reset.log"),
+							filepath.Join("some-temp-dir", "kern.log"),
+							filepath.Join("some-temp-dir", "dmesg"),
+							filepath.Join("some-temp-dir", "ifconfig"),
+							filepath.Join("some-temp-dir", "routes"),
+							filepath.Join("some-temp-dir", "vm-list"),
+							filepath.Join("some-temp-dir", "vm-info"),
+							filepath.Join("some-temp-dir", "vm-hostonlyifs"),
+						}),
+
+					mockUI.EXPECT().Say("Debug logs written to pcfdev-debug.tgz. While some scrubbing has taken place, please remove any remaining sensitive information from these logs before sharing."),
+				)
+
+				Expect(logFetcher.FetchLogs()).To(Succeed())
+			})
 		})
 
 		Context("when there is an error creating a temporary directory", func() {
@@ -167,7 +212,7 @@ var _ = Describe("LogFetcher", func() {
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log")),
 
 					mockDriver.EXPECT().VBoxManage("list", "vms").Return([]byte("some-vm-list"), nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), bytes.NewReader([]byte("some-vm-list"))).Return(errors.New("some-error")),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), strings.NewReader("some-vm-list")).Return(errors.New("some-error")),
 				)
 
 				Expect(logFetcher.FetchLogs()).To(MatchError("some-error"))
@@ -192,11 +237,11 @@ var _ = Describe("LogFetcher", func() {
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log")),
 
 					mockDriver.EXPECT().VBoxManage("list", "vms").Return([]byte("some-vm-list"), nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), bytes.NewReader([]byte("some-vm-list"))),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), strings.NewReader("some-vm-list")),
 					mockDriver.EXPECT().VBoxManage("showvminfo", "some-vm-name").Return([]byte("some-vm-info"), nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-info"), bytes.NewReader([]byte("some-vm-info"))),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-info"), strings.NewReader("some-vm-info")),
 					mockDriver.EXPECT().VBoxManage("list", "hostonlyifs", "--long").Return([]byte("some-vm-hostonlyifs"), nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-hostonlyifs"), bytes.NewReader([]byte("some-vm-hostonlyifs"))),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-hostonlyifs"), strings.NewReader("some-vm-hostonlyifs")),
 
 					mockFS.EXPECT().Compress(
 						"pcfdev-debug",

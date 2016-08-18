@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"bytes"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,9 +18,10 @@ type ConcreteLogFetcher struct {
 }
 
 type logFile struct {
-	command  []string
-	reciever string
-	filename string
+	command   []string
+	reciever  string
+	filename  string
+	sensitive bool
 }
 
 const (
@@ -32,51 +32,62 @@ const (
 func (l *ConcreteLogFetcher) FetchLogs() error {
 	logFiles := []logFile{
 		logFile{
-			command:  []string{"sudo", "cat", "/var/pcfdev/run.log"},
-			filename: "run.log",
-			reciever: ReceiverGuest,
+			command:   []string{"sudo", "cat", "/var/pcfdev/run.log"},
+			filename:  "run.log",
+			reciever:  ReceiverGuest,
+			sensitive: true,
 		},
 		logFile{
-			command:  []string{"sudo", "cat", "/var/pcfdev/reset.log"},
-			filename: "reset.log",
-			reciever: ReceiverGuest,
+			command:   []string{"sudo", "cat", "/var/pcfdev/reset.log"},
+			filename:  "reset.log",
+			reciever:  ReceiverGuest,
+			sensitive: true,
 		},
 		logFile{
-			command:  []string{"sudo", "cat", "/var/log/kern.log"},
-			filename: "kern.log",
-			reciever: ReceiverGuest,
+			command:   []string{"sudo", "cat", "/var/log/kern.log"},
+			filename:  "kern.log",
+			reciever:  ReceiverGuest,
+			sensitive: true,
 		},
 		logFile{
-			command:  []string{"sudo", "cat", "/var/log/dmesg"},
-			filename: "dmesg",
-			reciever: ReceiverGuest,
+			command:   []string{"sudo", "cat", "/var/log/dmesg"},
+			filename:  "dmesg",
+			reciever:  ReceiverGuest,
+			sensitive: true,
 		},
 		logFile{
-			command:  []string{"ifconfig"},
-			filename: "ifconfig",
-			reciever: ReceiverGuest,
+			command:   []string{"ifconfig"},
+			filename:  "ifconfig",
+			reciever:  ReceiverGuest,
+			sensitive: true,
 		},
 		logFile{
-			command:  []string{"route", "-n"},
-			filename: "routes",
-			reciever: ReceiverGuest,
+			command:   []string{"route", "-n"},
+			filename:  "routes",
+			reciever:  ReceiverGuest,
+			sensitive: false,
 		},
 		logFile{
-			command:  []string{"list", "vms"},
-			filename: "vm-list",
-			reciever: ReceiverHost,
+			command:   []string{"list", "vms"},
+			filename:  "vm-list",
+			reciever:  ReceiverHost,
+			sensitive: false,
 		},
 		logFile{
-			command:  []string{"showvminfo", l.VMConfig.Name},
-			filename: "vm-info",
-			reciever: ReceiverHost,
+			command:   []string{"showvminfo", l.VMConfig.Name},
+			filename:  "vm-info",
+			reciever:  ReceiverHost,
+			sensitive: true,
 		},
 		logFile{
-			command:  []string{"list", "hostonlyifs", "--long"},
-			filename: "vm-hostonlyifs",
-			reciever: ReceiverHost,
+			command:   []string{"list", "hostonlyifs", "--long"},
+			filename:  "vm-hostonlyifs",
+			reciever:  ReceiverHost,
+			sensitive: false,
 		},
 	}
+
+	sensitiveInformationScrubber := &SensitiveInformationScrubber{}
 
 	dir, err := l.FS.TempDir()
 	if err != nil {
@@ -91,7 +102,14 @@ func (l *ConcreteLogFetcher) FetchLogs() error {
 				return err
 			}
 
-			if err := l.FS.Write(filepath.Join(dir, logFile.filename), strings.NewReader(output)); err != nil {
+			if logFile.sensitive {
+				output = sensitiveInformationScrubber.Scrub(output)
+			}
+
+			if err := l.FS.Write(
+				filepath.Join(dir, logFile.filename),
+				strings.NewReader(output),
+			); err != nil {
 				return err
 			}
 		case ReceiverHost:
@@ -100,7 +118,15 @@ func (l *ConcreteLogFetcher) FetchLogs() error {
 				return err
 			}
 
-			if err := l.FS.Write(filepath.Join(dir, logFile.filename), bytes.NewReader(output)); err != nil {
+			scrubbedOutput := string(output)
+			if logFile.sensitive {
+				scrubbedOutput = sensitiveInformationScrubber.Scrub(scrubbedOutput)
+			}
+
+			if err := l.FS.Write(
+				filepath.Join(dir, logFile.filename),
+				strings.NewReader(scrubbedOutput),
+			); err != nil {
 				return err
 			}
 		}

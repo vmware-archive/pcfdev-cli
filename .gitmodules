@@ -3,7 +3,7 @@
 	url = https://github.com/cloudfoundry/cli.git
 [submodule "vendor/github.com/golang/mock"]
 	path = vendor/github.com/golang/mock
-	url = https://github.com/golang/mock.git
+	url = https://github.com/pcfdev-forks/mock.git
 [submodule "vendor/github.com/onsi/ginkgo"]
 	path = vendor/github.com/onsi/ginkgo
 	url = https://github.com/onsi/ginkgo

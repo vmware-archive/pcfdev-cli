@@ -2,6 +2,9 @@
 
 pcfdev_dir=$(cd `dirname $0` && cd .. && pwd)
 mocks_dirs=$(go list -f '{{.Dir}}' github.com/pivotal-cf/pcfdev-cli/... | grep -v /vendor/ | grep '/mocks$')
-find $mocks_dirs -name "*.go" -exec rm {} \;
+if [[ -n "$mocks_dirs" ]]; then
+  find $mocks_dirs -name "*.go" -exec rm {} \;
+fi
 
+go install github.com/pivotal-cf/pcfdev-cli/vendor/github.com/golang/mock/mockgen
 go generate $(go list github.com/pivotal-cf/pcfdev-cli/... | grep -v /vendor/)

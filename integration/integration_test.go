@@ -230,11 +230,11 @@ var _ = Describe("PCF Dev", func() {
 		stderr := gbytes.NewBuffer()
 		sshClient := &ssh.SSH{}
 		sshClient.RunSSHCommand("echo $HTTP_PROXY", getVMIP(), "22", 5*time.Second, stdout, stderr)
-		Eventually(stdout).Should(gbytes.Say("192.168.93.23"))
+		Eventually(stdout, "5s").Should(gbytes.Say("192.168.93.23"))
 		sshClient.RunSSHCommand("echo $HTTPS_PROXY", getVMIP(), "22", 5*time.Second, stdout, stderr)
-		Eventually(stdout).Should(gbytes.Say("192.168.38.29"))
+		Eventually(stdout, "5s").Should(gbytes.Say("192.168.38.29"))
 		sshClient.RunSSHCommand("echo $NO_PROXY", getVMIP(), "22", 5*time.Second, stdout, stderr)
-		Eventually(stdout).Should(gbytes.Say("192.168.98.98"))
+		Eventually(stdout, "5s").Should(gbytes.Say("192.168.98.98"))
 
 		response, err = getResponseFromFakeServer(interfaceName)
 		Expect(err).NotTo(HaveOccurred())

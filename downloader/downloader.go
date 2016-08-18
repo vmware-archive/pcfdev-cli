@@ -10,8 +10,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 )
 
-const DOWNLOAD_ATTEMPTS = 3
-
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/downloader Client
 type Client interface {
 	DownloadOVA(startAtByte int64) (ova *pivnet.DownloadReader, err error)

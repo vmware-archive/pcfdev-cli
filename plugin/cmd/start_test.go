@@ -93,6 +93,10 @@ var _ = Describe("StartCmd", func() {
 	})
 
 	Describe("Run", func() {
+		BeforeEach(func() {
+			startCmd.Parse([]string{})
+		})
+
 		Context("when starting the default ova", func() {
 			It("should validate start options and starts the VM", func() {
 				startOpts := &vm.StartOpts{
@@ -241,6 +245,34 @@ var _ = Describe("StartCmd", func() {
 					mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil)
 					Expect(startCmd.Run()).To(MatchError("you must destroy your existing VM to use a custom OVA"))
 				})
+			})
+		})
+
+		Context("when the provision option is specified", func() {
+			It("should provision the VM without starting it", func() {
+				startCmd.Parse([]string{"-r"})
+
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Provision(),
+				)
+
+				Expect(startCmd.Run()).To(Succeed())
+			})
+		})
+
+		Context("when provisioning fails", func() {
+			It("return an error", func() {
+				startCmd.Parse([]string{"-r"})
+
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Provision().Return(errors.New("some-error")),
+				)
+
+				Expect(startCmd.Run()).To(MatchError("some-error"))
 			})
 		})
 	})

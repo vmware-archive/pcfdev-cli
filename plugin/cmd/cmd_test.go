@@ -86,22 +86,6 @@ var _ = Describe("Builder", func() {
 			})
 		})
 
-		Context("when it is passed provision", func() {
-			It("should return a provision command", func() {
-				provisionCmd, err := builder.Cmd("provision")
-				Expect(err).NotTo(HaveOccurred())
-
-				switch c := provisionCmd.(type) {
-				case *cmd.ProvisionCmd:
-					Expect(c.VBox).To(BeIdenticalTo(builder.VBox))
-					Expect(c.VMBuilder).To(BeIdenticalTo(builder.VMBuilder))
-					Expect(c.Config).To(BeIdenticalTo(builder.Config))
-				default:
-					Fail("wrong type")
-				}
-			})
-		})
-
 		Context("when it is passed resume", func() {
 			It("should return a resume command", func() {
 				resumeCmd, err := builder.Cmd("resume")

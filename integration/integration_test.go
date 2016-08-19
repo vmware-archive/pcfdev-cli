@@ -212,7 +212,7 @@ var _ = Describe("PCF Dev", func() {
 		os.Setenv("NO_PROXY", "192.168.98.98")
 
 		By("starting after running destroy")
-		pcfdevCommand = exec.Command("cf", "dev", "start", "-m", "3456", "-c", "1", "-o", filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test2.ova"))
+		pcfdevCommand = exec.Command("cf", "dev", "start", "-m", "3456", "-c", "1", "-o", filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova"))
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
@@ -229,12 +229,12 @@ var _ = Describe("PCF Dev", func() {
 		stdout := gbytes.NewBuffer()
 		stderr := gbytes.NewBuffer()
 		sshClient := &ssh.SSH{}
-		sshClient.RunSSHCommand("echo $HTTP_PROXY", getVMIP(), "22", 5*time.Second, stdout, stderr)
-		Eventually(stdout, "5s").Should(gbytes.Say("192.168.93.23"))
-		sshClient.RunSSHCommand("echo $HTTPS_PROXY", getVMIP(), "22", 5*time.Second, stdout, stderr)
-		Eventually(stdout, "5s").Should(gbytes.Say("192.168.38.29"))
-		sshClient.RunSSHCommand("echo $NO_PROXY", getVMIP(), "22", 5*time.Second, stdout, stderr)
-		Eventually(stdout, "5s").Should(gbytes.Say("192.168.98.98"))
+		sshClient.RunSSHCommand("echo $HTTP_PROXY", getVMIP(), "22", time.Minute, stdout, stderr)
+		Eventually(stdout, "10s").Should(gbytes.Say("192.168.93.23"))
+		sshClient.RunSSHCommand("echo $HTTPS_PROXY", getVMIP(), "22", time.Minute, stdout, stderr)
+		Eventually(stdout, "10s").Should(gbytes.Say("192.168.38.29"))
+		sshClient.RunSSHCommand("echo $NO_PROXY", getVMIP(), "22", time.Minute, stdout, stderr)
+		Eventually(stdout, "10s").Should(gbytes.Say("192.168.98.98"))
 
 		response, err = getResponseFromFakeServer(interfaceName)
 		Expect(err).NotTo(HaveOccurred())
@@ -283,7 +283,7 @@ var _ = Describe("PCF Dev", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1h").Should(gexec.Exit(0))
 
-			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test2.ova")).To(BeAnExistingFile())
+			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova")).To(BeAnExistingFile())
 
 			listVmsCommand := exec.Command(vBoxManagePath, "list", "vms")
 			session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
@@ -298,19 +298,19 @@ var _ = Describe("PCF Dev", func() {
 			Eventually(session, "3m").Should(gexec.Exit(0))
 
 			By("removing")
-			os.Rename(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test2.ova"), filepath.Join(tempOVALocation, "pcfdev-test2.ova"))
-			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test2.ova")).NotTo(BeAnExistingFile())
+			os.Rename(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova"), filepath.Join(tempOVALocation, "pcfdev-test.ova"))
+			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova")).NotTo(BeAnExistingFile())
 
 			By("running import")
-			importCommand := exec.Command("cf", "dev", "import", filepath.Join(tempOVALocation, "pcfdev-test2.ova"))
+			importCommand := exec.Command("cf", "dev", "import", filepath.Join(tempOVALocation, "pcfdev-test.ova"))
 			session, err = gexec.Start(importCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "5m").Should(gexec.Exit(0))
-			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test2.ova")).To(BeAnExistingFile())
+			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova")).To(BeAnExistingFile())
 			Eventually(session).Should(gbytes.Say("OVA version some-ova-version imported successfully."))
 
 			By("rerunning import")
-			importCommand = exec.Command("cf", "dev", "import", filepath.Join(tempOVALocation, "pcfdev-test2.ova"))
+			importCommand = exec.Command("cf", "dev", "import", filepath.Join(tempOVALocation, "pcfdev-test.ova"))
 			session, err = gexec.Start(importCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "3m").Should(gexec.Exit(0))
@@ -331,7 +331,7 @@ var _ = Describe("PCF Dev", func() {
 			Expect(session).To(gbytes.Say("VM will not be provisioned .*"))
 
 			By("running provision")
-			provisionCommand := exec.Command("cf", "dev", "provision")
+			provisionCommand := exec.Command("cf", "dev", "start", "-r")
 			session, err = gexec.Start(provisionCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1h").Should(gexec.Exit(0))

@@ -16,27 +16,29 @@ type StartCmd struct {
 	VMBuilder   VMBuilder
 	Config      *config.Config
 	DownloadCmd Cmd
+	flagContext flags.FlagContext
 }
 
 func (s *StartCmd) Parse(args []string) error {
-	flagContext := flags.New()
-	flagContext.NewBoolFlag("n", "", "<skip provisioning>")
-	flagContext.NewIntFlag("c", "", "<number of cpus>")
-	flagContext.NewIntFlag("m", "", "<memory in MB>")
-	flagContext.NewStringFlag("o", "", "<path to custom ova>")
-	flagContext.NewStringFlag("p", "", "<private docker registries>")
-	flagContext.NewStringFlag("s", "", "<services to start with>")
-	if err := parse(flagContext, args, START_ARGS); err != nil {
+	s.flagContext = flags.New()
+	s.flagContext.NewBoolFlag("n", "", "<skip provisioning>")
+	s.flagContext.NewBoolFlag("r", "", "<provision>")
+	s.flagContext.NewIntFlag("c", "", "<number of cpus>")
+	s.flagContext.NewIntFlag("m", "", "<memory in MB>")
+	s.flagContext.NewStringFlag("o", "", "<path to custom ova>")
+	s.flagContext.NewStringFlag("p", "", "<private docker registries>")
+	s.flagContext.NewStringFlag("s", "", "<services to start with>")
+	if err := parse(s.flagContext, args, START_ARGS); err != nil {
 		return err
 	}
 
 	s.Opts = &vm.StartOpts{
-		CPUs:        flagContext.Int("c"),
-		Memory:      uint64(flagContext.Int("m")),
-		NoProvision: flagContext.Bool("n"),
-		OVAPath:     flagContext.String("o"),
-		Registries:  flagContext.String("p"),
-		Services:    flagContext.String("s"),
+		CPUs:        s.flagContext.Int("c"),
+		Memory:      uint64(s.flagContext.Int("m")),
+		NoProvision: s.flagContext.Bool("n"),
+		OVAPath:     s.flagContext.String("o"),
+		Registries:  s.flagContext.String("p"),
+		Services:    s.flagContext.String("s"),
 	}
 	return nil
 }
@@ -75,14 +77,18 @@ func (s *StartCmd) Run() error {
 		return err
 	}
 
-	if err := v.VerifyStartOpts(s.Opts); err != nil {
-		return err
-	}
-	if s.Opts.OVAPath == "" && existingVMName != "pcfdev-custom" {
-		if err := s.DownloadCmd.Run(); err != nil {
+	if s.flagContext.Bool("r") {
+		return v.Provision()
+	} else {
+		if err := v.VerifyStartOpts(s.Opts); err != nil {
 			return err
 		}
-	}
+		if s.Opts.OVAPath == "" && existingVMName != "pcfdev-custom" {
+			if err := s.DownloadCmd.Run(); err != nil {
+				return err
+			}
+		}
 
-	return v.Start(s.Opts)
+		return v.Start(s.Opts)
+	}
 }

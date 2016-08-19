@@ -92,12 +92,6 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 			Config:     b.Config,
 			FS:         b.FS,
 		}, nil
-	case "provision":
-		return &ProvisionCmd{
-			VBox:      b.VBox,
-			VMBuilder: b.VMBuilder,
-			Config:    b.Config,
-		}, nil
 	case "resume":
 		return &ResumeCmd{
 			VBox:      b.VBox,

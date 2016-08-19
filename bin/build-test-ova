@@ -1,35 +1,43 @@
 #!/bin/bash
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/../assets
+dir=$( cd $( dirname "${BASH_SOURCE[0]}" ) && cd ../assets && pwd )
 
 set -ex
 
-cd $dir
+pushd $dir >/dev/null
+  cat > fake_pcfdev_server.conf <<EOF
+  description "fake PCF Dev server"
 
-cat > fake_pcfdev_server.conf <<EOF
-description "fake PCF Dev server"
-
-exec /var/pcfdev/fake_pcfdev_server
+  exec /var/pcfdev/fake_pcfdev_server
 EOF
 
-cat > fake_pcfdev_server.go <<EOF
-package main
+  cat > fake_pcfdev_server.go <<EOF
+  package main
 
-import (
-  "log"
-  "net/http"
-)
+  import (
+    "log"
+    "net/http"
+  )
 
-func main() {
-  http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("PCF Dev Test VM"))
-  })
+  func main() {
+    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+      w.Write([]byte("PCF Dev Test VM"))
+    })
 
-  if err := http.ListenAndServe(":80", nil); err != nil {
-    log.Fatal("ListenAndServe: ", err)
+    if err := http.ListenAndServe(":80", nil); err != nil {
+      log.Fatal("ListenAndServe: ", err)
+    }
   }
-}
 EOF
 
-GOOS=linux go build fake_pcfdev_server.go
-packer build -force pcfdev-test.json
+  GOOS=linux go build fake_pcfdev_server.go
+  packer build -force pcfdev-test.json
+  aws s3 cp $dir/output-virtualbox-iso/pcfdev-test.ova s3://pivotalnetwork/product_files/pcfdev/pcfdev-test.ova
+  md5=$(md5 $dir/output-virtualbox-iso/pcfdev-test.ova | cut -d ' ' -f 4)
+  curl \
+    -X PATCH \
+    -H "Authorization: Token $PIVNET_TOKEN" \
+    -d "{\"product_file\":{\"md5\":\"${md5}\"}}" \
+    https://network.pivotal.io/api/v2/products/pcfdev/product_files/5689
+  echo "MD5: $md5"
+popd >/dev/null

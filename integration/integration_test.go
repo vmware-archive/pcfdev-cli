@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	vmName = "pcfdev-test2"
+	vmName = "pcfdev-test"
 )
 
 var (
@@ -59,8 +59,8 @@ var _ = BeforeSuite(func() {
 			" -X main.buildSHA=some-cli-sha"+
 			" -X main.ovaBuildVersion=some-ova-version"+
 			" -X main.releaseId=1622"+
-			" -X main.productFileId=5657"+
-			" -X main.md5=029b97e79d21a56dd820be8dab5ce0ee")
+			" -X main.productFileId=5689"+
+			" -X main.md5=bf5877c9b1dd4d78ca1bd2fde564905d")
 	Expect(err).NotTo(HaveOccurred())
 
 	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)

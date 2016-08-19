@@ -94,7 +94,7 @@ var _ = Describe("Unprovisioned", func() {
 					30*time.Second,
 				).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-service,some-other-service","registries":["some-registry","some-other-registry"]}`, nil),
 				mockUI.EXPECT().Say("Provisioning VM..."),
-				mockSSH.EXPECT().RunSSHCommand(`sudo -H /var/pcfdev/run "some-domain" "some-ip" "some-service,some-other-service" "some-registry,some-other-registry"`, "127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+				mockSSH.EXPECT().RunSSHCommand(`sudo -H /var/pcfdev/provision "some-domain" "some-ip" "some-service,some-other-service" "some-registry,some-other-registry"`, "127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
 			)
 
 			Expect(unprovisioned.Provision()).To(Succeed())

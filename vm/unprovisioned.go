@@ -57,7 +57,7 @@ func (u *Unprovisioned) Provision() error {
 	}
 
 	u.UI.Say("Provisioning VM...")
-	provisionCommand := fmt.Sprintf(`sudo -H /var/pcfdev/run "%s" "%s" "%s" "%s"`, provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services, strings.Join(provisionConfig.Registries, ","))
+	provisionCommand := fmt.Sprintf(`sudo -H /var/pcfdev/provision "%s" "%s" "%s" "%s"`, provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services, strings.Join(provisionConfig.Registries, ","))
 	if err := u.SSH.RunSSHCommand(provisionCommand, "127.0.0.1", u.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{err}
 	}

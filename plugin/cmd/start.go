@@ -22,11 +22,11 @@ type StartCmd struct {
 func (s *StartCmd) Parse(args []string) error {
 	s.flagContext = flags.New()
 	s.flagContext.NewBoolFlag("n", "", "<skip provisioning>")
-	s.flagContext.NewBoolFlag("r", "", "<provision>")
+	s.flagContext.NewBoolFlag("p", "", "<provision>")
 	s.flagContext.NewIntFlag("c", "", "<number of cpus>")
 	s.flagContext.NewIntFlag("m", "", "<memory in MB>")
 	s.flagContext.NewStringFlag("o", "", "<path to custom ova>")
-	s.flagContext.NewStringFlag("p", "", "<private docker registries>")
+	s.flagContext.NewStringFlag("r", "", "<docker registries>")
 	s.flagContext.NewStringFlag("s", "", "<services to start with>")
 	if err := parse(s.flagContext, args, START_ARGS); err != nil {
 		return err
@@ -37,7 +37,7 @@ func (s *StartCmd) Parse(args []string) error {
 		Memory:      uint64(s.flagContext.Int("m")),
 		NoProvision: s.flagContext.Bool("n"),
 		OVAPath:     s.flagContext.String("o"),
-		Registries:  s.flagContext.String("p"),
+		Registries:  s.flagContext.String("r"),
 		Services:    s.flagContext.String("s"),
 	}
 	return nil
@@ -77,7 +77,7 @@ func (s *StartCmd) Run() error {
 		return err
 	}
 
-	if s.flagContext.Bool("r") {
+	if s.flagContext.Bool("p") {
 		return v.Provision()
 	} else {
 		if err := v.VerifyStartOpts(s.Opts); err != nil {

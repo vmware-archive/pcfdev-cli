@@ -331,7 +331,7 @@ var _ = Describe("PCF Dev", func() {
 			Expect(session).To(gbytes.Say("VM will not be provisioned .*"))
 
 			By("running provision")
-			provisionCommand := exec.Command("cf", "dev", "start", "-r")
+			provisionCommand := exec.Command("cf", "dev", "start", "-p")
 			session, err = gexec.Start(provisionCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1h").Should(gexec.Exit(0))

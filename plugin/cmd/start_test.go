@@ -52,7 +52,7 @@ var _ = Describe("StartCmd", func() {
 					"-m", "3456",
 					"-n",
 					"-o", "some-ova-path",
-					"-p", "some-private-registry,some-other-private-registry",
+					"-r", "some-private-registry,some-other-private-registry",
 					"-s", "some-service,some-other-service",
 				})).To(Succeed())
 
@@ -250,7 +250,7 @@ var _ = Describe("StartCmd", func() {
 
 		Context("when the provision option is specified", func() {
 			It("should provision the VM without starting it", func() {
-				startCmd.Parse([]string{"-r"})
+				startCmd.Parse([]string{"-p"})
 
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", nil),
@@ -264,7 +264,7 @@ var _ = Describe("StartCmd", func() {
 
 		Context("when provisioning fails", func() {
 			It("return an error", func() {
-				startCmd.Parse([]string{"-r"})
+				startCmd.Parse([]string{"-p"})
 
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", nil),

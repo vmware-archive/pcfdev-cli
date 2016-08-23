@@ -13,6 +13,7 @@ const START_ARGS = 0
 type StartCmd struct {
 	Opts        *vm.StartOpts
 	VBox        VBox
+	VBoxDriver  VBoxDriver
 	VMBuilder   VMBuilder
 	Config      *config.Config
 	DownloadCmd Cmd
@@ -44,6 +45,15 @@ func (s *StartCmd) Parse(args []string) error {
 }
 
 func (s *StartCmd) Run() error {
+	version, err := s.VBoxDriver.Version()
+	if err != nil {
+		return err
+	}
+
+	if version.Major < 5 {
+		return &OldDriverError{}
+	}
+
 	var name string
 
 	if s.Opts.OVAPath != "" {

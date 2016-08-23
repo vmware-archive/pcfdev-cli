@@ -14,6 +14,10 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/network"
 )
 
+type VBoxDriverVersion struct {
+	Major, Minor, Build int
+}
+
 type VBoxDriver struct {
 	FS *fs.FS
 }
@@ -393,4 +397,32 @@ func (d *VBoxDriver) Disks() ([]string, error) {
 	}
 
 	return disks, nil
+}
+
+func (d *VBoxDriver) Version() (*VBoxDriverVersion, error) {
+	output, err := d.VBoxManage("--version")
+	if err != nil {
+		return nil, err
+	}
+
+	regex := regexp.MustCompile(`^(\d+\.\d+\.\d+)\D`)
+	if matches := regex.FindStringSubmatch(strings.TrimSpace(string(output))); len(matches) > 1 {
+		if versionParts := strings.SplitN(matches[1], ".", 3); len(versionParts) == 3 {
+			majorVersion, errMajor := strconv.Atoi(versionParts[0])
+			minorVersion, errMinor := strconv.Atoi(versionParts[1])
+			buildVersion, errBuild := strconv.Atoi(versionParts[2])
+
+			if errMajor != nil || errMinor != nil || errBuild != nil {
+				return nil, fmt.Errorf("failed to parse version from 'VBoxManage --version': %s", string(output))
+			}
+
+			return &VBoxDriverVersion{
+				Major: majorVersion,
+				Minor: minorVersion,
+				Build: buildVersion,
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("failed to parse version from 'VBoxManage --version': %s", string(output))
 }

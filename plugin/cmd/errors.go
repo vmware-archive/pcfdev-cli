@@ -21,3 +21,9 @@ type OldVMError struct{}
 func (e *OldVMError) Error() string {
 	return "old version of PCF Dev already running, please run `cf dev destroy` to continue"
 }
+
+type OldDriverError struct{}
+
+func (e *OldDriverError) Error() string {
+	return "please install Virtualbox version 5 or greater"
+}

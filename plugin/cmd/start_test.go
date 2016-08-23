@@ -9,29 +9,33 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/cmd"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/cmd/mocks"
+	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	vmMocks "github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 )
 
 var _ = Describe("StartCmd", func() {
 	var (
-		startCmd      *cmd.StartCmd
-		mockCtrl      *gomock.Controller
-		mockVMBuilder *mocks.MockVMBuilder
-		mockVBox      *mocks.MockVBox
-		mockVM        *vmMocks.MockVM
-		mockCmd       *mocks.MockCmd
+		startCmd       *cmd.StartCmd
+		mockCtrl       *gomock.Controller
+		mockVMBuilder  *mocks.MockVMBuilder
+		mockVBox       *mocks.MockVBox
+		mockVBoxDriver *mocks.MockVBoxDriver
+		mockVM         *vmMocks.MockVM
+		mockCmd        *mocks.MockCmd
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockVMBuilder = mocks.NewMockVMBuilder(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
+		mockVBoxDriver = mocks.NewMockVBoxDriver(mockCtrl)
 		mockVM = vmMocks.NewMockVM(mockCtrl)
 		mockCmd = mocks.NewMockCmd(mockCtrl)
 		startCmd = &cmd.StartCmd{
-			VBox:      mockVBox,
-			VMBuilder: mockVMBuilder,
+			VBox:       mockVBox,
+			VBoxDriver: mockVBoxDriver,
+			VMBuilder:  mockVMBuilder,
 			Config: &config.Config{
 				DefaultVMName: "some-default-vm-name",
 			},
@@ -105,6 +109,7 @@ var _ = Describe("StartCmd", func() {
 				}
 				startCmd.Opts = startOpts
 				gomock.InOrder(
+					mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().VerifyStartOpts(startOpts),
@@ -115,8 +120,25 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Run()).To(Succeed())
 			})
 
+			Context("when virtualbox version is too old", func() {
+				It("should tell the user to upgrade virtualbox", func() {
+					mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 4}, nil)
+
+					Expect(startCmd.Run()).To(MatchError("please install Virtualbox version 5 or greater"))
+				})
+			})
+
+			Context("when there is an error retrieving the virtualbox version", func() {
+				It("should return the error", func() {
+					mockVBoxDriver.EXPECT().Version().Return(nil, errors.New("some-error"))
+
+					Expect(startCmd.Run()).To(MatchError("some-error"))
+				})
+			})
+
 			Context("when there is an old vm present", func() {
 				It("should tell the user to destroy pcfdev", func() {
+					mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil)
 					mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil)
 
 					Expect(startCmd.Run()).To(MatchError("old version of PCF Dev already running, please run `cf dev destroy` to continue"))
@@ -125,6 +147,7 @@ var _ = Describe("StartCmd", func() {
 
 			Context("when there is an error getting the VM name", func() {
 				It("should return the error", func() {
+					mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil)
 					mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error"))
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))
@@ -134,6 +157,7 @@ var _ = Describe("StartCmd", func() {
 			Context("when it fails to get VM", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
+						mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
 					)
@@ -144,6 +168,7 @@ var _ = Describe("StartCmd", func() {
 			Context("when verifying start options fails", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
+						mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(errors.New("some-error")),
@@ -156,6 +181,7 @@ var _ = Describe("StartCmd", func() {
 			Context("when the OVA fails to download", func() {
 				It("should print an error message", func() {
 					gomock.InOrder(
+						mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
@@ -169,6 +195,7 @@ var _ = Describe("StartCmd", func() {
 			Context("when it fails to start VM", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
+						mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
@@ -188,6 +215,7 @@ var _ = Describe("StartCmd", func() {
 				}
 				startCmd.Opts = startOpts
 				gomock.InOrder(
+					mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockVMBuilder.EXPECT().VM("pcfdev-custom").Return(mockVM, nil),
 					mockVM.EXPECT().VerifyStartOpts(startOpts),
@@ -200,6 +228,7 @@ var _ = Describe("StartCmd", func() {
 			Context("when the custom VM is already present and OVAPath is not set", func() {
 				It("should start the custom VM", func() {
 					gomock.InOrder(
+						mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("pcfdev-custom", nil),
 						mockVMBuilder.EXPECT().VM("pcfdev-custom").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
@@ -216,6 +245,7 @@ var _ = Describe("StartCmd", func() {
 					}
 					startCmd.Opts = startOpts
 					gomock.InOrder(
+						mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("pcfdev-custom", nil),
 						mockVMBuilder.EXPECT().VM("pcfdev-custom").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(startOpts),
@@ -231,6 +261,7 @@ var _ = Describe("StartCmd", func() {
 						OVAPath: "some-custom-ova",
 					}
 					startCmd.Opts = startOpts
+					mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil)
 					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil)
 					Expect(startCmd.Run()).To(MatchError("you must destroy your existing VM to use a custom OVA"))
 				})
@@ -242,6 +273,7 @@ var _ = Describe("StartCmd", func() {
 						OVAPath: "some-custom-ova",
 					}
 					startCmd.Opts = startOpts
+					mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil)
 					mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil)
 					Expect(startCmd.Run()).To(MatchError("you must destroy your existing VM to use a custom OVA"))
 				})
@@ -253,6 +285,7 @@ var _ = Describe("StartCmd", func() {
 				startCmd.Parse([]string{"-p"})
 
 				gomock.InOrder(
+					mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Provision(),
@@ -267,6 +300,7 @@ var _ = Describe("StartCmd", func() {
 				startCmd.Parse([]string{"-p"})
 
 				gomock.InOrder(
+					mockVBoxDriver.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().Provision().Return(errors.New("some-error")),

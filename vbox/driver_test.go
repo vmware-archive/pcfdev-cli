@@ -855,4 +855,12 @@ var _ = Describe("driver", func() {
 			})
 		})
 	})
+
+	Describe("#Version", func() {
+		It("should return the version", func() {
+			driverVersion, err := driver.Version()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(driverVersion.Major).NotTo(BeZero())
+		})
+	})
 })

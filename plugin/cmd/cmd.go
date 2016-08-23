@@ -5,6 +5,7 @@ import (
 
 	"github.com/cloudfoundry/cli/flags"
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
@@ -19,6 +20,11 @@ type VBox interface {
 	GetVMName() (name string, err error)
 	VMConfig(vmName string) (vmConfig *config.VMConfig, err error)
 	DestroyPCFDevVMs() (err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/vbox_driver.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd VBoxDriver
+type VBoxDriver interface {
+	Version() (version *vbox.VBoxDriverVersion, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd FS
@@ -63,6 +69,7 @@ type Builder struct {
 	FS         FS
 	UI         UI
 	VBox       VBox
+	VBoxDriver VBoxDriver
 	VMBuilder  VMBuilder
 }
 
@@ -100,9 +107,10 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 		}, nil
 	case "start":
 		return &StartCmd{
-			VBox:      b.VBox,
-			VMBuilder: b.VMBuilder,
-			Config:    b.Config,
+			VBox:       b.VBox,
+			VBoxDriver: b.VBoxDriver,
+			VMBuilder:  b.VMBuilder,
+			Config:     b.Config,
 			DownloadCmd: &DownloadCmd{
 				VBox:       b.VBox,
 				UI:         b.UI,

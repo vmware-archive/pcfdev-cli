@@ -46,6 +46,7 @@ type Driver interface {
 	UseDNSProxy(vmName string) error
 	GetMemory(vmName string) (uint64, error)
 	VMState(vmName string) (string, error)
+	Version() (version *VBoxDriverVersion, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vbox FS
@@ -432,4 +433,8 @@ func (v *VBox) VMStatus(vmName string) (status string, err error) {
 	default:
 		return StatusUnknown, nil
 	}
+}
+
+func (v *VBox) Version() (version *VBoxDriverVersion, err error) {
+	return v.Driver.Version()
 }

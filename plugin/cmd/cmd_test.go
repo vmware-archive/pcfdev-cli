@@ -22,10 +22,7 @@ var _ = Describe("Builder", func() {
 		var builder *cmd.Builder
 		BeforeEach(func() {
 			builder = &cmd.Builder{
-				VBox: &vbox.VBox{},
-				VBoxDriver: &vbox.VBoxDriver{
-					FS: &fs.FS{},
-				},
+				VBox:       &vbox.VBox{},
 				Downloader: &downloader.Downloader{},
 				FS:         &fs.FS{},
 				UI: terminal.NewUI(
@@ -119,7 +116,6 @@ var _ = Describe("Builder", func() {
 				switch c := startCmd.(type) {
 				case *cmd.StartCmd:
 					Expect(c.VBox).To(BeIdenticalTo(builder.VBox))
-					Expect(c.VBoxDriver).To(BeIdenticalTo(builder.VBoxDriver))
 					Expect(c.VMBuilder).To(BeIdenticalTo(builder.VMBuilder))
 					Expect(c.Config).To(BeIdenticalTo(builder.Config))
 					Expect(c.DownloadCmd).To(Equal(&cmd.DownloadCmd{

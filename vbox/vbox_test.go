@@ -1124,6 +1124,25 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 		})
 	})
 
+	Describe("#Version", func() {
+		It("return the VBoxDriver version", func() {
+			driverVersion := &vbox.VBoxDriverVersion{Major: 1, Minor: 0, Build: 0}
+			mockDriver.EXPECT().Version().Return(driverVersion, nil)
+
+			Expect(vbx.Version()).To(Equal(driverVersion))
+		})
+
+		Context("when there is an error retrieving the version", func() {
+			It("return the error", func() {
+				mockDriver.EXPECT().Version().Return(nil, errors.New("some-error"))
+
+				version, err := vbx.Version()
+				Expect(version).To(BeNil())
+				Expect(err).To(MatchError("some-error"))
+			})
+		})
+	})
+
 	Describe("#PowerOffVM", func() {
 		It("should power off the VM", func() {
 			mockDriver.EXPECT().PowerOffVM("some-vm")

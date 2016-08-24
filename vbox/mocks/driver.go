@@ -6,6 +6,7 @@ package mocks
 import (
 	gomock "github.com/golang/mock/gomock"
 	network "github.com/pivotal-cf/pcfdev-cli/network"
+	vbox "github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
 // Mock of Driver interface
@@ -323,4 +324,15 @@ func (_m *MockDriver) VMs() ([]string, error) {
 
 func (_mr *_MockDriverRecorder) VMs() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "VMs")
+}
+
+func (_m *MockDriver) Version() (*vbox.VBoxDriverVersion, error) {
+	ret := _m.ctrl.Call(_m, "Version")
+	ret0, _ := ret[0].(*vbox.VBoxDriverVersion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockDriverRecorder) Version() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Version")
 }

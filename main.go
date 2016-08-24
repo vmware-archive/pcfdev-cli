@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudfoundry/cli/cf/trace"
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/downloader"
@@ -37,7 +38,12 @@ var (
 )
 
 func main() {
-	cfui := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
+	cfui := terminal.NewUI(
+		os.Stdin,
+		os.Stdout,
+		terminal.NewTeePrinter(os.Stdout),
+		trace.NewWriterPrinter(os.Stdout, true),
+	)
 
 	confirmInstalled(cfui)
 

@@ -47,7 +47,7 @@ func (dr *DownloadReader) displayProgress(length int64) {
 	dr.lastPercentage = percentage
 
 	fmt.Fprintf(dr.Writer,
-		"\rProgress: |%s%s>%s| %d%%",
+		"\rProgress: |%s%s>%s| %d%% ",
 		strings.Repeat("+", plusses),
 		strings.Repeat("=", bars),
 		strings.Repeat(" ", spaces),

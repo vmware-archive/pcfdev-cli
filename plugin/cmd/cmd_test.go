@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
+	"github.com/cloudfoundry/cli/cf/trace"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -27,11 +28,16 @@ var _ = Describe("Builder", func() {
 				},
 				Downloader: &downloader.Downloader{},
 				FS:         &fs.FS{},
-				UI:         terminal.NewUI(os.Stdin, terminal.NewTeePrinter()),
-				VMBuilder:  &vm.VBoxBuilder{},
-				Config:     &config.Config{},
-				EULAUI:     &ui.UI{},
-				Client:     &pivnet.Client{},
+				UI: terminal.NewUI(
+					os.Stdin,
+					os.Stdout,
+					terminal.NewTeePrinter(os.Stdout),
+					trace.NewWriterPrinter(os.Stdout, true),
+				),
+				VMBuilder: &vm.VBoxBuilder{},
+				Config:    &config.Config{},
+				EULAUI:    &ui.UI{},
+				Client:    &pivnet.Client{},
 			}
 		})
 

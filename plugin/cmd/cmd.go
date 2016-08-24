@@ -12,7 +12,7 @@ import (
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd UI
 type UI interface {
 	Say(message string, args ...interface{})
-	Confirm(message string, args ...interface{}) bool
+	Confirm(message string) bool
 }
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd VBox

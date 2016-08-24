@@ -4,12 +4,12 @@ import (
 	"errors"
 
 	cfplugin "github.com/cloudfoundry/cli/plugin"
+	"github.com/cloudfoundry/cli/plugin/pluginfakes"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/mocks"
 	"github.com/pivotal-cf/pcfdev-cli/user"
 
-	"github.com/cloudfoundry/cli/plugin/fakes"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,7 +21,7 @@ var _ = Describe("Plugin", func() {
 		mockUI            *mocks.MockUI
 		mockCmdBuilder    *mocks.MockCmdBuilder
 		mockCmd           *mocks.MockCmd
-		fakeCliConnection *fakes.FakeCliConnection
+		fakeCliConnection *pluginfakes.FakeCliConnection
 		pcfdev            *plugin.Plugin
 	)
 
@@ -30,7 +30,7 @@ var _ = Describe("Plugin", func() {
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockCmdBuilder = mocks.NewMockCmdBuilder(mockCtrl)
 		mockCmd = mocks.NewMockCmd(mockCtrl)
-		fakeCliConnection = &fakes.FakeCliConnection{}
+		fakeCliConnection = &pluginfakes.FakeCliConnection{}
 		pcfdev = &plugin.Plugin{
 			UI:         mockUI,
 			CmdBuilder: mockCmdBuilder,
@@ -163,7 +163,7 @@ var _ = Describe("Plugin", func() {
 
 	Context("uninstalling plugin", func() {
 		It("returns immediately", func() {
-			pcfdev.Run(&fakes.FakeCliConnection{}, []string{"CLI-MESSAGE-UNINSTALL"})
+			pcfdev.Run(&pluginfakes.FakeCliConnection{}, []string{"CLI-MESSAGE-UNINSTALL"})
 		})
 	})
 })

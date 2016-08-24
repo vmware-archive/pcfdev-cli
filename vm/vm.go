@@ -24,8 +24,8 @@ type VBox interface {
 type UI interface {
 	Failed(message string, args ...interface{})
 	Say(message string, args ...interface{})
-	Confirm(message string, args ...interface{}) bool
-	Ask(prompt string, args ...interface{}) (answer string)
+	Confirm(message string) bool
+	Ask(prompt string) (answer string)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vm SSH

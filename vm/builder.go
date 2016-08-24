@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
+	"github.com/cloudfoundry/cli/cf/trace"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -21,7 +22,12 @@ type VBoxBuilder struct {
 }
 
 func (b *VBoxBuilder) VM(vmName string) (VM, error) {
-	termUI := terminal.NewUI(os.Stdin, terminal.NewTeePrinter())
+	termUI := terminal.NewUI(
+		os.Stdin,
+		os.Stdout,
+		terminal.NewTeePrinter(os.Stdout),
+		trace.NewWriterPrinter(os.Stdout, true),
+	)
 
 	status, err := b.VBox.VMStatus(vmName)
 	if err != nil {

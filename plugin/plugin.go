@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cloudfoundry/cli/plugin"
+	cfplugin "github.com/cloudfoundry/cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/cmd"
 )
@@ -20,7 +20,7 @@ type Plugin struct {
 type UI interface {
 	Failed(message string, args ...interface{})
 	Say(message string, args ...interface{})
-	Ask(prompt string, args ...interface{}) (answer string)
+	Ask(prompt string) (answer string)
 }
 
 //go:generate mockgen -package mocks -destination mocks/cmd_builder.go github.com/pivotal-cf/pcfdev-cli/plugin CmdBuilder
@@ -30,7 +30,7 @@ type CmdBuilder interface {
 
 //go:generate mockgen -package mocks -destination mocks/cmd.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd Cmd
 
-func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
+func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
 		return
 	}
@@ -57,7 +57,7 @@ func (p *Plugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 }
 
-func (p *Plugin) showUsageMessage(cliConnection plugin.CliConnection) {
+func (p *Plugin) showUsageMessage(cliConnection cfplugin.CliConnection) {
 	if _, err := cliConnection.CliCommand("help", "dev"); err != nil {
 		p.UI.Failed(getErrorText(err))
 	}
@@ -67,7 +67,7 @@ func getErrorText(err error) string {
 	return fmt.Sprintf("Error: %s.", err.Error())
 }
 
-func (p *Plugin) getPluginVersion() plugin.VersionType {
+func (p *Plugin) getPluginVersion() cfplugin.VersionType {
 	var majorVersion, minorVersion, buildVersion int
 	var errMajor, errMinor, errBuild error
 
@@ -78,27 +78,27 @@ func (p *Plugin) getPluginVersion() plugin.VersionType {
 		minorVersion, errMinor = strconv.Atoi(versionParts[1])
 		buildVersion, errBuild = strconv.Atoi(versionParts[2])
 		if errMajor != nil || errMinor != nil || errBuild != nil {
-			return plugin.VersionType{}
+			return cfplugin.VersionType{}
 		}
 	}
 
-	return plugin.VersionType{
+	return cfplugin.VersionType{
 		Major: majorVersion,
 		Minor: minorVersion,
 		Build: buildVersion,
 	}
 }
 
-func (p *Plugin) GetMetadata() plugin.PluginMetadata {
-	return plugin.PluginMetadata{
+func (p *Plugin) GetMetadata() cfplugin.PluginMetadata {
+	return cfplugin.PluginMetadata{
 		Name:    "pcfdev",
 		Version: p.getPluginVersion(),
-		Commands: []plugin.Command{
-			plugin.Command{
+		Commands: []cfplugin.Command{
+			cfplugin.Command{
 				Name:     "dev",
 				Alias:    "pcfdev",
 				HelpText: "Control PCF Dev VMs running on your workstation",
-				UsageDetails: plugin.Usage{
+				UsageDetails: cfplugin.Usage{
 					Usage: `cf dev SUBCOMMAND
 
 SUBCOMMANDS:

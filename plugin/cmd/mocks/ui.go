@@ -28,19 +28,14 @@ func (_m *MockUI) EXPECT() *_MockUIRecorder {
 	return _m.recorder
 }
 
-func (_m *MockUI) Confirm(_param0 string, _param1 ...interface{}) bool {
-	_s := []interface{}{_param0}
-	for _, _x := range _param1 {
-		_s = append(_s, _x)
-	}
-	ret := _m.ctrl.Call(_m, "Confirm", _s...)
+func (_m *MockUI) Confirm(_param0 string) bool {
+	ret := _m.ctrl.Call(_m, "Confirm", _param0)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-func (_mr *_MockUIRecorder) Confirm(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	_s := append([]interface{}{arg0}, arg1...)
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Confirm", _s...)
+func (_mr *_MockUIRecorder) Confirm(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Confirm", arg0)
 }
 
 func (_m *MockUI) Say(_param0 string, _param1 ...interface{}) {

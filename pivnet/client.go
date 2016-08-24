@@ -21,8 +21,8 @@ type FS interface {
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/pivnet UI
 type UI interface {
-	AskForPassword(string, ...interface{}) string
-	Say(string, ...interface{})
+	AskForPassword(prompt string) string
+	Say(message string, args ...interface{})
 }
 
 //go:generate mockgen -package mocks -destination mocks/token.go github.com/pivotal-cf/pcfdev-cli/pivnet PivnetToken

@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/cloudfoundry/cli/flags"
+	"github.com/cloudfoundry/cli/cf/flags"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
 

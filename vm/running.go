@@ -59,7 +59,7 @@ func (r *Running) Start(opts *StartOpts) error {
 }
 
 func (r *Running) Status() string {
-	return fmt.Sprintf("Running\nLogin: cf login -a https://api.%s --skip-ssl-validation\nAdmin user => Email: admin / Password: admin\nRegular user => Email: user / Password: pass", r.VMConfig.Domain)
+	return fmt.Sprintf("Running\nCLI Login: cf login -a https://api.%s --skip-ssl-validation\nApps Manager URL: https://%s\nAdmin user => Email: admin / Password: admin\nRegular user => Email: user / Password: pass", r.VMConfig.Domain, r.VMConfig.Domain)
 }
 
 func (r *Running) Suspend() error {

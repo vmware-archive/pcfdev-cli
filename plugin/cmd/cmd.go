@@ -5,6 +5,7 @@ import (
 
 	"github.com/cloudfoundry/cli/cf/flags"
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/downloader"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
@@ -30,16 +31,17 @@ type FS interface {
 	MD5(path string) (md5 string, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/downloader.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd Downloader
-type Downloader interface {
-	Download() error
-	IsOVACurrent() (bool, error)
-}
-
 //go:generate mockgen -package mocks -destination mocks/vm_builder.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd VMBuilder
 type VMBuilder interface {
 	VM(name string) (vm vm.VM, err error)
 }
+
+//go:generate mockgen -package mocks -destination mocks/downloader_factory.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd DownloaderFactory
+type DownloaderFactory interface {
+	Create() (downloader downloader.Downloader, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/downloader.go github.com/pivotal-cf/pcfdev-cli/downloader Downloader
 
 //go:generate mockgen -package mocks -destination mocks/cmd.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd Cmd
 type Cmd interface {
@@ -58,14 +60,14 @@ func parse(flagContext flags.FlagContext, args []string, expectedLength int) err
 }
 
 type Builder struct {
-	Client     Client
-	Config     *config.Config
-	Downloader Downloader
-	EULAUI     EULAUI
-	FS         FS
-	UI         UI
-	VBox       VBox
-	VMBuilder  VMBuilder
+	Client            Client
+	Config            *config.Config
+	DownloaderFactory DownloaderFactory
+	EULAUI            EULAUI
+	FS                FS
+	UI                UI
+	VBox              VBox
+	VMBuilder         VMBuilder
 }
 
 func (b *Builder) Cmd(subcommand string) (Cmd, error) {
@@ -79,20 +81,20 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 		}, nil
 	case "download":
 		return &DownloadCmd{
-			VBox:       b.VBox,
-			UI:         b.UI,
-			EULAUI:     b.EULAUI,
-			Client:     b.Client,
-			Downloader: b.Downloader,
-			FS:         b.FS,
-			Config:     b.Config,
+			VBox:              b.VBox,
+			UI:                b.UI,
+			EULAUI:            b.EULAUI,
+			Client:            b.Client,
+			DownloaderFactory: b.DownloaderFactory,
+			FS:                b.FS,
+			Config:            b.Config,
 		}, nil
 	case "import":
 		return &ImportCmd{
-			Downloader: b.Downloader,
-			UI:         b.UI,
-			Config:     b.Config,
-			FS:         b.FS,
+			DownloaderFactory: b.DownloaderFactory,
+			UI:                b.UI,
+			Config:            b.Config,
+			FS:                b.FS,
 		}, nil
 	case "resume":
 		return &ResumeCmd{
@@ -106,13 +108,13 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 			VMBuilder: b.VMBuilder,
 			Config:    b.Config,
 			DownloadCmd: &DownloadCmd{
-				VBox:       b.VBox,
-				UI:         b.UI,
-				EULAUI:     b.EULAUI,
-				Client:     b.Client,
-				Downloader: b.Downloader,
-				FS:         b.FS,
-				Config:     b.Config,
+				VBox:              b.VBox,
+				UI:                b.UI,
+				EULAUI:            b.EULAUI,
+				Client:            b.Client,
+				DownloaderFactory: b.DownloaderFactory,
+				FS:                b.FS,
+				Config:            b.Config,
 			},
 		}, nil
 	case "status":

@@ -22,9 +22,9 @@ var _ = Describe("Builder", func() {
 		var builder *cmd.Builder
 		BeforeEach(func() {
 			builder = &cmd.Builder{
-				VBox:       &vbox.VBox{},
-				Downloader: &downloader.Downloader{},
-				FS:         &fs.FS{},
+				VBox:              &vbox.VBox{},
+				DownloaderFactory: &downloader.DownloaderFactory{},
+				FS:                &fs.FS{},
 				UI: terminal.NewUI(
 					os.Stdin,
 					os.Stdout,
@@ -66,7 +66,7 @@ var _ = Describe("Builder", func() {
 					Expect(c.UI).To(BeIdenticalTo(builder.UI))
 					Expect(c.EULAUI).To(BeIdenticalTo(builder.EULAUI))
 					Expect(c.Client).To(BeIdenticalTo(builder.Client))
-					Expect(c.Downloader).To(BeIdenticalTo(builder.Downloader))
+					Expect(c.DownloaderFactory).To(BeIdenticalTo(builder.DownloaderFactory))
 					Expect(c.FS).To(BeIdenticalTo(builder.FS))
 					Expect(c.Config).To(BeIdenticalTo(builder.Config))
 				default:
@@ -82,7 +82,7 @@ var _ = Describe("Builder", func() {
 
 				switch c := importCmd.(type) {
 				case *cmd.ImportCmd:
-					Expect(c.Downloader).To(BeIdenticalTo(builder.Downloader))
+					Expect(c.DownloaderFactory).To(BeIdenticalTo(builder.DownloaderFactory))
 					Expect(c.UI).To(BeIdenticalTo(builder.UI))
 					Expect(c.FS).To(BeIdenticalTo(builder.FS))
 					Expect(c.Config).To(BeIdenticalTo(builder.Config))
@@ -119,13 +119,13 @@ var _ = Describe("Builder", func() {
 					Expect(c.VMBuilder).To(BeIdenticalTo(builder.VMBuilder))
 					Expect(c.Config).To(BeIdenticalTo(builder.Config))
 					Expect(c.DownloadCmd).To(Equal(&cmd.DownloadCmd{
-						VBox:       builder.VBox,
-						UI:         builder.UI,
-						EULAUI:     builder.EULAUI,
-						Client:     builder.Client,
-						Downloader: builder.Downloader,
-						FS:         builder.FS,
-						Config:     builder.Config,
+						VBox:              builder.VBox,
+						UI:                builder.UI,
+						EULAUI:            builder.EULAUI,
+						Client:            builder.Client,
+						DownloaderFactory: builder.DownloaderFactory,
+						FS:                builder.FS,
+						Config:            builder.Config,
 					}))
 				default:
 					Fail("wrong type")

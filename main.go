@@ -88,7 +88,7 @@ func main() {
 		CmdBuilder: &cmd.Builder{
 			Client: client,
 			Config: conf,
-			Downloader: &downloader.Downloader{
+			DownloaderFactory: &downloader.DownloaderFactory{
 				PivnetClient:         client,
 				FS:                   fileSystem,
 				Token:                token,

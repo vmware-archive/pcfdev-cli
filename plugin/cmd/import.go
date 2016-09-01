@@ -11,11 +11,11 @@ import (
 const IMPORT_ARGS = 1
 
 type ImportCmd struct {
-	OVAPath    string
-	Downloader Downloader
-	UI         UI
-	Config     *config.Config
-	FS         FS
+	OVAPath           string
+	DownloaderFactory DownloaderFactory
+	UI                UI
+	Config            *config.Config
+	FS                FS
 }
 
 func (i *ImportCmd) Parse(args []string) error {
@@ -34,7 +34,11 @@ func (i *ImportCmd) Run() error {
 	if md5 != i.Config.ExpectedMD5 {
 		return fmt.Errorf("specified OVA version does not match the expected OVA version (%s) for this version of the cf CLI plugin", i.Config.Version.OVABuildVersion)
 	}
-	ovaIsCurrent, err := i.Downloader.IsOVACurrent()
+	downloader, err := i.DownloaderFactory.Create()
+	if err != nil {
+		return err
+	}
+	ovaIsCurrent, err := downloader.IsOVACurrent()
 	if err != nil {
 		return err
 	}

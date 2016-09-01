@@ -21,14 +21,19 @@ type EULAUI interface {
 	Close() error
 }
 
+type Downloader interface {
+	IsOVACurrent() (bool, error)
+	Download() error
+}
+
 type DownloadCmd struct {
-	VBox       VBox
-	UI         UI
-	EULAUI     EULAUI
-	Client     Client
-	Downloader Downloader
-	FS         FS
-	Config     *config.Config
+	VBox              VBox
+	UI                UI
+	EULAUI            EULAUI
+	Client            Client
+	DownloaderFactory DownloaderFactory
+	FS                FS
+	Config            *config.Config
 }
 
 func (d *DownloadCmd) Parse(args []string) error {
@@ -44,7 +49,12 @@ func (d *DownloadCmd) Run() error {
 		return &OldVMError{}
 	}
 
-	current, err := d.Downloader.IsOVACurrent()
+	downloader, err := d.DownloaderFactory.Create()
+	if err != nil {
+		return err
+	}
+
+	current, err := downloader.IsOVACurrent()
 	if err != nil {
 		return err
 	}
@@ -69,7 +79,7 @@ func (d *DownloadCmd) Run() error {
 
 	d.UI.Say("Downloading VM...")
 
-	if err := d.Downloader.Download(); err != nil {
+	if err := downloader.Download(); err != nil {
 		return err
 	}
 

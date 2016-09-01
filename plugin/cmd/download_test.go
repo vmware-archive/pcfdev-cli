@@ -13,14 +13,15 @@ import (
 
 var _ = Describe("DownloadCmd", func() {
 	var (
-		mockCtrl       *gomock.Controller
-		mockUI         *mocks.MockUI
-		mockEULAUI     *mocks.MockEULAUI
-		mockVBox       *mocks.MockVBox
-		mockFS         *mocks.MockFS
-		mockDownloader *mocks.MockDownloader
-		mockClient     *mocks.MockClient
-		downloadCmd    *cmd.DownloadCmd
+		mockCtrl              *gomock.Controller
+		mockUI                *mocks.MockUI
+		mockEULAUI            *mocks.MockEULAUI
+		mockVBox              *mocks.MockVBox
+		mockFS                *mocks.MockFS
+		mockDownloader        *mocks.MockDownloader
+		mockDownloaderFactory *mocks.MockDownloaderFactory
+		mockClient            *mocks.MockClient
+		downloadCmd           *cmd.DownloadCmd
 	)
 
 	BeforeEach(func() {
@@ -30,13 +31,14 @@ var _ = Describe("DownloadCmd", func() {
 		mockClient = mocks.NewMockClient(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockDownloader = mocks.NewMockDownloader(mockCtrl)
+		mockDownloaderFactory = mocks.NewMockDownloaderFactory(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		downloadCmd = &cmd.DownloadCmd{
-			UI:         mockUI,
-			EULAUI:     mockEULAUI,
-			Client:     mockClient,
-			VBox:       mockVBox,
-			Downloader: mockDownloader,
+			UI:                mockUI,
+			EULAUI:            mockEULAUI,
+			Client:            mockClient,
+			VBox:              mockVBox,
+			DownloaderFactory: mockDownloaderFactory,
 			Config: &config.Config{
 				DefaultVMName: "some-vm-name",
 			},
@@ -73,6 +75,7 @@ var _ = Describe("DownloadCmd", func() {
 			It("should not download", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 					mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 					mockUI.EXPECT().Say("Using existing image."),
 				)
@@ -97,10 +100,22 @@ var _ = Describe("DownloadCmd", func() {
 			})
 		})
 
+		Context("when creating a downloader fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockDownloaderFactory.EXPECT().Create().Return(nil, errors.New("some-error")),
+				)
+
+				Expect(downloadCmd.Run()).To(MatchError("some-error"))
+			})
+		})
+
 		Context("when calling IsOVACurrent fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 					mockDownloader.EXPECT().IsOVACurrent().Return(false, errors.New("some-error")),
 				)
 
@@ -112,6 +127,7 @@ var _ = Describe("DownloadCmd", func() {
 			It("should download the OVA", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("", nil),
+					mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 					mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 					mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 					mockUI.EXPECT().Say("Downloading VM..."),
@@ -126,6 +142,7 @@ var _ = Describe("DownloadCmd", func() {
 				It("should print an error", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(false, errors.New("some-error")),
 					)
@@ -139,6 +156,7 @@ var _ = Describe("DownloadCmd", func() {
 				It("should print an error", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(true, nil),
 						mockUI.EXPECT().Say("Downloading VM..."),
@@ -153,6 +171,7 @@ var _ = Describe("DownloadCmd", func() {
 				It("should download the ova", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
@@ -173,6 +192,7 @@ var _ = Describe("DownloadCmd", func() {
 				It("should not accept and fail gracefully", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
@@ -189,6 +209,7 @@ var _ = Describe("DownloadCmd", func() {
 				It("should return the error", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
@@ -206,6 +227,7 @@ var _ = Describe("DownloadCmd", func() {
 				It("should return the error", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
@@ -222,6 +244,7 @@ var _ = Describe("DownloadCmd", func() {
 				It("should return the error", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 						mockClient.EXPECT().GetEULA().Return("some-eula", nil),
@@ -238,6 +261,7 @@ var _ = Describe("DownloadCmd", func() {
 				It("should print an error", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 						mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 						mockClient.EXPECT().IsEULAAccepted().Return(false, nil),
 						mockClient.EXPECT().GetEULA().Return("", errors.New("some-error")),

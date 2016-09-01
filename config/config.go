@@ -14,6 +14,8 @@ type Config struct {
 	DefaultVMName            string
 	PCFDevHome               string
 	OVADir                   string
+	OVAPath                  string
+	PartialOVAPath           string
 	VMDir                    string
 	HTTPProxy                string
 	HTTPSProxy               string
@@ -68,6 +70,8 @@ func New(defaultVMName string, expectedMD5 string, system System, version *Versi
 		PCFDevHome:               pcfdevHome,
 		OVADir:                   filepath.Join(pcfdevHome, "ova"),
 		VMDir:                    filepath.Join(pcfdevHome, "vms"),
+		OVAPath:                  filepath.Join(pcfdevHome, "ova", defaultVMName+".ova"),
+		PartialOVAPath:           filepath.Join(pcfdevHome, "ova", defaultVMName+".ova.partial"),
 		HTTPProxy:                getHTTPProxy(),
 		HTTPSProxy:               getHTTPSProxy(),
 		NoProxy:                  getNoProxy(),

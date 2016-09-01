@@ -17,6 +17,19 @@ func RemoveDuplicates(collection []string) []string {
 	return uniqueCollection
 }
 
+func ExecuteWithAttempts(command func() error, attempts int, delay time.Duration) error {
+	var err error
+	for attempts > 0 {
+		if err = command(); err == nil {
+			return nil
+		}
+
+		attempts = attempts - 1
+		time.Sleep(delay)
+	}
+	return err
+}
+
 func ExecuteWithTimeout(command func() error, timeout time.Duration, delay time.Duration) error {
 	timeoutChan := time.After(timeout)
 	var err error

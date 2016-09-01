@@ -14,10 +14,11 @@ import (
 
 var _ = Describe("ImportCmd", func() {
 	var (
-		mockFS         *mocks.MockFS
-		mockDownloader *mocks.MockDownloader
-		mockUI         *mocks.MockUI
-		mockCtrl       *gomock.Controller
+		mockFS                *mocks.MockFS
+		mockDownloader        *mocks.MockDownloader
+		mockDownloaderFactory *mocks.MockDownloaderFactory
+		mockUI                *mocks.MockUI
+		mockCtrl              *gomock.Controller
 	)
 
 	BeforeEach(func() {
@@ -25,6 +26,7 @@ var _ = Describe("ImportCmd", func() {
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockDownloader = mocks.NewMockDownloader(mockCtrl)
+		mockDownloaderFactory = mocks.NewMockDownloaderFactory(mockCtrl)
 	})
 
 	AfterEach(func() {
@@ -60,10 +62,10 @@ var _ = Describe("ImportCmd", func() {
 
 		BeforeEach(func() {
 			importCmd = &cmd.ImportCmd{
-				OVAPath:    "some-ova-path",
-				UI:         mockUI,
-				FS:         mockFS,
-				Downloader: mockDownloader,
+				OVAPath:           "some-ova-path",
+				UI:                mockUI,
+				FS:                mockFS,
+				DownloaderFactory: mockDownloaderFactory,
 				Config: &config.Config{
 					DefaultVMName: "some-vm-name",
 					OVADir:        "some-ova-dir",
@@ -80,6 +82,7 @@ var _ = Describe("ImportCmd", func() {
 		It("should copy an ova to the specified path", func() {
 			gomock.InOrder(
 				mockFS.EXPECT().MD5("some-ova-path").Return("some-md5", nil),
+				mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 				mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 				mockFS.EXPECT().Copy("some-ova-path", filepath.Join("some-ova-dir", "some-vm-name.ova")),
 				mockUI.EXPECT().Say("OVA version some-ova-version imported successfully."),
@@ -92,6 +95,7 @@ var _ = Describe("ImportCmd", func() {
 			It("should print an error message", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().MD5("some-ova-path").Return("some-md5", nil),
+					mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 					mockDownloader.EXPECT().IsOVACurrent().Return(false, nil),
 					mockFS.EXPECT().Copy("some-ova-path", filepath.Join("some-ova-dir", "some-vm-name.ova")).Return(errors.New("some-error")),
 				)
@@ -115,10 +119,21 @@ var _ = Describe("ImportCmd", func() {
 			})
 		})
 
+		Context("when creating a downloader returns an error", func() {
+			It("should return the error", func() {
+				gomock.InOrder(
+					mockFS.EXPECT().MD5("some-ova-path").Return("some-md5", nil),
+					mockDownloaderFactory.EXPECT().Create().Return(nil, errors.New("some-error")),
+				)
+				Expect(importCmd.Run()).To(MatchError("some-error"))
+			})
+		})
+
 		Context("when the ova is already installed", func() {
 			It("should print a message", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().MD5("some-ova-path").Return("some-md5", nil),
+					mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 					mockDownloader.EXPECT().IsOVACurrent().Return(true, nil),
 
 					mockUI.EXPECT().Say("PCF Dev OVA is already installed."),
@@ -132,6 +147,7 @@ var _ = Describe("ImportCmd", func() {
 			It("should print an error message", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().MD5("some-ova-path").Return("some-md5", nil),
+					mockDownloaderFactory.EXPECT().Create().Return(mockDownloader, nil),
 					mockDownloader.EXPECT().IsOVACurrent().Return(true, errors.New("some-error")),
 				)
 

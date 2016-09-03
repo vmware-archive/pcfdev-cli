@@ -84,7 +84,7 @@
                 "echo \"if [ -f /var/pcfdev/status ]\nthen\ncat /var/pcfdev/status\nfi\" >> /var/pcfdev/health-check",
                 "chmod +x /var/pcfdev/health-check",
 
-                "echo 'some-pcfdev-run-log' > /var/pcfdev/run.log",
+                "echo 'some-pcfdev-provision-log' > /var/pcfdev/provision.log",
                 "echo 'some-pcfdev-reset-log' > /var/pcfdev/reset.log"
             ]
         }

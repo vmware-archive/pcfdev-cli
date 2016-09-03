@@ -32,8 +32,8 @@ const (
 func (l *ConcreteLogFetcher) FetchLogs() error {
 	logFiles := []logFile{
 		logFile{
-			command:   []string{"sudo", "cat", "/var/pcfdev/run.log"},
-			filename:  "run.log",
+			command:   []string{"sudo", "cat", "/var/pcfdev/provision.log"},
+			filename:  "provision.log",
 			reciever:  ReceiverGuest,
 			sensitive: true,
 		},

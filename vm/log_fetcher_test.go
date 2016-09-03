@@ -52,8 +52,8 @@ var _ = Describe("LogFetcher", func() {
 		It("should say a message", func() {
 			gomock.InOrder(
 				mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/run.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-run-log", nil),
-				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "run.log"), strings.NewReader("some-pcfdev-run-log")),
+				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-provision-log", nil),
+				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log")),
 				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log")),
 				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
@@ -76,7 +76,7 @@ var _ = Describe("LogFetcher", func() {
 					"pcfdev-debug",
 					".",
 					[]string{
-						filepath.Join("some-temp-dir", "run.log"),
+						filepath.Join("some-temp-dir", "provision.log"),
 						filepath.Join("some-temp-dir", "reset.log"),
 						filepath.Join("some-temp-dir", "kern.log"),
 						filepath.Join("some-temp-dir", "dmesg"),
@@ -97,8 +97,8 @@ var _ = Describe("LogFetcher", func() {
 			It("should remove the sensitive information", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/run.log", "127.0.0.1", "some-port", 20*time.Second).Return("http://some-private-domain.com", nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "run.log"), strings.NewReader("<redacted uri>")),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("http://some-private-domain.com", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("<redacted uri>")),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log")),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
@@ -121,7 +121,7 @@ var _ = Describe("LogFetcher", func() {
 						"pcfdev-debug",
 						".",
 						[]string{
-							filepath.Join("some-temp-dir", "run.log"),
+							filepath.Join("some-temp-dir", "provision.log"),
 							filepath.Join("some-temp-dir", "reset.log"),
 							filepath.Join("some-temp-dir", "kern.log"),
 							filepath.Join("some-temp-dir", "dmesg"),
@@ -151,7 +151,7 @@ var _ = Describe("LogFetcher", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/run.log", "127.0.0.1", "some-port", 20*time.Second).Return("", errors.New("some-error")),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("", errors.New("some-error")),
 				)
 
 				Expect(logFetcher.FetchLogs()).To(MatchError("some-error"))
@@ -162,8 +162,8 @@ var _ = Describe("LogFetcher", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/run.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-run-log", nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "run.log"), strings.NewReader("some-pcfdev-run-log")).Return(errors.New("some-error")),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-provision-log", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log")).Return(errors.New("some-error")),
 				)
 
 				Expect(logFetcher.FetchLogs()).To(MatchError("some-error"))
@@ -174,8 +174,8 @@ var _ = Describe("LogFetcher", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/run.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-run-log", nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "run.log"), strings.NewReader("some-pcfdev-run-log")),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-provision-log", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log")),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log")),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
@@ -198,8 +198,8 @@ var _ = Describe("LogFetcher", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/run.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-run-log", nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "run.log"), strings.NewReader("some-pcfdev-run-log")),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-provision-log", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log")),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log")),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
@@ -223,8 +223,8 @@ var _ = Describe("LogFetcher", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/run.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-run-log", nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "run.log"), strings.NewReader("some-pcfdev-run-log")),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-provision-log", nil),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log")),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log")),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
@@ -247,7 +247,7 @@ var _ = Describe("LogFetcher", func() {
 						"pcfdev-debug",
 						".",
 						[]string{
-							filepath.Join("some-temp-dir", "run.log"),
+							filepath.Join("some-temp-dir", "provision.log"),
 							filepath.Join("some-temp-dir", "reset.log"),
 							filepath.Join("some-temp-dir", "kern.log"),
 							filepath.Join("some-temp-dir", "dmesg"),

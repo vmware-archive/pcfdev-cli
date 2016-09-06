@@ -57,6 +57,10 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 		}
 	}
 
+	if opts.Registries != "" && strings.Count(opts.Registries, ":") != 1 {
+		return fmt.Errorf("docker registries must be passed in 'host:port' format")
+	}
+
 	return nil
 }
 

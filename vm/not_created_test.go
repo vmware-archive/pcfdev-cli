@@ -74,7 +74,7 @@ var _ = Describe("Not Created", func() {
 				})
 			})
 
-			Context("when scs is passed as a service", func() {
+			Context("when 'scs' is passed as a service", func() {
 				It("should use the designated spring cloud min memory limit", func() {
 					conf.SpringCloudMinMemory = uint64(6000)
 
@@ -85,7 +85,7 @@ var _ = Describe("Not Created", func() {
 				})
 			})
 
-			Context("when spring-cloud-services is passed as a service", func() {
+			Context("when 'spring-cloud-services' is passed as a service", func() {
 				It("should use the designated spring cloud min memory limit", func() {
 					conf.SpringCloudMinMemory = uint64(6000)
 
@@ -96,14 +96,30 @@ var _ = Describe("Not Created", func() {
 				})
 			})
 
-			Context("when all is passed as a service", func() {
-				It("should increase the minimum memory limit", func() {
+			Context("when 'all' is passed as a service", func() {
+				It("should use the designated spring cloud min memory limit", func() {
 					conf.SpringCloudMinMemory = uint64(6000)
 
 					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
 						Memory:   uint64(3500),
 						Services: "all",
 					})).To(MatchError("PCF Dev requires at least 6000 MB of memory to run"))
+				})
+			})
+
+			Context("when docker registries are passed in 'host:port' format", func() {
+				It("should succeed", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Registries: "some-host:some-port",
+					})).To(Succeed())
+				})
+			})
+
+			Context("when docker registries not passed in 'host:port' format", func() {
+				It("should return an error", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Registries: "some-host?some-port",
+					})).To(MatchError("docker registries must be passed in 'host:port' format"))
 				})
 			})
 

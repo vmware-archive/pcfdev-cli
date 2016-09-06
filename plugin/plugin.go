@@ -105,7 +105,7 @@ SUBCOMMANDS:
    start                             Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.
       [-c number-of-cores]           Number of processor cores used by VM. Default: number of physical cores.
       [-m memory-in-mb]              Memory to allocate for VM. Default: half of total memory, max 4 GB, max 8 GB with SCS.
-      [-r registry1,registry2,...]   Docker registries that PCF Dev will use without SSL validation.
+      [-r registry1,registry2,...]   Docker registries that PCF Dev will use without SSL validation. Specify in 'host:port' format.
       [-s service1,service2]         Specify the services started with PCF Dev.
                                         Options: redis, rabbitmq, spring-cloud-services (scs), default, all, none
                                         Default: redis, rabbitmq

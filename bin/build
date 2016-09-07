@@ -11,7 +11,12 @@ then
   md5="02bf213ccb6346efa97e9c17ee5cfcbc"
   ova_version="0"
 else
-  metadata=$(aws s3 cp s3://pcfdev/ci/pivnet-file-metadata -)
+  if [[ "$1" == "internal" ]]
+  then
+    metadata=$(curl http://s3.amazonaws.com/pcfdev/ci/pivnet-file-metadata)
+  else
+    metadata=$(curl http://s3.amazonaws.com/pcfdev/ci/pivnet-file-release-metadata)
+  fi
   vm_name=pcfdev-$(echo "$metadata" | jq -r .version)
   release_id=$(echo "$metadata" | jq -r .release_id)
   product_file_id=$(echo "$metadata" | jq -r .id)

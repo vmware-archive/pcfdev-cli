@@ -137,7 +137,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("when parsing the version fails", func() {
-			It("should print an error and exit", func() {
+			It("should default to 0.0.0", func() {
 				pcfdev.Config = &config.Config{
 					Version: &config.Version{
 						BuildVersion: "some-bad-version",

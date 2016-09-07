@@ -49,10 +49,13 @@ func main() {
 
 	fileSystem := &fs.FS{}
 	driver := &vbox.VBoxDriver{FS: fileSystem}
-	conf, err := config.New(vmName, md5,
+	conf, err := config.New(
+		vmName,
+		md5,
 		&system.System{
 			FS: fileSystem,
-		}, &config.Version{
+		},
+		&config.Version{
 			BuildVersion:    buildVersion,
 			BuildSHA:        buildSHA,
 			OVABuildVersion: ovaBuildVersion,

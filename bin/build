@@ -13,9 +13,9 @@ then
 else
   if [[ "$1" == "internal" ]]
   then
-    metadata=$(curl http://s3.amazonaws.com/pcfdev/ci/pivnet-file-metadata)
+    metadata=$(curl http://s3.amazonaws.com/pcfdev/pivnet-metadata/internal)
   else
-    metadata=$(curl http://s3.amazonaws.com/pcfdev/ci/pivnet-file-release-metadata)
+    metadata=$(curl http://s3.amazonaws.com/pcfdev/pivnet-metadata/release)
   fi
   vm_name=pcfdev-$(echo "$metadata" | jq -r .version)
   release_id=$(echo "$metadata" | jq -r .release_id)

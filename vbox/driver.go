@@ -84,7 +84,13 @@ func (d *VBoxDriver) VMExists(vmName string) (exists bool, err error) {
 }
 
 func (d *VBoxDriver) VMState(vmName string) (string, error) {
-	output, err := d.VBoxManage("showvminfo", vmName, "--machinereadable")
+	var output []byte
+	err := helpers.ExecuteWithAttempts(func() error {
+		var err error
+		output, err = d.VBoxManage("showvminfo", vmName, "--machinereadable")
+		return err
+	}, 3, time.Second)
+
 	if err != nil {
 		return "", err
 	}

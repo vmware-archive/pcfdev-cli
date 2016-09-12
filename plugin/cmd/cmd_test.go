@@ -227,6 +227,22 @@ var _ = Describe("Builder", func() {
 			})
 		})
 
+		Context("when is is passed 'trust'", func() {
+			It("should return a trust command", func() {
+				trustCmd, err := builder.Cmd("trust")
+				Expect(err).NotTo(HaveOccurred())
+
+				switch c := trustCmd.(type) {
+				case *cmd.TrustCmd:
+					Expect(c.VBox).To(BeIdenticalTo(builder.VBox))
+					Expect(c.VMBuilder).To(BeIdenticalTo(builder.VMBuilder))
+					Expect(c.Config).To(BeIdenticalTo(builder.Config))
+				default:
+					Fail("wrong type")
+				}
+			})
+		})
+
 		Context("when it is passed an unknown subcommand", func() {
 			It("should return an error", func() {
 				_, err := builder.Cmd("some-bad-subcommand")

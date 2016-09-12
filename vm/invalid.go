@@ -43,6 +43,11 @@ func (i *Invalid) GetDebugLogs() error {
 	return nil
 }
 
+func (i *Invalid) Trust() error {
+	i.UI.Failed(i.message())
+	return nil
+}
+
 func (i *Invalid) message() string {
 	return i.err() + "."
 }

@@ -241,4 +241,11 @@ var _ = Describe("Saved", func() {
 			Expect(savedVM.GetDebugLogs()).To(Succeed())
 		})
 	})
+
+	Describe("Trust", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("Your VM is suspended. Resume to trust VM certificates.")
+			Expect(savedVM.Trust()).To(Succeed())
+		})
+	})
 })

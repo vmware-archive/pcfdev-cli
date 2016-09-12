@@ -155,6 +155,14 @@ var _ = Describe("Unprovisioned", func() {
 		})
 	})
 
+	Describe("Trust", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
+
+			Expect(unprovisioned.Trust()).To(Succeed())
+		})
+	})
+
 	Describe("GetDebugLogs", func() {
 		It("should succeed", func() {
 			mockLogFetcher.EXPECT().FetchLogs()

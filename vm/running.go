@@ -17,6 +17,7 @@ type Running struct {
 	SSH        SSH
 	Builder    Builder
 	LogFetcher LogFetcher
+	CertStore  CertStore
 }
 
 func (r *Running) Stop() error {
@@ -74,6 +75,19 @@ func (r *Running) Suspend() error {
 
 func (r *Running) Resume() error {
 	r.UI.Say("PCF Dev is running.")
+
+	return nil
+}
+
+func (r *Running) Trust() error {
+	output, err := r.SSH.GetSSHOutput("cat /var/pcfdev/openssl/cacert.pem", "127.0.0.1", r.VMConfig.SSHPort, 5*time.Minute)
+	if err != nil {
+		return &TrustError{err}
+	}
+
+	if err := r.CertStore.Store(output); err != nil {
+		return &TrustError{err}
+	}
 
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/cloudfoundry/cli/cf/terminal"
 	"github.com/cloudfoundry/cli/cf/trace"
+	"github.com/pivotal-cf/pcfdev-cli/cert"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -91,6 +92,12 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				VBox:     b.VBox,
 				SSH:      b.SSH,
 				Builder:  b,
+				CertStore: &cert.CertStore{
+					FS: b.FS,
+					SystemStore: &cert.ConcreteSystemStore{
+						FS: b.FS,
+					},
+				},
 				LogFetcher: &ConcreteLogFetcher{
 					VMConfig: vmConfig,
 					UI:       termUI,

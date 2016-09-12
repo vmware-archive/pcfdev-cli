@@ -65,3 +65,11 @@ type FetchLogsError struct {
 func (e *FetchLogsError) Error() string {
 	return fmt.Sprintf("failed to retrieve logs: %s", e.Err)
 }
+
+type TrustError struct {
+	Err error
+}
+
+func (e *TrustError) Error() string {
+	return fmt.Sprintf("failed to trust VM certificates: %s", e.Err)
+}

@@ -23,6 +23,7 @@ var _ = Describe("Running", func() {
 		mockSSH        *mocks.MockSSH
 		mockVM         *mocks.MockVM
 		mockLogFetcher *mocks.MockLogFetcher
+		mockCertStore  *mocks.MockCertStore
 
 		runningVM vm.Running
 		config    *conf.VMConfig
@@ -37,6 +38,7 @@ var _ = Describe("Running", func() {
 		mockVM = mocks.NewMockVM(mockCtrl)
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
 		mockLogFetcher = mocks.NewMockLogFetcher(mockCtrl)
+		mockCertStore = mocks.NewMockCertStore(mockCtrl)
 		config = &conf.VMConfig{}
 
 		runningVM = vm.Running{
@@ -53,6 +55,7 @@ var _ = Describe("Running", func() {
 			Builder:    mockBuilder,
 			SSH:        mockSSH,
 			LogFetcher: mockLogFetcher,
+			CertStore:  mockCertStore,
 		}
 	})
 
@@ -215,4 +218,33 @@ var _ = Describe("Running", func() {
 		})
 	})
 
+	Describe("Trust", func() {
+		It("should trust VM certificates", func() {
+			gomock.InOrder(
+				mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/cacert.pem", "127.0.0.1", "some-port", 5*time.Minute).Return("some-cert", nil),
+				mockCertStore.EXPECT().Store("some-cert"),
+			)
+
+			Expect(runningVM.Trust()).To(Succeed())
+		})
+
+		Context("when there is an error getting SSH output", func() {
+			It("should return the error", func() {
+				mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/cacert.pem", "127.0.0.1", "some-port", 5*time.Minute).Return("", errors.New("some-error"))
+
+				Expect(runningVM.Trust()).To(MatchError("failed to trust VM certificates: some-error"))
+			})
+		})
+
+		Context("when there is an error storing the certificate", func() {
+			It("should return the error", func() {
+				gomock.InOrder(
+					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/cacert.pem", "127.0.0.1", "some-port", 5*time.Minute).Return("some-cert", nil),
+					mockCertStore.EXPECT().Store("some-cert").Return(errors.New("some-error")),
+				)
+
+				Expect(runningVM.Trust()).To(MatchError("failed to trust VM certificates: some-error"))
+			})
+		})
+	})
 })

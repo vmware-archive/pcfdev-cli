@@ -79,6 +79,11 @@ func (u *Unprovisioned) message() string {
 	return u.err() + "."
 }
 
+func (u *Unprovisioned) Trust() error {
+	u.UI.Failed(u.message())
+	return nil
+}
+
 func (u *Unprovisioned) err() string {
 	return "PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again"
 }

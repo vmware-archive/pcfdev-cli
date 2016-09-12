@@ -45,6 +45,7 @@ type VM interface {
 	Suspend() error
 	Resume() error
 	GetDebugLogs() error
+	Trust() error
 
 	VerifyStartOpts(*StartOpts) error
 }
@@ -52,6 +53,11 @@ type VM interface {
 //go:generate mockgen -package mocks -destination mocks/builder.go github.com/pivotal-cf/pcfdev-cli/vm Builder
 type Builder interface {
 	VM(name string) (vm VM, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/cert_store.go github.com/pivotal-cf/pcfdev-cli/vm CertStore
+type CertStore interface {
+	Store(cert string) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vm FS

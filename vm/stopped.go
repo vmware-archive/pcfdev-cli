@@ -131,6 +131,11 @@ func (s *Stopped) Resume() error {
 }
 
 func (s *Stopped) GetDebugLogs() error {
-	s.UI.Say("Your VM is currently stopped. Start vm to retrieve debug logs.")
+	s.UI.Say("Your VM is currently stopped. Start VM to retrieve debug logs.")
+	return nil
+}
+
+func (s *Stopped) Trust() error {
+	s.UI.Say("Your VM is currently stopped. Start VM to trust VM certificates.")
 	return nil
 }

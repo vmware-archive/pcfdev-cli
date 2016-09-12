@@ -86,3 +86,8 @@ func (s *Saved) GetDebugLogs() error {
 	s.UI.Say("Your VM is suspended. Resume to retrieve debug logs.")
 	return nil
 }
+
+func (s *Saved) Trust() error {
+	s.UI.Say("Your VM is suspended. Resume to trust VM certificates.")
+	return nil
+}

@@ -99,6 +99,16 @@ func (_mr *_MockVMRecorder) Suspend() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Suspend")
 }
 
+func (_m *MockVM) Trust() error {
+	ret := _m.ctrl.Call(_m, "Trust")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockVMRecorder) Trust() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Trust")
+}
+
 func (_m *MockVM) VerifyStartOpts(_param0 *vm.StartOpts) error {
 	ret := _m.ctrl.Call(_m, "VerifyStartOpts", _param0)
 	ret0, _ := ret[0].(error)

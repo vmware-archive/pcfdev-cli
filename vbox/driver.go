@@ -215,6 +215,7 @@ func (d *VBoxDriver) GetHostOnlyInterfaces() (interfaces []*network.Interface, e
 			Name:            strings.TrimSpace(nameMatches[i][1]),
 			IP:              strings.TrimSpace(ipMatches[i][1]),
 			HardwareAddress: strings.TrimSpace(hardwareAddressMatches[i][1]),
+			Exists:          true,
 		}
 	}
 

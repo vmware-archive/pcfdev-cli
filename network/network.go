@@ -9,8 +9,9 @@ type Network struct{}
 
 type Interface struct {
 	HardwareAddress string
-	Name            string
 	IP              string
+	Name            string
+	Exists          bool
 }
 
 func (n *Network) Interfaces() (interfaces []*Interface, err error) {
@@ -33,6 +34,7 @@ func (n *Network) Interfaces() (interfaces []*Interface, err error) {
 				interfaces = append(interfaces, &Interface{
 					IP:              addrString,
 					HardwareAddress: iface.HardwareAddr.String(),
+					Exists:          true,
 				})
 			}
 		}

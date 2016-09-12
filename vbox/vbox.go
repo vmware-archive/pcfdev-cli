@@ -63,7 +63,7 @@ type SSH interface {
 
 //go:generate mockgen -package mocks -destination mocks/picker.go github.com/pivotal-cf/pcfdev-cli/vbox NetworkPicker
 type NetworkPicker interface {
-	SelectAvailableIP(vboxnets []*network.Interface) (ip string, err error)
+	SelectAvailableInterface(vboxnets []*network.Interface) (networkInterface *network.Interface, err error)
 }
 
 type VBox struct {
@@ -231,36 +231,24 @@ func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	ip, err := v.Picker.SelectAvailableIP(vboxInterfaces)
+	networkInterface, err := v.Picker.SelectAvailableInterface(vboxInterfaces)
 	if err != nil {
 		return err
 	}
 
-	interfaceName := ""
-	for _, iface := range vboxInterfaces {
-		inUse, err := v.Driver.IsInterfaceInUse(iface.Name)
-		if err != nil {
-			return err
-		}
-		if !inUse {
-			interfaceName = iface.Name
-			break
-		}
-	}
-
-	if interfaceName == "" {
-		interfaceName, err = v.Driver.CreateHostOnlyInterface(ip)
-		if err != nil {
+	if networkInterface.Exists {
+		if err := v.Driver.ConfigureHostOnlyInterface(networkInterface.Name, networkInterface.IP); err != nil {
 			return err
 		}
 	} else {
-		err = v.Driver.ConfigureHostOnlyInterface(interfaceName, ip)
+		interfaceName, err := v.Driver.CreateHostOnlyInterface(networkInterface.IP)
 		if err != nil {
 			return err
 		}
+		networkInterface.Name = interfaceName
 	}
 
-	if err := v.Driver.AttachNetworkInterface(interfaceName, vmConfig.Name); err != nil {
+	if err := v.Driver.AttachNetworkInterface(networkInterface.Name, vmConfig.Name); err != nil {
 		return err
 	}
 

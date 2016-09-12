@@ -64,7 +64,7 @@ var _ = Describe("network", func() {
 			net := network.Network{}
 			interfaces, err := net.Interfaces()
 			Expect(err).NotTo(HaveOccurred())
-			expectedInterface := &network.Interface{IP: expectedIP, HardwareAddress: expectedHardwareAddress}
+			expectedInterface := &network.Interface{IP: expectedIP, HardwareAddress: expectedHardwareAddress, Exists: true}
 			Expect(interfaces).To(ContainElement(expectedInterface))
 		})
 	})

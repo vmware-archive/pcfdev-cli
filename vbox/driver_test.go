@@ -547,6 +547,7 @@ var _ = Describe("driver", func() {
 				if iface.Name == interfaceName {
 					Expect(iface.IP).To(Equal(expectedIP))
 					Expect(iface.HardwareAddress).To(Equal(expectedHardwareAddress))
+					Expect(iface.Exists).To(BeTrue())
 					return
 				}
 			}

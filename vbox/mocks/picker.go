@@ -29,13 +29,13 @@ func (_m *MockNetworkPicker) EXPECT() *_MockNetworkPickerRecorder {
 	return _m.recorder
 }
 
-func (_m *MockNetworkPicker) SelectAvailableIP(_param0 []*network.Interface) (string, error) {
-	ret := _m.ctrl.Call(_m, "SelectAvailableIP", _param0)
-	ret0, _ := ret[0].(string)
+func (_m *MockNetworkPicker) SelectAvailableInterface(_param0 []*network.Interface) (*network.Interface, error) {
+	ret := _m.ctrl.Call(_m, "SelectAvailableInterface", _param0)
+	ret0, _ := ret[0].(*network.Interface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockNetworkPickerRecorder) SelectAvailableIP(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SelectAvailableIP", arg0)
+func (_mr *_MockNetworkPickerRecorder) SelectAvailableInterface(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SelectAvailableInterface", arg0)
 }

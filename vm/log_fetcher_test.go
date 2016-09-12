@@ -65,7 +65,7 @@ var _ = Describe("LogFetcher", func() {
 				mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("some-routes-log", nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log")),
 
-				mockDriver.EXPECT().VBoxManage("list", "vms").Return([]byte("some-vm-list"), nil),
+				mockDriver.EXPECT().VBoxManage("list", "vms", "--long").Return([]byte("some-vm-list"), nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), strings.NewReader("some-vm-list")),
 				mockDriver.EXPECT().VBoxManage("showvminfo", "some-vm-name").Return([]byte("some-vm-info"), nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-info"), strings.NewReader("some-vm-info")),
@@ -110,7 +110,7 @@ var _ = Describe("LogFetcher", func() {
 					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("http://some-private-domain.com", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("http://some-private-domain.com")),
 
-					mockDriver.EXPECT().VBoxManage("list", "vms").Return([]byte("http://some-private-domain.com"), nil),
+					mockDriver.EXPECT().VBoxManage("list", "vms", "--long").Return([]byte("http://some-private-domain.com"), nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), strings.NewReader("http://some-private-domain.com")),
 					mockDriver.EXPECT().VBoxManage("showvminfo", "some-vm-name").Return([]byte("some-vm-info"), nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-info"), strings.NewReader("some-vm-info")),
@@ -187,7 +187,7 @@ var _ = Describe("LogFetcher", func() {
 					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("some-routes-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log")),
 
-					mockDriver.EXPECT().VBoxManage("list", "vms").Return(nil, errors.New("some-error")),
+					mockDriver.EXPECT().VBoxManage("list", "vms", "--long").Return(nil, errors.New("some-error")),
 				)
 
 				Expect(logFetcher.FetchLogs()).To(MatchError("some-error"))
@@ -211,7 +211,7 @@ var _ = Describe("LogFetcher", func() {
 					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("some-routes-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log")),
 
-					mockDriver.EXPECT().VBoxManage("list", "vms").Return([]byte("some-vm-list"), nil),
+					mockDriver.EXPECT().VBoxManage("list", "vms", "--long").Return([]byte("some-vm-list"), nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), strings.NewReader("some-vm-list")).Return(errors.New("some-error")),
 				)
 
@@ -236,7 +236,7 @@ var _ = Describe("LogFetcher", func() {
 					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("some-routes-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log")),
 
-					mockDriver.EXPECT().VBoxManage("list", "vms").Return([]byte("some-vm-list"), nil),
+					mockDriver.EXPECT().VBoxManage("list", "vms", "--long").Return([]byte("some-vm-list"), nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-list"), strings.NewReader("some-vm-list")),
 					mockDriver.EXPECT().VBoxManage("showvminfo", "some-vm-name").Return([]byte("some-vm-info"), nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "vm-info"), strings.NewReader("some-vm-info")),

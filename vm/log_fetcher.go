@@ -59,7 +59,7 @@ func (l *ConcreteLogFetcher) FetchLogs() error {
 			command:   []string{"ifconfig"},
 			filename:  "ifconfig",
 			reciever:  ReceiverGuest,
-			sensitive: true,
+			sensitive: false,
 		},
 		logFile{
 			command:   []string{"route", "-n"},
@@ -68,7 +68,7 @@ func (l *ConcreteLogFetcher) FetchLogs() error {
 			sensitive: false,
 		},
 		logFile{
-			command:   []string{"list", "vms"},
+			command:   []string{"list", "vms", "--long"},
 			filename:  "vm-list",
 			reciever:  ReceiverHost,
 			sensitive: false,
@@ -77,7 +77,7 @@ func (l *ConcreteLogFetcher) FetchLogs() error {
 			command:   []string{"showvminfo", l.VMConfig.Name},
 			filename:  "vm-info",
 			reciever:  ReceiverHost,
-			sensitive: true,
+			sensitive: false,
 		},
 		logFile{
 			command:   []string{"list", "hostonlyifs", "--long"},

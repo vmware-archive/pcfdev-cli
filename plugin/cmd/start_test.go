@@ -16,12 +16,13 @@ import (
 
 var _ = Describe("StartCmd", func() {
 	var (
-		startCmd       *cmd.StartCmd
-		mockCtrl       *gomock.Controller
-		mockVMBuilder  *mocks.MockVMBuilder
-		mockVBox       *mocks.MockVBox
-		mockVM         *vmMocks.MockVM
-		mockCmd        *mocks.MockCmd
+		startCmd      *cmd.StartCmd
+		mockCtrl      *gomock.Controller
+		mockVMBuilder *mocks.MockVMBuilder
+		mockVBox      *mocks.MockVBox
+		mockVM        *vmMocks.MockVM
+		mockStartedVM *vmMocks.MockVM
+		mockCmd       *mocks.MockCmd
 	)
 
 	BeforeEach(func() {
@@ -29,10 +30,11 @@ var _ = Describe("StartCmd", func() {
 		mockVMBuilder = mocks.NewMockVMBuilder(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockVM = vmMocks.NewMockVM(mockCtrl)
+		mockStartedVM = vmMocks.NewMockVM(mockCtrl)
 		mockCmd = mocks.NewMockCmd(mockCtrl)
 		startCmd = &cmd.StartCmd{
-			VBox:       mockVBox,
-			VMBuilder:  mockVMBuilder,
+			VBox:      mockVBox,
+			VMBuilder: mockVMBuilder,
 			Config: &config.Config{
 				DefaultVMName: "some-default-vm-name",
 			},
@@ -50,6 +52,7 @@ var _ = Describe("StartCmd", func() {
 			It("should set start options", func() {
 				Expect(startCmd.Parse([]string{
 					"-c", "2",
+					"-k",
 					"-m", "3456",
 					"-n",
 					"-o", "some-ova-path",
@@ -58,6 +61,7 @@ var _ = Describe("StartCmd", func() {
 				})).To(Succeed())
 
 				Expect(startCmd.Opts.CPUs).To(Equal(2))
+				Expect(startCmd.Opts.Trust).To(BeTrue())
 				Expect(startCmd.Opts.Memory).To(Equal(uint64(3456)))
 				Expect(startCmd.Opts.NoProvision).To(BeTrue())
 				Expect(startCmd.Opts.OVAPath).To(Equal("some-ova-path"))
@@ -70,6 +74,7 @@ var _ = Describe("StartCmd", func() {
 			It("should set start options", func() {
 				Expect(startCmd.Parse([]string{})).To(Succeed())
 				Expect(startCmd.Opts.CPUs).To(Equal(0))
+				Expect(startCmd.Opts.Trust).To(BeFalse())
 				Expect(startCmd.Opts.Memory).To(Equal(uint64(0)))
 				Expect(startCmd.Opts.NoProvision).To(BeFalse())
 				Expect(startCmd.Opts.OVAPath).To(Equal(""))
@@ -99,7 +104,7 @@ var _ = Describe("StartCmd", func() {
 		})
 
 		Context("when starting the default ova", func() {
-			It("should validate start options and starts the VM", func() {
+			It("should validate start options and start the VM", func() {
 				startOpts := &vm.StartOpts{
 					Memory: uint64(3456),
 					CPUs:   2,
@@ -115,6 +120,25 @@ var _ = Describe("StartCmd", func() {
 				)
 
 				Expect(startCmd.Run()).To(Succeed())
+			})
+
+			Context("when the trust option is passed", func() {
+				It("should trust the VM certificate after starting", func() {
+					startCmd.Parse([]string{"-k"})
+
+					gomock.InOrder(
+						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Trust: true}),
+						mockCmd.EXPECT().Run(),
+						mockVM.EXPECT().Start(&vm.StartOpts{Trust: true}),
+						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockStartedVM, nil),
+						mockStartedVM.EXPECT().Trust(),
+					)
+
+					Expect(startCmd.Run()).To(Succeed())
+				})
 			})
 
 			Context("when virtualbox version is too old", func() {
@@ -198,6 +222,43 @@ var _ = Describe("StartCmd", func() {
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
 						mockCmd.EXPECT().Run(),
 						mockVM.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("some-error")),
+					)
+
+					Expect(startCmd.Run()).To(MatchError("some-error"))
+				})
+			})
+
+			Context("when there is an error getting the started VM", func() {
+				It("should return the error", func() {
+					startCmd.Parse([]string{"-k"})
+
+					gomock.InOrder(
+						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Trust: true}),
+						mockCmd.EXPECT().Run(),
+						mockVM.EXPECT().Start(&vm.StartOpts{Trust: true}),
+						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
+					)
+
+					Expect(startCmd.Run()).To(MatchError("some-error"))
+				})
+			})
+
+			Context("when there is an error trusting the VM certificates", func() {
+				It("should return the error", func() {
+					startCmd.Parse([]string{"-k"})
+
+					gomock.InOrder(
+						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Trust: true}),
+						mockCmd.EXPECT().Run(),
+						mockVM.EXPECT().Start(&vm.StartOpts{Trust: true}),
+						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockStartedVM, nil),
+						mockStartedVM.EXPECT().Trust().Return(errors.New("some-error")),
 					)
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))

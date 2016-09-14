@@ -81,10 +81,11 @@ type Driver interface {
 }
 
 type StartOpts struct {
-	Memory      uint64
 	CPUs        int
-	OVAPath     string
-	Services    string
+	Memory      uint64
 	NoProvision bool
+	OVAPath     string
 	Registries  string
+	Services    string
+	Trust       bool
 }

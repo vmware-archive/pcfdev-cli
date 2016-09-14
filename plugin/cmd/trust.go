@@ -6,6 +6,8 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
+const TRUST_ARGS = 0
+
 type TrustCmd struct {
 	VMBuilder VMBuilder
 	VBox      VBox
@@ -13,7 +15,7 @@ type TrustCmd struct {
 }
 
 func (t *TrustCmd) Parse(args []string) error {
-	return parse(flags.New(), args, STATUS_ARGS)
+	return parse(flags.New(), args, TRUST_ARGS)
 }
 
 func (t *TrustCmd) Run() error {

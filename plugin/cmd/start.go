@@ -21,6 +21,7 @@ type StartCmd struct {
 
 func (s *StartCmd) Parse(args []string) error {
 	s.flagContext = flags.New()
+	s.flagContext.NewBoolFlag("k", "", "<trust>")
 	s.flagContext.NewBoolFlag("n", "", "<skip provisioning>")
 	s.flagContext.NewBoolFlag("p", "", "<provision>")
 	s.flagContext.NewIntFlag("c", "", "<number of cpus>")
@@ -34,6 +35,7 @@ func (s *StartCmd) Parse(args []string) error {
 
 	s.Opts = &vm.StartOpts{
 		CPUs:        s.flagContext.Int("c"),
+		Trust:       s.flagContext.Bool("k"),
 		Memory:      uint64(s.flagContext.Int("m")),
 		NoProvision: s.flagContext.Bool("n"),
 		OVAPath:     s.flagContext.String("o"),
@@ -98,6 +100,19 @@ func (s *StartCmd) Run() error {
 			}
 		}
 
-		return v.Start(s.Opts)
+		if err := v.Start(s.Opts); err != nil {
+			return err
+		}
+
+		if s.flagContext.Bool("k") {
+			startedVM, err := s.VMBuilder.VM(name)
+			if err != nil {
+				return err
+			}
+
+			return startedVM.Trust()
+		}
+
+		return nil
 	}
 }

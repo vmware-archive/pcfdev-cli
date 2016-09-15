@@ -23,7 +23,7 @@ func (t *Token) Get() (string, error) {
 
 	if envToken := os.Getenv("PIVNET_TOKEN"); envToken != "" {
 		t.UI.Say("PIVNET_TOKEN set, ignored saved PivNet API token.")
-		t.token = envToken
+		t.token = strings.TrimSpace(envToken)
 		return t.token, nil
 	}
 
@@ -43,7 +43,7 @@ func (t *Token) Get() (string, error) {
 
 	t.UI.Say("Please retrieve your Pivotal Network API token from:")
 	t.UI.Say("https://network.pivotal.io/users/dashboard/edit-profile")
-	t.token = t.UI.AskForPassword("API token")
+	t.token = strings.TrimSpace(t.UI.AskForPassword("API token"))
 	return t.token, nil
 }
 

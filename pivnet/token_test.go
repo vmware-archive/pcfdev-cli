@@ -57,6 +57,17 @@ var _ = Describe("Pivnet Token", func() {
 				mockUI.EXPECT().Say("PIVNET_TOKEN set, ignored saved PivNet API token.")
 				Expect(token.Get()).To(Equal("some-token"))
 			})
+
+			Context("when there is whitespace passed into PIVNET_TOKEN env var", func() {
+				BeforeEach(func() {
+					os.Setenv("PIVNET_TOKEN", "  some-token-with-whitespace     ")
+				})
+
+				It("should return PIVNET_TOKEN env var without whitespace", func() {
+					mockUI.EXPECT().Say("PIVNET_TOKEN set, ignored saved PivNet API token.")
+					Expect(token.Get()).To(Equal("some-token-with-whitespace"))
+				})
+			})
 		})
 
 		Context("when PIVNET_TOKEN env var is not set", func() {
@@ -92,6 +103,19 @@ var _ = Describe("Pivnet Token", func() {
 					)
 
 					Expect(token.Get()).To(Equal("some-user-provided-token"))
+				})
+
+				Context("when the user enters a token with whitespace", func() {
+					It("should return a token without whitespace", func() {
+						gomock.InOrder(
+							mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(false, nil),
+							mockUI.EXPECT().Say("Please retrieve your Pivotal Network API token from:"),
+							mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile"),
+							mockUI.EXPECT().AskForPassword("API token").Return("              some-user-provided-token-with-whitespace       "),
+						)
+
+						Expect(token.Get()).To(Equal("some-user-provided-token-with-whitespace"))
+					})
 				})
 			})
 

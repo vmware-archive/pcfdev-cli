@@ -80,7 +80,7 @@ func (r *Running) Resume() error {
 }
 
 func (r *Running) Trust() error {
-	output, err := r.SSH.GetSSHOutput("cat /var/pcfdev/openssl/cacert.pem", "127.0.0.1", r.VMConfig.SSHPort, 5*time.Minute)
+	output, err := r.SSH.GetSSHOutput("cat /var/vcap/jobs/gorouter/config/cert.pem", "127.0.0.1", r.VMConfig.SSHPort, 5*time.Minute)
 	if err != nil {
 		return &TrustError{err}
 	}

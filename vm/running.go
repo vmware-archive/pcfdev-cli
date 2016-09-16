@@ -80,10 +80,15 @@ func (r *Running) Resume() error {
 	return nil
 }
 
-func (r *Running) Trust() error {
+func (r *Running) Trust(startOpts *StartOpts) error {
 	output, err := r.SSH.GetSSHOutput("cat /var/vcap/jobs/gorouter/config/cert.pem", "127.0.0.1", r.VMConfig.SSHPort, 5*time.Minute)
 	if err != nil {
 		return &TrustError{err}
+	}
+
+	if startOpts.PrintCA {
+		r.UI.Say(output)
+		return nil
 	}
 
 	if err := r.CertStore.Store(output); err != nil {

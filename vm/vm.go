@@ -45,7 +45,7 @@ type VM interface {
 	Suspend() error
 	Resume() error
 	GetDebugLogs() error
-	Trust() error
+	Trust(*StartOpts) error
 	Target() error
 
 	VerifyStartOpts(*StartOpts) error
@@ -94,4 +94,5 @@ type StartOpts struct {
 	Registries  string
 	Services    string
 	Trust       bool
+	PrintCA     bool
 }

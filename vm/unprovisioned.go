@@ -75,7 +75,7 @@ func (u *Unprovisioned) Resume() error {
 	return nil
 }
 
-func (u *Unprovisioned) Trust() error {
+func (u *Unprovisioned) Trust(startOps *StartOpts) error {
 	u.UI.Failed(u.message())
 	return nil
 }

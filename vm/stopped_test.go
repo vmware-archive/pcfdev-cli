@@ -415,7 +415,7 @@ var _ = Describe("Stopped", func() {
 	Describe("Trust", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Say("Your VM is currently stopped. Start VM to trust VM certificates.")
-			Expect(stoppedVM.Trust()).To(Succeed())
+			Expect(stoppedVM.Trust(&vm.StartOpts{})).To(Succeed())
 		})
 	})
 

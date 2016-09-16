@@ -568,7 +568,7 @@ var _ = Describe("Not Created", func() {
 		It("should say message", func() {
 			mockUI.EXPECT().Say("No VM created, cannot trust VM certificates.")
 
-			Expect(notCreatedVM.Trust()).To(Succeed())
+			Expect(notCreatedVM.Trust(&vm.StartOpts{})).To(Succeed())
 		})
 	})
 

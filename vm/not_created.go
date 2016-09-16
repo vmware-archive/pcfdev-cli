@@ -164,7 +164,7 @@ func (n *NotCreated) GetDebugLogs() error {
 	return nil
 }
 
-func (n *NotCreated) Trust() error {
+func (n *NotCreated) Trust(startOps *StartOpts) error {
 	n.UI.Say("No VM created, cannot trust VM certificates.")
 	return nil
 }

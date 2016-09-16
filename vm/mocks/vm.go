@@ -109,14 +109,14 @@ func (_mr *_MockVMRecorder) Target() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Target")
 }
 
-func (_m *MockVM) Trust() error {
-	ret := _m.ctrl.Call(_m, "Trust")
+func (_m *MockVM) Trust(_param0 *vm.StartOpts) error {
+	ret := _m.ctrl.Call(_m, "Trust", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockVMRecorder) Trust() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Trust")
+func (_mr *_MockVMRecorder) Trust(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Trust", arg0)
 }
 
 func (_m *MockVM) VerifyStartOpts(_param0 *vm.StartOpts) error {

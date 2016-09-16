@@ -9,13 +9,25 @@ import (
 const TRUST_ARGS = 0
 
 type TrustCmd struct {
-	VMBuilder VMBuilder
-	VBox      VBox
-	Config    *config.Config
+	Opts        *vm.StartOpts
+	VMBuilder   VMBuilder
+	VBox        VBox
+	Config      *config.Config
+	flagContext flags.FlagContext
 }
 
 func (t *TrustCmd) Parse(args []string) error {
-	return parse(flags.New(), args, TRUST_ARGS)
+	t.flagContext = flags.New()
+	t.flagContext.NewBoolFlag("p", "", "<trust>")
+	if err := parse(t.flagContext, args, TRUST_ARGS); err != nil {
+		return err
+	}
+
+	t.Opts = &vm.StartOpts{
+		PrintCA: t.flagContext.Bool("p"),
+	}
+
+	return nil
 }
 
 func (t *TrustCmd) Run() error {
@@ -23,7 +35,7 @@ func (t *TrustCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return vm.Trust()
+	return vm.Trust(t.Opts)
 }
 
 func (t *TrustCmd) getVM() (vm vm.VM, err error) {

@@ -43,7 +43,7 @@ func (i *Invalid) GetDebugLogs() error {
 	return nil
 }
 
-func (i *Invalid) Trust() error {
+func (i *Invalid) Trust(startOps *StartOpts) error {
 	i.UI.Failed(i.message())
 	return nil
 }

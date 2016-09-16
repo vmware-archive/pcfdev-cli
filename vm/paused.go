@@ -70,7 +70,7 @@ func (p *Paused) GetDebugLogs() error {
 	return nil
 }
 
-func (p *Paused) Trust() error {
+func (p *Paused) Trust(startOps *StartOpts) error {
 	p.UI.Say("Your VM is suspended. Resume to trust VM certificates.")
 	return nil
 }

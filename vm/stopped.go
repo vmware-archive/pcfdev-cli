@@ -135,7 +135,7 @@ func (s *Stopped) GetDebugLogs() error {
 	return nil
 }
 
-func (s *Stopped) Trust() error {
+func (s *Stopped) Trust(startOps *StartOpts) error {
 	s.UI.Say("Your VM is currently stopped. Start VM to trust VM certificates.")
 	return nil
 }

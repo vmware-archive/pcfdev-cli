@@ -229,14 +229,14 @@ var _ = Describe("Running", func() {
 				mockUI.EXPECT().Say("***Warning: a self-signed certificate for *.some-domain has been inserted into your OS certificate store. To remove this certificate, run: cf dev untrust***"),
 			)
 
-			Expect(runningVM.Trust()).To(Succeed())
+			Expect(runningVM.Trust(&vm.StartOpts{})).To(Succeed())
 		})
 
 		Context("when there is an error getting SSH output", func() {
 			It("should return the error", func() {
 				mockSSH.EXPECT().GetSSHOutput("cat /var/vcap/jobs/gorouter/config/cert.pem", "127.0.0.1", "some-port", 5*time.Minute).Return("", errors.New("some-error"))
 
-				Expect(runningVM.Trust()).To(MatchError("failed to trust VM certificates: some-error"))
+				Expect(runningVM.Trust(&vm.StartOpts{})).To(MatchError("failed to trust VM certificates: some-error"))
 			})
 		})
 
@@ -247,7 +247,18 @@ var _ = Describe("Running", func() {
 					mockCertStore.EXPECT().Store("some-cert").Return(errors.New("some-error")),
 				)
 
-				Expect(runningVM.Trust()).To(MatchError("failed to trust VM certificates: some-error"))
+				Expect(runningVM.Trust(&vm.StartOpts{})).To(MatchError("failed to trust VM certificates: some-error"))
+			})
+		})
+
+		Context("when the user specifies the 'PrintCA' flag", func() {
+			It("should print the CA", func() {
+				gomock.InOrder(
+					mockSSH.EXPECT().GetSSHOutput("cat /var/vcap/jobs/gorouter/config/cert.pem", "127.0.0.1", "some-port", 5*time.Minute).Return("some-cert", nil),
+					mockUI.EXPECT().Say("some-cert"),
+				)
+
+				Expect(runningVM.Trust(&vm.StartOpts{PrintCA: true})).To(Succeed())
 			})
 		})
 	})

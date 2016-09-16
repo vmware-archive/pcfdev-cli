@@ -90,7 +90,7 @@ var _ = Describe("Invalid", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Failed("Error: some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'.")
 
-			invalid.Trust()
+			invalid.Trust(&vm.StartOpts{})
 		})
 	})
 

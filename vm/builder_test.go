@@ -175,6 +175,7 @@ var _ = Describe("Builder", func() {
 						Expect(u.LogFetcher).NotTo(BeNil())
 						Expect(u.Builder).NotTo(BeNil())
 						Expect(u.CertStore).NotTo(BeNil())
+						Expect(u.CmdRunner).NotTo(BeNil())
 					default:
 						Fail("wrong type")
 					}
@@ -213,6 +214,7 @@ var _ = Describe("Builder", func() {
 						Expect(u.LogFetcher).NotTo(BeNil())
 						Expect(u.Builder).NotTo(BeNil())
 						Expect(u.CertStore).NotTo(BeNil())
+						Expect(u.CmdRunner).NotTo(BeNil())
 					default:
 						Fail("wrong type")
 					}

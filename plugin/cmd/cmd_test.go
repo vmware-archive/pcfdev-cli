@@ -263,18 +263,21 @@ var _ = Describe("Builder", func() {
 			})
 		})
 
-		// Context("when is is passed 'target'", func() {
-		// It("should return a target command", func() {
-		// targetCmd, err := builder.Cmd("target")
-		// Expect(err).NotTo(HaveOccurred())
+		Context("when is is passed 'target'", func() {
+			It("should return a target command", func() {
+				targetCmd, err := builder.Cmd("target")
+				Expect(err).NotTo(HaveOccurred())
 
-		// switch u := targetCmd.(type) {
-		// case *cmd.TargetCmd:
-		// default:
-		// Fail("wrong type")
-		// }
-		// })
-		// })
+				switch u := targetCmd.(type) {
+				case *cmd.TargetCmd:
+					Expect(u.VBox).To(BeIdenticalTo(builder.VBox))
+					Expect(u.VMBuilder).To(BeIdenticalTo(builder.VMBuilder))
+					Expect(u.Config).To(BeIdenticalTo(builder.Config))
+				default:
+					Fail("wrong type")
+				}
+			})
+		})
 
 		Context("when it is passed an unknown subcommand", func() {
 			It("should return an error", func() {

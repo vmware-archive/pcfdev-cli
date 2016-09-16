@@ -571,4 +571,12 @@ var _ = Describe("Not Created", func() {
 			Expect(notCreatedVM.Trust()).To(Succeed())
 		})
 	})
+
+	Describe("Target", func() {
+		It("should say message", func() {
+			mockUI.EXPECT().Say("No VM created, cannot target PCF Dev.")
+
+			Expect(notCreatedVM.Target()).To(Succeed())
+		})
+	})
 })

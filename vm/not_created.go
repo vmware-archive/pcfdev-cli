@@ -168,3 +168,8 @@ func (n *NotCreated) Trust() error {
 	n.UI.Say("No VM created, cannot trust VM certificates.")
 	return nil
 }
+
+func (n *NotCreated) Target() error {
+	n.UI.Say("No VM created, cannot target PCF Dev.")
+	return nil
+}

@@ -71,13 +71,13 @@ var _ = Describe("Unprovisioned", func() {
 		It("should say a message", func() {
 			Expect(unprovisioned.VerifyStartOpts(
 				&vm.StartOpts{},
-			)).To(MatchError("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again"))
+			)).To(MatchError("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'"))
 		})
 	})
 
 	Describe("Start", func() {
 		It("should start vm", func() {
-			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
+			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'.")
 
 			Expect(unprovisioned.Start(&vm.StartOpts{})).To(Succeed())
 		})
@@ -135,13 +135,13 @@ var _ = Describe("Unprovisioned", func() {
 
 	Describe("Status", func() {
 		It("should return 'Stopped'", func() {
-			Expect(unprovisioned.Status()).To(Equal("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again."))
+			Expect(unprovisioned.Status()).To(Equal("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'."))
 		})
 	})
 
 	Describe("Suspend", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
+			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'.")
 
 			Expect(unprovisioned.Suspend()).To(Succeed())
 		})
@@ -149,7 +149,7 @@ var _ = Describe("Unprovisioned", func() {
 
 	Describe("Resume", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
+			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'.")
 
 			Expect(unprovisioned.Resume()).To(Succeed())
 		})
@@ -157,7 +157,15 @@ var _ = Describe("Unprovisioned", func() {
 
 	Describe("Trust", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop' before attempting to start again.")
+			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'.")
+
+			Expect(unprovisioned.Trust()).To(Succeed())
+		})
+	})
+
+	Describe("Target", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'.")
 
 			Expect(unprovisioned.Trust()).To(Succeed())
 		})

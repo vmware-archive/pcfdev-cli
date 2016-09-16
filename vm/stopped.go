@@ -139,3 +139,8 @@ func (s *Stopped) Trust() error {
 	s.UI.Say("Your VM is currently stopped. Start VM to trust VM certificates.")
 	return nil
 }
+
+func (s *Stopped) Target() error {
+	s.UI.Say("Your VM is currently stopped. Start VM to target PCF Dev.")
+	return nil
+}

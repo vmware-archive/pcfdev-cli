@@ -12,6 +12,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/cert"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
+	"github.com/pivotal-cf/pcfdev-cli/runner"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
@@ -86,12 +87,13 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			}, nil
 		} else {
 			return &Running{
-				VMConfig: vmConfig,
-				FS:       b.FS,
-				UI:       termUI,
-				VBox:     b.VBox,
-				SSH:      b.SSH,
-				Builder:  b,
+				VMConfig:  vmConfig,
+				FS:        b.FS,
+				UI:        termUI,
+				VBox:      b.VBox,
+				SSH:       b.SSH,
+				Builder:   b,
+				CmdRunner: &runner.CmdRunner{},
 				CertStore: &cert.CertStore{
 					FS: b.FS,
 					SystemStore: &cert.ConcreteSystemStore{

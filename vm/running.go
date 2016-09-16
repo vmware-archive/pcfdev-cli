@@ -18,6 +18,7 @@ type Running struct {
 	Builder    Builder
 	LogFetcher LogFetcher
 	CertStore  CertStore
+	CmdRunner  CmdRunner
 }
 
 func (r *Running) Stop() error {
@@ -90,6 +91,23 @@ func (r *Running) Trust() error {
 	}
 
 	r.UI.Say(fmt.Sprintf("***Warning: a self-signed certificate for *.%s has been inserted into your OS certificate store. To remove this certificate, run: cf dev untrust***", r.VMConfig.Domain))
+
+	return nil
+}
+
+func (r *Running) Target() error {
+	if _, err := r.CmdRunner.Run(
+		"cf",
+		"login",
+		"-a", fmt.Sprintf("api.%s", r.VMConfig.Domain),
+		"--skip-ssl-validation",
+		"-u", "user",
+		"-p", "pass",
+		"-o", "pcfdev-org",
+		"-s", "pcfdev-space",
+	); err != nil {
+		return &TargetError{err}
+	}
 
 	return nil
 }

@@ -248,4 +248,11 @@ var _ = Describe("Saved", func() {
 			Expect(savedVM.Trust()).To(Succeed())
 		})
 	})
+
+	Describe("Target", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("Your VM is suspended. Resume to target PCF Dev.")
+			Expect(savedVM.Target()).To(Succeed())
+		})
+	})
 })

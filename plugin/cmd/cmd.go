@@ -184,8 +184,12 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 				},
 			},
 		}, nil
-	// case "target":
-	// return &TargetCmd{}, nil
+	case "target":
+		return &TargetCmd{
+			VBox:      b.VBox,
+			VMBuilder: b.VMBuilder,
+			Config:    b.Config,
+		}, nil
 	default:
 		return nil, errors.New("")
 	}

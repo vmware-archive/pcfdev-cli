@@ -91,3 +91,8 @@ func (s *Saved) Trust() error {
 	s.UI.Say("Your VM is suspended. Resume to trust VM certificates.")
 	return nil
 }
+
+func (s *Saved) Target() error {
+	s.UI.Say("Your VM is suspended. Resume to target PCF Dev.")
+	return nil
+}

@@ -73,3 +73,11 @@ type TrustError struct {
 func (e *TrustError) Error() string {
 	return fmt.Sprintf("failed to trust VM certificates: %s", e.Err)
 }
+
+type TargetError struct {
+	Err error
+}
+
+func (e *TargetError) Error() string {
+	return fmt.Sprintf("failed to target PCF Dev: %s", e.Err)
+}

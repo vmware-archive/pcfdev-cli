@@ -46,6 +46,7 @@ type VM interface {
 	Resume() error
 	GetDebugLogs() error
 	Trust() error
+	Target() error
 
 	VerifyStartOpts(*StartOpts) error
 }
@@ -78,6 +79,11 @@ type LogFetcher interface {
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vm Driver
 type Driver interface {
 	VBoxManage(arg ...string) (output []byte, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/cmd_runner.go github.com/pivotal-cf/pcfdev-cli/vm CmdRunner
+type CmdRunner interface {
+	Run(command string, args ...string) (output []byte, err error)
 }
 
 type StartOpts struct {

@@ -418,4 +418,11 @@ var _ = Describe("Stopped", func() {
 			Expect(stoppedVM.Trust()).To(Succeed())
 		})
 	})
+
+	Describe("Target", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("Your VM is currently stopped. Start VM to target PCF Dev.")
+			Expect(stoppedVM.Target()).To(Succeed())
+		})
+	})
 })

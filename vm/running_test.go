@@ -24,6 +24,7 @@ var _ = Describe("Running", func() {
 		mockVM         *mocks.MockVM
 		mockLogFetcher *mocks.MockLogFetcher
 		mockCertStore  *mocks.MockCertStore
+		mockCmdRunner  *mocks.MockCmdRunner
 
 		runningVM vm.Running
 		config    *conf.VMConfig
@@ -39,6 +40,7 @@ var _ = Describe("Running", func() {
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
 		mockLogFetcher = mocks.NewMockLogFetcher(mockCtrl)
 		mockCertStore = mocks.NewMockCertStore(mockCtrl)
+		mockCmdRunner = mocks.NewMockCmdRunner(mockCtrl)
 		config = &conf.VMConfig{}
 
 		runningVM = vm.Running{
@@ -56,6 +58,7 @@ var _ = Describe("Running", func() {
 			SSH:        mockSSH,
 			LogFetcher: mockLogFetcher,
 			CertStore:  mockCertStore,
+			CmdRunner:  mockCmdRunner,
 		}
 	})
 
@@ -246,6 +249,39 @@ var _ = Describe("Running", func() {
 
 				Expect(runningVM.Trust()).To(MatchError("failed to trust VM certificates: some-error"))
 			})
+		})
+	})
+
+	Describe("Target", func() {
+		It("target PCF Dev", func() {
+			mockCmdRunner.EXPECT().Run(
+				"cf",
+				"login",
+				"-a", "api.some-domain",
+				"--skip-ssl-validation",
+				"-u", "user",
+				"-p", "pass",
+				"-o", "pcfdev-org",
+				"-s", "pcfdev-space",
+			)
+			Expect(runningVM.Target()).To(Succeed())
+		})
+	})
+
+	Context("when there is an error", func() {
+		It("should return the error", func() {
+			mockCmdRunner.EXPECT().Run(
+				"cf",
+				"login",
+				"-a", "api.some-domain",
+				"--skip-ssl-validation",
+				"-u", "user",
+				"-p", "pass",
+				"-o", "pcfdev-org",
+				"-s", "pcfdev-space",
+			).Return(nil, errors.New("some-error"))
+
+			Expect(runningVM.Target()).To(MatchError("failed to target PCF Dev: some-error"))
 		})
 	})
 })

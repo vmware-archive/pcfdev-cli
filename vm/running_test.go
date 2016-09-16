@@ -223,6 +223,7 @@ var _ = Describe("Running", func() {
 			gomock.InOrder(
 				mockSSH.EXPECT().GetSSHOutput("cat /var/vcap/jobs/gorouter/config/cert.pem", "127.0.0.1", "some-port", 5*time.Minute).Return("some-cert", nil),
 				mockCertStore.EXPECT().Store("some-cert"),
+				mockUI.EXPECT().Say("***Warning: a self-signed certificate for *.some-domain has been inserted into your OS certificate store. To remove this certificate, run: cf dev untrust***"),
 			)
 
 			Expect(runningVM.Trust()).To(Succeed())

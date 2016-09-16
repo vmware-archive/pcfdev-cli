@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"errors"
+	"io"
 
 	"github.com/cloudfoundry/cli/cf/flags"
+	"github.com/pivotal-cf/pcfdev-cli/cert"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/downloader"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -26,9 +28,13 @@ type VBox interface {
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd FS
 type FS interface {
-	Remove(path string) error
 	Copy(source string, destination string) error
+	Exists(path string) (exists bool, err error)
 	MD5(path string) (md5 string, err error)
+	Read(path string) (contents []byte, err error)
+	Remove(path string) error
+	TempDir() (string, error)
+	Write(path string, contents io.Reader) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/vm_builder.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd VMBuilder
@@ -47,6 +53,11 @@ type DownloaderFactory interface {
 type Cmd interface {
 	Parse([]string) error
 	Run() error
+}
+
+//go:generate mockgen -package mocks -destination mocks/cert_store.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd CertStore
+type CertStore interface {
+	Unstore() error
 }
 
 func parse(flagContext flags.FlagContext, args []string, expectedLength int) error {
@@ -78,6 +89,13 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 			UI:     b.UI,
 			FS:     b.FS,
 			Config: b.Config,
+			UntrustCmd: &UntrustCmd{
+				CertStore: &cert.CertStore{
+					SystemStore: &cert.ConcreteSystemStore{
+						FS: b.FS,
+					},
+				},
+			},
 		}, nil
 	case "download":
 		return &DownloadCmd{
@@ -152,6 +170,14 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 			VBox:      b.VBox,
 			VMBuilder: b.VMBuilder,
 			Config:    b.Config,
+		}, nil
+	case "untrust":
+		return &UntrustCmd{
+			CertStore: &cert.CertStore{
+				SystemStore: &cert.ConcreteSystemStore{
+					FS: b.FS,
+				},
+			},
 		}, nil
 	default:
 		return nil, errors.New("")

@@ -12,7 +12,7 @@ import (
 	vmMocks "github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 )
 
-var _ = Describe("StatusCmd", func() {
+var _ = Describe("TrustCmd", func() {
 	var (
 		trustCmd      *cmd.TrustCmd
 		mockCtrl      *gomock.Controller

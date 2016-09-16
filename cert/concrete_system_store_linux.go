@@ -3,6 +3,7 @@ package cert
 import (
 	"bytes"
 	"errors"
+	"os/exec"
 )
 
 func (c *ConcreteSystemStore) Store(path string) error {
@@ -20,6 +21,12 @@ func (c *ConcreteSystemStore) Store(path string) error {
 		return err
 	}
 
+	return nil
+}
+
+func (c *ConcreteSystemStore) Unstore() error {
+	exec.Command("sudo", "update-ca-certificates", "--fresh").Run()
+	exec.Command("sudo", "update-ca-trust", "extract").Run()
 	return nil
 }
 

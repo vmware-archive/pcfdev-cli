@@ -118,6 +118,7 @@ SUBCOMMANDS:
    status                            Query for the status of the PCF Dev VM.
    import /path/to/ova               Import OVA from local filesystem.
    trust                             Import VM certificates into host's trusted certificate store.
+   untrust                           Remove VM certificates from host's trusted certificate store.
    version                           Display the release version of the CLI.`,
 				},
 			},

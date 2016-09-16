@@ -79,4 +79,20 @@ var _ = Describe("CertStore", func() {
 			})
 		})
 	})
+
+	Describe("#Unstore", func() {
+		It("should remove the certificates from the system certificate store", func() {
+			mockSystemStore.EXPECT().Unstore()
+
+			Expect(certStore.Unstore()).To(Succeed())
+		})
+
+		Context("when there is an issue removing the certificates from the system certificate store", func() {
+			It("should return the error", func() {
+				mockSystemStore.EXPECT().Unstore().Return(errors.New("some-error"))
+
+				Expect(certStore.Unstore()).To(MatchError("some-error"))
+			})
+		})
+	})
 })

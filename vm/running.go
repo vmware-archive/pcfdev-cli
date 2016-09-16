@@ -89,6 +89,8 @@ func (r *Running) Trust() error {
 		return &TrustError{err}
 	}
 
+	r.UI.Say(fmt.Sprintf("***Warning: a self-signed certificate for *.%s has been inserted into your OS certificate store. To remove this certificate, run: cf dev untrust***", r.VMConfig.Domain))
+
 	return nil
 }
 

@@ -14,7 +14,7 @@ var allowedSubnets = []string{
 	"192.168.99.1",
 }
 
-var allowedAddresses = map[string]string{
+var AllowedAddresses = map[string]string{
 	"192.168.11.11": "local.pcfdev.io",
 	"192.168.22.11": "local2.pcfdev.io",
 	"192.168.33.11": "local3.pcfdev.io",
@@ -27,7 +27,7 @@ var allowedAddresses = map[string]string{
 }
 
 func DomainForIP(ip string) (string, error) {
-	domain, ok := allowedAddresses[ip]
+	domain, ok := AllowedAddresses[ip]
 	if !ok {
 		return "", fmt.Errorf("%s is not one of the allowed PCF Dev ips", ip)
 	}
@@ -36,7 +36,7 @@ func DomainForIP(ip string) (string, error) {
 }
 
 func SubnetForIP(ip string) (string, error) {
-	_, ok := allowedAddresses[ip]
+	_, ok := AllowedAddresses[ip]
 	if !ok {
 		return "", fmt.Errorf("%s is not one of the allowed PCF Dev ips", ip)
 	}

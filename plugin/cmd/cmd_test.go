@@ -49,6 +49,7 @@ var _ = Describe("Builder", func() {
 					Expect(c.UI).To(BeIdenticalTo(builder.UI))
 					Expect(c.FS).To(BeIdenticalTo(builder.FS))
 					Expect(c.Config).To(BeIdenticalTo(builder.Config))
+					Expect(c.UntrustCmd).NotTo(BeNil())
 				default:
 					Fail("wrong type")
 				}
@@ -237,6 +238,20 @@ var _ = Describe("Builder", func() {
 					Expect(c.VBox).To(BeIdenticalTo(builder.VBox))
 					Expect(c.VMBuilder).To(BeIdenticalTo(builder.VMBuilder))
 					Expect(c.Config).To(BeIdenticalTo(builder.Config))
+				default:
+					Fail("wrong type")
+				}
+			})
+		})
+
+		Context("when is is passed 'untrust'", func() {
+			It("should return a untrust command", func() {
+				untrustCmd, err := builder.Cmd("untrust")
+				Expect(err).NotTo(HaveOccurred())
+
+				switch u := untrustCmd.(type) {
+				case *cmd.UntrustCmd:
+					Expect(u.CertStore).NotTo(BeNil())
 				default:
 					Fail("wrong type")
 				}

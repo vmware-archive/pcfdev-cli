@@ -37,3 +37,13 @@ func (_m *MockSystemStore) Store(_param0 string) error {
 func (_mr *_MockSystemStoreRecorder) Store(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Store", arg0)
 }
+
+func (_m *MockSystemStore) Unstore() error {
+	ret := _m.ctrl.Call(_m, "Unstore")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockSystemStoreRecorder) Unstore() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Unstore")
+}

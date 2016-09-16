@@ -18,6 +18,7 @@ type FS interface {
 //go:generate mockgen -package mocks -destination mocks/system_store.go github.com/pivotal-cf/pcfdev-cli/cert SystemStore
 type SystemStore interface {
 	Store(path string) error
+	Unstore() error
 }
 
 type CertStore struct {
@@ -37,4 +38,8 @@ func (c *CertStore) Store(cert string) error {
 	}
 
 	return c.SystemStore.Store(filepath.Join(tempDir, "cert"))
+}
+
+func (c *CertStore) Unstore() error {
+	return c.SystemStore.Unstore()
 }

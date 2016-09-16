@@ -1,6 +1,8 @@
 package runner_test
 
 import (
+	"runtime"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	rnr "github.com/pivotal-cf/pcfdev-cli/runner"
@@ -12,6 +14,10 @@ var _ = Describe("CmdRunner", func() {
 	)
 
 	BeforeEach(func() {
+		if runtime.GOOS == "windows" {
+			Skip("This test is not appropriate for the windows OS")
+		}
+
 		runner = &rnr.CmdRunner{}
 	})
 

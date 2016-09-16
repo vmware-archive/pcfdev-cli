@@ -16,6 +16,7 @@ type StartCmd struct {
 	VMBuilder   VMBuilder
 	Config      *config.Config
 	DownloadCmd Cmd
+	TrustCmd    Cmd
 	flagContext flags.FlagContext
 }
 
@@ -105,12 +106,7 @@ func (s *StartCmd) Run() error {
 		}
 
 		if s.flagContext.Bool("k") {
-			startedVM, err := s.VMBuilder.VM(name)
-			if err != nil {
-				return err
-			}
-
-			return startedVM.Trust()
+			return s.TrustCmd.Run()
 		}
 
 		return nil

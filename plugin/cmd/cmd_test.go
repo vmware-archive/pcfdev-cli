@@ -128,6 +128,11 @@ var _ = Describe("Builder", func() {
 						FS:                builder.FS,
 						Config:            builder.Config,
 					}))
+					Expect(c.TrustCmd).To(Equal(&cmd.TrustCmd{
+						VBox:      builder.VBox,
+						VMBuilder: builder.VMBuilder,
+						Config:    builder.Config,
+					}))
 				default:
 					Fail("wrong type")
 				}
@@ -257,6 +262,19 @@ var _ = Describe("Builder", func() {
 				}
 			})
 		})
+
+		// Context("when is is passed 'target'", func() {
+		// It("should return a target command", func() {
+		// targetCmd, err := builder.Cmd("target")
+		// Expect(err).NotTo(HaveOccurred())
+
+		// switch u := targetCmd.(type) {
+		// case *cmd.TargetCmd:
+		// default:
+		// Fail("wrong type")
+		// }
+		// })
+		// })
 
 		Context("when it is passed an unknown subcommand", func() {
 			It("should return an error", func() {

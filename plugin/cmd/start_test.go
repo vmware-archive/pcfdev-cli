@@ -16,13 +16,14 @@ import (
 
 var _ = Describe("StartCmd", func() {
 	var (
-		startCmd      *cmd.StartCmd
-		mockCtrl      *gomock.Controller
-		mockVMBuilder *mocks.MockVMBuilder
-		mockVBox      *mocks.MockVBox
-		mockVM        *vmMocks.MockVM
-		mockStartedVM *vmMocks.MockVM
-		mockCmd       *mocks.MockCmd
+		startCmd        *cmd.StartCmd
+		mockCtrl        *gomock.Controller
+		mockVMBuilder   *mocks.MockVMBuilder
+		mockVBox        *mocks.MockVBox
+		mockVM          *vmMocks.MockVM
+		mockStartedVM   *vmMocks.MockVM
+		mockDownloadCmd *mocks.MockCmd
+		mockTrustCmd    *mocks.MockCmd
 	)
 
 	BeforeEach(func() {
@@ -31,7 +32,8 @@ var _ = Describe("StartCmd", func() {
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockVM = vmMocks.NewMockVM(mockCtrl)
 		mockStartedVM = vmMocks.NewMockVM(mockCtrl)
-		mockCmd = mocks.NewMockCmd(mockCtrl)
+		mockDownloadCmd = mocks.NewMockCmd(mockCtrl)
+		mockTrustCmd = mocks.NewMockCmd(mockCtrl)
 		startCmd = &cmd.StartCmd{
 			VBox:      mockVBox,
 			VMBuilder: mockVMBuilder,
@@ -39,7 +41,8 @@ var _ = Describe("StartCmd", func() {
 				DefaultVMName: "some-default-vm-name",
 			},
 			Opts:        &vm.StartOpts{},
-			DownloadCmd: mockCmd,
+			DownloadCmd: mockDownloadCmd,
+			TrustCmd:    mockTrustCmd,
 		}
 	})
 
@@ -115,7 +118,7 @@ var _ = Describe("StartCmd", func() {
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 					mockVM.EXPECT().VerifyStartOpts(startOpts),
-					mockCmd.EXPECT().Run(),
+					mockDownloadCmd.EXPECT().Run(),
 					mockVM.EXPECT().Start(startOpts),
 				)
 
@@ -131,10 +134,9 @@ var _ = Describe("StartCmd", func() {
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Trust: true}),
-						mockCmd.EXPECT().Run(),
+						mockDownloadCmd.EXPECT().Run(),
 						mockVM.EXPECT().Start(&vm.StartOpts{Trust: true}),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockStartedVM, nil),
-						mockStartedVM.EXPECT().Trust(),
+						mockTrustCmd.EXPECT().Run(),
 					)
 
 					Expect(startCmd.Run()).To(Succeed())
@@ -206,7 +208,7 @@ var _ = Describe("StartCmd", func() {
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
-						mockCmd.EXPECT().Run().Return(errors.New("some-error")),
+						mockDownloadCmd.EXPECT().Run().Return(errors.New("some-error")),
 					)
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))
@@ -220,26 +222,8 @@ var _ = Describe("StartCmd", func() {
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
-						mockCmd.EXPECT().Run(),
+						mockDownloadCmd.EXPECT().Run(),
 						mockVM.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("some-error")),
-					)
-
-					Expect(startCmd.Run()).To(MatchError("some-error"))
-				})
-			})
-
-			Context("when there is an error getting the started VM", func() {
-				It("should return the error", func() {
-					startCmd.Parse([]string{"-k"})
-
-					gomock.InOrder(
-						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
-						mockVBox.EXPECT().GetVMName().Return("", nil),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Trust: true}),
-						mockCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{Trust: true}),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
 					)
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))
@@ -255,10 +239,9 @@ var _ = Describe("StartCmd", func() {
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Trust: true}),
-						mockCmd.EXPECT().Run(),
+						mockDownloadCmd.EXPECT().Run(),
 						mockVM.EXPECT().Start(&vm.StartOpts{Trust: true}),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockStartedVM, nil),
-						mockStartedVM.EXPECT().Trust().Return(errors.New("some-error")),
+						mockTrustCmd.EXPECT().Run().Return(errors.New("some-error")),
 					)
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))

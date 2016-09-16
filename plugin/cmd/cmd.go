@@ -134,6 +134,11 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 				FS:                b.FS,
 				Config:            b.Config,
 			},
+			TrustCmd: &TrustCmd{
+				VBox:      b.VBox,
+				VMBuilder: b.VMBuilder,
+				Config:    b.Config,
+			},
 		}, nil
 	case "status":
 		return &StatusCmd{
@@ -179,6 +184,8 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 				},
 			},
 		}, nil
+	// case "target":
+	// return &TargetCmd{}, nil
 	default:
 		return nil, errors.New("")
 	}

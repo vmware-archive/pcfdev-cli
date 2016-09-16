@@ -17,12 +17,14 @@ type StartCmd struct {
 	Config      *config.Config
 	DownloadCmd Cmd
 	TrustCmd    Cmd
+	TargetCmd   Cmd
 	flagContext flags.FlagContext
 }
 
 func (s *StartCmd) Parse(args []string) error {
 	s.flagContext = flags.New()
 	s.flagContext.NewBoolFlag("k", "", "<trust>")
+	s.flagContext.NewBoolFlag("t", "", "<target>")
 	s.flagContext.NewBoolFlag("n", "", "<skip provisioning>")
 	s.flagContext.NewBoolFlag("p", "", "<provision>")
 	s.flagContext.NewIntFlag("c", "", "<number of cpus>")
@@ -36,7 +38,6 @@ func (s *StartCmd) Parse(args []string) error {
 
 	s.Opts = &vm.StartOpts{
 		CPUs:        s.flagContext.Int("c"),
-		Trust:       s.flagContext.Bool("k"),
 		Memory:      uint64(s.flagContext.Int("m")),
 		NoProvision: s.flagContext.Bool("n"),
 		OVAPath:     s.flagContext.String("o"),
@@ -107,6 +108,10 @@ func (s *StartCmd) Run() error {
 
 		if s.flagContext.Bool("k") {
 			return s.TrustCmd.Run()
+		}
+
+		if s.flagContext.Bool("t") {
+			return s.TargetCmd.Run()
 		}
 
 		return nil

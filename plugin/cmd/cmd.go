@@ -139,6 +139,11 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 				VMBuilder: b.VMBuilder,
 				Config:    b.Config,
 			},
+			TargetCmd: &TargetCmd{
+				VBox:      b.VBox,
+				VMBuilder: b.VMBuilder,
+				Config:    b.Config,
+			},
 		}, nil
 	case "status":
 		return &StatusCmd{

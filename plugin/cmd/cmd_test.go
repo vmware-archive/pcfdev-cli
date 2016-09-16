@@ -133,6 +133,11 @@ var _ = Describe("Builder", func() {
 						VMBuilder: builder.VMBuilder,
 						Config:    builder.Config,
 					}))
+					Expect(c.TargetCmd).To(Equal(&cmd.TargetCmd{
+						VBox:      builder.VBox,
+						VMBuilder: builder.VMBuilder,
+						Config:    builder.Config,
+					}))
 				default:
 					Fail("wrong type")
 				}

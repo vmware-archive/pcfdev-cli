@@ -111,12 +111,14 @@ SUBCOMMANDS:
                                         Options: redis, rabbitmq, spring-cloud-services (scs), default, all, none
                                         Default: redis, rabbitmq
                                         (MySQL is always available and cannot be disabled.)
+      [-t]                           Perform a CF login to PCF Dev after starting, as the 'user' user.
    stop                              Shutdown the PCF Dev VM. All data is preserved.
    suspend                           Save the current state of the PCF Dev VM to disk and then stop the VM.
    resume                            Resume PCF Dev VM from suspended state.
    destroy                           Delete the PCF Dev VM. All data is destroyed.
    status                            Query for the status of the PCF Dev VM.
    import /path/to/ova               Import OVA from local filesystem.
+   target                            Perform a CF login to PCF Dev, as the 'user' user.
    trust                             Import VM certificates into host's trusted certificate store.
    untrust                           Remove VM certificates from host's trusted certificate store.
    version                           Display the release version of the CLI.`,

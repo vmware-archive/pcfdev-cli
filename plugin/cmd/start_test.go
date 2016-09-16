@@ -24,6 +24,7 @@ var _ = Describe("StartCmd", func() {
 		mockStartedVM   *vmMocks.MockVM
 		mockDownloadCmd *mocks.MockCmd
 		mockTrustCmd    *mocks.MockCmd
+		mockTargetCmd   *mocks.MockCmd
 	)
 
 	BeforeEach(func() {
@@ -34,6 +35,7 @@ var _ = Describe("StartCmd", func() {
 		mockStartedVM = vmMocks.NewMockVM(mockCtrl)
 		mockDownloadCmd = mocks.NewMockCmd(mockCtrl)
 		mockTrustCmd = mocks.NewMockCmd(mockCtrl)
+		mockTargetCmd = mocks.NewMockCmd(mockCtrl)
 		startCmd = &cmd.StartCmd{
 			VBox:      mockVBox,
 			VMBuilder: mockVMBuilder,
@@ -43,6 +45,7 @@ var _ = Describe("StartCmd", func() {
 			Opts:        &vm.StartOpts{},
 			DownloadCmd: mockDownloadCmd,
 			TrustCmd:    mockTrustCmd,
+			TargetCmd:   mockTargetCmd,
 		}
 	})
 
@@ -64,7 +67,6 @@ var _ = Describe("StartCmd", func() {
 				})).To(Succeed())
 
 				Expect(startCmd.Opts.CPUs).To(Equal(2))
-				Expect(startCmd.Opts.Trust).To(BeTrue())
 				Expect(startCmd.Opts.Memory).To(Equal(uint64(3456)))
 				Expect(startCmd.Opts.NoProvision).To(BeTrue())
 				Expect(startCmd.Opts.OVAPath).To(Equal("some-ova-path"))
@@ -77,7 +79,6 @@ var _ = Describe("StartCmd", func() {
 			It("should set start options", func() {
 				Expect(startCmd.Parse([]string{})).To(Succeed())
 				Expect(startCmd.Opts.CPUs).To(Equal(0))
-				Expect(startCmd.Opts.Trust).To(BeFalse())
 				Expect(startCmd.Opts.Memory).To(Equal(uint64(0)))
 				Expect(startCmd.Opts.NoProvision).To(BeFalse())
 				Expect(startCmd.Opts.OVAPath).To(Equal(""))
@@ -133,13 +134,49 @@ var _ = Describe("StartCmd", func() {
 						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Trust: true}),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
 						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{Trust: true}),
+						mockVM.EXPECT().Start(&vm.StartOpts{}),
 						mockTrustCmd.EXPECT().Run(),
 					)
 
 					Expect(startCmd.Run()).To(Succeed())
+				})
+			})
+
+			Context("when the target option is passed", func() {
+				It("should target PCF Dev after starting", func() {
+					startCmd.Parse([]string{"-t"})
+
+					gomock.InOrder(
+						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
+						mockDownloadCmd.EXPECT().Run(),
+						mockVM.EXPECT().Start(&vm.StartOpts{}),
+						mockTargetCmd.EXPECT().Run(),
+					)
+
+					Expect(startCmd.Run()).To(Succeed())
+				})
+			})
+
+			Context("when targeting PCF Dev fails", func() {
+				It("should return the error", func() {
+					startCmd.Parse([]string{"-t"})
+
+					gomock.InOrder(
+						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
+						mockDownloadCmd.EXPECT().Run(),
+						mockVM.EXPECT().Start(&vm.StartOpts{}),
+						mockTargetCmd.EXPECT().Run().Return(errors.New("some-error")),
+					)
+
+					Expect(startCmd.Run()).To(MatchError("some-error"))
 				})
 			})
 
@@ -238,9 +275,9 @@ var _ = Describe("StartCmd", func() {
 						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Trust: true}),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
 						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{Trust: true}),
+						mockVM.EXPECT().Start(&vm.StartOpts{}),
 						mockTrustCmd.EXPECT().Run().Return(errors.New("some-error")),
 					)
 

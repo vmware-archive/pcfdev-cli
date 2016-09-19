@@ -114,6 +114,8 @@ func (r *Running) Target() error {
 		return &TargetError{err}
 	}
 
+	r.UI.Say(fmt.Sprintf("Successfully logged in to api.%s as user.", r.VMConfig.Domain))
+
 	return nil
 }
 

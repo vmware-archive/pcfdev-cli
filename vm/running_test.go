@@ -264,7 +264,7 @@ var _ = Describe("Running", func() {
 	})
 
 	Describe("Target", func() {
-		It("target PCF Dev", func() {
+		It("target PCF Dev and prints an output message to the user", func() {
 			mockCmdRunner.EXPECT().Run(
 				"cf",
 				"login",
@@ -275,6 +275,8 @@ var _ = Describe("Running", func() {
 				"-o", "pcfdev-org",
 				"-s", "pcfdev-space",
 			)
+			mockUI.EXPECT().Say("Successfully logged in to api.some-domain as user.")
+
 			Expect(runningVM.Target()).To(Succeed())
 		})
 	})

@@ -120,7 +120,7 @@ SUBCOMMANDS:
    import /path/to/ova               Import OVA from local filesystem.
    target                            Perform a CF login to PCF Dev, as the 'user' user.
    trust                             Import VM certificates into host's trusted certificate store.
-      [-p]                           Print the PCF Dev Root CA to stdout.
+      [-p]                           Print the PCF Dev Root CA Certificate to stdout.
    untrust                           Remove VM certificates from host's trusted certificate store.
    version                           Display the release version of the CLI.`,
 				},

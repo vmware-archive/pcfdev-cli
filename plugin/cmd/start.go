@@ -107,7 +107,9 @@ func (s *StartCmd) Run() error {
 		}
 
 		if s.flagContext.Bool("k") {
-			return s.TrustCmd.Run()
+			if err := s.TrustCmd.Run(); err != nil {
+				return err
+			}
 		}
 
 		if s.flagContext.Bool("t") {

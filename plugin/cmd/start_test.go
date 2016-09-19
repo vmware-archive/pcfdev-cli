@@ -180,6 +180,25 @@ var _ = Describe("StartCmd", func() {
 				})
 			})
 
+			Context("when targeting PCF Dev and trusting VM certificates", func() {
+				It("should target PCF Dev and trust the VM certificates", func() {
+					startCmd.Parse([]string{"-t", "-k"})
+
+					gomock.InOrder(
+						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
+						mockVBox.EXPECT().GetVMName().Return("", nil),
+						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
+						mockDownloadCmd.EXPECT().Run(),
+						mockVM.EXPECT().Start(&vm.StartOpts{}),
+						mockTrustCmd.EXPECT().Run(),
+						mockTargetCmd.EXPECT().Run(),
+					)
+
+					Expect(startCmd.Run()).To(Succeed())
+				})
+			})
+
 			Context("when virtualbox version is too old", func() {
 				It("should tell the user to upgrade virtualbox", func() {
 					mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 4}, nil)

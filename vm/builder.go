@@ -97,7 +97,8 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				CertStore: &cert.CertStore{
 					FS: b.FS,
 					SystemStore: &cert.ConcreteSystemStore{
-						FS: b.FS,
+						FS:        b.FS,
+						CmdRunner: &runner.CmdRunner{},
 					},
 				},
 				LogFetcher: &ConcreteLogFetcher{

@@ -1,5 +1,6 @@
 package cert
 
 type ConcreteSystemStore struct {
-	FS FS
+	FS        FS
+	CmdRunner CmdRunner
 }

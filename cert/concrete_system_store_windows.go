@@ -12,7 +12,8 @@ func (c *ConcreteSystemStore) Store(path string) error {
 
 func (c *ConcreteSystemStore) Unstore() error {
 	for _, domain := range address.AllowedAddresses {
-		exec.Command("certutil", "-delstore", "ROOT", domain).Run()
+		c.CmdRunner.Run("certutil", "-delstore", "ROOT", domain)
 	}
+
 	return nil
 }

@@ -21,6 +21,11 @@ type SystemStore interface {
 	Unstore() error
 }
 
+//go:generate mockgen -package mocks -destination mocks/cmd_runner.go github.com/pivotal-cf/pcfdev-cli/cert CmdRunner
+type CmdRunner interface {
+	Run(command string, args ...string) (output []byte, err error)
+}
+
 type CertStore struct {
 	FS          FS
 	SystemStore SystemStore

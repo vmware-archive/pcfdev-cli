@@ -8,6 +8,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/cert"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/downloader"
+	"github.com/pivotal-cf/pcfdev-cli/runner"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
@@ -185,7 +186,8 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 		return &UntrustCmd{
 			CertStore: &cert.CertStore{
 				SystemStore: &cert.ConcreteSystemStore{
-					FS: b.FS,
+					FS:        b.FS,
+					CmdRunner: &runner.CmdRunner{},
 				},
 			},
 		}, nil

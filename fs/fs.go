@@ -187,7 +187,7 @@ func (fs *FS) Compress(name string, path string, contentPaths []string) error {
 			return err
 		}
 		if err := tarWriter.WriteHeader(&tar.Header{
-			Name:    contentStat.Name(),
+			Name:    filepath.Join(name, contentStat.Name()),
 			Size:    contentStat.Size(),
 			ModTime: contentStat.ModTime(),
 			Mode:    int64(contentStat.Mode())}); err != nil {

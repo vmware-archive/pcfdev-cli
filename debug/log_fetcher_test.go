@@ -1,4 +1,4 @@
-package vm_test
+package debug_test
 
 import (
 	"errors"
@@ -8,8 +8,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/config"
-	"github.com/pivotal-cf/pcfdev-cli/vm"
-	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
+	"github.com/pivotal-cf/pcfdev-cli/debug"
+	"github.com/pivotal-cf/pcfdev-cli/debug/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,21 +18,18 @@ import (
 var _ = Describe("LogFetcher", func() {
 	var (
 		mockCtrl   *gomock.Controller
-		mockUI     *mocks.MockUI
 		mockSSH    *mocks.MockSSH
 		mockFS     *mocks.MockFS
 		mockDriver *mocks.MockDriver
-		logFetcher vm.LogFetcher
+		logFetcher *debug.LogFetcher
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
-		mockUI = mocks.NewMockUI(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockDriver = mocks.NewMockDriver(mockCtrl)
-		logFetcher = &vm.ConcreteLogFetcher{
-			UI:     mockUI,
+		logFetcher = &debug.LogFetcher{
 			SSH:    mockSSH,
 			FS:     mockFS,
 			Driver: mockDriver,
@@ -86,8 +83,6 @@ var _ = Describe("LogFetcher", func() {
 						filepath.Join("some-temp-dir", "vm-info"),
 						filepath.Join("some-temp-dir", "vm-hostonlyifs"),
 					}),
-
-				mockUI.EXPECT().Say("Debug logs written to pcfdev-debug.tgz. While some scrubbing has taken place, please remove any remaining sensitive information from these logs before sharing."),
 			)
 
 			Expect(logFetcher.FetchLogs()).To(Succeed())
@@ -131,8 +126,6 @@ var _ = Describe("LogFetcher", func() {
 							filepath.Join("some-temp-dir", "vm-info"),
 							filepath.Join("some-temp-dir", "vm-hostonlyifs"),
 						}),
-
-					mockUI.EXPECT().Say("Debug logs written to pcfdev-debug.tgz. While some scrubbing has taken place, please remove any remaining sensitive information from these logs before sharing."),
 				)
 
 				Expect(logFetcher.FetchLogs()).To(Succeed())

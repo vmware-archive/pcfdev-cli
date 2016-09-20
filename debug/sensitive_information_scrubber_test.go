@@ -1,7 +1,7 @@
-package vm_test
+package debug_test
 
 import (
-	"github.com/pivotal-cf/pcfdev-cli/vm"
+	"github.com/pivotal-cf/pcfdev-cli/debug"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -9,11 +9,11 @@ import (
 
 var _ = Describe("SensitiveInformationScrubber", func() {
 	var (
-		scrubber *vm.SensitiveInformationScrubber
+		scrubber *debug.SensitiveInformationScrubber
 	)
 
 	BeforeEach(func() {
-		scrubber = &vm.SensitiveInformationScrubber{}
+		scrubber = &debug.SensitiveInformationScrubber{}
 	})
 
 	Describe("#Scrub", func() {

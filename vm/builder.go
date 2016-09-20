@@ -11,6 +11,7 @@ import (
 	"github.com/cloudfoundry/cli/cf/trace"
 	"github.com/pivotal-cf/pcfdev-cli/cert"
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/debug"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/runner"
 	"github.com/pivotal-cf/pcfdev-cli/ui"
@@ -79,9 +80,8 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				HelpText: &ui.HelpText{
 					UI: termUI,
 				},
-				LogFetcher: &ConcreteLogFetcher{
+				LogFetcher: &debug.LogFetcher{
 					VMConfig: vmConfig,
-					UI:       termUI,
 					FS:       b.FS,
 					SSH:      b.SSH,
 					Driver: &vbox.VBoxDriver{
@@ -108,9 +108,8 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 						CmdRunner: &runner.CmdRunner{},
 					},
 				},
-				LogFetcher: &ConcreteLogFetcher{
+				LogFetcher: &debug.LogFetcher{
 					VMConfig: vmConfig,
-					UI:       termUI,
 					FS:       b.FS,
 					SSH:      b.SSH,
 					Driver: &vbox.VBoxDriver{

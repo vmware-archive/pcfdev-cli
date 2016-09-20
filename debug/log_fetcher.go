@@ -1,6 +1,7 @@
-package vm
+package debug
 
 import (
+	"io"
 	"path/filepath"
 	"strings"
 	"time"
@@ -8,8 +9,24 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
 
-type ConcreteLogFetcher struct {
-	UI     UI
+//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/debug FS
+type FS interface {
+	Write(path string, contents io.Reader) error
+	Compress(name string, path string, contentPaths []string) error
+	TempDir() (tempDir string, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/debug SSH
+type SSH interface {
+	GetSSHOutput(command string, ip string, port string, timeout time.Duration) (combinedOutput string, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/debug Driver
+type Driver interface {
+	VBoxManage(arg ...string) (output []byte, err error)
+}
+
+type LogFetcher struct {
 	FS     FS
 	SSH    SSH
 	Driver Driver
@@ -29,7 +46,7 @@ const (
 	ReceiverHost  = "Host"
 )
 
-func (l *ConcreteLogFetcher) FetchLogs() error {
+func (l *LogFetcher) FetchLogs() error {
 	logFiles := []logFile{
 		logFile{
 			command:   []string{"sudo", "cat", "/var/pcfdev/provision.log"},
@@ -136,11 +153,10 @@ func (l *ConcreteLogFetcher) FetchLogs() error {
 		return err
 	}
 
-	l.UI.Say("Debug logs written to pcfdev-debug.tgz. While some scrubbing has taken place, please remove any remaining sensitive information from these logs before sharing.")
 	return nil
 }
 
-func (l *ConcreteLogFetcher) getLogFileNames(logFiles []logFile, parentDir string) []string {
+func (l *LogFetcher) getLogFileNames(logFiles []logFile, parentDir string) []string {
 	logFileNames := []string{}
 	for _, logFile := range logFiles {
 		logFileNames = append(logFileNames, filepath.Join(parentDir, logFile.filename))

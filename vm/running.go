@@ -127,5 +127,6 @@ func (r *Running) GetDebugLogs() error {
 		return &FetchLogsError{err}
 	}
 
+	r.UI.Say("Debug logs written to pcfdev-debug.tgz. While some scrubbing has taken place, please remove any remaining sensitive information from these logs before sharing.")
 	return nil
 }

@@ -207,7 +207,10 @@ var _ = Describe("Running", func() {
 
 	Describe("GetDebugLogs", func() {
 		It("should succeed", func() {
-			mockLogFetcher.EXPECT().FetchLogs()
+			gomock.InOrder(
+				mockLogFetcher.EXPECT().FetchLogs(),
+				mockUI.EXPECT().Say("Debug logs written to pcfdev-debug.tgz. While some scrubbing has taken place, please remove any remaining sensitive information from these logs before sharing."),
+			)
 
 			Expect(runningVM.GetDebugLogs()).To(Succeed())
 		})

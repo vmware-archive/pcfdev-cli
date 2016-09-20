@@ -93,7 +93,8 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 			UntrustCmd: &UntrustCmd{
 				CertStore: &cert.CertStore{
 					SystemStore: &cert.ConcreteSystemStore{
-						FS: b.FS,
+						FS:        b.FS,
+						CmdRunner: &runner.CmdRunner{},
 					},
 				},
 			},

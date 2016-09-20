@@ -37,7 +37,7 @@ func (p *Paused) Start(opts *StartOpts) error {
 	return p.Resume()
 }
 
-func (p *Paused) Provision() error {
+func (p *Paused) Provision(opts *StartOpts) error {
 	return nil
 }
 

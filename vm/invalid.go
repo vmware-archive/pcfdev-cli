@@ -19,7 +19,7 @@ func (i *Invalid) Start(opts *StartOpts) error {
 	return nil
 }
 
-func (i *Invalid) Provision() error {
+func (i *Invalid) Provision(opts *StartOpts) error {
 	i.UI.Failed(i.message())
 	return nil
 }

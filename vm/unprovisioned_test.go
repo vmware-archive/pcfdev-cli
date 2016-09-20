@@ -22,6 +22,7 @@ var _ = Describe("Unprovisioned", func() {
 		mockVBox       *mocks.MockVBox
 		mockSSH        *mocks.MockSSH
 		mockLogFetcher *mocks.MockLogFetcher
+		mockHelpText   *mocks.MockHelpText
 		unprovisioned  vm.Unprovisioned
 	)
 
@@ -32,6 +33,7 @@ var _ = Describe("Unprovisioned", func() {
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
 		mockLogFetcher = mocks.NewMockLogFetcher(mockCtrl)
+		mockHelpText = mocks.NewMockHelpText(mockCtrl)
 
 		unprovisioned = vm.Unprovisioned{
 			UI:         mockUI,
@@ -39,6 +41,7 @@ var _ = Describe("Unprovisioned", func() {
 			FS:         mockFS,
 			SSH:        mockSSH,
 			LogFetcher: mockLogFetcher,
+			HelpText:   mockHelpText,
 			Config: &conf.Config{
 				VMDir: "some-vm-dir",
 			},
@@ -95,9 +98,29 @@ var _ = Describe("Unprovisioned", func() {
 				).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-service,some-other-service","registries":["some-registry","some-other-registry"]}`, nil),
 				mockUI.EXPECT().Say("Provisioning VM..."),
 				mockSSH.EXPECT().RunSSHCommand(`sudo -H /var/pcfdev/provision "some-domain" "some-ip" "some-service,some-other-service" "some-registry,some-other-registry"`, "127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+				mockHelpText.EXPECT().Print("some-domain", false),
 			)
 
-			Expect(unprovisioned.Provision()).To(Succeed())
+			Expect(unprovisioned.Provision(&vm.StartOpts{})).To(Succeed())
+		})
+
+		Context("when the VM is autotargeted", func() {
+			It("should provision the VM", func() {
+				gomock.InOrder(
+					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", 30*time.Second, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().GetSSHOutput(
+						"cat /var/pcfdev/provision-options.json",
+						"127.0.0.1",
+						"some-port",
+						30*time.Second,
+					).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-service,some-other-service","registries":["some-registry","some-other-registry"]}`, nil),
+					mockUI.EXPECT().Say("Provisioning VM..."),
+					mockSSH.EXPECT().RunSSHCommand(`sudo -H /var/pcfdev/provision "some-domain" "some-ip" "some-service,some-other-service" "some-registry,some-other-registry"`, "127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockHelpText.EXPECT().Print("some-domain", true),
+				)
+
+				Expect(unprovisioned.Provision(&vm.StartOpts{Target: true})).To(Succeed())
+			})
 		})
 
 		Context("when there is an error finding the provision config", func() {
@@ -106,7 +129,7 @@ var _ = Describe("Unprovisioned", func() {
 					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", 30*time.Second, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
-				Expect(unprovisioned.Provision()).To(MatchError("failed to provision VM: missing provision configuration"))
+				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError("failed to provision VM: missing provision configuration"))
 			})
 		})
 
@@ -117,7 +140,7 @@ var _ = Describe("Unprovisioned", func() {
 					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", 30*time.Second).Return("", errors.New("some-error")),
 				)
 
-				Expect(unprovisioned.Provision()).To(MatchError("failed to provision VM: some-error"))
+				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError("failed to provision VM: some-error"))
 			})
 		})
 
@@ -128,7 +151,7 @@ var _ = Describe("Unprovisioned", func() {
 					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", 30*time.Second).Return("{some-bad-json}", nil),
 				)
 
-				Expect(unprovisioned.Provision()).To(MatchError(ContainSubstring(`failed to provision VM: invalid character 's'`)))
+				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError(ContainSubstring(`failed to provision VM: invalid character 's'`)))
 			})
 		})
 	})

@@ -109,10 +109,10 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		return nil
 	}
 
-	return unprovisionedVM.Provision()
+	return unprovisionedVM.Provision(opts)
 }
 
-func (s *Stopped) Provision() error {
+func (s *Stopped) Provision(opts *StartOpts) error {
 	return nil
 }
 

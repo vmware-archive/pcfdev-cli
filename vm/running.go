@@ -19,6 +19,7 @@ type Running struct {
 	LogFetcher LogFetcher
 	CertStore  CertStore
 	CmdRunner  CmdRunner
+	HelpText   HelpText
 }
 
 func (r *Running) Stop() error {
@@ -31,7 +32,7 @@ func (r *Running) Stop() error {
 	return nil
 }
 
-func (r *Running) Provision() error {
+func (r *Running) Provision(opts *StartOpts) error {
 	if _, err := r.SSH.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", r.VMConfig.IP, "22", 30*time.Second); err != nil {
 		return err
 	}
@@ -39,7 +40,7 @@ func (r *Running) Provision() error {
 	if err != nil {
 		return err
 	}
-	return unprovisionedVM.Provision()
+	return unprovisionedVM.Provision(opts)
 }
 
 func (r *Running) VerifyStartOpts(opts *StartOpts) error {

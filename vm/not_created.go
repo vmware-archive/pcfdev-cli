@@ -92,7 +92,7 @@ func (n *NotCreated) hasSCS(services string) bool {
 	return strings.Contains(services, "scs") || strings.Contains(services, "spring-cloud-services") || strings.Contains(services, "all")
 }
 
-func (n *NotCreated) Provision() error {
+func (n *NotCreated) Provision(opts *StartOpts) error {
 	return nil
 }
 

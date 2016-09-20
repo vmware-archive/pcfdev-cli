@@ -13,6 +13,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/runner"
+	"github.com/pivotal-cf/pcfdev-cli/ui"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
 
@@ -75,6 +76,9 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				VBox:     b.VBox,
 				FS:       b.FS,
 				SSH:      b.SSH,
+				HelpText: &ui.HelpText{
+					UI: termUI,
+				},
 				LogFetcher: &ConcreteLogFetcher{
 					VMConfig: vmConfig,
 					UI:       termUI,
@@ -94,6 +98,9 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				SSH:       b.SSH,
 				Builder:   b,
 				CmdRunner: &runner.CmdRunner{},
+				HelpText: &ui.HelpText{
+					UI: termUI,
+				},
 				CertStore: &cert.CertStore{
 					FS: b.FS,
 					SystemStore: &cert.ConcreteSystemStore{

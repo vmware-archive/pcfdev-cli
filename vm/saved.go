@@ -37,7 +37,7 @@ func (s *Saved) Start(opts *StartOpts) error {
 	return s.Resume()
 }
 
-func (s *Saved) Provision() error {
+func (s *Saved) Provision(opts *StartOpts) error {
 	return nil
 }
 

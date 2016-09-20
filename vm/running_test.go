@@ -134,17 +134,17 @@ var _ = Describe("Running", func() {
 			gomock.InOrder(
 				mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", 30*time.Second).Return("", nil),
 				mockBuilder.EXPECT().VM("some-vm").Return(mockVM, nil),
-				mockVM.EXPECT().Provision(),
+				mockVM.EXPECT().Provision(&vm.StartOpts{}),
 			)
 
-			runningVM.Provision()
+			runningVM.Provision(&vm.StartOpts{})
 		})
 
 		Context("when removing healthcheck file fails", func() {
 			It("should return an error", func() {
 				mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", 30*time.Second).Return("", errors.New("some-error"))
 
-				Expect(runningVM.Provision()).To(MatchError("some-error"))
+				Expect(runningVM.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
 			})
 		})
 
@@ -155,7 +155,7 @@ var _ = Describe("Running", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
 
-				Expect(runningVM.Provision()).To(MatchError("some-error"))
+				Expect(runningVM.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
 			})
 		})
 
@@ -164,10 +164,10 @@ var _ = Describe("Running", func() {
 				gomock.InOrder(
 					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", 30*time.Second).Return("", nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockVM, nil),
-					mockVM.EXPECT().Provision().Return(errors.New("some-error")),
+					mockVM.EXPECT().Provision(&vm.StartOpts{}).Return(errors.New("some-error")),
 				)
 
-				Expect(runningVM.Provision()).To(MatchError("some-error"))
+				Expect(runningVM.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
 			})
 		})
 	})

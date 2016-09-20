@@ -64,6 +64,7 @@ var _ = Describe("StartCmd", func() {
 					"-o", "some-ova-path",
 					"-r", "some-private-registry,some-other-private-registry",
 					"-s", "some-service,some-other-service",
+					"-t",
 				})).To(Succeed())
 
 				Expect(startCmd.Opts.CPUs).To(Equal(2))
@@ -72,6 +73,7 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Opts.OVAPath).To(Equal("some-ova-path"))
 				Expect(startCmd.Opts.Registries).To(Equal("some-private-registry,some-other-private-registry"))
 				Expect(startCmd.Opts.Services).To(Equal("some-service,some-other-service"))
+				Expect(startCmd.Opts.Target).To(BeTrue())
 			})
 		})
 
@@ -84,6 +86,7 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Opts.OVAPath).To(Equal(""))
 				Expect(startCmd.Opts.Registries).To(Equal(""))
 				Expect(startCmd.Opts.Services).To(Equal(""))
+				Expect(startCmd.Opts.Target).To(BeFalse())
 			})
 		})
 
@@ -152,9 +155,9 @@ var _ = Describe("StartCmd", func() {
 						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Target: true}),
 						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{}),
+						mockVM.EXPECT().Start(&vm.StartOpts{Target: true}),
 						mockTargetCmd.EXPECT().Run(),
 					)
 
@@ -170,9 +173,9 @@ var _ = Describe("StartCmd", func() {
 						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Target: true}),
 						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{}),
+						mockVM.EXPECT().Start(&vm.StartOpts{Target: true}),
 						mockTargetCmd.EXPECT().Run().Return(errors.New("some-error")),
 					)
 
@@ -188,9 +191,9 @@ var _ = Describe("StartCmd", func() {
 						mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 						mockVBox.EXPECT().GetVMName().Return("", nil),
 						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
+						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Target: true}),
 						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{}),
+						mockVM.EXPECT().Start(&vm.StartOpts{Target: true}),
 						mockTrustCmd.EXPECT().Run(),
 						mockTargetCmd.EXPECT().Run(),
 					)
@@ -378,14 +381,14 @@ var _ = Describe("StartCmd", func() {
 		})
 
 		Context("when the provision option is specified", func() {
-			It("should provision the VM without starting it", func() {
+			It("should provision the VM", func() {
 				startCmd.Parse([]string{"-p"})
 
 				gomock.InOrder(
 					mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-					mockVM.EXPECT().Provision(),
+					mockVM.EXPECT().Provision(&vm.StartOpts{}),
 				)
 
 				Expect(startCmd.Run()).To(Succeed())
@@ -400,7 +403,7 @@ var _ = Describe("StartCmd", func() {
 					mockVBox.EXPECT().Version().Return(&vbox.VBoxDriverVersion{Major: 5}, nil),
 					mockVBox.EXPECT().GetVMName().Return("", nil),
 					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-					mockVM.EXPECT().Provision().Return(errors.New("some-error")),
+					mockVM.EXPECT().Provision(&vm.StartOpts{}).Return(errors.New("some-error")),
 				)
 
 				Expect(startCmd.Run()).To(MatchError("some-error"))

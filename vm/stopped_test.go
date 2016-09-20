@@ -143,7 +143,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "none"}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "none"})
@@ -159,7 +159,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "all"}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "all"})
@@ -175,7 +175,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "default"}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "default"})
@@ -191,7 +191,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "spring-cloud-services"}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "spring-cloud-services"})
@@ -207,7 +207,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "scs"}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "scs"})
@@ -223,7 +223,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "rabbitmq"}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "rabbitmq"})
@@ -239,7 +239,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "redis"}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "redis"})
@@ -255,7 +255,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "mysql"}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "mysql"})
@@ -271,7 +271,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "default,spring-cloud-services,scs"}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Services: "default,spring-cloud-services,scs"})
@@ -287,7 +287,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{})
@@ -303,7 +303,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":["some-private-registry","some-other-private-registry"]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Registries: "some-private-registry,some-other-private-registry"}),
 				)
 
 				stoppedVM.Start(&vm.StartOpts{Registries: "some-private-registry,some-other-private-registry"})
@@ -375,7 +375,7 @@ var _ = Describe("Stopped", func() {
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision().Return(errors.New("some-error")),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{}).Return(errors.New("some-error")),
 				)
 
 				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("some-error"))

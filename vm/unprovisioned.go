@@ -19,6 +19,7 @@ type Unprovisioned struct {
 	LogFetcher LogFetcher
 	Config     *config.Config
 	VMConfig   *config.VMConfig
+	HelpText   HelpText
 }
 
 func (u *Unprovisioned) Stop() error {
@@ -41,7 +42,7 @@ func (u *Unprovisioned) Status() string {
 	return u.message()
 }
 
-func (u *Unprovisioned) Provision() error {
+func (u *Unprovisioned) Provision(opts *StartOpts) error {
 	if err := u.SSH.RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", u.VMConfig.SSHPort, 30*time.Second, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{errors.New("missing provision configuration")}
 	}
@@ -61,6 +62,8 @@ func (u *Unprovisioned) Provision() error {
 	if err := u.SSH.RunSSHCommand(provisionCommand, "127.0.0.1", u.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{err}
 	}
+
+	u.HelpText.Print(u.VMConfig.Domain, opts.Target)
 
 	return nil
 }

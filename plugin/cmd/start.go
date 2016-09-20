@@ -43,6 +43,7 @@ func (s *StartCmd) Parse(args []string) error {
 		OVAPath:     s.flagContext.String("o"),
 		Registries:  s.flagContext.String("r"),
 		Services:    s.flagContext.String("s"),
+		Target:      s.flagContext.Bool("t"),
 	}
 	return nil
 }
@@ -91,7 +92,7 @@ func (s *StartCmd) Run() error {
 	}
 
 	if s.flagContext.Bool("p") {
-		return v.Provision()
+		return v.Provision(&vm.StartOpts{})
 	} else {
 		if err := v.VerifyStartOpts(s.Opts); err != nil {
 			return err

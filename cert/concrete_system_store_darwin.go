@@ -13,8 +13,10 @@ func (c *ConcreteSystemStore) Store(path string) error {
 		return err
 	}
 
-	exec.Command("security", "create-keychain", "-p", "pcfdev", "pcfdev.keychain").Run()
-	return exec.Command("security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", pcfdevKeychain, path).Run()
+	c.CmdRunner.Run("security", "create-keychain", "-p", "pcfdev", "pcfdev.keychain")
+	c.CmdRunner.Run("security", "list-keychains", "-d", "user", "-s", "login.keychain", "pcfdev.keychain")
+	_, err = c.CmdRunner.Run("security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", pcfdevKeychain, path)
+	return err
 }
 
 func (c *ConcreteSystemStore) Unstore() error {

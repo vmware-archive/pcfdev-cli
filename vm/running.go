@@ -100,7 +100,7 @@ func (r *Running) Trust(startOpts *StartOpts) error {
 	return nil
 }
 
-func (r *Running) Target() error {
+func (r *Running) Target(autoTarget bool) error {
 	if _, err := r.CmdRunner.Run(
 		"cf",
 		"login",
@@ -114,7 +114,9 @@ func (r *Running) Target() error {
 		return &TargetError{err}
 	}
 
-	r.UI.Say(fmt.Sprintf("Successfully logged in to api.%s as user.", r.VMConfig.Domain))
+	if !autoTarget {
+		r.UI.Say(fmt.Sprintf("Successfully logged in to api.%s as user.", r.VMConfig.Domain))
+	}
 
 	return nil
 }

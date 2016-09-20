@@ -252,7 +252,7 @@ var _ = Describe("Saved", func() {
 	Describe("Target", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Say("Your VM is suspended. Resume to target PCF Dev.")
-			Expect(savedVM.Target()).To(Succeed())
+			Expect(savedVM.Target(false)).To(Succeed())
 		})
 	})
 })

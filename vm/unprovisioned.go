@@ -80,7 +80,7 @@ func (u *Unprovisioned) Trust(startOps *StartOpts) error {
 	return nil
 }
 
-func (u *Unprovisioned) Target() error {
+func (u *Unprovisioned) Target(autoTarget bool) error {
 	u.UI.Failed(u.message())
 	return nil
 }

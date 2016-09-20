@@ -75,7 +75,7 @@ func (p *Paused) Trust(startOps *StartOpts) error {
 	return nil
 }
 
-func (p *Paused) Target() error {
+func (p *Paused) Target(autoTarget bool) error {
 	p.UI.Say("Your VM is suspended. Resume to target PCF Dev.")
 	return nil
 }

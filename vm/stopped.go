@@ -140,7 +140,7 @@ func (s *Stopped) Trust(startOps *StartOpts) error {
 	return nil
 }
 
-func (s *Stopped) Target() error {
+func (s *Stopped) Target(autoTarget bool) error {
 	s.UI.Say("Your VM is currently stopped. Start VM to target PCF Dev.")
 	return nil
 }

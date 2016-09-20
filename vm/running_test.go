@@ -264,6 +264,24 @@ var _ = Describe("Running", func() {
 	})
 
 	Describe("Target", func() {
+		Context("when autoTarget is set", func() {
+			It("target PCF Dev", func() {
+				mockCmdRunner.EXPECT().Run(
+					"cf",
+					"login",
+					"-a", "api.some-domain",
+					"--skip-ssl-validation",
+					"-u", "user",
+					"-p", "pass",
+					"-o", "pcfdev-org",
+					"-s", "pcfdev-space",
+				)
+				Expect(runningVM.Target(true)).To(Succeed())
+			})
+		})
+	})
+
+	Context("when autoTarget is NOT set", func() {
 		It("target PCF Dev and prints an output message to the user", func() {
 			mockCmdRunner.EXPECT().Run(
 				"cf",
@@ -277,7 +295,7 @@ var _ = Describe("Running", func() {
 			)
 			mockUI.EXPECT().Say("Successfully logged in to api.some-domain as user.")
 
-			Expect(runningVM.Target()).To(Succeed())
+			Expect(runningVM.Target(false)).To(Succeed())
 		})
 	})
 
@@ -294,7 +312,7 @@ var _ = Describe("Running", func() {
 				"-s", "pcfdev-space",
 			).Return(nil, errors.New("some-error"))
 
-			Expect(runningVM.Target()).To(MatchError("failed to target PCF Dev: some-error"))
+			Expect(runningVM.Target(false)).To(MatchError("failed to target PCF Dev: some-error"))
 		})
 	})
 })

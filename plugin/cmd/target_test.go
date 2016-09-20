@@ -62,10 +62,23 @@ var _ = Describe("TargetCmd", func() {
 			gomock.InOrder(
 				mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
 				mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-				mockVM.EXPECT().Target(),
+				mockVM.EXPECT().Target(false),
 			)
 
 			Expect(targetCmd.Run()).To(Succeed())
+		})
+
+		Context("when the VM is automatically targeted", func() {
+			It("should pass the autoTarget flag to Target", func() {
+				targetCmd.AutoTarget = true
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
+					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().Target(true),
+				)
+
+				Expect(targetCmd.Run()).To(Succeed())
+			})
 		})
 
 		Context("when there is an error getting the VM name", func() {
@@ -92,7 +105,7 @@ var _ = Describe("TargetCmd", func() {
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
 					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-					mockVM.EXPECT().Target().Return(errors.New("some-error")),
+					mockVM.EXPECT().Target(false).Return(errors.New("some-error")),
 				)
 
 				Expect(targetCmd.Run()).To(MatchError("some-error"))

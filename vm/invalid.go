@@ -48,7 +48,7 @@ func (i *Invalid) Trust(startOps *StartOpts) error {
 	return nil
 }
 
-func (i *Invalid) Target() error {
+func (i *Invalid) Target(autoTarget bool) error {
 	i.UI.Failed(i.message())
 	return nil
 }

@@ -167,7 +167,7 @@ var _ = Describe("Unprovisioned", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Failed("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'.")
 
-			Expect(unprovisioned.Target()).To(Succeed())
+			Expect(unprovisioned.Target(false)).To(Succeed())
 		})
 	})
 

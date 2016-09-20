@@ -134,9 +134,10 @@ var _ = Describe("Builder", func() {
 						Config:    builder.Config,
 					}))
 					Expect(c.TargetCmd).To(Equal(&cmd.TargetCmd{
-						VBox:      builder.VBox,
-						VMBuilder: builder.VMBuilder,
-						Config:    builder.Config,
+						VBox:       builder.VBox,
+						VMBuilder:  builder.VMBuilder,
+						Config:     builder.Config,
+						AutoTarget: true,
 					}))
 				default:
 					Fail("wrong type")
@@ -259,9 +260,9 @@ var _ = Describe("Builder", func() {
 				untrustCmd, err := builder.Cmd("untrust")
 				Expect(err).NotTo(HaveOccurred())
 
-				switch u := untrustCmd.(type) {
+				switch c := untrustCmd.(type) {
 				case *cmd.UntrustCmd:
-					Expect(u.CertStore).NotTo(BeNil())
+					Expect(c.CertStore).NotTo(BeNil())
 				default:
 					Fail("wrong type")
 				}
@@ -273,11 +274,12 @@ var _ = Describe("Builder", func() {
 				targetCmd, err := builder.Cmd("target")
 				Expect(err).NotTo(HaveOccurred())
 
-				switch u := targetCmd.(type) {
+				switch c := targetCmd.(type) {
 				case *cmd.TargetCmd:
-					Expect(u.VBox).To(BeIdenticalTo(builder.VBox))
-					Expect(u.VMBuilder).To(BeIdenticalTo(builder.VMBuilder))
-					Expect(u.Config).To(BeIdenticalTo(builder.Config))
+					Expect(c.VBox).To(BeIdenticalTo(builder.VBox))
+					Expect(c.VMBuilder).To(BeIdenticalTo(builder.VMBuilder))
+					Expect(c.Config).To(BeIdenticalTo(builder.Config))
+					Expect(c.AutoTarget).To(BeFalse())
 				default:
 					Fail("wrong type")
 				}

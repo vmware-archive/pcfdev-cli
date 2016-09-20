@@ -9,9 +9,10 @@ import (
 const TARGET_ARGS = 0
 
 type TargetCmd struct {
-	VMBuilder VMBuilder
-	VBox      VBox
-	Config    *config.Config
+	VMBuilder  VMBuilder
+	VBox       VBox
+	Config     *config.Config
+	AutoTarget bool
 }
 
 func (t *TargetCmd) Parse(args []string) error {
@@ -23,7 +24,7 @@ func (t *TargetCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return vm.Target()
+	return vm.Target(t.AutoTarget)
 }
 
 func (t *TargetCmd) getVM() (vm vm.VM, err error) {

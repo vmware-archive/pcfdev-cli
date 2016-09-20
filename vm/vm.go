@@ -46,7 +46,7 @@ type VM interface {
 	Resume() error
 	GetDebugLogs() error
 	Trust(*StartOpts) error
-	Target() error
+	Target(autoTarget bool) error
 
 	VerifyStartOpts(*StartOpts) error
 }

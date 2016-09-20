@@ -141,9 +141,10 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 				Config:    b.Config,
 			},
 			TargetCmd: &TargetCmd{
-				VBox:      b.VBox,
-				VMBuilder: b.VMBuilder,
-				Config:    b.Config,
+				VBox:       b.VBox,
+				VMBuilder:  b.VMBuilder,
+				Config:     b.Config,
+				AutoTarget: true,
 			},
 		}, nil
 	case "status":
@@ -193,9 +194,10 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 		}, nil
 	case "target":
 		return &TargetCmd{
-			VBox:      b.VBox,
-			VMBuilder: b.VMBuilder,
-			Config:    b.Config,
+			VBox:       b.VBox,
+			VMBuilder:  b.VMBuilder,
+			Config:     b.Config,
+			AutoTarget: false,
 		}, nil
 	default:
 		return nil, errors.New("")

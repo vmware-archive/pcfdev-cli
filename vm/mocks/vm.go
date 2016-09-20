@@ -99,14 +99,14 @@ func (_mr *_MockVMRecorder) Suspend() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Suspend")
 }
 
-func (_m *MockVM) Target() error {
-	ret := _m.ctrl.Call(_m, "Target")
+func (_m *MockVM) Target(_param0 bool) error {
+	ret := _m.ctrl.Call(_m, "Target", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockVMRecorder) Target() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Target")
+func (_mr *_MockVMRecorder) Target(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Target", arg0)
 }
 
 func (_m *MockVM) Trust(_param0 *vm.StartOpts) error {

@@ -169,7 +169,7 @@ func (n *NotCreated) Trust(startOps *StartOpts) error {
 	return nil
 }
 
-func (n *NotCreated) Target() error {
+func (n *NotCreated) Target(autoTarget bool) error {
 	n.UI.Say("No VM created, cannot target PCF Dev.")
 	return nil
 }

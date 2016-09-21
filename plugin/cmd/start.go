@@ -11,14 +11,14 @@ import (
 const START_ARGS = 0
 
 type StartCmd struct {
-	Opts        *vm.StartOpts
-	VBox        VBox
-	VMBuilder   VMBuilder
-	Config      *config.Config
-	DownloadCmd Cmd
-	TrustCmd    Cmd
-	TargetCmd   Cmd
-	flagContext flags.FlagContext
+	Opts         *vm.StartOpts
+	VBox         VBox
+	VMBuilder    VMBuilder
+	Config       *config.Config
+	AutoTrustCmd AutoTrustCmd
+	DownloadCmd  Cmd
+	TargetCmd    Cmd
+	flagContext  flags.FlagContext
 }
 
 func (s *StartCmd) Parse(args []string) error {
@@ -108,7 +108,7 @@ func (s *StartCmd) Run() error {
 		}
 
 		if s.flagContext.Bool("k") {
-			if err := s.TrustCmd.Run(); err != nil {
+			if err := s.AutoTrustCmd.Run(); err != nil {
 				return err
 			}
 		}

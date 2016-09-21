@@ -56,6 +56,11 @@ type Cmd interface {
 	Run() error
 }
 
+//go:generate mockgen -package mocks -destination mocks/auto_trust_cmd.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd AutoTrustCmd
+type AutoTrustCmd interface {
+	Run() error
+}
+
 //go:generate mockgen -package mocks -destination mocks/cert_store.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd CertStore
 type CertStore interface {
 	Unstore() error
@@ -136,7 +141,7 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 				FS:                b.FS,
 				Config:            b.Config,
 			},
-			TrustCmd: &TrustCmd{
+			AutoTrustCmd: &ConcreteAutoTrustCmd{
 				VBox:      b.VBox,
 				VMBuilder: b.VMBuilder,
 				Config:    b.Config,

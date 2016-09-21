@@ -128,7 +128,7 @@ var _ = Describe("Builder", func() {
 						FS:                builder.FS,
 						Config:            builder.Config,
 					}))
-					Expect(c.TrustCmd).To(Equal(&cmd.TrustCmd{
+					Expect(c.AutoTrustCmd).To(Equal(&cmd.ConcreteAutoTrustCmd{
 						VBox:      builder.VBox,
 						VMBuilder: builder.VMBuilder,
 						Config:    builder.Config,

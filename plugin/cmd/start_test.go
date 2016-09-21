@@ -16,15 +16,15 @@ import (
 
 var _ = Describe("StartCmd", func() {
 	var (
-		startCmd        *cmd.StartCmd
-		mockCtrl        *gomock.Controller
-		mockVMBuilder   *mocks.MockVMBuilder
-		mockVBox        *mocks.MockVBox
-		mockVM          *vmMocks.MockVM
-		mockStartedVM   *vmMocks.MockVM
-		mockDownloadCmd *mocks.MockCmd
-		mockTrustCmd    *mocks.MockCmd
-		mockTargetCmd   *mocks.MockCmd
+		startCmd         *cmd.StartCmd
+		mockCtrl         *gomock.Controller
+		mockVMBuilder    *mocks.MockVMBuilder
+		mockVBox         *mocks.MockVBox
+		mockVM           *vmMocks.MockVM
+		mockStartedVM    *vmMocks.MockVM
+		mockAutoTrustCmd *mocks.MockAutoTrustCmd
+		mockDownloadCmd  *mocks.MockCmd
+		mockTargetCmd    *mocks.MockCmd
 	)
 
 	BeforeEach(func() {
@@ -34,7 +34,7 @@ var _ = Describe("StartCmd", func() {
 		mockVM = vmMocks.NewMockVM(mockCtrl)
 		mockStartedVM = vmMocks.NewMockVM(mockCtrl)
 		mockDownloadCmd = mocks.NewMockCmd(mockCtrl)
-		mockTrustCmd = mocks.NewMockCmd(mockCtrl)
+		mockAutoTrustCmd = mocks.NewMockAutoTrustCmd(mockCtrl)
 		mockTargetCmd = mocks.NewMockCmd(mockCtrl)
 		startCmd = &cmd.StartCmd{
 			VBox:      mockVBox,
@@ -42,10 +42,10 @@ var _ = Describe("StartCmd", func() {
 			Config: &config.Config{
 				DefaultVMName: "some-default-vm-name",
 			},
-			Opts:        &vm.StartOpts{},
-			DownloadCmd: mockDownloadCmd,
-			TrustCmd:    mockTrustCmd,
-			TargetCmd:   mockTargetCmd,
+			Opts:         &vm.StartOpts{},
+			DownloadCmd:  mockDownloadCmd,
+			AutoTrustCmd: mockAutoTrustCmd,
+			TargetCmd:    mockTargetCmd,
 		}
 	})
 
@@ -140,7 +140,7 @@ var _ = Describe("StartCmd", func() {
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
 						mockDownloadCmd.EXPECT().Run(),
 						mockVM.EXPECT().Start(&vm.StartOpts{}),
-						mockTrustCmd.EXPECT().Run(),
+						mockAutoTrustCmd.EXPECT().Run(),
 					)
 
 					Expect(startCmd.Run()).To(Succeed())
@@ -194,7 +194,7 @@ var _ = Describe("StartCmd", func() {
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Target: true}),
 						mockDownloadCmd.EXPECT().Run(),
 						mockVM.EXPECT().Start(&vm.StartOpts{Target: true}),
-						mockTrustCmd.EXPECT().Run(),
+						mockAutoTrustCmd.EXPECT().Run(),
 						mockTargetCmd.EXPECT().Run(),
 					)
 
@@ -300,7 +300,7 @@ var _ = Describe("StartCmd", func() {
 						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
 						mockDownloadCmd.EXPECT().Run(),
 						mockVM.EXPECT().Start(&vm.StartOpts{}),
-						mockTrustCmd.EXPECT().Run().Return(errors.New("some-error")),
+						mockAutoTrustCmd.EXPECT().Run().Return(errors.New("some-error")),
 					)
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))

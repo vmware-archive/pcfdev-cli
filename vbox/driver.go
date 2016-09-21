@@ -166,19 +166,27 @@ func (d *VBoxDriver) DestroyVM(vmName string) error {
 	)
 }
 
-func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (interfaceName string, err error) {
-	output, err := d.VBoxManage("hostonlyif", "create")
+func (d *VBoxDriver) CreateHostOnlyInterface(ip string) (string, error) {
+	var interfaceName string
+	err := helpers.ExecuteWithAttempts(func() error {
+		output, err := d.VBoxManage("hostonlyif", "create")
+		if err != nil {
+			return err
+		}
+
+		regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
+		matches := regex.FindStringSubmatch(string(output))
+		if len(matches) <= 1 {
+			return errors.New("could not determine interface name")
+		}
+
+		interfaceName = matches[1]
+		return nil
+	}, 3, time.Second)
+
 	if err != nil {
 		return "", err
 	}
-
-	regex := regexp.MustCompile(`Interface '(.*)' was successfully created`)
-	matches := regex.FindStringSubmatch(string(output))
-	if len(matches) <= 1 {
-		return "", errors.New("could not determine interface name")
-	}
-
-	interfaceName = matches[1]
 
 	if _, err := d.VBoxManage("hostonlyif", "ipconfig", interfaceName, "--ip", ip, "--netmask", "255.255.255.0"); err != nil {
 		return "", err

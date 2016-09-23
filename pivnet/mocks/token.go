@@ -48,13 +48,3 @@ func (_m *MockPivnetToken) Get() (string, error) {
 func (_mr *_MockPivnetTokenRecorder) Get() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Get")
 }
-
-func (_m *MockPivnetToken) Save() error {
-	ret := _m.ctrl.Call(_m, "Save")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-func (_mr *_MockPivnetTokenRecorder) Save() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Save")
-}

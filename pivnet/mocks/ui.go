@@ -28,6 +28,16 @@ func (_m *MockUI) EXPECT() *_MockUIRecorder {
 	return _m.recorder
 }
 
+func (_m *MockUI) Ask(_param0 string) string {
+	ret := _m.ctrl.Call(_m, "Ask", _param0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *_MockUIRecorder) Ask(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Ask", arg0)
+}
+
 func (_m *MockUI) AskForPassword(_param0 string) string {
 	ret := _m.ctrl.Call(_m, "AskForPassword", _param0)
 	ret0, _ := ret[0].(string)

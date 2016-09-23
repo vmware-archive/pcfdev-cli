@@ -153,7 +153,7 @@ var _ = Describe("Pivnet Client", func() {
 		})
 	})
 
-	Describe("AcceptEULA", func() {
+	Describe("#AcceptEULA", func() {
 		It("should accept the EULA", func() {
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				defer GinkgoRecover()
@@ -329,7 +329,7 @@ var _ = Describe("Pivnet Client", func() {
 		})
 	})
 
-	Describe("IsEULAAccepted", func() {
+	Describe("#IsEULAAccepted", func() {
 		Context("when EULA has been accepted", func() {
 			It("should return true", func() {
 				handler := func(w http.ResponseWriter, r *http.Request) {
@@ -419,7 +419,7 @@ var _ = Describe("Pivnet Client", func() {
 		})
 	})
 
-	Describe("GetEULA", func() {
+	Describe("#GetEULA", func() {
 		It("should return EULA", func() {
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				defer GinkgoRecover()
@@ -593,6 +593,67 @@ var _ = Describe("Pivnet Client", func() {
 				mockToken.EXPECT().Get().Return("some-token", nil).Times(2)
 				_, err := client.GetEULA()
 				Expect(err).To(MatchError(ContainSubstring("failed to parse network response:")))
+			})
+		})
+	})
+
+	Describe("#GetToken", func() {
+		It("should return a token", func() {
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/api/v2/api_token" {
+					Expect(r.Method).To(Equal("GET"))
+					Expect(r.Header["User-Agent"][0]).To(Equal("PCF-Dev-client"))
+
+					w.WriteHeader(200)
+					w.Write([]byte(`{"api_token": "some-token"}`))
+				} else {
+					Fail("unexpected server request")
+				}
+			}
+			client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+
+			Expect(client.GetToken("some-username", "some-password")).To(Equal("some-token"))
+		})
+
+		Context("when there is an error making the request", func() {
+			It("should return an error", func() {
+				client.Host = "some-bad-protocol-scheme://"
+
+				_, err := client.GetToken("some-username", "some-password")
+				Expect(err).To(MatchError(ContainSubstring("unsupported protocol scheme")))
+			})
+		})
+
+		Context("when Pivnet returns a non-200 status", func() {
+			It("should return an error", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					if r.URL.Path == "/api/v2/api_token" {
+						w.WriteHeader(401)
+					} else {
+						Fail("unexpected server request")
+					}
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+
+				_, err := client.GetToken("some-bad-username", "some-bad-password")
+				Expect(err).To(MatchError("Pivotal Network returned: 401 Unauthorized"))
+			})
+		})
+
+		Context("when there is an parsing the body", func() {
+			It("should return an error", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					if r.URL.Path == "/api/v2/api_token" {
+						w.WriteHeader(200)
+						w.Write([]byte(""))
+					} else {
+						Fail("unexpected server request")
+					}
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+
+				_, err := client.GetToken("some-username", "some-password")
+				Expect(err).To(MatchError("unexpected end of JSON input"))
 			})
 		})
 	})

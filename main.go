@@ -74,6 +74,7 @@ func main() {
 		ProductFileId: productFileId,
 		Token:         token,
 	}
+	token.Client = client
 	vbx := &vbox.VBox{
 		SSH:    &ssh.SSH{},
 		FS:     fileSystem,

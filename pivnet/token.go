@@ -1,6 +1,7 @@
 package pivnet
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,12 +9,32 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
 
+//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/pivnet FS
+type FS interface {
+	Exists(path string) (bool, error)
+	Read(path string) (contents []byte, err error)
+	Write(path string, contents io.Reader) error
+	Remove(path string) error
+}
+
+//go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/pivnet PivnetClient
+type PivnetClient interface {
+	GetToken(string, string) (string, error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/pivnet UI
+type UI interface {
+	Ask(string) string
+	AskForPassword(string) string
+	Say(string, ...interface{})
+}
+
 type Token struct {
 	Config *config.Config
 	FS     FS
+	Client PivnetClient
 	UI     UI
-
-	token string
+	token  string
 }
 
 func (t *Token) Get() (string, error) {
@@ -41,9 +62,15 @@ func (t *Token) Get() (string, error) {
 		return t.token, nil
 	}
 
-	t.UI.Say("Please retrieve your Pivotal Network API token from:")
-	t.UI.Say("https://network.pivotal.io/users/dashboard/edit-profile")
-	t.token = strings.TrimSpace(t.UI.AskForPassword("API token"))
+	t.UI.Say("Please sign in with your Pivotal Network account.")
+	t.UI.Say("Need an account? Join Pivotal Network: https://network.pivotal.io")
+	username := t.UI.Ask("Email")
+	password := t.UI.AskForPassword("Password")
+
+	if t.token, err = t.Client.GetToken(username, password); err != nil {
+		return "", err
+	}
+
 	return t.token, nil
 }
 

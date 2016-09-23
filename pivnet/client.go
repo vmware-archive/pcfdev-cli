@@ -3,7 +3,6 @@ package pivnet
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -11,32 +10,17 @@ import (
 	"github.com/kennygrant/sanitize"
 )
 
-//go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/pivnet FS
-type FS interface {
-	Exists(path string) (bool, error)
-	Read(path string) (contents []byte, err error)
-	Write(path string, contents io.Reader) error
-	Remove(path string) error
-}
-
-//go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/pivnet UI
-type UI interface {
-	AskForPassword(prompt string) string
-	Say(message string, args ...interface{})
-}
-
 //go:generate mockgen -package mocks -destination mocks/token.go github.com/pivotal-cf/pcfdev-cli/pivnet PivnetToken
 type PivnetToken interface {
 	Get() (token string, err error)
-	Save() error
 	Destroy() error
 }
 
 type Client struct {
+	Token         PivnetToken
 	Host          string
 	ReleaseId     string
 	ProductFileId string
-	Token         PivnetToken
 }
 
 type ReleaseResponse struct {
@@ -196,6 +180,49 @@ func (c *Client) AcceptEULA() error {
 	default:
 		return c.unexpectedResponseError(resp)
 	}
+}
+
+func (c *Client) GetToken(username string, password string) (string, error) {
+	req, err := http.NewRequest(
+		"GET",
+		c.Host+"/api/v2/api_token",
+		nil,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("User-Agent", "PCF-Dev-client")
+
+	query := req.URL.Query()
+	query.Add("username", username)
+	query.Add("password", password)
+	req.URL.RawQuery = query.Encode()
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return "", c.unexpectedResponseError(resp)
+	}
+
+	var apiToken struct {
+		ApiToken string `json:"api_token"`
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if err := json.Unmarshal(body, &apiToken); err != nil {
+		return "", err
+	}
+
+	return apiToken.ApiToken, nil
 }
 
 func (c *Client) unexpectedResponseError(resp *http.Response) error {

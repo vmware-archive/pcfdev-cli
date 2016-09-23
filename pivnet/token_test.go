@@ -17,22 +17,25 @@ import (
 
 var _ = Describe("Pivnet Token", func() {
 	var (
-		mockCtrl *gomock.Controller
-		mockFS   *mocks.MockFS
-		mockUI   *mocks.MockUI
-		token    *pivnet.Token
+		mockCtrl   *gomock.Controller
+		mockFS     *mocks.MockFS
+		mockUI     *mocks.MockUI
+		mockClient *mocks.MockPivnetClient
+		token      *pivnet.Token
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockUI = mocks.NewMockUI(mockCtrl)
+		mockClient = mocks.NewMockPivnetClient(mockCtrl)
 		token = &pivnet.Token{
 			Config: &config.Config{
 				PCFDevHome: "some-pcfdev-home",
 			},
-			FS: mockFS,
-			UI: mockUI,
+			FS:     mockFS,
+			UI:     mockUI,
+			Client: mockClient,
 		}
 	})
 
@@ -94,28 +97,17 @@ var _ = Describe("Pivnet Token", func() {
 			})
 
 			Context("when a token does not exist at the token file path", func() {
-				It("should prompt the user to enter their Pivnet token", func() {
+				It("should prompt the user to enter their Pivnet username and password", func() {
 					gomock.InOrder(
 						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(false, nil),
-						mockUI.EXPECT().Say("Please retrieve your Pivotal Network API token from:"),
-						mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile"),
-						mockUI.EXPECT().AskForPassword("API token").Return("some-user-provided-token"),
+						mockUI.EXPECT().Say("Please sign in with your Pivotal Network account."),
+						mockUI.EXPECT().Say("Need an account? Join Pivotal Network: https://network.pivotal.io"),
+						mockUI.EXPECT().Ask("Email").Return("some-email"),
+						mockUI.EXPECT().AskForPassword("Password").Return("some-password"),
+						mockClient.EXPECT().GetToken("some-email", "some-password").Return("some-token", nil),
 					)
 
-					Expect(token.Get()).To(Equal("some-user-provided-token"))
-				})
-
-				Context("when the user enters a token with whitespace", func() {
-					It("should return a token without whitespace", func() {
-						gomock.InOrder(
-							mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(false, nil),
-							mockUI.EXPECT().Say("Please retrieve your Pivotal Network API token from:"),
-							mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile"),
-							mockUI.EXPECT().AskForPassword("API token").Return("              some-user-provided-token-with-whitespace       "),
-						)
-
-						Expect(token.Get()).To(Equal("some-user-provided-token-with-whitespace"))
-					})
+					Expect(token.Get()).To(Equal("some-token"))
 				})
 			})
 
@@ -123,12 +115,15 @@ var _ = Describe("Pivnet Token", func() {
 				It("should return the same value", func() {
 					gomock.InOrder(
 						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Times(1),
-						mockUI.EXPECT().Say("Please retrieve your Pivotal Network API token from:").Times(1),
-						mockUI.EXPECT().Say("https://network.pivotal.io/users/dashboard/edit-profile").Times(1),
-						mockUI.EXPECT().AskForPassword("API token").Return("some-user-provided-token").Times(1),
+						mockUI.EXPECT().Say("Please sign in with your Pivotal Network account."),
+						mockUI.EXPECT().Say("Need an account? Join Pivotal Network: https://network.pivotal.io"),
+						mockUI.EXPECT().Ask("Email").Return("some-email"),
+						mockUI.EXPECT().AskForPassword("Password").Return("some-password"),
+						mockClient.EXPECT().GetToken("some-email", "some-password").Return("some-token", nil),
 					)
-					Expect(token.Get()).To(Equal("some-user-provided-token"))
-					Expect(token.Get()).To(Equal("some-user-provided-token"))
+
+					Expect(token.Get()).To(Equal("some-token"))
+					Expect(token.Get()).To(Equal("some-token"))
 				})
 			})
 
@@ -148,6 +143,22 @@ var _ = Describe("Pivnet Token", func() {
 					gomock.InOrder(
 						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(true, nil),
 						mockFS.EXPECT().Read(filepath.Join("some-pcfdev-home", "token")).Return(nil, errors.New("some-error")),
+					)
+
+					_, err := token.Get()
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
+
+			Context("when getting the token from Pivnet fails", func() {
+				It("should return an error", func() {
+					gomock.InOrder(
+						mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Times(1),
+						mockUI.EXPECT().Say("Please sign in with your Pivotal Network account."),
+						mockUI.EXPECT().Say("Need an account? Join Pivotal Network: https://network.pivotal.io"),
+						mockUI.EXPECT().Ask("Email").Return("some-email"),
+						mockUI.EXPECT().AskForPassword("Password").Return("some-password"),
+						mockClient.EXPECT().GetToken("some-email", "some-password").Return("", errors.New("some-error")),
 					)
 
 					_, err := token.Get()

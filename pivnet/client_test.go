@@ -603,6 +603,7 @@ var _ = Describe("Pivnet Client", func() {
 				if r.URL.Path == "/api/v2/api_token" {
 					Expect(r.Method).To(Equal("GET"))
 					Expect(r.Header["User-Agent"][0]).To(Equal("PCF-Dev-client"))
+					Expect(r.URL.RawQuery).To(Equal("password=some-password&username=some-username"))
 
 					w.WriteHeader(200)
 					w.Write([]byte(`{"api_token": "some-token"}`))

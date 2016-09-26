@@ -62,6 +62,7 @@ var _ = Describe("Builder", func() {
 				switch u := notCreatedVM.(type) {
 				case *vm.NotCreated:
 					Expect(u.VMConfig.Name).To(Equal("some-vm"))
+					Expect(u.Network).NotTo(BeNil())
 				default:
 					Fail("wrong type")
 				}

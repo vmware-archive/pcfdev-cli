@@ -1,6 +1,11 @@
 package address
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/pivotal-cf/pcfdev-cli/network"
+)
 
 var allowedSubnets = []string{
 	"192.168.11.1",
@@ -26,20 +31,51 @@ var AllowedAddresses = map[string]string{
 	"192.168.99.11": "local9.pcfdev.io",
 }
 
-func DomainForIP(ip string) (string, error) {
+func DomainForIP(ip string) string {
 	domain, ok := AllowedAddresses[ip]
-	if !ok {
-		return "", fmt.Errorf("%s is not one of the allowed PCF Dev ips", ip)
+	if ok {
+		return domain
+	} else {
+		return fmt.Sprintf("%s.xip.io", ip)
 	}
+}
 
-	return domain, nil
+func IPForSubnet(subnet string) string {
+	return subnet + "1"
 }
 
 func SubnetForIP(ip string) (string, error) {
-	_, ok := AllowedAddresses[ip]
-	if !ok {
-		return "", fmt.Errorf("%s is not one of the allowed PCF Dev ips", ip)
+	if !network.IsIPV4(ip) {
+		return "", fmt.Errorf("%s is not a supported IP address", ip)
+	}
+
+	splitIP := strings.Split(ip, ".")
+	splitIP[3] = "1"
+
+	return strings.Join(splitIP, "."), nil
+}
+
+func SubnetForDomain(requestedDomain string) (string, error) {
+	var ip string
+
+	for subnet, domain := range AllowedAddresses {
+		if requestedDomain == domain {
+			ip = subnet
+		}
+	}
+
+	if ip == "" {
+		return "", fmt.Errorf("%s is not one of the allowed PCF Dev domains", requestedDomain)
 	}
 
 	return ip[0 : len(ip)-1], nil
+}
+
+func IsDomainAllowed(domain string) bool {
+	for _, allowedDomain := range AllowedAddresses {
+		if allowedDomain == domain {
+			return true
+		}
+	}
+	return false
 }

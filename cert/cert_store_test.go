@@ -38,7 +38,7 @@ var _ = Describe("CertStore", func() {
 		It("should add the certificate to the system certificate store", func() {
 			gomock.InOrder(
 				mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "cert"), strings.NewReader("some-cert")),
+				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "cert"), strings.NewReader("some-cert"), false),
 				mockSystemStore.EXPECT().Store(filepath.Join("some-temp-dir", "cert")),
 				mockFS.EXPECT().Remove("some-temp-dir"),
 			)
@@ -58,7 +58,7 @@ var _ = Describe("CertStore", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "cert"), strings.NewReader("some-cert")).Return(errors.New("some-error")),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "cert"), strings.NewReader("some-cert"), false).Return(errors.New("some-error")),
 					mockFS.EXPECT().Remove("some-temp-dir"),
 				)
 
@@ -70,7 +70,7 @@ var _ = Describe("CertStore", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "cert"), strings.NewReader("some-cert")),
+					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "cert"), strings.NewReader("some-cert"), false),
 					mockSystemStore.EXPECT().Store(filepath.Join("some-temp-dir", "cert")).Return(errors.New("some-error")),
 					mockFS.EXPECT().Remove("some-temp-dir"),
 				)

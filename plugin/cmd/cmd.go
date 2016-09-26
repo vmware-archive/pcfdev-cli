@@ -29,13 +29,13 @@ type VBox interface {
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd FS
 type FS interface {
+	Write(path string, contents io.Reader, append bool) error
 	Copy(source string, destination string) error
 	Exists(path string) (exists bool, err error)
 	MD5(path string) (md5 string, err error)
 	Read(path string) (contents []byte, err error)
 	Remove(path string) error
 	TempDir() (string, error)
-	Write(path string, contents io.Reader) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/vm_builder.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd VMBuilder

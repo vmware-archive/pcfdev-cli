@@ -77,7 +77,7 @@
                 "chmod +x /var/pcfdev/fake_pcfdev_server",
 
                 "echo '#!/bin/bash' > /var/pcfdev/provision",
-                "echo \"echo 'Waiting for services to start...'\necho -n 'ok' > /var/pcfdev/status\nservice fake_pcfdev_server start\necho 'Services started'\" >> /var/pcfdev/provision",
+                "echo \"echo 'Waiting for services to start...'\necho -n 'ok' > /var/pcfdev/status\nservice fake_pcfdev_server start\necho 'Services started'\necho\" >> /var/pcfdev/provision",
                 "chmod +x /var/pcfdev/provision",
 
                 "echo '#!/bin/bash' > /var/pcfdev/health-check",

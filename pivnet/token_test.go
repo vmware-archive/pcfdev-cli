@@ -185,21 +185,7 @@ var _ = Describe("Pivnet Token", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(true, nil),
 					mockFS.EXPECT().Read(filepath.Join("some-pcfdev-home", "token")).Return([]byte("some-user-provided-token"), nil),
-					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(false, nil),
-					mockFS.EXPECT().Write(filepath.Join("some-pcfdev-home", "token"), strings.NewReader("some-user-provided-token")),
-				)
-
-				token.Get()
-				Expect(token.Save()).To(Succeed())
-			})
-
-			It("should remove old token if it exists", func() {
-				gomock.InOrder(
-					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(true, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-pcfdev-home", "token")).Return([]byte("some-user-provided-token"), nil),
-					mockFS.EXPECT().Exists(filepath.Join("some-pcfdev-home", "token")).Return(true, nil),
-					mockFS.EXPECT().Remove(filepath.Join("some-pcfdev-home", "token")),
-					mockFS.EXPECT().Write(filepath.Join("some-pcfdev-home", "token"), strings.NewReader("some-user-provided-token")),
+					mockFS.EXPECT().Write(filepath.Join("some-pcfdev-home", "token"), strings.NewReader("some-user-provided-token"), false),
 				)
 
 				token.Get()

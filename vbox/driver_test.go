@@ -92,46 +92,6 @@ var _ = Describe("driver", func() {
 		})
 	})
 
-	Describe("#GetVMIP", func() {
-		Context("when interface exists", func() {
-			var interfaceName string
-
-			BeforeEach(func() {
-				var err error
-				interfaceName, err = driver.CreateHostOnlyInterface("192.168.88.1")
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(driver.AttachNetworkInterface(interfaceName, vmName)).To(Succeed())
-			})
-
-			AfterEach(func() {
-				command := exec.Command(vBoxManagePath, "hostonlyif", "remove", interfaceName)
-				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
-			})
-
-			It("should return the ip of the vm", func() {
-				Expect(driver.GetVMIP(vmName)).To(Equal("192.168.88.11"))
-			})
-		})
-
-		Context("when interface does not exist", func() {
-			It("should return an error message", func() {
-				_, err := driver.GetVMIP(vmName)
-				Expect(err).To(MatchError("there is no attached hostonlyif for " + vmName))
-			})
-		})
-
-		Context("when VBoxManage command fails", func() {
-			It("should return the output of the failed command", func() {
-				_, err := driver.GetVMIP("some-bad-vm-name")
-				Expect(err).To(MatchError(ContainSubstring("failed to execute 'VBoxManage showvminfo some-bad-vm-name --machinereadable': exit status 1")))
-				Expect(err).To(MatchError(ContainSubstring("Could not find a registered machine named 'some-bad-vm-name'")))
-			})
-		})
-	})
-
 	Describe("#GetMemory", func() {
 		BeforeEach(func() {
 			Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--memory", "4567").Run()).To(Succeed())

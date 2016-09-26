@@ -30,7 +30,7 @@ type FS interface {
 	MD5(path string) (md5 string, err error)
 	CreateDir(path string) error
 	Length(path string) (bytes int64, err error)
-	Write(path string, contents io.Reader) error
+	Write(path string, contents io.Reader, append bool) error
 	Move(source string, destinationPath string) error
 	DeleteAllExcept(path string, filenames []string) error
 }
@@ -95,7 +95,7 @@ func (d *ConcreteOVADownloader) Download() (string, error) {
 			return err
 		}
 
-		if err := d.FS.Write(d.Config.PartialOVAPath, ova); err != nil {
+		if err := d.FS.Write(d.Config.PartialOVAPath, ova, true); err != nil {
 			return err
 		}
 

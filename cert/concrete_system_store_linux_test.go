@@ -36,7 +36,7 @@ var _ = Describe("ConcreteSystemStore", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().Exists("/etc/ssl/certs/ca-certificates.crt").Return(true, nil),
 					mockFS.EXPECT().Read("path-to-some-cert").Return([]byte("some-cert"), nil),
-					mockFS.EXPECT().Write("/etc/ssl/certs/ca-certificates.crt", bytes.NewReader([]byte("some-cert"))),
+					mockFS.EXPECT().Write("/etc/ssl/certs/ca-certificates.crt", bytes.NewReader([]byte("some-cert")), true),
 				)
 
 				Expect(certStore.Store("path-to-some-cert")).To(Succeed())
@@ -49,7 +49,7 @@ var _ = Describe("ConcreteSystemStore", func() {
 					mockFS.EXPECT().Exists("/etc/ssl/certs/ca-certificates.crt").Return(false, nil),
 					mockFS.EXPECT().Exists("/etc/pki/tls/certs/ca-bundle.crt").Return(true, nil),
 					mockFS.EXPECT().Read("path-to-some-cert").Return([]byte("some-cert"), nil),
-					mockFS.EXPECT().Write("/etc/pki/tls/certs/ca-bundle.crt", bytes.NewReader([]byte("some-cert"))),
+					mockFS.EXPECT().Write("/etc/pki/tls/certs/ca-bundle.crt", bytes.NewReader([]byte("some-cert")), true),
 				)
 
 				Expect(certStore.Store("path-to-some-cert")).To(Succeed())
@@ -63,7 +63,7 @@ var _ = Describe("ConcreteSystemStore", func() {
 					mockFS.EXPECT().Exists("/etc/pki/tls/certs/ca-bundle.crt").Return(false, nil),
 					mockFS.EXPECT().Exists("/etc/ssl/ca-bundle.pem").Return(true, nil),
 					mockFS.EXPECT().Read("path-to-some-cert").Return([]byte("some-cert"), nil),
-					mockFS.EXPECT().Write("/etc/ssl/ca-bundle.pem", bytes.NewReader([]byte("some-cert"))),
+					mockFS.EXPECT().Write("/etc/ssl/ca-bundle.pem", bytes.NewReader([]byte("some-cert")), true),
 				)
 
 				Expect(certStore.Store("path-to-some-cert")).To(Succeed())
@@ -78,7 +78,7 @@ var _ = Describe("ConcreteSystemStore", func() {
 					mockFS.EXPECT().Exists("/etc/ssl/ca-bundle.pem").Return(false, nil),
 					mockFS.EXPECT().Exists("/etc/pki/tls/cacert.pem").Return(true, nil),
 					mockFS.EXPECT().Read("path-to-some-cert").Return([]byte("some-cert"), nil),
-					mockFS.EXPECT().Write("/etc/pki/tls/cacert.pem", bytes.NewReader([]byte("some-cert"))),
+					mockFS.EXPECT().Write("/etc/pki/tls/cacert.pem", bytes.NewReader([]byte("some-cert")), true),
 				)
 
 				Expect(certStore.Store("path-to-some-cert")).To(Succeed())
@@ -122,7 +122,7 @@ var _ = Describe("ConcreteSystemStore", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().Exists("/etc/ssl/certs/ca-certificates.crt").Return(true, nil),
 					mockFS.EXPECT().Read("path-to-some-cert").Return([]byte("some-cert"), nil),
-					mockFS.EXPECT().Write("/etc/ssl/certs/ca-certificates.crt", bytes.NewReader([]byte("some-cert"))).Return(errors.New("some-error")),
+					mockFS.EXPECT().Write("/etc/ssl/certs/ca-certificates.crt", bytes.NewReader([]byte("some-cert")), true).Return(errors.New("some-error")),
 				)
 
 				Expect(certStore.Store("path-to-some-cert")).To(MatchError("some-error"))

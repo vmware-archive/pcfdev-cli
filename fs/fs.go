@@ -28,8 +28,15 @@ func (fs *FS) Read(path string) (contents []byte, err error) {
 	return ioutil.ReadFile(path)
 }
 
-func (fs *FS) Write(path string, contents io.Reader) error {
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+func (fs *FS) Write(path string, contents io.Reader, append bool) error {
+	var flag int
+	if append {
+		flag = os.O_APPEND | os.O_WRONLY | os.O_CREATE
+	} else {
+		flag = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
+	}
+
+	file, err := os.OpenFile(path, flag, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %s", err)
 	}
@@ -126,7 +133,7 @@ func (fs *FS) Copy(source string, destination string) error {
 	}
 	os.Remove(destination)
 
-	return fs.Write(destination, sourceFile)
+	return fs.Write(destination, sourceFile, true)
 }
 
 func (fs *FS) Extract(archivePath string, destinationPath string, pattern string) error {
@@ -148,7 +155,7 @@ func (fs *FS) Extract(archivePath string, destinationPath string, pattern string
 		}
 		matches := regex.FindStringSubmatch(header.Name)
 		if len(matches) > 0 {
-			fs.Write(destinationPath, reader)
+			fs.Write(destinationPath, reader, true)
 			return nil
 		}
 	}

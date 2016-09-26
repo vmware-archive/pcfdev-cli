@@ -12,7 +12,7 @@ type FS interface {
 	Read(path string) (contents []byte, err error)
 	Remove(path string) error
 	TempDir() (string, error)
-	Write(path string, contents io.Reader) error
+	Write(path string, contents io.Reader, append bool) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/system_store.go github.com/pivotal-cf/pcfdev-cli/cert SystemStore
@@ -38,7 +38,7 @@ func (c *CertStore) Store(cert string) error {
 	}
 	defer c.FS.Remove(tempDir)
 
-	if err := c.FS.Write(filepath.Join(tempDir, "cert"), strings.NewReader(cert)); err != nil {
+	if err := c.FS.Write(filepath.Join(tempDir, "cert"), strings.NewReader(cert), false); err != nil {
 		return err
 	}
 

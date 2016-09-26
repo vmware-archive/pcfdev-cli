@@ -17,7 +17,7 @@ func (c *ConcreteSystemStore) Store(path string) error {
 		return err
 	}
 
-	if err := c.FS.Write(caCertsPath, bytes.NewReader(contents)); err != nil {
+	if err := c.FS.Write(caCertsPath, bytes.NewReader(contents), true); err != nil {
 		return err
 	}
 

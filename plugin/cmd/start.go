@@ -32,6 +32,8 @@ func (s *StartCmd) Parse(args []string) error {
 	s.flagContext.NewStringFlag("o", "", "<path to custom ova>")
 	s.flagContext.NewStringFlag("r", "", "<docker registries>")
 	s.flagContext.NewStringFlag("s", "", "<services to start with>")
+	s.flagContext.NewStringFlag("d", "", "<domain>")
+	s.flagContext.NewStringFlag("i", "", "<IP>")
 	if err := parse(s.flagContext, args, START_ARGS); err != nil {
 		return err
 	}
@@ -44,6 +46,8 @@ func (s *StartCmd) Parse(args []string) error {
 		Registries:  s.flagContext.String("r"),
 		Services:    s.flagContext.String("s"),
 		Target:      s.flagContext.Bool("t"),
+		Domain:      s.flagContext.String("d"),
+		IP:          s.flagContext.String("i"),
 	}
 	return nil
 }

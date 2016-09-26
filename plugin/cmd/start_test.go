@@ -65,6 +65,8 @@ var _ = Describe("StartCmd", func() {
 					"-r", "some-private-registry,some-other-private-registry",
 					"-s", "some-service,some-other-service",
 					"-t",
+					"-i", "some-ip",
+					"-d", "some-domain",
 				})).To(Succeed())
 
 				Expect(startCmd.Opts.CPUs).To(Equal(2))
@@ -74,6 +76,8 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Opts.Registries).To(Equal("some-private-registry,some-other-private-registry"))
 				Expect(startCmd.Opts.Services).To(Equal("some-service,some-other-service"))
 				Expect(startCmd.Opts.Target).To(BeTrue())
+				Expect(startCmd.Opts.Domain).To(Equal("some-domain"))
+				Expect(startCmd.Opts.IP).To(Equal("some-ip"))
 			})
 		})
 
@@ -83,10 +87,12 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Opts.CPUs).To(Equal(0))
 				Expect(startCmd.Opts.Memory).To(Equal(uint64(0)))
 				Expect(startCmd.Opts.NoProvision).To(BeFalse())
-				Expect(startCmd.Opts.OVAPath).To(Equal(""))
-				Expect(startCmd.Opts.Registries).To(Equal(""))
-				Expect(startCmd.Opts.Services).To(Equal(""))
+				Expect(startCmd.Opts.OVAPath).To(BeEmpty())
+				Expect(startCmd.Opts.Registries).To(BeEmpty())
+				Expect(startCmd.Opts.Services).To(BeEmpty())
 				Expect(startCmd.Opts.Target).To(BeFalse())
+				Expect(startCmd.Opts.Domain).To(BeEmpty())
+				Expect(startCmd.Opts.IP).To(BeEmpty())
 			})
 		})
 

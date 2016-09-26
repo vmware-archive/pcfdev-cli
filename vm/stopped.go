@@ -42,6 +42,12 @@ func (s *Stopped) VerifyStartOpts(opts *StartOpts) error {
 	if opts.Registries != "" {
 		return errors.New("private registries cannot be changed once the vm has been created")
 	}
+	if opts.Domain != "" {
+		return errors.New("the -d flag cannot be used if the VM has already been created")
+	}
+	if opts.IP != "" {
+		return errors.New("the -i flag cannot be used if the VM has already been created")
+	}
 	if s.VMConfig.Memory > s.Config.FreeMemory {
 		if !s.UI.Confirm(fmt.Sprintf("Less than %d MB of free memory detected, continue (y/N): ", s.VMConfig.Memory)) {
 			return errors.New("user declined to continue, exiting")
@@ -88,6 +94,14 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		IP:         s.VMConfig.IP,
 		Services:   strings.Join(services, ","),
 		Registries: registries,
+	}
+
+	if opts.IP != "" {
+		provisionConfig.IP = opts.IP
+	}
+
+	if opts.Domain != "" {
+		provisionConfig.Domain = opts.Domain
 	}
 
 	data, err := json.Marshal(provisionConfig)

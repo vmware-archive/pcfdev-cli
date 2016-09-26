@@ -13,6 +13,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/debug"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
+	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/runner"
 	"github.com/pivotal-cf/pcfdev-cli/ui"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
@@ -67,6 +68,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			Config:   b.Config,
 			FS:       b.FS,
 			VMConfig: vmConfig,
+			Network:  &network.Network{},
 		}, nil
 	case vbox.StatusRunning:
 		if output, err := b.healthcheck(vmConfig.IP, vmConfig.SSHPort); strings.TrimSpace(output) != "ok" || err != nil {

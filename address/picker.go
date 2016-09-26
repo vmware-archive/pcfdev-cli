@@ -3,6 +3,7 @@ package address
 import (
 	"fmt"
 
+	cfg "github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 )
 
@@ -21,7 +22,48 @@ type Picker struct {
 	Driver  Driver
 }
 
-func (p *Picker) SelectAvailableInterface(reusableInterfaces []*network.Interface) (*network.Interface, error) {
+func (p *Picker) SelectAvailableInterface(reusableInterfaces []*network.Interface, config *cfg.VMConfig) (*cfg.NetworkConfig, error) {
+	if config.IP != "" || config.Domain != "" {
+		var subnetIP, ip, domain string
+		var err error
+
+		if config.IP != "" {
+			subnetIP, err = SubnetForIP(config.IP)
+			if err != nil {
+				return nil, err
+			}
+			ip = config.IP
+		} else {
+			subnetIP, err = SubnetForDomain(config.Domain)
+			if err != nil {
+				return nil, err
+			}
+			ip = IPForSubnet(subnetIP)
+		}
+
+		if config.Domain != "" {
+			domain = config.Domain
+		} else {
+			domain = DomainForIP(ip)
+		}
+
+		var networkInterface *network.Interface
+		if addrs := p.addrsInSet(subnetIP, reusableInterfaces); len(addrs) > 0 {
+			networkInterface = addrs[0]
+		} else {
+			networkInterface = &network.Interface{
+				IP:     subnetIP,
+				Exists: false,
+			}
+		}
+
+		return &cfg.NetworkConfig{
+			VMIP:      ip,
+			VMDomain:  domain,
+			Interface: networkInterface,
+		}, nil
+	}
+
 	allInterfaces, err := p.Network.Interfaces()
 	if err != nil {
 		return nil, err
@@ -33,11 +75,17 @@ func (p *Picker) SelectAvailableInterface(reusableInterfaces []*network.Interfac
 		}
 
 		matchingAddrs := p.addrsInSet(subnetIP, reusableInterfaces)
+		domain := DomainForIP(IPForSubnet(subnetIP))
+
 		switch len(matchingAddrs) {
 		case 0:
-			return &network.Interface{
-				IP:     subnetIP,
-				Exists: false,
+			return &cfg.NetworkConfig{
+				VMIP:     IPForSubnet(subnetIP),
+				VMDomain: domain,
+				Interface: &network.Interface{
+					IP:     subnetIP,
+					Exists: false,
+				},
 			}, nil
 		case 1:
 			inUse, err := p.Driver.IsInterfaceInUse(matchingAddrs[0].Name)
@@ -49,7 +97,11 @@ func (p *Picker) SelectAvailableInterface(reusableInterfaces []*network.Interfac
 				continue
 			}
 
-			return matchingAddrs[0], nil
+			return &cfg.NetworkConfig{
+				VMIP:      IPForSubnet(subnetIP),
+				VMDomain:  domain,
+				Interface: matchingAddrs[0],
+			}, nil
 		}
 	}
 

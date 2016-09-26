@@ -5,6 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	config "github.com/pivotal-cf/pcfdev-cli/config"
 	network "github.com/pivotal-cf/pcfdev-cli/network"
 )
 
@@ -29,13 +30,13 @@ func (_m *MockNetworkPicker) EXPECT() *_MockNetworkPickerRecorder {
 	return _m.recorder
 }
 
-func (_m *MockNetworkPicker) SelectAvailableInterface(_param0 []*network.Interface) (*network.Interface, error) {
-	ret := _m.ctrl.Call(_m, "SelectAvailableInterface", _param0)
-	ret0, _ := ret[0].(*network.Interface)
+func (_m *MockNetworkPicker) SelectAvailableInterface(_param0 []*network.Interface, _param1 *config.VMConfig) (*config.NetworkConfig, error) {
+	ret := _m.ctrl.Call(_m, "SelectAvailableInterface", _param0, _param1)
+	ret0, _ := ret[0].(*config.NetworkConfig)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockNetworkPickerRecorder) SelectAvailableInterface(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SelectAvailableInterface", arg0)
+func (_mr *_MockNetworkPickerRecorder) SelectAvailableInterface(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SelectAvailableInterface", arg0, arg1)
 }

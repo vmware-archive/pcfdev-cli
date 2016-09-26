@@ -13,7 +13,7 @@ import (
 type FS interface {
 	Exists(path string) (bool, error)
 	Read(path string) (contents []byte, err error)
-	Write(path string, contents io.Reader) error
+	Write(path string, contents io.Reader, append bool) error
 	Remove(path string) error
 }
 
@@ -79,17 +79,7 @@ func (t *Token) Save() error {
 		return nil
 	}
 
-	exists, err := t.FS.Exists(filepath.Join(t.Config.PCFDevHome, "token"))
-	if err != nil {
-		return err
-	}
-	if exists {
-		if err := t.FS.Remove(filepath.Join(t.Config.PCFDevHome, "token")); err != nil {
-			return err
-		}
-	}
-
-	return t.FS.Write(filepath.Join(t.Config.PCFDevHome, "token"), strings.NewReader(t.token))
+	return t.FS.Write(filepath.Join(t.Config.PCFDevHome, "token"), strings.NewReader(t.token), false)
 }
 
 func (t *Token) Destroy() error {

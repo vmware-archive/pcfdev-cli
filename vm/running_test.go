@@ -119,6 +119,22 @@ var _ = Describe("Running", func() {
 				})).To(MatchError("services cannot be changed once the vm has been created"))
 			})
 		})
+
+		Context("when desired IP is passed", func() {
+			It("should return an error", func() {
+				Expect(runningVM.VerifyStartOpts(&vm.StartOpts{
+					IP: "some-ip",
+				})).To(MatchError("the -i flag cannot be used if the VM has already been created"))
+			})
+		})
+
+		Context("when desired domain is passed", func() {
+			It("should return an error", func() {
+				Expect(runningVM.VerifyStartOpts(&vm.StartOpts{
+					Domain: "some-domain",
+				})).To(MatchError("the -d flag cannot be used if the VM has already been created"))
+			})
+		})
 	})
 
 	Describe("Start", func() {

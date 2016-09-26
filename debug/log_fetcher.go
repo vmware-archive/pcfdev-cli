@@ -11,7 +11,7 @@ import (
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/debug FS
 type FS interface {
-	Write(path string, contents io.Reader) error
+	Write(path string, contents io.Reader, append bool) error
 	Compress(name string, path string, contentPaths []string) error
 	TempDir() (tempDir string, err error)
 }
@@ -126,6 +126,7 @@ func (l *LogFetcher) FetchLogs() error {
 			if err := l.FS.Write(
 				filepath.Join(dir, logFile.filename),
 				strings.NewReader(output),
+				false,
 			); err != nil {
 				return err
 			}
@@ -143,6 +144,7 @@ func (l *LogFetcher) FetchLogs() error {
 			if err := l.FS.Write(
 				filepath.Join(dir, logFile.filename),
 				strings.NewReader(scrubbedOutput),
+				false,
 			); err != nil {
 				return err
 			}

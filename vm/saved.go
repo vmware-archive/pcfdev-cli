@@ -27,6 +27,12 @@ func (s *Saved) VerifyStartOpts(opts *StartOpts) error {
 	if opts.Services != "" {
 		return errors.New("services cannot be changed once the vm has been created")
 	}
+	if opts.Domain != "" {
+		return errors.New("the -d flag cannot be used if the VM has already been created")
+	}
+	if opts.IP != "" {
+		return errors.New("the -i flag cannot be used if the VM has already been created")
+	}
 	if err := s.checkMemory(); err != nil {
 		return err
 	}

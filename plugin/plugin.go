@@ -104,6 +104,8 @@ func (p *Plugin) GetMetadata() cfplugin.PluginMetadata {
 SUBCOMMANDS:
    start                             Start the PCF Dev VM. When creating a VM, http proxy env vars are respected.
       [-c number-of-cores]           Number of processor cores used by VM. Default: number of physical cores.
+      [-d domain]                    Specify the domain that the PCF Dev VM will occupy.
+      [-i ip-address]                Specify the IP Address that the PCF Dev VM will occupy.
       [-k]                           Import VM certificates into host's trusted certificate store.
       [-m memory-in-mb]              Memory to allocate for VM. Default: half of total memory, max 4 GB, max 8 GB with SCS.
       [-r registry1,registry2,...]   Docker registries that PCF Dev will use without SSL validation. Specify in 'host:port' format.

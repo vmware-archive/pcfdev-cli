@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/address/mocks"
+	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 )
 
@@ -36,18 +37,187 @@ var _ = Describe("Picker", func() {
 	})
 
 	Describe("#SelectAvailableInterface", func() {
+		Context("when there is a desired ip passed in", func() {
+			It("should return an interface with that IP", func() {
+				vboxInterfaces := []*network.Interface{}
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.11.11",
+					VMDomain: "local.pcfdev.io",
+					Interface: &network.Interface{
+						IP:     "192.168.11.1",
+						Exists: false,
+					},
+				}
+
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{
+					IP: "192.168.11.11",
+				})).To(Equal(expectedNetworkConfig))
+			})
+		})
+
+		Context("when there is an error determining the subnet of a desired ip", func() {
+			It("should return an error", func() {
+				vboxInterfaces := []*network.Interface{}
+				_, err := picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{
+					IP:     "some-bad-ip",
+					Domain: "some-domain",
+				})
+
+				Expect(err).To(MatchError("some-bad-ip is not a supported IP address"))
+			})
+		})
+
+		Context("when there is a desired invalid ip passed", func() {
+			It("should return an error", func() {
+				vboxInterfaces := []*network.Interface{}
+				_, err := picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{
+					IP: "some-bad-ip",
+				})
+
+				Expect(err).To(MatchError("some-bad-ip is not a supported IP address"))
+			})
+		})
+
+		Context("when there is a desired ip passed in and it is in use", func() {
+			It("should return an interface with the corresponding IP that exists", func() {
+				vboxInterfaces := []*network.Interface{
+					&network.Interface{
+						Name:   "some-net-iface",
+						IP:     "192.168.11.1",
+						Exists: true,
+					},
+				}
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.11.11",
+					VMDomain: "local.pcfdev.io",
+					Interface: &network.Interface{
+						Name:   "some-net-iface",
+						IP:     "192.168.11.1",
+						Exists: true,
+					},
+				}
+
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{
+					IP: "192.168.11.11",
+				})).To(Equal(expectedNetworkConfig))
+			})
+		})
+
+		Context("when there is a desired PCFDev domain passed in", func() {
+			It("should return an interface with the corresponding IP", func() {
+				vboxInterfaces := []*network.Interface{}
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.22.11",
+					VMDomain: "local2.pcfdev.io",
+					Interface: &network.Interface{
+						IP:     "192.168.22.1",
+						Exists: false,
+					},
+				}
+
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{
+					Domain: "local2.pcfdev.io",
+				})).To(Equal(expectedNetworkConfig))
+			})
+		})
+
+		Context("when there is a desired PCFDev domain passed in and the corresponding ip already exists", func() {
+			It("should return an interface with the corresponding IP that exists", func() {
+				vboxInterfaces := []*network.Interface{
+					&network.Interface{
+						Name:   "some-net-iface",
+						IP:     "192.168.22.1",
+						Exists: true,
+					},
+				}
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.22.11",
+					VMDomain: "local2.pcfdev.io",
+					Interface: &network.Interface{
+						Name:   "some-net-iface",
+						IP:     "192.168.22.1",
+						Exists: true,
+					},
+				}
+
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{
+					Domain: "local2.pcfdev.io",
+				})).To(Equal(expectedNetworkConfig))
+			})
+		})
+
+		Context("when there is a desired domain and IP passed in", func() {
+			It("should return an interface with the corresponding IP that does not exist", func() {
+				vboxInterfaces := []*network.Interface{}
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.99.99",
+					VMDomain: "some-domain",
+					Interface: &network.Interface{
+						IP:     "192.168.99.1",
+						Exists: false,
+					},
+				}
+
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{
+					Domain: "some-domain",
+					IP:     "192.168.99.99",
+				})).To(Equal(expectedNetworkConfig))
+			})
+		})
+
+		Context("when there is a desired domain and IP passed in and the corresponding ip already exists", func() {
+			It("should return an interface with the corresponding IP that exists", func() {
+				vboxInterfaces := []*network.Interface{
+					&network.Interface{
+						Name:   "some-net-iface",
+						IP:     "192.168.22.1",
+						Exists: true,
+					},
+				}
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.22.11",
+					VMDomain: "some-domain",
+					Interface: &network.Interface{
+						IP:     "192.168.22.1",
+						Name:   "some-net-iface",
+						Exists: true,
+					},
+				}
+
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{
+					Domain: "some-domain",
+					IP:     "192.168.22.11",
+				})).To(Equal(expectedNetworkConfig))
+			})
+		})
+
+		Context("when there is a desired non-PCFDev domain passed in", func() {
+			It("should return an error - even though this code path should never be reached", func() {
+				vboxInterfaces := []*network.Interface{}
+
+				_, err := picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{
+					Domain: "some-bad-domain",
+				})
+				Expect(err).To(MatchError("some-bad-domain is not one of the allowed PCF Dev domains"))
+			})
+		})
+
 		Context("when there is no available network interface", func() {
-			It("should return return a new interface on 192.168.11.11", func() {
+			It("should return a new interface on 192.168.11.11", func() {
 				vboxInterfaces := []*network.Interface{}
 				allInterfaces := vboxInterfaces
-				expectedInterface := &network.Interface{
-					IP:     "192.168.11.1",
-					Exists: false,
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.11.11",
+					VMDomain: "local.pcfdev.io",
+					Interface: &network.Interface{
+						IP:     "192.168.11.1",
+						Exists: false,
+					},
 				}
 
 				mockNetwork.EXPECT().Interfaces().Return(allInterfaces, nil)
 
-				Expect(picker.SelectAvailableInterface(vboxInterfaces)).To(Equal(expectedInterface))
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{})).To(Equal(expectedNetworkConfig))
 			})
 		})
 
@@ -62,14 +232,18 @@ var _ = Describe("Picker", func() {
 						Exists:          true,
 					},
 				)
-				expectedInterface := &network.Interface{
-					IP:     "192.168.22.1",
-					Exists: false,
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.22.11",
+					VMDomain: "local2.pcfdev.io",
+					Interface: &network.Interface{
+						IP:     "192.168.22.1",
+						Exists: false,
+					},
 				}
 
 				mockNetwork.EXPECT().Interfaces().Return(allInterfaces, nil)
 
-				Expect(picker.SelectAvailableInterface(vboxInterfaces)).To(Equal(expectedInterface))
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{})).To(Equal(expectedNetworkConfig))
 			})
 		})
 
@@ -91,14 +265,18 @@ var _ = Describe("Picker", func() {
 						Exists:          true,
 					},
 				)
-				expectedInterface := &network.Interface{
-					IP:     "192.168.22.1",
-					Exists: false,
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.22.11",
+					VMDomain: "local2.pcfdev.io",
+					Interface: &network.Interface{
+						IP:     "192.168.22.1",
+						Exists: false,
+					},
 				}
 
 				mockNetwork.EXPECT().Interfaces().Return(allInterfaces, nil)
 
-				Expect(picker.SelectAvailableInterface(vboxInterfaces)).To(Equal(expectedInterface))
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{})).To(Equal(expectedNetworkConfig))
 			})
 		})
 
@@ -119,14 +297,18 @@ var _ = Describe("Picker", func() {
 					},
 				}
 				allInterfaces := vboxInterfaces
-				expectedInterface := &network.Interface{
-					IP:     "192.168.22.1",
-					Exists: false,
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.22.11",
+					VMDomain: "local2.pcfdev.io",
+					Interface: &network.Interface{
+						IP:     "192.168.22.1",
+						Exists: false,
+					},
 				}
 
 				mockNetwork.EXPECT().Interfaces().Return(allInterfaces, nil)
 
-				Expect(picker.SelectAvailableInterface(vboxInterfaces)).To(Equal(expectedInterface))
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{})).To(Equal(expectedNetworkConfig))
 			})
 		})
 
@@ -147,7 +329,16 @@ var _ = Describe("Picker", func() {
 					},
 				}
 				allInterfaces := vboxInterfaces
-				expectedInterface := vboxInterfaces[1]
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.22.11",
+					VMDomain: "local2.pcfdev.io",
+					Interface: &network.Interface{
+						Name:            "some-other-vbox-interface",
+						IP:              "192.168.22.1",
+						HardwareAddress: "some-other-vbox-hardware-address",
+						Exists:          true,
+					},
+				}
 
 				gomock.InOrder(
 					mockNetwork.EXPECT().Interfaces().Return(allInterfaces, nil),
@@ -155,7 +346,7 @@ var _ = Describe("Picker", func() {
 					mockDriver.EXPECT().IsInterfaceInUse("some-other-vbox-interface").Return(false, nil),
 				)
 
-				Expect(picker.SelectAvailableInterface(vboxInterfaces)).To(Equal(expectedInterface))
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{})).To(Equal(expectedNetworkConfig))
 			})
 		})
 
@@ -176,9 +367,13 @@ var _ = Describe("Picker", func() {
 					},
 				}
 				allInterfaces := vboxInterfaces
-				expectedInterface := &network.Interface{
-					IP:     "192.168.33.1",
-					Exists: false,
+				expectedNetworkConfig := &config.NetworkConfig{
+					VMIP:     "192.168.33.11",
+					VMDomain: "local3.pcfdev.io",
+					Interface: &network.Interface{
+						IP:     "192.168.33.1",
+						Exists: false,
+					},
 				}
 
 				gomock.InOrder(
@@ -187,7 +382,7 @@ var _ = Describe("Picker", func() {
 					mockDriver.EXPECT().IsInterfaceInUse("some-other-vbox-interface").Return(true, nil),
 				)
 
-				Expect(picker.SelectAvailableInterface(vboxInterfaces)).To(Equal(expectedInterface))
+				Expect(picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{})).To(Equal(expectedNetworkConfig))
 			})
 		})
 
@@ -207,7 +402,7 @@ var _ = Describe("Picker", func() {
 
 				mockNetwork.EXPECT().Interfaces().Return(allInterfaces, nil)
 
-				_, err := picker.SelectAvailableInterface([]*network.Interface{})
+				_, err := picker.SelectAvailableInterface([]*network.Interface{}, &config.VMConfig{})
 				Expect(err).To(MatchError("all allowed network interfaces are currently taken"))
 			})
 		})
@@ -216,7 +411,7 @@ var _ = Describe("Picker", func() {
 			It("should return the error", func() {
 				mockNetwork.EXPECT().Interfaces().Return(nil, errors.New("some-error"))
 
-				_, err := picker.SelectAvailableInterface([]*network.Interface{})
+				_, err := picker.SelectAvailableInterface([]*network.Interface{}, &config.VMConfig{})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})
@@ -238,7 +433,7 @@ var _ = Describe("Picker", func() {
 					mockDriver.EXPECT().IsInterfaceInUse("some-vbox-interface").Return(false, errors.New("some-error")),
 				)
 
-				_, err := picker.SelectAvailableInterface(vboxInterfaces)
+				_, err := picker.SelectAvailableInterface(vboxInterfaces, &config.VMConfig{})
 				Expect(err).To(MatchError("some-error"))
 			})
 		})

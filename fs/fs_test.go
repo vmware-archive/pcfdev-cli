@@ -64,32 +64,47 @@ var _ = Describe("Filesystem", func() {
 		Context("when path is valid", func() {
 			It("should create a file with path and writes contents", func() {
 				readCloser := ioutil.NopCloser(strings.NewReader("some-contents"))
-				Expect(fs.Write(filepath.Join(tmpDir, "some-file"), readCloser)).To(Succeed())
+				Expect(fs.Write(filepath.Join(tmpDir, "some-file"), readCloser, false)).To(Succeed())
 				data, err := ioutil.ReadFile(filepath.Join(tmpDir, "some-file"))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(data)).To(Equal("some-contents"))
 			})
 		})
 
-		Context("when file exists already", func() {
+		Context("when file exists already and append is true", func() {
 			BeforeEach(func() {
-				Expect(fs.Write(filepath.Join(tmpDir, "some-file"), ioutil.NopCloser(strings.NewReader("some-")))).To(Succeed())
+				Expect(fs.Write(filepath.Join(tmpDir, "some-file"), ioutil.NopCloser(strings.NewReader("some-")), true)).To(Succeed())
 			})
 
 			It("should append to file", func() {
 				readCloser := ioutil.NopCloser(strings.NewReader("contents"))
-				Expect(fs.Write(filepath.Join(tmpDir, "some-file"), readCloser)).To(Succeed())
+				Expect(fs.Write(filepath.Join(tmpDir, "some-file"), readCloser, true)).To(Succeed())
 				data, err := ioutil.ReadFile(filepath.Join(tmpDir, "some-file"))
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(string(data)).To(Equal("some-contents"))
+			})
+		})
+
+		Context("when file exists already and append is false", func() {
+			BeforeEach(func() {
+				Expect(fs.Write(filepath.Join(tmpDir, "some-file"), ioutil.NopCloser(strings.NewReader("some content that will be overwritten")), false)).To(Succeed())
+			})
+
+			It("should overwrite the file", func() {
+				readCloser := ioutil.NopCloser(strings.NewReader("new contents"))
+				Expect(fs.Write(filepath.Join(tmpDir, "some-file"), readCloser, false)).To(Succeed())
+				data, err := ioutil.ReadFile(filepath.Join(tmpDir, "some-file"))
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(string(data)).To(Equal("new contents"))
 			})
 		})
 
 		Context("when path is invalid", func() {
 			It("should return an error", func() {
 				readCloser := ioutil.NopCloser(strings.NewReader("some-contents"))
-				err := fs.Write(filepath.Join("some-bad-dir", "some-other-file"), readCloser)
+				err := fs.Write(filepath.Join("some-bad-dir", "some-other-file"), readCloser, false)
 				Expect(err.Error()).To(ContainSubstring("failed to open file:"))
 			})
 		})

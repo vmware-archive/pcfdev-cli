@@ -22,6 +22,7 @@ var _ = Describe("Not Created", func() {
 		mockBuilder  *mocks.MockBuilder
 		mockStopped  *mocks.MockVM
 		mockFS       *mocks.MockFS
+		mockNetwork  *mocks.MockNetwork
 		notCreatedVM vm.NotCreated
 		conf         *config.Config
 	)
@@ -33,6 +34,7 @@ var _ = Describe("Not Created", func() {
 		mockBuilder = mocks.NewMockBuilder(mockCtrl)
 		mockStopped = mocks.NewMockVM(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
+		mockNetwork = mocks.NewMockNetwork(mockCtrl)
 		conf = &config.Config{
 			DefaultCPUs: func() (int, error) { return 0, nil },
 		}
@@ -47,6 +49,7 @@ var _ = Describe("Not Created", func() {
 			Builder: mockBuilder,
 			FS:      mockFS,
 			Config:  conf,
+			Network: mockNetwork,
 		}
 	})
 
@@ -104,6 +107,62 @@ var _ = Describe("Not Created", func() {
 						Memory:   uint64(3500),
 						Services: "all",
 					})).To(MatchError("PCF Dev requires at least 6000 MB of memory to run"))
+				})
+			})
+
+			Context("when a colliding IP is selected", func() {
+				It("should show a warning about the colliding IP", func() {
+					mockNetwork.EXPECT().HasIPCollision("192.168.33.1").Return(true, nil)
+					mockUI.EXPECT().Say("Warning: the chosen PCF Dev VM IP address may be in use by another VM or device.")
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						IP: "192.168.33.11",
+					})).To(Succeed())
+				})
+			})
+
+			Context("when a colliding ip is not a valid IP", func() {
+				It("should return an error", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						IP: "some-ip",
+					})).To(MatchError("some-ip is not a supported IP address"))
+				})
+			})
+
+			Context("when there is an error decidiing if there is a colliding IP", func() {
+				It("should return an error", func() {
+					mockNetwork.EXPECT().HasIPCollision("192.168.11.1").Return(false, errors.New("some-error"))
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						IP: "192.168.11.11",
+					})).To(MatchError("some-error"))
+				})
+			})
+
+			Context("when non-standard domain and no IP is passed", func() {
+				It("should return an error", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Domain: "some-bad-domain",
+					})).To(MatchError("some-bad-domain is not one of the allowed PCF Dev domains"))
+				})
+			})
+
+			Context("when non-standard domain and IP is passed", func() {
+				It("should succeed", func() {
+					mockNetwork.EXPECT().HasIPCollision("192.168.11.1").Return(false, nil)
+
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						IP:     "192.168.11.11",
+						Domain: "some-non-standard-domain",
+					})).To(Succeed())
+				})
+			})
+
+			Context("when a valid domain is passed", func() {
+				It("should succeed", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Domain: "local.pcfdev.io",
+					})).To(Succeed())
 				})
 			})
 
@@ -340,6 +399,8 @@ var _ = Describe("Not Created", func() {
 					CPUs:     3,
 					OVAPath:  "some-ova-path",
 					Services: "all",
+					IP:       "some-ip",
+					Domain:   "some-domain",
 				}
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Allocating 4000 MB out of 8000 MB total system memory (5000 MB free)."),
@@ -349,6 +410,8 @@ var _ = Describe("Not Created", func() {
 						Memory:  uint64(4000),
 						CPUs:    3,
 						OVAPath: "some-ova-path",
+						IP:      "some-ip",
+						Domain:  "some-domain",
 					}),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockStopped, nil),
 					mockStopped.EXPECT().Start(startOpts),

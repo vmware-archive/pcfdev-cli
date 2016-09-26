@@ -66,6 +66,22 @@ var _ = Describe("Stopped", func() {
 	})
 
 	Describe("VerifyStartOpts", func() {
+		Context("when desired IP is passed", func() {
+			It("should return an error", func() {
+				Expect(stoppedVM.VerifyStartOpts(&vm.StartOpts{
+					IP: "some-ip",
+				})).To(MatchError("the -i flag cannot be used if the VM has already been created"))
+			})
+		})
+
+		Context("when desired domain is passed", func() {
+			It("should return an error", func() {
+				Expect(stoppedVM.VerifyStartOpts(&vm.StartOpts{
+					Domain: "some-domain",
+				})).To(MatchError("the -d flag cannot be used if the VM has already been created"))
+			})
+		})
+
 		Context("when desired memory is passed", func() {
 			It("should return an error", func() {
 				Expect(stoppedVM.VerifyStartOpts(&vm.StartOpts{
@@ -291,6 +307,38 @@ var _ = Describe("Stopped", func() {
 				)
 
 				stoppedVM.Start(&vm.StartOpts{})
+			})
+		})
+
+		Context("when ip is specified specified", func() {
+			It("should start the vm with the custom ip", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Starting VM..."),
+					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockSSH.EXPECT().RunSSHCommand("echo "+
+						`'{"domain":"some-domain","ip":"some-custom-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{IP: "some-custom-ip"}),
+				)
+
+				stoppedVM.Start(&vm.StartOpts{IP: "some-custom-ip"})
+			})
+		})
+
+		Context("when domain is specified specified", func() {
+			It("should start the vm with the custom domain", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Starting VM..."),
+					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockSSH.EXPECT().RunSSHCommand("echo "+
+						`'{"domain":"some-custom-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						"127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Domain: "some-custom-domain"}),
+				)
+
+				stoppedVM.Start(&vm.StartOpts{Domain: "some-custom-domain"})
 			})
 		})
 

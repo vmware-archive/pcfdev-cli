@@ -72,12 +72,12 @@ func (_mr *_MockFSRecorder) TempDir() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TempDir")
 }
 
-func (_m *MockFS) Write(_param0 string, _param1 io.Reader) error {
-	ret := _m.ctrl.Call(_m, "Write", _param0, _param1)
+func (_m *MockFS) Write(_param0 string, _param1 io.Reader, _param2 bool) error {
+	ret := _m.ctrl.Call(_m, "Write", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockFSRecorder) Write(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Write", arg0, arg1)
+func (_mr *_MockFSRecorder) Write(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Write", arg0, arg1, arg2)
 }

@@ -60,7 +60,7 @@ var _ = BeforeSuite(func() {
 			" -X main.ovaBuildVersion=some-ova-version"+
 			" -X main.releaseId=1622"+
 			" -X main.productFileId=5689"+
-			" -X main.md5=02bf213ccb6346efa97e9c17ee5cfcbc")
+			" -X main.md5=93b6c4b51ededa91aa14bf63b5453966")
 	Expect(err).NotTo(HaveOccurred())
 
 	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)
@@ -212,7 +212,13 @@ var _ = Describe("PCF Dev", func() {
 		os.Setenv("NO_PROXY", "192.168.98.98")
 
 		By("starting after running destroy")
-		pcfdevCommand = exec.Command("cf", "dev", "start", "-m", "3456", "-c", "1", "-o", filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova"))
+		pcfdevCommand = exec.Command("cf", "dev", "start",
+			"-m", "3456",
+			"-c", "1",
+			"-o", filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova"),
+			"-i", "192.168.200.138",
+			"-d", "192.168.200.138.xip.io",
+		)
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
@@ -229,14 +235,15 @@ var _ = Describe("PCF Dev", func() {
 		stdout := gbytes.NewBuffer()
 		stderr := gbytes.NewBuffer()
 		sshClient := &ssh.SSH{}
-		sshClient.RunSSHCommand("echo $HTTP_PROXY", getVMIP(), "22", time.Minute, stdout, stderr)
-		Eventually(stdout, "10s").Should(gbytes.Say("192.168.93.23"))
-		sshClient.RunSSHCommand("echo $HTTPS_PROXY", getVMIP(), "22", time.Minute, stdout, stderr)
+		sshPort := getForwardedPort("pcfdev-custom")
+		sshClient.RunSSHCommand("echo $HTTP_PROXY", "127.0.0.1", sshPort, time.Minute, stdout, stderr)
+		Eventually(stdout, "30s").Should(gbytes.Say("192.168.93.23"))
+		sshClient.RunSSHCommand("echo $HTTPS_PROXY", "127.0.0.1", sshPort, time.Minute, stdout, stderr)
 		Eventually(stdout, "10s").Should(gbytes.Say("192.168.38.29"))
-		sshClient.RunSSHCommand("echo $NO_PROXY", getVMIP(), "22", time.Minute, stdout, stderr)
+		sshClient.RunSSHCommand("echo $NO_PROXY", "127.0.0.1", sshPort, time.Minute, stdout, stderr)
 		Eventually(stdout, "10s").Should(gbytes.Say("192.168.98.98"))
 
-		response, err = getResponseFromFakeServer(interfaceName)
+		response, err = getResponseFromFakeServerWithHostname("http://192.168.200.138.xip.io")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(response).To(Equal("PCF Dev Test VM"))
 	})
@@ -383,10 +390,10 @@ func vmCores(name string) string {
 	return regex.FindStringSubmatch(string(output))[1]
 }
 
-func getVMIP() string {
-	output, err := exec.Command("cf", "dev", "status").Output()
+func getForwardedPort(vmName string) string {
+	output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
 	Expect(err).NotTo(HaveOccurred())
-	regex := regexp.MustCompile(`api.(\S+)`)
+	regex := regexp.MustCompile(`Forwarding\(\d+\)="ssh,tcp,127.0.0.1,(.*),,22"`)
 	return regex.FindStringSubmatch(string(output))[1]
 }
 
@@ -412,6 +419,10 @@ func getResponseFromFakeServer(vboxnetName string) (response string, err error) 
 		}
 	}
 
+	return getResponseFromFakeServerWithHostname(hostname)
+}
+
+func getResponseFromFakeServerWithHostname(hostname string) (response string, err error) {
 	timeoutChan := time.After(2 * time.Minute)
 	var httpResponse *http.Response
 	var responseBody []byte

@@ -125,6 +125,22 @@ var _ = Describe("Paused", func() {
 				Expect(pausedVM.VerifyStartOpts(&vm.StartOpts{})).To(Succeed())
 			})
 		})
+
+		Context("when desired IP is passed", func() {
+			It("should return an error", func() {
+				Expect(pausedVM.VerifyStartOpts(&vm.StartOpts{
+					IP: "some-ip",
+				})).To(MatchError("the -i flag cannot be used if the VM has already been created"))
+			})
+		})
+
+		Context("when desired domain is passed", func() {
+			It("should return an error", func() {
+				Expect(pausedVM.VerifyStartOpts(&vm.StartOpts{
+					Domain: "some-domain",
+				})).To(MatchError("the -d flag cannot be used if the VM has already been created"))
+			})
+		})
 	})
 
 	Describe("Resume", func() {

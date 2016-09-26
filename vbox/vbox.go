@@ -2,6 +2,7 @@ package vbox
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -36,7 +37,6 @@ type Driver interface {
 	IsInterfaceInUse(interfaceName string) (bool, error)
 	GetHostForwardPort(vmName string, ruleName string) (port string, err error)
 	GetHostOnlyInterfaces() (interfaces []*network.Interface, err error)
-	GetVMIP(vmName string) (vmIP string, err error)
 	SetCPUs(vmName string, cpuNumber int) error
 	SetMemory(vmName string, memory uint64) error
 	CreateVM(vmName string, baseDirectory string) error
@@ -53,6 +53,8 @@ type Driver interface {
 type FS interface {
 	Extract(archivePath string, destinationPath string, filename string) error
 	Remove(path string) error
+	Write(path string, contents io.Reader, append bool) error
+	Read(path string) (contents []byte, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
@@ -63,7 +65,7 @@ type SSH interface {
 
 //go:generate mockgen -package mocks -destination mocks/picker.go github.com/pivotal-cf/pcfdev-cli/vbox NetworkPicker
 type NetworkPicker interface {
-	SelectAvailableInterface(vboxnets []*network.Interface) (networkInterface *network.Interface, err error)
+	SelectAvailableInterface(vboxnets []*network.Interface, vmConfig *config.VMConfig) (networkConfig *config.NetworkConfig, err error)
 }
 
 type VBox struct {
@@ -121,10 +123,10 @@ func (v *VBox) StartVM(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	if err := v.configureNetwork(vmConfig.IP, vmConfig.SSHPort); err != nil {
+	if err := v.configureNetwork(vmConfig); err != nil {
 		return err
 	}
-	if err := v.configureEnvironment(vmConfig.IP, vmConfig.SSHPort); err != nil {
+	if err := v.configureEnvironment(vmConfig); err != nil {
 		return err
 	}
 
@@ -135,43 +137,38 @@ func (v *VBox) StartVM(vmConfig *config.VMConfig) error {
 	return v.Driver.StartVM(vmConfig.Name)
 }
 
-func (v *VBox) configureNetwork(ip string, sshPort string) error {
+func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {
 	t, err := template.New("properties template").Parse(networkTemplate)
 	if err != nil {
 		return err
 	}
 
 	var sshCommand bytes.Buffer
-	if err = t.Execute(&sshCommand, VMProperties{IPAddress: ip}); err != nil {
+	if err = t.Execute(&sshCommand, VMProperties{IPAddress: vmConfig.IP}); err != nil {
 		return err
 	}
 
 	return v.SSH.RunSSHCommand(
 		fmt.Sprintf("echo -e '%s' | sudo tee /etc/network/interfaces", sshCommand.String()),
 		"127.0.0.1",
-		sshPort,
+		vmConfig.SSHPort,
 		5*time.Minute,
 		ioutil.Discard,
 		ioutil.Discard,
 	)
 }
 
-func (v *VBox) configureEnvironment(ip string, sshPort string) error {
-	proxySettings, err := v.proxySettings(ip)
+func (v *VBox) configureEnvironment(vmConfig *config.VMConfig) error {
+	proxySettings, err := v.proxySettings(vmConfig)
 	if err != nil {
 		return err
 	}
 
-	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings), "127.0.0.1", sshPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
+	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings), "127.0.0.1", vmConfig.SSHPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
 }
 
-func (v *VBox) proxySettings(ip string) (settings string, err error) {
-	subnet, err := address.SubnetForIP(ip)
-	if err != nil {
-		return "", err
-	}
-
-	domain, err := address.DomainForIP(ip)
+func (v *VBox) proxySettings(vmConfig *config.VMConfig) (settings string, err error) {
+	subnet, err := address.SubnetForIP(vmConfig.IP)
 	if err != nil {
 		return "", err
 	}
@@ -182,9 +179,9 @@ func (v *VBox) proxySettings(ip string) (settings string, err error) {
 		"localhost",
 		"127.0.0.1",
 		subnet,
-		ip,
-		domain,
-		"." + domain,
+		vmConfig.IP,
+		vmConfig.Domain,
+		"." + vmConfig.Domain,
 	}, ",")
 	if v.Config.NoProxy != "" {
 		noProxy = strings.Join([]string{noProxy, v.Config.NoProxy}, ",")
@@ -231,24 +228,32 @@ func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	networkInterface, err := v.Picker.SelectAvailableInterface(vboxInterfaces)
+	networkConfig, err := v.Picker.SelectAvailableInterface(vboxInterfaces, vmConfig)
 	if err != nil {
 		return err
 	}
 
-	if networkInterface.Exists {
-		if err := v.Driver.ConfigureHostOnlyInterface(networkInterface.Name, networkInterface.IP); err != nil {
+	if networkConfig.Interface.Exists {
+		if err := v.Driver.ConfigureHostOnlyInterface(networkConfig.Interface.Name, networkConfig.Interface.IP); err != nil {
 			return err
 		}
 	} else {
-		interfaceName, err := v.Driver.CreateHostOnlyInterface(networkInterface.IP)
+		interfaceName, err := v.Driver.CreateHostOnlyInterface(networkConfig.Interface.IP)
 		if err != nil {
 			return err
 		}
-		networkInterface.Name = interfaceName
+		networkConfig.Interface.Name = interfaceName
 	}
 
-	if err := v.Driver.AttachNetworkInterface(networkInterface.Name, vmConfig.Name); err != nil {
+	if err := v.Driver.AttachNetworkInterface(networkConfig.Interface.Name, vmConfig.Name); err != nil {
+		return err
+	}
+
+	if err := v.FS.Write(
+		filepath.Join(v.Config.VMDir, "vm_config"),
+		strings.NewReader(fmt.Sprintf(`{"ip":"%s","domain":"%s"}`, networkConfig.VMIP, networkConfig.VMDomain)),
+		false,
+	); err != nil {
 		return err
 	}
 
@@ -376,22 +381,21 @@ func (v *VBox) VMConfig(vmName string) (*config.VMConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	ip, err := v.Driver.GetVMIP(vmName)
-	if err != nil {
-		return nil, err
-	}
-	domain, err := address.DomainForIP(ip)
+	vmConfigBytes, err := v.FS.Read(filepath.Join(v.Config.VMDir, "vm_config"))
 	if err != nil {
 		return nil, err
 	}
 
-	return &config.VMConfig{
-		Domain:  domain,
-		IP:      ip,
+	vmConfig := &config.VMConfig{
 		Memory:  memory,
 		Name:    vmName,
 		SSHPort: port,
-	}, nil
+	}
+	if err := json.Unmarshal(vmConfigBytes, &vmConfig); err != nil {
+		return nil, err
+	}
+
+	return vmConfig, nil
 }
 
 func (v *VBox) VMStatus(vmName string) (status string, err error) {

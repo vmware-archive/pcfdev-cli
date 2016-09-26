@@ -65,7 +65,7 @@ type CertStore interface {
 type FS interface {
 	Remove(path string) error
 	Exists(path string) (exists bool, err error)
-	Write(path string, contents io.Reader) error
+	Write(path string, contents io.Reader, append bool) error
 	Read(path string) (contents []byte, err error)
 	Compress(name string, path string, contentPaths []string) error
 	TempDir() (tempDir string, err error)
@@ -91,6 +91,11 @@ type HelpText interface {
 	Print(domain string, autoTarget bool)
 }
 
+//go:generate mockgen -package mocks -destination mocks/network.go github.com/pivotal-cf/pcfdev-cli/vm Network
+type Network interface {
+	HasIPCollision(ip string) (bool, error)
+}
+
 type StartOpts struct {
 	CPUs        int
 	Memory      uint64
@@ -101,4 +106,6 @@ type StartOpts struct {
 	Trust       bool
 	PrintCA     bool
 	Target      bool
+	IP          string
+	Domain      string
 }

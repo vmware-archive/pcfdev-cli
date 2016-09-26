@@ -143,7 +143,7 @@ var _ = Describe("ConcreteOVADownloader", func() {
 					mockFS.EXPECT().Exists("some-partial-ova-path").Return(false, nil),
 					mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
 					mockToken.EXPECT().Save(),
-					mockFS.EXPECT().Write("some-partial-ova-path", readCloser),
+					mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true),
 					mockFS.EXPECT().MD5("some-partial-ova-path").Return("some-md5", nil),
 				)
 
@@ -160,7 +160,7 @@ var _ = Describe("ConcreteOVADownloader", func() {
 						mockFS.EXPECT().Exists("some-partial-ova-path").Return(false, nil),
 						mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
 						mockToken.EXPECT().Save(),
-						mockFS.EXPECT().Write("some-partial-ova-path", readCloser),
+						mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true),
 						mockFS.EXPECT().MD5("some-partial-ova-path").Return("some-md5", nil),
 					)
 
@@ -193,7 +193,7 @@ var _ = Describe("ConcreteOVADownloader", func() {
 						mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
 
 						mockToken.EXPECT().Save(),
-						mockFS.EXPECT().Write("some-partial-ova-path", readCloser),
+						mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true),
 						mockFS.EXPECT().MD5("some-partial-ova-path").Return("some-md5", nil),
 					)
 
@@ -230,7 +230,7 @@ var _ = Describe("ConcreteOVADownloader", func() {
 						mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
 						mockToken.EXPECT().Save(),
 
-						mockFS.EXPECT().Write("some-partial-ova-path", readCloser),
+						mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true),
 						mockFS.EXPECT().MD5("some-partial-ova-path").Return("some-md5", nil),
 					)
 
@@ -265,12 +265,12 @@ var _ = Describe("ConcreteOVADownloader", func() {
 						mockFS.EXPECT().Exists("some-partial-ova-path").Return(false, nil),
 						mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
 						mockToken.EXPECT().Save(),
-						mockFS.EXPECT().Write("some-partial-ova-path", readCloser).Return(errors.New("some-error")),
+						mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true).Return(errors.New("some-error")),
 
 						mockFS.EXPECT().Exists("some-partial-ova-path").Return(false, nil),
 						mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
 						mockToken.EXPECT().Save(),
-						mockFS.EXPECT().Write("some-partial-ova-path", readCloser),
+						mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true),
 						mockFS.EXPECT().MD5("some-partial-ova-path").Return("some-md5", nil),
 					)
 
@@ -287,12 +287,12 @@ var _ = Describe("ConcreteOVADownloader", func() {
 						mockFS.EXPECT().Exists("some-partial-ova-path").Return(false, nil),
 						mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
 						mockToken.EXPECT().Save(),
-						mockFS.EXPECT().Write("some-partial-ova-path", readCloser).Return(errors.New("some-error")),
+						mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true).Return(errors.New("some-error")),
 
 						mockFS.EXPECT().Exists("some-partial-ova-path").Return(false, nil),
 						mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
 						mockToken.EXPECT().Save(),
-						mockFS.EXPECT().Write("some-partial-ova-path", readCloser).Return(errors.New("some-error")),
+						mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true).Return(errors.New("some-error")),
 					)
 
 					_, err := downloader.Download()
@@ -307,7 +307,7 @@ var _ = Describe("ConcreteOVADownloader", func() {
 						mockFS.EXPECT().Exists("some-partial-ova-path").Return(false, nil),
 						mockClient.EXPECT().DownloadOVA(int64(0)).Return(readCloser, nil),
 						mockToken.EXPECT().Save(),
-						mockFS.EXPECT().Write("some-partial-ova-path", readCloser),
+						mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true),
 						mockFS.EXPECT().MD5("some-partial-ova-path").Return("", errors.New("some-error")),
 					)
 
@@ -326,7 +326,7 @@ var _ = Describe("ConcreteOVADownloader", func() {
 					mockFS.EXPECT().Length("some-partial-ova-path").Return(int64(24), nil),
 					mockClient.EXPECT().DownloadOVA(int64(24)).Return(readCloser, nil),
 					mockToken.EXPECT().Save(),
-					mockFS.EXPECT().Write("some-partial-ova-path", readCloser),
+					mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true),
 					mockFS.EXPECT().MD5("some-partial-ova-path").Return("some-md5", nil),
 				)
 
@@ -343,13 +343,13 @@ var _ = Describe("ConcreteOVADownloader", func() {
 						mockFS.EXPECT().Length("some-partial-ova-path").Return(int64(24), nil),
 						mockClient.EXPECT().DownloadOVA(int64(24)).Return(readCloser, nil),
 						mockToken.EXPECT().Save(),
-						mockFS.EXPECT().Write("some-partial-ova-path", readCloser).Return(errors.New("some-error")),
+						mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true).Return(errors.New("some-error")),
 
 						mockFS.EXPECT().Exists("some-partial-ova-path").Return(true, nil),
 						mockFS.EXPECT().Length("some-partial-ova-path").Return(int64(48), nil),
 						mockClient.EXPECT().DownloadOVA(int64(48)).Return(readCloser, nil),
 						mockToken.EXPECT().Save(),
-						mockFS.EXPECT().Write("some-partial-ova-path", readCloser),
+						mockFS.EXPECT().Write("some-partial-ova-path", readCloser, true),
 						mockFS.EXPECT().MD5("some-partial-ova-path").Return("some-md5", nil),
 					)
 

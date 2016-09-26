@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
 
@@ -16,6 +17,7 @@ type NotCreated struct {
 	Config   *config.Config
 	VMConfig *config.VMConfig
 	FS       FS
+	Network  Network
 }
 
 func (n *NotCreated) Stop() error {
@@ -59,6 +61,27 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 
 	if opts.Registries != "" && strings.Count(opts.Registries, ":") != 1 {
 		return fmt.Errorf("docker registries must be passed in 'host:port' format")
+	}
+
+	if opts.IP == "" && opts.Domain != "" && !address.IsDomainAllowed(opts.Domain) {
+		return errors.New(fmt.Sprintf("%s is not one of the allowed PCF Dev domains", opts.Domain))
+	}
+
+	if opts.IP != "" {
+		subnet, err := address.SubnetForIP(opts.IP)
+		if err != nil {
+			return err
+		}
+
+		notOk, err := n.Network.HasIPCollision(subnet)
+
+		if err != nil {
+			return err
+		}
+
+		if notOk {
+			n.UI.Say("Warning: the chosen PCF Dev VM IP address may be in use by another VM or device.")
+		}
 	}
 
 	return nil
@@ -131,6 +154,8 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 		Memory:  memory,
 		CPUs:    cpus,
 		OVAPath: ovaPath,
+		IP:      opts.IP,
+		Domain:  opts.Domain,
 	}); err != nil {
 		return &ImportVMError{err}
 	}

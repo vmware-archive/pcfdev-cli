@@ -254,29 +254,6 @@ func (d *VBoxDriver) SetCPUs(vmName string, cpus int) error {
 	return err
 }
 
-func (d *VBoxDriver) GetVMIP(vmName string) (string, error) {
-	vboxnetName, err := d.getVBoxNetName(vmName)
-	if err != nil {
-		return "", err
-	}
-	if vboxnetName == "" {
-		return "", fmt.Errorf("there is no attached hostonlyif for %s", vmName)
-	}
-
-	vboxnets, err := d.GetHostOnlyInterfaces()
-	if err != nil {
-		return "", err
-	}
-
-	for _, vboxnet := range vboxnets {
-		if vboxnet.Name == vboxnetName {
-			return d.getVMIPForSubnet(vboxnet.IP), nil
-		}
-	}
-
-	return "", fmt.Errorf("couldnt find %s in list of hostonlyifs", vboxnetName)
-}
-
 func (d *VBoxDriver) AttachNetworkInterface(interfaceName string, vmName string) error {
 	_, err := d.VBoxManage("modifyvm", vmName, "--nic2", "hostonly", "--nictype2", "virtio", "--hostonlyadapter2", interfaceName)
 	return err
@@ -333,10 +310,6 @@ func (d *VBoxDriver) RunningVMs() (vms []string, err error) {
 	}
 
 	return runningVMs, nil
-}
-
-func (d *VBoxDriver) getVMIPForSubnet(subnetIP string) string {
-	return subnetIP + "1"
 }
 
 func (d *VBoxDriver) getVBoxNetName(vmName string) (interfaceName string, err error) {

@@ -25,9 +25,9 @@ var _ = Describe("CmdRunner", func() {
 		})
 
 		Context("when there is an error", func() {
-			It("should return the error", func() {
-				_, err := runner.Run("some-bad-binary")
-				Expect(err).To(MatchError(ContainSubstring(`executable file not found in %PATH%`)))
+			It("should return the error with the output and the arguments", func() {
+				_, err := runner.Run("cmd", "/c", "echo some-error && exit 1")
+				Expect(strings.TrimSpace(err.Error())).To(Equal("failed to execute 'cmd /c echo some-error && exit 1': exit status 1: some-error"))
 			})
 		})
 	})

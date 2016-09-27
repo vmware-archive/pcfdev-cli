@@ -3,7 +3,6 @@ package vbox
 import (
 	"errors"
 	"fmt"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/network"
+	"github.com/pivotal-cf/pcfdev-cli/runner"
 )
 
 type VBoxDriverVersion struct {
@@ -19,7 +19,8 @@ type VBoxDriverVersion struct {
 }
 
 type VBoxDriver struct {
-	FS *fs.FS
+	FS        *fs.FS
+	CmdRunner *runner.CmdRunner
 }
 
 const (
@@ -30,17 +31,13 @@ const (
 	StatePaused  = "paused"
 )
 
-func (*VBoxDriver) VBoxManage(arg ...string) (output []byte, err error) {
+func (v *VBoxDriver) VBoxManage(arg ...string) (output []byte, err error) {
 	vBoxManagePath, err := helpers.VBoxManagePath()
 	if err != nil {
 		return nil, errors.New("could not find VBoxManage executable")
 	}
 
-	output, err = exec.Command(vBoxManagePath, arg...).CombinedOutput()
-	if err != nil {
-		return output, fmt.Errorf("failed to execute 'VBoxManage %s': %s: %s", strings.Join(arg, " "), err, output)
-	}
-	return output, nil
+	return v.CmdRunner.Run(vBoxManagePath, arg...)
 }
 
 func (d *VBoxDriver) StartVM(vmName string) error {

@@ -1,6 +1,8 @@
 package cert_test
 
 import (
+	"errors"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,6 +27,22 @@ var _ = Describe("ConcreteSystemStore", func() {
 
 	AfterEach(func() {
 		mockCtrl.Finish()
+	})
+
+	Describe("#Store", func() {
+		It("should store PCF Dev certificates", func() {
+			mockCmdRunner.EXPECT().Run("certutil", "-addstore", "-f", "ROOT", "some-path")
+
+			Expect(certStore.Store("some-path")).To(Succeed())
+		})
+
+		Context("when there is an issue storing the certificates", func() {
+			It("should return an error", func() {
+				mockCmdRunner.EXPECT().Run("certutil", "-addstore", "-f", "ROOT", "some-path").Return(nil, errors.New("some-error"))
+
+				Expect(certStore.Store("some-path")).To(MatchError("some-error"))
+			})
+		})
 	})
 
 	Describe("#Unstore", func() {

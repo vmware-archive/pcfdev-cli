@@ -87,7 +87,8 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 					FS:       b.FS,
 					SSH:      b.SSH,
 					Driver: &vbox.VBoxDriver{
-						FS: &fs.FS{},
+						FS:        &fs.FS{},
+						CmdRunner: &runner.CmdRunner{},
 					},
 				},
 			}, nil
@@ -116,6 +117,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 					SSH:      b.SSH,
 					Driver: &vbox.VBoxDriver{
 						FS: &fs.FS{},
+						CmdRunner: &runner.CmdRunner{},
 					},
 				},
 			}, nil

@@ -16,6 +16,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
 	"github.com/pivotal-cf/pcfdev-cli/plugin"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/cmd"
+	"github.com/pivotal-cf/pcfdev-cli/runner"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/system"
 	"github.com/pivotal-cf/pcfdev-cli/ui"
@@ -48,7 +49,10 @@ func main() {
 	confirmInstalled(cfui)
 
 	fileSystem := &fs.FS{}
-	driver := &vbox.VBoxDriver{FS: fileSystem}
+	driver := &vbox.VBoxDriver{
+		FS:        fileSystem,
+		CmdRunner: &runner.CmdRunner{},
+	}
 	conf, err := config.New(
 		vmName,
 		md5,

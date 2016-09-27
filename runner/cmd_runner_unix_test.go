@@ -28,9 +28,9 @@ var _ = Describe("CmdRunner", func() {
 		})
 
 		Context("when there is an error", func() {
-			It("should return the error", func() {
-				_, err := runner.Run("/some/bad/binary")
-				Expect(err).To(MatchError(ContainSubstring("no such file or directory")))
+			It("should return the error with the output and the arguments", func() {
+				_, err := runner.Run("bash", "-c", "echo -n some-error && exit 1")
+				Expect(err).To(MatchError("failed to execute 'bash -c echo -n some-error && exit 1': exit status 1: some-error"))
 			})
 		})
 	})

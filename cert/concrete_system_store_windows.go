@@ -1,13 +1,10 @@
 package cert
 
-import (
-	"os/exec"
-
-	"github.com/pivotal-cf/pcfdev-cli/address"
-)
+import "github.com/pivotal-cf/pcfdev-cli/address"
 
 func (c *ConcreteSystemStore) Store(path string) error {
-	return exec.Command("certutil", "-addstore", "-f", "ROOT", path).Run()
+	_, err := c.CmdRunner.Run("certutil", "-addstore", "-f", "ROOT", path)
+	return err
 }
 
 func (c *ConcreteSystemStore) Unstore() error {

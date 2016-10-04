@@ -80,7 +80,6 @@ var _ = Describe("Builder", func() {
 					switch u := invalidVM.(type) {
 					case *vm.Invalid:
 						Expect(u.Err).NotTo(BeNil())
-						Expect(u.UI).NotTo(BeNil())
 					default:
 						Fail("wrong type")
 					}
@@ -137,7 +136,6 @@ var _ = Describe("Builder", func() {
 					switch u := invalidVM.(type) {
 					case *vm.Invalid:
 						Expect(u.Err).NotTo(BeNil())
-						Expect(u.UI).NotTo(BeNil())
 					default:
 						Fail("wrong type")
 					}

@@ -11,6 +11,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/downloader"
+	"github.com/pivotal-cf/pcfdev-cli/exit"
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/pivnet"
@@ -43,7 +44,7 @@ func main() {
 		os.Stdin,
 		os.Stdout,
 		terminal.NewTeePrinter(os.Stdout),
-		trace.NewWriterPrinter(os.Stdout, true),
+		trace.NewLogger(os.Stdout, false, "", ""),
 	)
 
 	confirmInstalled(cfui)
@@ -66,6 +67,7 @@ func main() {
 		})
 	if err != nil {
 		cfui.Failed("Error: %s", err)
+		os.Exit(1)
 	}
 	token := &pivnet.Token{
 		Config: conf,
@@ -93,6 +95,7 @@ func main() {
 	cfplugin.Start(&plugin.Plugin{
 		UI:     &plugin.NonTranslatingUI{cfui},
 		Config: conf,
+		Exit:   &exit.Exit{},
 		CmdBuilder: &cmd.Builder{
 			Client: client,
 			Config: conf,

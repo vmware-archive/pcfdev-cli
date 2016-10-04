@@ -31,7 +31,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		os.Stdin,
 		os.Stdout,
 		terminal.NewTeePrinter(os.Stdout),
-		trace.NewWriterPrinter(os.Stdout, true),
+		trace.NewLogger(os.Stdout, false, "", ""),
 	)
 
 	status, err := b.VBox.VMStatus(vmName)
@@ -43,7 +43,6 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	if err != nil {
 		return &Invalid{
 			Err: err,
-			UI:  termUI,
 		}, nil
 	}
 
@@ -57,7 +56,6 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		if dirExists {
 			return &Invalid{
 				Err: errors.New("VM files need to be purged"),
-				UI:  termUI,
 			}, nil
 		}
 
@@ -116,7 +114,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 					FS:       b.FS,
 					SSH:      b.SSH,
 					Driver: &vbox.VBoxDriver{
-						FS: &fs.FS{},
+						FS:        &fs.FS{},
 						CmdRunner: &runner.CmdRunner{},
 					},
 				},
@@ -151,7 +149,6 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	default:
 		return &Invalid{
 			Err: errors.New("vm in unknown state"),
-			UI:  termUI,
 		}, nil
 	}
 }

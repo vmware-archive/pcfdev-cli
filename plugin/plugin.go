@@ -13,6 +13,7 @@ import (
 type Plugin struct {
 	UI         UI
 	CmdBuilder CmdBuilder
+	Exit       Exit
 	Config     *config.Config
 }
 
@@ -26,6 +27,11 @@ type UI interface {
 //go:generate mockgen -package mocks -destination mocks/cmd_builder.go github.com/pivotal-cf/pcfdev-cli/plugin CmdBuilder
 type CmdBuilder interface {
 	Cmd(subcommand string) (cmd.Cmd, error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/exit.go github.com/pivotal-cf/pcfdev-cli/plugin Exit
+type Exit interface {
+	Exit(status int)
 }
 
 //go:generate mockgen -package mocks -destination mocks/cmd.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd Cmd
@@ -54,12 +60,14 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	}
 	if err := cmd.Run(); err != nil {
 		p.UI.Failed(getErrorText(err))
+		p.Exit.Exit(1)
 	}
 }
 
 func (p *Plugin) showUsageMessage(cliConnection cfplugin.CliConnection) {
 	if _, err := cliConnection.CliCommand("help", "dev"); err != nil {
 		p.UI.Failed(getErrorText(err))
+		p.Exit.Exit(1)
 	}
 }
 

@@ -30,16 +30,15 @@ func (u *Unprovisioned) Stop() error {
 }
 
 func (u *Unprovisioned) VerifyStartOpts(opts *StartOpts) error {
-	return errors.New(u.err())
+	return u.err()
 }
 
 func (u *Unprovisioned) Start(opts *StartOpts) error {
-	u.UI.Failed(u.message())
-	return nil
+	return u.err()
 }
 
 func (u *Unprovisioned) Status() string {
-	return u.message()
+	return u.err().Error()
 }
 
 func (u *Unprovisioned) Provision(opts *StartOpts) error {
@@ -69,31 +68,23 @@ func (u *Unprovisioned) Provision(opts *StartOpts) error {
 }
 
 func (u *Unprovisioned) Suspend() error {
-	u.UI.Failed(u.message())
-	return nil
+	return u.err()
 }
 
 func (u *Unprovisioned) Resume() error {
-	u.UI.Failed(u.message())
-	return nil
+	return u.err()
 }
 
 func (u *Unprovisioned) Trust(startOps *StartOpts) error {
-	u.UI.Failed(u.message())
-	return nil
+	return u.err()
 }
 
 func (u *Unprovisioned) Target(autoTarget bool) error {
-	u.UI.Failed(u.message())
-	return nil
+	return u.err()
 }
 
-func (u *Unprovisioned) message() string {
-	return u.err() + "."
-}
-
-func (u *Unprovisioned) err() string {
-	return "PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'"
+func (u *Unprovisioned) err() error {
+	return errors.New("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'")
 }
 
 func (u *Unprovisioned) GetDebugLogs() error {

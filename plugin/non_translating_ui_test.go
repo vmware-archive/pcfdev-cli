@@ -59,4 +59,12 @@ var _ = Describe("NonTranslatingUI", func() {
 			})
 		})
 	})
+
+	Describe("#Failed", func() {
+		It("should not panic", func() {
+			mockCFUI.EXPECT().Failed("some-failure").Do(func() { panic("some-panic") })
+
+			Expect(func() { ui.Failed("some-failure") }).NotTo(Panic())
+		})
+	})
 })

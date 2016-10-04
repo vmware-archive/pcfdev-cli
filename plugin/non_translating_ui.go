@@ -14,3 +14,8 @@ func (ui *NonTranslatingUI) Confirm(message string) bool {
 	}
 	return false
 }
+
+func (ui *NonTranslatingUI) Failed(message string, args ...interface{}) {
+	defer func() { recover() }()
+	ui.UI.Failed(message, args...)
+}

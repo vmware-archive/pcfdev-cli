@@ -1,27 +1,25 @@
 package vm
 
+import "errors"
+
 type Invalid struct {
 	Err error
-	UI  UI
 }
 
 func (i *Invalid) Stop() error {
-	i.UI.Failed(i.message())
-	return nil
+	return i.err()
 }
 
 func (i *Invalid) VerifyStartOpts(opts *StartOpts) error {
-	return nil
+	return i.err()
 }
 
 func (i *Invalid) Start(opts *StartOpts) error {
-	i.UI.Failed(i.message())
-	return nil
+	return i.err()
 }
 
 func (i *Invalid) Provision(opts *StartOpts) error {
-	i.UI.Failed(i.message())
-	return nil
+	return i.err()
 }
 
 func (i *Invalid) Status() string {
@@ -29,34 +27,29 @@ func (i *Invalid) Status() string {
 }
 
 func (i *Invalid) Suspend() error {
-	i.UI.Failed(i.message())
-	return nil
+	return i.err()
 }
 
 func (i *Invalid) Resume() error {
-	i.UI.Failed(i.message())
-	return nil
+	return i.err()
 }
 
 func (i *Invalid) GetDebugLogs() error {
-	i.UI.Failed(i.message())
-	return nil
+	return i.err()
 }
 
 func (i *Invalid) Trust(startOps *StartOpts) error {
-	i.UI.Failed(i.message())
-	return nil
+	return i.err()
 }
 
 func (i *Invalid) Target(autoTarget bool) error {
-	i.UI.Failed(i.message())
-	return nil
+	return i.err()
 }
 
 func (i *Invalid) message() string {
-	return i.err() + "."
+	return "PCF Dev is in an invalid state. Please run 'cf dev destroy'"
 }
 
-func (i *Invalid) err() string {
-	return "Error: " + i.Err.Error() + ".\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"
+func (i *Invalid) err() error {
+	return errors.New(i.Err.Error() + ".\n" + i.message())
 }

@@ -21,6 +21,7 @@ var _ = Describe("Plugin", func() {
 		mockUI            *mocks.MockUI
 		mockCmdBuilder    *mocks.MockCmdBuilder
 		mockCmd           *mocks.MockCmd
+		mockExit          *mocks.MockExit
 		fakeCliConnection *pluginfakes.FakeCliConnection
 		pcfdev            *plugin.Plugin
 	)
@@ -30,10 +31,12 @@ var _ = Describe("Plugin", func() {
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockCmdBuilder = mocks.NewMockCmdBuilder(mockCtrl)
 		mockCmd = mocks.NewMockCmd(mockCtrl)
+		mockExit = mocks.NewMockExit(mockCtrl)
 		fakeCliConnection = &pluginfakes.FakeCliConnection{}
 		pcfdev = &plugin.Plugin{
 			UI:         mockUI,
 			CmdBuilder: mockCmdBuilder,
+			Exit:       mockExit,
 		}
 	})
 
@@ -83,6 +86,7 @@ var _ = Describe("Plugin", func() {
 					mockCmd.EXPECT().Parse([]string{}),
 					mockCmd.EXPECT().Run().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error."),
+					mockExit.EXPECT().Exit(1),
 				)
 
 				pcfdev.Run(fakeCliConnection, []string{"dev", "some-command"})
@@ -115,6 +119,7 @@ var _ = Describe("Plugin", func() {
 				gomock.InOrder(
 					mockCmdBuilder.EXPECT().Cmd("help").Return(nil, errors.New("")),
 					mockUI.EXPECT().Failed("Error: some-error."),
+					mockExit.EXPECT().Exit(1),
 				)
 
 				fakeCliConnection.CliCommandReturns(nil, errors.New("some-error"))

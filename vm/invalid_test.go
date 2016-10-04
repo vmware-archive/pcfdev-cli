@@ -3,102 +3,74 @@ package vm_test
 import (
 	"errors"
 
-	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
-	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Invalid", func() {
-	var (
-		mockCtrl *gomock.Controller
-		mockUI   *mocks.MockUI
-		invalid  vm.Invalid
-	)
+	var invalid vm.Invalid
 
 	BeforeEach(func() {
-		mockCtrl = gomock.NewController(GinkgoT())
-		mockUI = mocks.NewMockUI(mockCtrl)
-
 		invalid = vm.Invalid{
 			Err: errors.New("some-error"),
-			UI:  mockUI,
 		}
-	})
-
-	AfterEach(func() {
-		mockCtrl.Finish()
 	})
 
 	Describe("Stop", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Failed("Error: some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'.")
-
-			invalid.Stop()
+			Expect(invalid.Stop()).To(MatchError("some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
 
 	Describe("VerifyStartOpts", func() {
-		It("should say a message", func() {
+		It("should succeed", func() {
 			Expect(invalid.VerifyStartOpts(
 				&vm.StartOpts{},
-			)).To((Succeed()))
+			)).To(MatchError("some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
 
 	Describe("Start", func() {
 		It("should start vm", func() {
-			mockUI.EXPECT().Failed("Error: some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'.")
-
-			invalid.Start(&vm.StartOpts{})
+			Expect(invalid.Start(&vm.StartOpts{})).To(MatchError("some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
 
 	Describe("Status", func() {
-		It("should return 'Stopped'", func() {
-			Expect(invalid.Status()).To(Equal("Error: some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'."))
+		It("should return 'Status'", func() {
+			Expect(invalid.Status()).To(Equal("PCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
 
 	Describe("Suspend", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Failed("Error: some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'.")
-
-			invalid.Suspend()
+			Expect(invalid.Suspend()).To(MatchError("some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
 
 	Describe("Resume", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Failed("Error: some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'.")
-
-			invalid.Resume()
+			Expect(invalid.Resume()).To(MatchError("some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
 
 	Describe("GetDebugLogs", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Failed("Error: some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'.")
-
-			invalid.GetDebugLogs()
+			Expect(invalid.GetDebugLogs()).To(MatchError("some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
 
 	Describe("Trust", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Failed("Error: some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'.")
-
-			invalid.Trust(&vm.StartOpts{})
+			Expect(invalid.Trust(&vm.StartOpts{})).To(MatchError("some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
 
 	Describe("Target", func() {
 		It("should say a message", func() {
-			mockUI.EXPECT().Failed("Error: some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'.")
-
-			invalid.Target(false)
+			Expect(invalid.Target(false)).To(MatchError("some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
 })

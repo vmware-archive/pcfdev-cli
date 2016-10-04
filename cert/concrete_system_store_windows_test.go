@@ -31,14 +31,14 @@ var _ = Describe("ConcreteSystemStore", func() {
 
 	Describe("#Store", func() {
 		It("should store PCF Dev certificates", func() {
-			mockCmdRunner.EXPECT().Run("certutil", "-addstore", "-f", "ROOT", "some-path")
+			mockCmdRunner.EXPECT().Run("certutil", "-addstore", "-user", "-f", "ROOT", "some-path")
 
 			Expect(certStore.Store("some-path")).To(Succeed())
 		})
 
 		Context("when there is an issue storing the certificates", func() {
 			It("should return an error", func() {
-				mockCmdRunner.EXPECT().Run("certutil", "-addstore", "-f", "ROOT", "some-path").Return(nil, errors.New("some-error"))
+				mockCmdRunner.EXPECT().Run("certutil", "-addstore", "-user", "-f", "ROOT", "some-path").Return(nil, errors.New("some-error"))
 
 				Expect(certStore.Store("some-path")).To(MatchError("some-error"))
 			})
@@ -47,15 +47,15 @@ var _ = Describe("ConcreteSystemStore", func() {
 
 	Describe("#Unstore", func() {
 		It("should delete only PCF Dev certificates", func() {
-			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "ROOT", "local.pcfdev.io")
-			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "ROOT", "local2.pcfdev.io")
-			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "ROOT", "local3.pcfdev.io")
-			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "ROOT", "local4.pcfdev.io")
-			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "ROOT", "local5.pcfdev.io")
-			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "ROOT", "local6.pcfdev.io")
-			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "ROOT", "local7.pcfdev.io")
-			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "ROOT", "local8.pcfdev.io")
-			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "ROOT", "local9.pcfdev.io")
+			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "-user", "ROOT", "local.pcfdev.io")
+			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "-user", "ROOT", "local2.pcfdev.io")
+			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "-user", "ROOT", "local3.pcfdev.io")
+			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "-user", "ROOT", "local4.pcfdev.io")
+			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "-user", "ROOT", "local5.pcfdev.io")
+			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "-user", "ROOT", "local6.pcfdev.io")
+			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "-user", "ROOT", "local7.pcfdev.io")
+			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "-user", "ROOT", "local8.pcfdev.io")
+			mockCmdRunner.EXPECT().Run("certutil", "-delstore", "-user", "ROOT", "local9.pcfdev.io")
 
 			Expect(certStore.Unstore()).To(Succeed())
 		})

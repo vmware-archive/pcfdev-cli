@@ -637,7 +637,7 @@ var _ = Describe("Pivnet Client", func() {
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
 
 				_, err := client.GetToken("some-bad-username", "some-bad-password")
-				Expect(err).To(MatchError("Pivotal Network returned: 401 Unauthorized"))
+				Expect(err).To(MatchError("invalid credentials"))
 			})
 		})
 

@@ -206,7 +206,7 @@ func (c *Client) GetToken(username string, password string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return "", c.unexpectedResponseError(resp)
+		return "", &InvalidCredentialsError{}
 	}
 
 	var apiToken struct {

@@ -8,6 +8,12 @@ func (e *InvalidTokenError) Error() string {
 	return "invalid Pivotal Network API token"
 }
 
+type InvalidCredentialsError struct{}
+
+func (e *InvalidCredentialsError) Error() string {
+	return "invalid credentials"
+}
+
 type UnexpectedResponseError struct {
 	Err error
 }

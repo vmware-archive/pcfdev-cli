@@ -1,17 +1,10 @@
 #!/bin/bash
 
-changed_dirs=$(git diff --name-only | grep -v -e '^bin/' -e '^vendor/' -e '^assets/' | xargs -I {} dirname {} | uniq | grep -v -e '^\.$' -e 'mocks$')
-new_dirs=$(git status --porcelain | awk 'match($1, "\\?\\?"){print $2}')
-
-if [[ $changed_dirs == "" ]] && [[ $new_dirs == "" ]]
-then
-  echo "No mocks need generation. Exiting..."
-  exit 0
+pcfdev_dir=$(cd `dirname $0` && cd .. && pwd)
+mocks_dirs=$(go list -f '{{.Dir}}' github.com/pivotal-cf/pcfdev-cli/... | grep -v /vendor/ | grep '/mocks$')
+if [[ -n "$mocks_dirs" ]]; then
+  find $mocks_dirs -name "*.go" -exec rm {} \;
 fi
 
-mock_dirs=$(find $changed_dirs $new_dirs -name mocks)
-rm -rf $mock_dirs
-mkdir -p $mock_dirs
-
 go install github.com/pivotal-cf/pcfdev-cli/vendor/github.com/golang/mock/mockgen
-go generate $(echo "$changed_dirs" "$new_dirs" | xargs -I {} echo "github.com/pivotal-cf/pcfdev-cli/{}")
+go generate $(go list github.com/pivotal-cf/pcfdev-cli/... | grep -v /vendor/)

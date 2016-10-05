@@ -8,10 +8,16 @@ func (e *InvalidTokenError) Error() string {
 	return "invalid Pivotal Network API token"
 }
 
-type InvalidCredentialsError struct{}
+type InvalidUsernameError struct{}
 
-func (e *InvalidCredentialsError) Error() string {
-	return "invalid credentials"
+func (e *InvalidUsernameError) Error() string {
+	return "unable to locate Pivotal Network user"
+}
+
+type InvalidPasswordError struct{}
+
+func (e *InvalidPasswordError) Error() string {
+	return "invalid password"
 }
 
 type UnexpectedResponseError struct {

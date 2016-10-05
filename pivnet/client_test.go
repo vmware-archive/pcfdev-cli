@@ -625,7 +625,7 @@ var _ = Describe("Pivnet Client", func() {
 			})
 		})
 
-		Context("when Pivnet returns a non-200 status", func() {
+		Context("when Pivnet returns a 401", func() {
 			It("should return an error", func() {
 				handler := func(w http.ResponseWriter, r *http.Request) {
 					if r.URL.Path == "/api/v2/api_token" {
@@ -636,8 +636,40 @@ var _ = Describe("Pivnet Client", func() {
 				}
 				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
 
+				_, err := client.GetToken("some-username", "some-bad-password")
+				Expect(err).To(MatchError("invalid password"))
+			})
+		})
+
+		Context("when Pivnet returns a 500", func() {
+			It("should return an error", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					if r.URL.Path == "/api/v2/api_token" {
+						w.WriteHeader(500)
+					} else {
+						Fail("unexpected server request")
+					}
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+
 				_, err := client.GetToken("some-bad-username", "some-bad-password")
-				Expect(err).To(MatchError("invalid credentials"))
+				Expect(err).To(MatchError("unable to locate Pivotal Network user"))
+			})
+		})
+
+		Context("when Pivnet returns a different non-200 status", func() {
+			It("should return an error", func() {
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					if r.URL.Path == "/api/v2/api_token" {
+						w.WriteHeader(502)
+					} else {
+						Fail("unexpected server request")
+					}
+				}
+				client.Host = httptest.NewServer(http.HandlerFunc(handler)).URL
+
+				_, err := client.GetToken("some-bad-username", "some-bad-password")
+				Expect(err).To(MatchError("Pivotal Network returned: 502 Bad Gateway"))
 			})
 		})
 

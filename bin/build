@@ -8,7 +8,7 @@ then
   vm_name="pcfdev-test"
   release_id="1622"
   product_file_id="5689"
-  md5="f2a095619fcde7a3cd3b5124f7144c7d"
+  md5="4c19b7f03b6d70ff932fbd79bb35cef2"
   ova_version="0"
 else
   if [[ "$1" == "internal" ]]

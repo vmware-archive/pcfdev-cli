@@ -60,7 +60,7 @@ var _ = BeforeSuite(func() {
 			" -X main.ovaBuildVersion=some-ova-version"+
 			" -X main.releaseId=1622"+
 			" -X main.productFileId=5689"+
-			" -X main.md5=93b6c4b51ededa91aa14bf63b5453966")
+			" -X main.md5=f2a095619fcde7a3cd3b5124f7144c7d")
 	Expect(err).NotTo(HaveOccurred())
 
 	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)

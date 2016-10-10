@@ -44,6 +44,7 @@ var _ = Describe("vbox", func() {
 			HTTPSProxy:         "some-https-proxy",
 			NoProxy:            "some-no-proxy",
 			InsecurePrivateKey: "some-insecure-private-key",
+			PrivateKeyPath:     "some-private-key-path",
 
 			MinMemory: uint64(1000),
 			MaxMemory: uint64(2000),
@@ -618,8 +619,8 @@ var _ = Describe("vbox", func() {
 					mockDriver.EXPECT().StartVM("some-vm"),
 					mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -631,7 +632,7 @@ auto eth1
 iface eth1 inet static
 address 192.168.22.11
 netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=some-http-proxy
@@ -666,8 +667,8 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 					mockDriver.EXPECT().StartVM("some-vm"),
 					mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -679,7 +680,7 @@ auto eth1
 iface eth1 inet static
 address 192.168.22.11
 netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
@@ -712,8 +713,8 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -744,8 +745,8 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-p
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -757,7 +758,7 @@ auto eth1
 iface eth1 inet static
 address 192.168.22.11
 netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 
@@ -794,8 +795,8 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -807,7 +808,7 @@ auto eth1
 iface eth1 inet static
 address 192.168.22.11
 netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
@@ -845,8 +846,8 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -858,7 +859,7 @@ auto eth1
 iface eth1 inet static
 address 192.168.22.11
 netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
@@ -941,7 +942,7 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false).Return(errors.New("some-error")),
+						mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false).Return(errors.New("some-error")),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -959,8 +960,8 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error")),
+						mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error")),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -978,8 +979,8 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf(`echo -e '
 auto lo
 iface lo inet loopback
@@ -1008,8 +1009,8 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), "127.0.0.1", "some-
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf(`echo -e '
 auto lo
 iface lo inet loopback
@@ -1021,7 +1022,7 @@ auto eth1
 iface eth1 inet static
 address 192.168.22.11
 netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error")),
+						mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error")),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -1039,8 +1040,8 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), "127.0.0.1", "some-
 						mockDriver.EXPECT().StartVM("some-vm"),
 						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Write("some-private-key-path", strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -1052,7 +1053,7 @@ auto eth1
 iface eth1 inet static
 address 192.168.11.11
 netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=some-http-proxy

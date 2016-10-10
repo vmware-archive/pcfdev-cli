@@ -71,6 +71,7 @@ var _ = Describe("Config", func() {
 			Expect(conf.SpringCloudMaxMemory).To(Equal(uint64(8192)))
 			Expect(conf.Version).To(BeIdenticalTo(expectedVersion))
 			Expect(conf.InsecurePrivateKey).To(Equal("some-insecure-private-key"))
+			Expect(conf.PrivateKeyPath).To(Equal(filepath.Join("some-pcfdev-home", "vms", "key.pem")))
 		})
 
 		Context("when caps proxy env vars are unset", func() {

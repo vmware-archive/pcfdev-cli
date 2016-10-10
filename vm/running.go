@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -36,7 +35,7 @@ func (r *Running) Stop() error {
 }
 
 func (r *Running) Provision(opts *StartOpts) error {
-	privateKeyBytes, err := r.FS.Read(filepath.Join(r.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := r.FS.Read(r.Config.PrivateKeyPath)
 	if err != nil {
 		return err
 	}
@@ -96,7 +95,7 @@ func (r *Running) Resume() error {
 }
 
 func (r *Running) Trust(startOpts *StartOpts) error {
-	privateKeyBytes, err := r.FS.Read(filepath.Join(r.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := r.FS.Read(r.Config.PrivateKeyPath)
 	if err != nil {
 		return &TrustError{err}
 	}
@@ -151,7 +150,7 @@ func (r *Running) GetDebugLogs() error {
 }
 
 func (r *Running) SSH() error {
-	privateKeyBytes, err := r.FS.Read(filepath.Join(r.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := r.FS.Read(r.Config.PrivateKeyPath)
 	if err != nil {
 		return err
 	}

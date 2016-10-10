@@ -173,7 +173,7 @@ func (b *VBoxBuilder) healthcheck(ip string, sshPort string) (string, error) {
 	outputChan := make(chan string, 1)
 	errChan := make(chan error, 1)
 
-	privateKeyBytes, err := b.FS.Read(filepath.Join(b.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := b.FS.Read(b.Config.PrivateKeyPath)
 	if err != nil {
 		return "", err
 	}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -115,7 +114,7 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		return &StartVMError{err}
 	}
 
-	privateKeyBytes, err := s.FS.Read(filepath.Join(s.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := s.FS.Read(s.Config.PrivateKeyPath)
 	if err != nil {
 		return &StartVMError{err}
 	}

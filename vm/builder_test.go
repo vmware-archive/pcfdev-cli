@@ -32,9 +32,10 @@ var _ = Describe("Builder", func() {
 			mockFS = mocks.NewMockFS(mockCtrl)
 			mockSSH = mocks.NewMockSSH(mockCtrl)
 			conf = &config.Config{
-				MinMemory: 100,
-				MaxMemory: 200,
-				VMDir:     "some-vm-dir",
+				MinMemory:      100,
+				MaxMemory:      200,
+				VMDir:          "some-vm-dir",
+				PrivateKeyPath: "some-private-key-path",
 			}
 
 			builder = &vm.VBoxBuilder{
@@ -155,7 +156,7 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					)
 					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", "some-private-key", 20*time.Second).AnyTimes().Do(
 						func(string, string, string, string, time.Duration) { time.Sleep(time.Minute) },
@@ -197,7 +198,7 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					)
 					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", "some-private-key", 20*time.Second).AnyTimes().Do(
 						func(string, string, string, string, time.Duration) { time.Sleep(time.Minute) },
@@ -237,7 +238,7 @@ var _ = Describe("Builder", func() {
 
 					mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil)
 					mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil)
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil)
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil)
 					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", "some-private-key", 20*time.Second).AnyTimes().Do(
 						func(string, string, string, string, time.Duration) { time.Sleep(time.Minute) },
 					)
@@ -269,7 +270,7 @@ var _ = Describe("Builder", func() {
 					}
 					mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil)
 					mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil)
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil)
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil)
 					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", "some-private-key", 20*time.Second).AnyTimes().Do(
 						func(string, string, string, string, time.Duration) { time.Sleep(time.Minute) },
 					)

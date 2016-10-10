@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -43,7 +42,7 @@ func (u *Unprovisioned) Status() string {
 }
 
 func (u *Unprovisioned) Provision(opts *StartOpts) error {
-	privateKeyBytes, err := u.FS.Read(filepath.Join(u.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := u.FS.Read(u.Config.PrivateKeyPath)
 	if err != nil {
 		return err
 	}
@@ -90,7 +89,7 @@ func (u *Unprovisioned) Target(autoTarget bool) error {
 }
 
 func (u *Unprovisioned) SSH() error {
-	privateKeyBytes, err := u.FS.Read(filepath.Join(u.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := u.FS.Read(u.Config.PrivateKeyPath)
 	if err != nil {
 		return err
 	}

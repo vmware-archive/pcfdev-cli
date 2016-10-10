@@ -3,7 +3,6 @@ package vm_test
 import (
 	"errors"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/golang/mock/gomock"
@@ -53,7 +52,7 @@ var _ = Describe("Running", func() {
 				SSHPort: "some-port",
 			},
 			Config: &conf.Config{
-				VMDir: "some-vm-dir",
+				PrivateKeyPath: "some-private-key-path",
 			},
 
 			VBox:       mockVBox,
@@ -153,7 +152,7 @@ var _ = Describe("Running", func() {
 	Describe("Provision", func() {
 		It("should provision the VM", func() {
 			gomock.InOrder(
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 				mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", "some-private-key", 30*time.Second).Return("", nil),
 				mockBuilder.EXPECT().VM("some-vm").Return(mockVM, nil),
 				mockVM.EXPECT().Provision(&vm.StartOpts{}),
@@ -165,7 +164,7 @@ var _ = Describe("Running", func() {
 		Context("when removing healthcheck file fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", "some-private-key", 30*time.Second).Return("", errors.New("some-error")),
 				)
 
@@ -175,7 +174,7 @@ var _ = Describe("Running", func() {
 
 		Context("when retrieving the private key fails", func() {
 			It("should return an error", func() {
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error"))
+				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
 
 				Expect(runningVM.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
 			})
@@ -184,7 +183,7 @@ var _ = Describe("Running", func() {
 		Context("when building unprovisioned vm fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", "some-private-key", 30*time.Second).Return("", nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
@@ -196,7 +195,7 @@ var _ = Describe("Running", func() {
 		Context("when running the provision command fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", "some-private-key", 30*time.Second).Return("", nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockVM, nil),
 					mockVM.EXPECT().Provision(&vm.StartOpts{}).Return(errors.New("some-error")),
@@ -262,7 +261,7 @@ var _ = Describe("Running", func() {
 	Describe("Trust", func() {
 		It("should trust VM certificates", func() {
 			gomock.InOrder(
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 				mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", "some-port", "some-private-key", 5*time.Minute).Return("some-cert", nil),
 				mockCertStore.EXPECT().Store("some-cert"),
 				mockUI.EXPECT().Say("***Warning: a self-signed certificate for *.some-domain has been inserted into your OS certificate store. To remove this certificate, run: cf dev untrust***"),
@@ -273,7 +272,7 @@ var _ = Describe("Running", func() {
 
 		Context("when there is an error reading the private key", func() {
 			It("should return the error", func() {
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error"))
+				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
 
 				Expect(runningVM.Trust(&vm.StartOpts{})).To(MatchError("failed to trust VM certificates: some-error"))
 			})
@@ -282,7 +281,7 @@ var _ = Describe("Running", func() {
 		Context("when there is an error getting SSH output", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", "some-port", "some-private-key", 5*time.Minute).Return("", errors.New("some-error")),
 				)
 
@@ -293,7 +292,7 @@ var _ = Describe("Running", func() {
 		Context("when there is an error storing the certificate", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", "some-port", "some-private-key", 5*time.Minute).Return("some-cert", nil),
 					mockCertStore.EXPECT().Store("some-cert").Return(errors.New("some-error")),
 				)
@@ -305,7 +304,7 @@ var _ = Describe("Running", func() {
 		Context("when the user specifies the 'PrintCA' flag", func() {
 			It("should print the CA", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", "some-port", "some-private-key", 5*time.Minute).Return("some-cert", nil),
 					mockUI.EXPECT().Say("some-cert"),
 				)
@@ -318,7 +317,7 @@ var _ = Describe("Running", func() {
 	Describe("SSH", func() {
 		It("should execute ssh on the client", func() {
 			gomock.InOrder(
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 				mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr),
 			)
 
@@ -328,7 +327,7 @@ var _ = Describe("Running", func() {
 		Context("when executing ssh fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
@@ -338,7 +337,7 @@ var _ = Describe("Running", func() {
 
 		Context("when reading the private key fails", func() {
 			It("should return an error", func() {
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error"))
+				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
 
 				Expect(runningVM.SSH()).To(MatchError("some-error"))
 			})

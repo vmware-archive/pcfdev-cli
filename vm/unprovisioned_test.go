@@ -3,7 +3,6 @@ package vm_test
 import (
 	"errors"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/golang/mock/gomock"
@@ -44,7 +43,7 @@ var _ = Describe("Unprovisioned", func() {
 			LogFetcher: mockLogFetcher,
 			HelpText:   mockHelpText,
 			Config: &conf.Config{
-				VMDir: "some-vm-dir",
+				PrivateKeyPath: "some-private-key-path",
 			},
 			VMConfig: &conf.VMConfig{
 				Name:    "some-vm",
@@ -88,7 +87,7 @@ var _ = Describe("Unprovisioned", func() {
 	Describe("Provision", func() {
 		It("should provision the VM", func() {
 			gomock.InOrder(
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 				mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", "some-private-key", 30*time.Second, os.Stdout, os.Stderr),
 				mockSSH.EXPECT().GetSSHOutput(
 					"cat /var/pcfdev/provision-options.json",
@@ -108,7 +107,7 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when the VM is autotargeted", func() {
 			It("should provision the VM", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", "some-private-key", 30*time.Second, os.Stdout, os.Stderr),
 					mockSSH.EXPECT().GetSSHOutput(
 						"cat /var/pcfdev/provision-options.json",
@@ -128,7 +127,7 @@ var _ = Describe("Unprovisioned", func() {
 
 		Context("when reading the private key fails", func() {
 			It("should return an error", func() {
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error"))
+				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
 
 				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
 			})
@@ -137,7 +136,7 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when there is an error finding the provision config", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", "some-private-key", 30*time.Second, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
@@ -148,7 +147,7 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when there is an error reading the provision config", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", "some-private-key", 30*time.Second, os.Stdout, os.Stderr),
 					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", "some-private-key", 30*time.Second).Return("", errors.New("some-error")),
 				)
@@ -160,7 +159,7 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when there is an error parsing the provision config", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", "some-private-key", 30*time.Second, os.Stdout, os.Stderr),
 					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", "some-private-key", 30*time.Second).Return("{some-bad-json}", nil),
 				)
@@ -203,7 +202,7 @@ var _ = Describe("Unprovisioned", func() {
 	Describe("SSH", func() {
 		It("should execute ssh on the client", func() {
 			gomock.InOrder(
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 				mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr),
 			)
 
@@ -212,7 +211,7 @@ var _ = Describe("Unprovisioned", func() {
 
 		Context("when reading the private key fails", func() {
 			It("should return an error", func() {
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error"))
+				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
 
 				Expect(unprovisioned.SSH()).To(MatchError("some-error"))
 			})
@@ -221,7 +220,7 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when executing ssh fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 

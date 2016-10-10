@@ -31,6 +31,7 @@ type Config struct {
 	DefaultCPUs              func() (int, error)
 	ExpectedMD5              string
 	InsecurePrivateKey       string
+	PrivateKeyPath           string
 	Version                  *Version
 }
 
@@ -86,6 +87,7 @@ func New(defaultVMName string, expectedMD5 string, insecurePrivateKey string, sy
 		SpringCloudMaxMemory:     springCloudMaxMemory,
 		DefaultCPUs:              system.PhysicalCores,
 		InsecurePrivateKey:       insecurePrivateKey,
+		PrivateKeyPath:           filepath.Join(pcfdevHome, "vms", "key.pem"),
 		Version:                  version,
 	}, nil
 }

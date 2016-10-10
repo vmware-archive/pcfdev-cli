@@ -160,11 +160,11 @@ func (v *VBox) insertSecureKeypair(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	return v.FS.Write(filepath.Join(v.Config.VMDir, "key.pem"), strings.NewReader(privateKey), false)
+	return v.FS.Write(v.Config.PrivateKeyPath, strings.NewReader(privateKey), false)
 }
 
 func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {
-	privateKeyBytes, err := v.FS.Read(filepath.Join(v.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := v.FS.Read(v.Config.PrivateKeyPath)
 	if err != nil {
 		return err
 	}
@@ -196,7 +196,7 @@ func (v *VBox) configureEnvironment(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	privateKeyBytes, err := v.FS.Read(filepath.Join(v.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := v.FS.Read(v.Config.PrivateKeyPath)
 	if err != nil {
 		return err
 	}

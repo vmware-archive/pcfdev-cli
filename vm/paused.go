@@ -2,7 +2,6 @@ package vm
 
 import (
 	"errors"
-	"path/filepath"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -65,7 +64,7 @@ func (p *Paused) Resume() error {
 		return &ResumeVMError{err}
 	}
 
-	privateKeyBytes, err := p.FS.Read(filepath.Join(p.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := p.FS.Read(p.Config.PrivateKeyPath)
 	if err != nil {
 		return &ResumeVMError{err}
 	}

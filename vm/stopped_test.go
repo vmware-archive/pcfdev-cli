@@ -3,7 +3,6 @@ package vm_test
 import (
 	"errors"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/golang/mock/gomock"
@@ -50,7 +49,7 @@ var _ = Describe("Stopped", func() {
 			SSHClient: mockSSH,
 			Builder:   mockBuilder,
 			Config: &config.Config{
-				VMDir: "some-vm-dir",
+				PrivateKeyPath: "some-private-key-path",
 			},
 		}
 	})
@@ -157,7 +156,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -174,7 +173,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -191,7 +190,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -208,7 +207,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -225,7 +224,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -242,7 +241,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -259,7 +258,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -276,7 +275,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -293,7 +292,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -310,7 +309,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -327,7 +326,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-custom-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -344,7 +343,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-custom-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -361,7 +360,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":["some-private-registry","some-other-private-registry"]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -389,7 +388,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error")),
+					mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error")),
 				)
 
 				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("failed to start VM: some-error"))
@@ -402,7 +401,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
@@ -418,7 +417,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm"),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
@@ -449,7 +448,7 @@ var _ = Describe("Stopped", func() {
 					mockUI.EXPECT().Say("Starting VM..."),
 					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
 						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						"127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),

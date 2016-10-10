@@ -40,7 +40,7 @@ var _ = Describe("LogFetcher", func() {
 			},
 
 			Config: &config.Config{
-				VMDir: "some-vm-dir",
+				PrivateKeyPath: "some-private-key-path",
 			},
 		}
 	})
@@ -52,7 +52,7 @@ var _ = Describe("LogFetcher", func() {
 	Describe("#GetDebugLogs", func() {
 		It("should say a message", func() {
 			gomock.InOrder(
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 				mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
 				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-provision-log", nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log"), false),
@@ -96,7 +96,7 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is sensitive information", func() {
 			It("should remove the sensitive information", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("http://some-private-domain.com", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("<redacted uri>"), false),
@@ -141,7 +141,7 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error creating a temporary directory", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("", errors.New("some-error")),
 				)
 
@@ -152,7 +152,7 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error getting ssh output of vm log file", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("", errors.New("some-error")),
 				)
@@ -164,7 +164,7 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error writing the temporary file for the vm log file", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-provision-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log"), false).Return(errors.New("some-error")),
@@ -177,7 +177,7 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error getting output of logging shell command", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-provision-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log"), false),
@@ -202,7 +202,7 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error writing the temporary file for the logging shell command", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-provision-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log"), false),
@@ -228,7 +228,7 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error compressing a tar ball of the log files", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
-					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
 					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-provision-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log"), false),
@@ -272,7 +272,7 @@ var _ = Describe("LogFetcher", func() {
 
 		Context("when there is an error reading the private key", func() {
 			It("should return the error", func() {
-				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error"))
+				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
 
 				Expect(logFetcher.FetchLogs()).To(MatchError("some-error"))
 			})

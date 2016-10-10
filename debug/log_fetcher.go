@@ -108,7 +108,7 @@ func (l *LogFetcher) FetchLogs() error {
 
 	sensitiveInformationScrubber := &SensitiveInformationScrubber{}
 
-	privateKeyBytes, err := l.FS.Read(filepath.Join(l.Config.VMDir, "key.pem"))
+	privateKeyBytes, err := l.FS.Read(l.Config.PrivateKeyPath)
 	if err != nil {
 		return err
 	}

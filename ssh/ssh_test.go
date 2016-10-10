@@ -72,7 +72,9 @@ var _ = Describe("ssh", func() {
 
 			AfterEach(func() {
 				Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
-				Expect(exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()).To(Succeed())
+				Eventually(func() error {
+					return exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()
+				}, "10s").Should(Succeed())
 			})
 
 			Context("when the command succeeds", func() {
@@ -126,7 +128,9 @@ var _ = Describe("ssh", func() {
 
 			AfterEach(func() {
 				Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
-				Expect(exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()).To(Succeed())
+				Eventually(func() error {
+					return exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()
+				}, "10s").Should(Succeed())
 			})
 
 			It("should succeed", func() {
@@ -167,7 +171,9 @@ var _ = Describe("ssh", func() {
 
 			AfterEach(func() {
 				Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
-				Expect(exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()).To(Succeed())
+				Eventually(func() error {
+					return exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()
+				}, "10s").Should(Succeed())
 			})
 
 			It("should return the output of the ssh command", func() {
@@ -228,7 +234,9 @@ var _ = Describe("ssh", func() {
 
 		AfterEach(func() {
 			Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
-			Expect(exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()).To(Succeed())
+			Eventually(func() error {
+				return exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()
+			}, "10s").Should(Succeed())
 		})
 
 		It("should start an ssh session into the VM", func() {

@@ -40,7 +40,7 @@ func (r *Running) Provision(opts *StartOpts) error {
 		return err
 	}
 
-	if _, err := r.SSHClient.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", r.VMConfig.IP, "22", string(privateKeyBytes), 30*time.Second); err != nil {
+	if _, err := r.SSHClient.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", r.VMConfig.IP, "22", privateKeyBytes, 30*time.Second); err != nil {
 		return err
 	}
 	unprovisionedVM, err := r.Builder.VM(r.VMConfig.Name)
@@ -100,7 +100,7 @@ func (r *Running) Trust(startOpts *StartOpts) error {
 		return &TrustError{err}
 	}
 
-	output, err := r.SSHClient.GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", r.VMConfig.SSHPort, string(privateKeyBytes), 5*time.Minute)
+	output, err := r.SSHClient.GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", r.VMConfig.SSHPort, privateKeyBytes, 5*time.Minute)
 	if err != nil {
 		return &TrustError{err}
 	}
@@ -155,5 +155,5 @@ func (r *Running) SSH() error {
 		return err
 	}
 
-	return r.SSHClient.StartSSHSession("127.0.0.1", r.VMConfig.SSHPort, string(privateKeyBytes), 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
+	return r.SSHClient.StartSSHSession("127.0.0.1", r.VMConfig.SSHPort, privateKeyBytes, 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
 }

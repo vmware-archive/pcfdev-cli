@@ -60,8 +60,8 @@ type FS interface {
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
 type SSH interface {
 	GenerateAddress() (host string, port string, err error)
-	GenerateKeypair() (privateKey string, publicKey string, err error)
-	RunSSHCommand(command string, ip string, port string, privateKey string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
+	GenerateKeypair() (privateKey []byte, publicKey []byte, err error)
+	RunSSHCommand(command string, ip string, port string, privateKey []byte, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/picker.go github.com/pivotal-cf/pcfdev-cli/vbox NetworkPicker
@@ -160,7 +160,7 @@ func (v *VBox) insertSecureKeypair(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	return v.FS.Write(v.Config.PrivateKeyPath, strings.NewReader(privateKey), false)
+	return v.FS.Write(v.Config.PrivateKeyPath, bytes.NewReader(privateKey), false)
 }
 
 func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {
@@ -183,7 +183,7 @@ func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {
 		fmt.Sprintf("echo -e '%s' | sudo tee /etc/network/interfaces", sshCommand.String()),
 		"127.0.0.1",
 		vmConfig.SSHPort,
-		string(privateKeyBytes),
+		privateKeyBytes,
 		5*time.Minute,
 		ioutil.Discard,
 		ioutil.Discard,
@@ -205,7 +205,7 @@ func (v *VBox) configureEnvironment(vmConfig *config.VMConfig) error {
 		fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings),
 		"127.0.0.1",
 		vmConfig.SSHPort,
-		string(privateKeyBytes),
+		privateKeyBytes,
 		5*time.Minute,
 		ioutil.Discard,
 		ioutil.Discard,

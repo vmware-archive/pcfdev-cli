@@ -72,7 +72,7 @@ var _ = Describe("Paused", func() {
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
 				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-				mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", []byte("some-private-key"), 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
@@ -108,7 +108,7 @@ var _ = Describe("Paused", func() {
 					mockUI.EXPECT().Say("Resuming VM..."),
 					mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute).Return(errors.New("some-error")),
+					mockSSH.EXPECT().WaitForSSH("some-ip", "22", []byte("some-private-key"), 5*time.Minute).Return(errors.New("some-error")),
 				)
 
 				Expect(pausedVM.Start(&vm.StartOpts{})).To(MatchError("failed to resume VM: some-error"))
@@ -170,7 +170,7 @@ var _ = Describe("Paused", func() {
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
 				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-				mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", []byte("some-private-key"), 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
@@ -183,7 +183,7 @@ var _ = Describe("Paused", func() {
 					mockUI.EXPECT().Say("Resuming VM..."),
 					mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute).Return(errors.New("some-error")),
+					mockSSH.EXPECT().WaitForSSH("some-ip", "22", []byte("some-private-key"), 5*time.Minute).Return(errors.New("some-error")),
 				)
 
 				Expect(pausedVM.Resume()).To(MatchError("failed to resume VM: some-error"))

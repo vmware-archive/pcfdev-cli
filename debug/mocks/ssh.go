@@ -29,7 +29,7 @@ func (_m *MockSSH) EXPECT() *_MockSSHRecorder {
 	return _m.recorder
 }
 
-func (_m *MockSSH) GetSSHOutput(_param0 string, _param1 string, _param2 string, _param3 string, _param4 time.Duration) (string, error) {
+func (_m *MockSSH) GetSSHOutput(_param0 string, _param1 string, _param2 string, _param3 []byte, _param4 time.Duration) (string, error) {
 	ret := _m.ctrl.Call(_m, "GetSSHOutput", _param0, _param1, _param2, _param3, _param4)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)

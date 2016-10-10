@@ -179,12 +179,12 @@ func (b *VBoxBuilder) healthcheck(ip string, sshPort string) (string, error) {
 	}
 
 	go func() {
-		output, err := b.SSH.GetSSHOutput(healthCheckCommand, "127.0.0.1", sshPort, string(privateKeyBytes), 20*time.Second)
+		output, err := b.SSH.GetSSHOutput(healthCheckCommand, "127.0.0.1", sshPort, privateKeyBytes, 20*time.Second)
 		outputChan <- output
 		errChan <- err
 	}()
 	go func() {
-		output, err := b.SSH.GetSSHOutput(healthCheckCommand, ip, "22", string(privateKeyBytes), 20*time.Second)
+		output, err := b.SSH.GetSSHOutput(healthCheckCommand, ip, "22", privateKeyBytes, 20*time.Second)
 		outputChan <- output
 		errChan <- err
 	}()

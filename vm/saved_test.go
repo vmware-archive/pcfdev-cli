@@ -72,7 +72,7 @@ var _ = Describe("Saved", func() {
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig),
 				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-				mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", []byte("some-private-key"), 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
@@ -107,7 +107,7 @@ var _ = Describe("Saved", func() {
 					mockUI.EXPECT().Say("Resuming VM..."),
 					mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute).Return(errors.New("some-error")),
+					mockSSH.EXPECT().WaitForSSH("some-ip", "22", []byte("some-private-key"), 5*time.Minute).Return(errors.New("some-error")),
 				)
 
 				Expect(savedVM.Start(&vm.StartOpts{})).To(MatchError("failed to resume VM: some-error"))
@@ -199,7 +199,7 @@ var _ = Describe("Saved", func() {
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig),
 				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-				mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", []byte("some-private-key"), 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
@@ -214,7 +214,7 @@ var _ = Describe("Saved", func() {
 					mockUI.EXPECT().Say("Resuming VM..."),
 					mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute).Return(errors.New("some-error")),
+					mockSSH.EXPECT().WaitForSSH("some-ip", "22", []byte("some-private-key"), 5*time.Minute).Return(errors.New("some-error")),
 				)
 
 				Expect(savedVM.Resume()).To(MatchError("failed to resume VM: some-error"))
@@ -259,7 +259,7 @@ var _ = Describe("Saved", func() {
 						mockUI.EXPECT().Say("Resuming VM..."),
 						mockVBox.EXPECT().ResumeSavedVM(savedVM.VMConfig),
 						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-						mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute),
+						mockSSH.EXPECT().WaitForSSH("some-ip", "22", []byte("some-private-key"), 5*time.Minute),
 						mockUI.EXPECT().Say("PCF Dev is now running."),
 					)
 

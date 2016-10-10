@@ -158,10 +158,10 @@ var _ = Describe("Builder", func() {
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
 						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					)
-					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", "some-private-key", 20*time.Second).AnyTimes().Do(
-						func(string, string, string, string, time.Duration) { time.Sleep(time.Minute) },
+					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", []byte("some-private-key"), 20*time.Second).AnyTimes().Do(
+						func(string, string, string, []byte, time.Duration) { time.Sleep(time.Minute) },
 					)
-					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("ok\n", nil)
+					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", []byte("some-private-key"), 20*time.Second).Return("ok\n", nil)
 
 					runningVM, err := builder.VM("some-vm")
 					Expect(err).NotTo(HaveOccurred())
@@ -200,10 +200,10 @@ var _ = Describe("Builder", func() {
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
 						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					)
-					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", "some-private-key", 20*time.Second).AnyTimes().Do(
-						func(string, string, string, string, time.Duration) { time.Sleep(time.Minute) },
+					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", []byte("some-private-key"), 20*time.Second).AnyTimes().Do(
+						func(string, string, string, []byte, time.Duration) { time.Sleep(time.Minute) },
 					)
-					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", "some-private-key", 20*time.Second).Return("ok\n", nil)
+					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", []byte("some-private-key"), 20*time.Second).Return("ok\n", nil)
 
 					runningVM, err := builder.VM("some-vm")
 					Expect(err).NotTo(HaveOccurred())
@@ -239,10 +239,10 @@ var _ = Describe("Builder", func() {
 					mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil)
 					mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil)
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil)
-					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", "some-private-key", 20*time.Second).AnyTimes().Do(
-						func(string, string, string, string, time.Duration) { time.Sleep(time.Minute) },
+					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", []byte("some-private-key"), 20*time.Second).AnyTimes().Do(
+						func(string, string, string, []byte, time.Duration) { time.Sleep(time.Minute) },
 					)
-					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", "some-private-key", 20*time.Second).Return("", nil)
+					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", []byte("some-private-key"), 20*time.Second).Return("", nil)
 
 					unprovisionedVM, err := builder.VM("some-vm")
 					Expect(err).NotTo(HaveOccurred())
@@ -271,10 +271,10 @@ var _ = Describe("Builder", func() {
 					mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil)
 					mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil)
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil)
-					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", "some-private-key", 20*time.Second).AnyTimes().Do(
-						func(string, string, string, string, time.Duration) { time.Sleep(time.Minute) },
+					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "192.168.11.11", "22", []byte("some-private-key"), 20*time.Second).AnyTimes().Do(
+						func(string, string, string, []byte, time.Duration) { time.Sleep(time.Minute) },
 					)
-					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("", nil)
+					mockSSH.EXPECT().GetSSHOutput(healthCheckCommand, "127.0.0.1", "some-port", []byte("some-private-key"), 20*time.Second).Return("", nil)
 
 					unprovisionedVM, err := builder.VM("some-vm")
 					Expect(err).NotTo(HaveOccurred())

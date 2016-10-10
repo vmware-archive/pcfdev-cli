@@ -58,7 +58,7 @@ func main() {
 	conf, err := config.New(
 		vmName,
 		md5,
-		insecurePrivateKey,
+		[]byte(insecurePrivateKey),
 		&system.System{
 			FS: fileSystem,
 		},

@@ -27,7 +27,7 @@ func (*SSH) GenerateAddress() (host string, port string, err error) {
 	return address[0], address[1], nil
 }
 
-func (s *SSH) GetSSHOutput(command string, ip string, port string, privateKey string, timeout time.Duration) (string, error) {
+func (s *SSH) GetSSHOutput(command string, ip string, port string, privateKey []byte, timeout time.Duration) (string, error) {
 	client, session, err := s.newSession(ip, port, privateKey, timeout)
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func (s *SSH) GetSSHOutput(command string, ip string, port string, privateKey st
 	return string(output), err
 }
 
-func (s *SSH) RunSSHCommand(command string, ip string, port string, privateKey string, timeout time.Duration, stdout io.Writer, stderr io.Writer) (err error) {
+func (s *SSH) RunSSHCommand(command string, ip string, port string, privateKey []byte, timeout time.Duration, stdout io.Writer, stderr io.Writer) (err error) {
 	client, session, err := s.newSession(ip, port, privateKey, timeout)
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (s *SSH) RunSSHCommand(command string, ip string, port string, privateKey s
 	return session.Run(command)
 }
 
-func (s *SSH) StartSSHSession(ip string, port string, privateKey string, timeout time.Duration, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (s *SSH) StartSSHSession(ip string, port string, privateKey []byte, timeout time.Duration, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	client, session, err := s.newSession(ip, port, privateKey, timeout)
 	if err != nil {
 		return err
@@ -89,32 +89,32 @@ func (s *SSH) StartSSHSession(ip string, port string, privateKey string, timeout
 	return session.Wait()
 }
 
-func (s *SSH) WaitForSSH(ip string, port string, privateKey string, timeout time.Duration) error {
+func (s *SSH) WaitForSSH(ip string, port string, privateKey []byte, timeout time.Duration) error {
 	_, err := s.waitForSSH(ip, port, privateKey, timeout)
 	return err
 }
 
-func (s *SSH) GenerateKeypair() (string, string, error) {
+func (s *SSH) GenerateKeypair() ([]byte, []byte, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 
 	encodedPrivateKey := new(bytes.Buffer)
 	marshaledPrivateKey := x509.MarshalPKCS1PrivateKey(privateKey)
 	if err = pem.Encode(encodedPrivateKey, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: marshaledPrivateKey}); err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 
 	publicKey, err := ssh.NewPublicKey(privateKey.Public())
 	if err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 
-	return encodedPrivateKey.String(), string(ssh.MarshalAuthorizedKey(publicKey)), nil
+	return encodedPrivateKey.Bytes(), ssh.MarshalAuthorizedKey(publicKey), nil
 }
 
-func (s *SSH) newSession(ip string, port string, privateKey string, timeout time.Duration) (*ssh.Client, *ssh.Session, error) {
+func (s *SSH) newSession(ip string, port string, privateKey []byte, timeout time.Duration) (*ssh.Client, *ssh.Session, error) {
 	client, err := s.waitForSSH(ip, port, privateKey, timeout)
 	if err != nil {
 		return nil, nil, err
@@ -129,8 +129,8 @@ func (s *SSH) newSession(ip string, port string, privateKey string, timeout time
 	return client, session, nil
 }
 
-func (*SSH) waitForSSH(ip string, port string, privateKey string, timeout time.Duration) (client *ssh.Client, err error) {
-	signer, err := ssh.ParsePrivateKey([]byte(privateKey))
+func (*SSH) waitForSSH(ip string, port string, privateKey []byte, timeout time.Duration) (client *ssh.Client, err error) {
+	signer, err := ssh.ParsePrivateKey(privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse private key: %s", err)
 	}

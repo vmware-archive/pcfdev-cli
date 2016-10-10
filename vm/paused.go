@@ -69,7 +69,7 @@ func (p *Paused) Resume() error {
 		return &ResumeVMError{err}
 	}
 
-	if err := p.SSHClient.WaitForSSH(p.VMConfig.IP, "22", string(privateKeyBytes), 5*time.Minute); err != nil {
+	if err := p.SSHClient.WaitForSSH(p.VMConfig.IP, "22", privateKeyBytes, 5*time.Minute); err != nil {
 		return &ResumeVMError{err}
 	}
 

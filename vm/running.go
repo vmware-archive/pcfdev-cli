@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 )
 
 type Running struct {
+	Config   *config.Config
 	VMConfig *config.VMConfig
 
 	VBox       VBox
@@ -34,7 +36,12 @@ func (r *Running) Stop() error {
 }
 
 func (r *Running) Provision(opts *StartOpts) error {
-	if _, err := r.SSHClient.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", r.VMConfig.IP, "22", 30*time.Second); err != nil {
+	privateKeyBytes, err := r.FS.Read(filepath.Join(r.Config.VMDir, "key.pem"))
+	if err != nil {
+		return err
+	}
+
+	if _, err := r.SSHClient.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", r.VMConfig.IP, "22", string(privateKeyBytes), 30*time.Second); err != nil {
 		return err
 	}
 	unprovisionedVM, err := r.Builder.VM(r.VMConfig.Name)
@@ -89,7 +96,12 @@ func (r *Running) Resume() error {
 }
 
 func (r *Running) Trust(startOpts *StartOpts) error {
-	output, err := r.SSHClient.GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", r.VMConfig.SSHPort, 5*time.Minute)
+	privateKeyBytes, err := r.FS.Read(filepath.Join(r.Config.VMDir, "key.pem"))
+	if err != nil {
+		return &TrustError{err}
+	}
+
+	output, err := r.SSHClient.GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", r.VMConfig.SSHPort, string(privateKeyBytes), 5*time.Minute)
 	if err != nil {
 		return &TrustError{err}
 	}
@@ -139,5 +151,10 @@ func (r *Running) GetDebugLogs() error {
 }
 
 func (r *Running) SSH() error {
-	return r.SSHClient.StartSSHSession("127.0.0.1", r.VMConfig.SSHPort, 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
+	privateKeyBytes, err := r.FS.Read(filepath.Join(r.Config.VMDir, "key.pem"))
+	if err != nil {
+		return err
+	}
+
+	return r.SSHClient.StartSSHSession("127.0.0.1", r.VMConfig.SSHPort, string(privateKeyBytes), 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
 }

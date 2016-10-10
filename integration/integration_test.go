@@ -53,6 +53,9 @@ var _ = BeforeSuite(func() {
 	os.Setenv("CF_PLUGIN_HOME", filepath.Join(tempHome, "plugins"))
 	os.Setenv("PCFDEV_HOME", filepath.Join(tempHome, "pcfdev"))
 
+	insecurePrivateKeyBytes, err := ioutil.ReadFile(filepath.Join("..", "assets", "insecure.key"))
+	Expect(err).NotTo(HaveOccurred())
+
 	pluginPath, err = gexec.Build(filepath.Join("github.com", "pivotal-cf", "pcfdev-cli"), "-ldflags",
 		"-X main.vmName="+vmName+
 			" -X main.buildVersion=0.0.0"+
@@ -60,7 +63,8 @@ var _ = BeforeSuite(func() {
 			" -X main.ovaBuildVersion=some-ova-version"+
 			" -X main.releaseId=1622"+
 			" -X main.productFileId=5689"+
-			" -X main.md5=4c19b7f03b6d70ff932fbd79bb35cef2")
+			" -X main.md5=4c19b7f03b6d70ff932fbd79bb35cef2"+
+			fmt.Sprintf(` -X "main.insecurePrivateKey=%s"`, string(insecurePrivateKeyBytes)))
 	Expect(err).NotTo(HaveOccurred())
 
 	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)
@@ -246,15 +250,18 @@ var _ = Describe("PCF Dev", func() {
 		Expect(vmMemory("pcfdev-custom")).To(Equal("3456"))
 		Expect(vmCores("pcfdev-custom")).To(Equal("1"))
 
+		securePrivateKey, err := ioutil.ReadFile(filepath.Join(os.Getenv("PCFDEV_HOME"), "vms", "key.pem"))
+		Expect(err).NotTo(HaveOccurred())
+
 		stdout := gbytes.NewBuffer()
 		stderr := gbytes.NewBuffer()
 		sshClient := &ssh.SSH{}
 		sshPort := getForwardedPort("pcfdev-custom")
-		sshClient.RunSSHCommand("echo $HTTP_PROXY", "127.0.0.1", sshPort, time.Minute, stdout, stderr)
+		sshClient.RunSSHCommand("echo $HTTP_PROXY", "127.0.0.1", sshPort, string(securePrivateKey), time.Minute, stdout, stderr)
 		Eventually(stdout, "30s").Should(gbytes.Say("192.168.93.23"))
-		sshClient.RunSSHCommand("echo $HTTPS_PROXY", "127.0.0.1", sshPort, time.Minute, stdout, stderr)
+		sshClient.RunSSHCommand("echo $HTTPS_PROXY", "127.0.0.1", sshPort, string(securePrivateKey), time.Minute, stdout, stderr)
 		Eventually(stdout, "10s").Should(gbytes.Say("192.168.38.29"))
-		sshClient.RunSSHCommand("echo $NO_PROXY", "127.0.0.1", sshPort, time.Minute, stdout, stderr)
+		sshClient.RunSSHCommand("echo $NO_PROXY", "127.0.0.1", sshPort, string(securePrivateKey), time.Minute, stdout, stderr)
 		Eventually(stdout, "10s").Should(gbytes.Say("192.168.98.98"))
 
 		response, err = getResponseFromFakeServerWithHostname("http://192.168.200.138.xip.io")

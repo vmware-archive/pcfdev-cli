@@ -2,7 +2,15 @@
 
 set -ex
 
+if [[ "$1" != "test" ]]; then
+	if [[ -z "$PCFDEV_INSECURE_PRIVATE_KEY" ]]; then
+		echo "PCFDEV_INSECURE_PRIVATE_KEY must be set"
+		exit 1
+	fi
+fi
+
 pcfdev_cli_path=$(cd `dirname $0` && cd .. && pwd)
+
 if [[ "$1" == "test" ]]
 then
   vm_name="pcfdev-test"
@@ -10,6 +18,7 @@ then
   product_file_id="5689"
   md5="4c19b7f03b6d70ff932fbd79bb35cef2"
   ova_version="0"
+  insecure_private_key=$(cat $pcfdev_cli_path/assets/insecure.key)
 else
   if [[ "$1" == "internal" ]]
   then
@@ -22,6 +31,7 @@ else
   product_file_id=$(echo "$metadata" | jq -r .id)
   md5=$(echo "$metadata" | jq -r .md5)
   ova_version=$(echo "$metadata" | jq -r .version | tr -d v)
+  insecure_private_key=$PCFDEV_INSECURE_PRIVATE_KEY
 fi
 
 pushd "$pcfdev_cli_path" >/dev/null
@@ -33,5 +43,6 @@ pushd "$pcfdev_cli_path" >/dev/null
      -X main.vmName=${vm_name}
      -X main.releaseId=${release_id}
      -X main.productFileId=${product_file_id}
-     -X main.md5=${md5}"
+     -X main.md5=${md5}
+	 -X \"main.insecurePrivateKey=$insecure_private_key\""
 popd >/dev/null

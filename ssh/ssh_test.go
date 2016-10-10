@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"path/filepath"
 	"time"
+
+	gossh "golang.org/x/crypto/ssh"
 
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	. "github.com/pivotal-cf/pcfdev-cli/ssh"
@@ -16,9 +19,10 @@ import (
 )
 
 var (
-	vBoxManagePath string
-	vmName         string
-	port           string
+	vBoxManagePath  string
+	vmName          string
+	port            string
+	privateKeyBytes []byte
 
 	ssh *SSH
 )
@@ -26,6 +30,9 @@ var (
 var _ = BeforeSuite(func() {
 	var err error
 	vBoxManagePath, err = helpers.VBoxManagePath()
+	Expect(err).NotTo(HaveOccurred())
+
+	privateKeyBytes, err = ioutil.ReadFile(filepath.Join("..", "assets", "insecure.key"))
 	Expect(err).NotTo(HaveOccurred())
 })
 
@@ -70,26 +77,32 @@ var _ = Describe("ssh", func() {
 
 			Context("when the command succeeds", func() {
 				It("should stream stdout to the terminal", func() {
-					Expect(ssh.RunSSHCommand("echo -n some-output", "127.0.0.1", port, 5*time.Minute, stdout, stderr)).To(Succeed())
+					Expect(ssh.RunSSHCommand("echo -n some-output", "127.0.0.1", port, string(privateKeyBytes), 5*time.Minute, stdout, stderr)).To(Succeed())
 					Eventually(string(stdout.Contents()), 20*time.Second).Should(Equal("some-output"))
 				})
 
 				It("should stream stderr to the terminal", func() {
-					Expect(ssh.RunSSHCommand(">&2 echo -n some-output", "127.0.0.1", port, 5*time.Minute, stdout, stderr)).To(Succeed())
+					Expect(ssh.RunSSHCommand(">&2 echo -n some-output", "127.0.0.1", port, string(privateKeyBytes), 5*time.Minute, stdout, stderr)).To(Succeed())
 					Eventually(string(stderr.Contents()), 20*time.Second).Should(Equal("some-output"))
 				})
 			})
 
 			Context("when the command fails", func() {
 				It("should return an error", func() {
-					Expect(ssh.RunSSHCommand("false", "127.0.0.1", port, 5*time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("Process exited with: 1")))
+					Expect(ssh.RunSSHCommand("false", "127.0.0.1", port, string(privateKeyBytes), 5*time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("Process exited with: 1")))
+				})
+			})
+
+			Context("when private key is bad", func() {
+				It("should return an error", func() {
+					Expect(ssh.RunSSHCommand("false", "127.0.0.1", port, "some-bad-private-key", 5*time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("could not parse private key:")))
 				})
 			})
 		})
 
 		Context("when SSH connection times out", func() {
 			It("should return an error", func() {
-				Expect(ssh.RunSSHCommand("echo -n some-output", "127.0.0.1", "some-bad-port", time.Second, ioutil.Discard, ioutil.Discard)).To(MatchError(ContainSubstring("ssh connection timed out:")))
+				Expect(ssh.RunSSHCommand("echo -n some-output", "127.0.0.1", "some-bad-port", string(privateKeyBytes), time.Second, ioutil.Discard, ioutil.Discard)).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})
 	})
@@ -117,13 +130,19 @@ var _ = Describe("ssh", func() {
 			})
 
 			It("should succeed", func() {
-				Expect(ssh.WaitForSSH(ip, port, 5*time.Minute)).To(Succeed())
+				Expect(ssh.WaitForSSH(ip, port, string(privateKeyBytes), 5*time.Minute)).To(Succeed())
 			})
 		})
 
 		Context("when SSH connection times out", func() {
 			It("should return an error", func() {
-				Expect(ssh.WaitForSSH(ip, port, 5*time.Second)).To(MatchError(ContainSubstring("ssh connection timed out:")))
+				Expect(ssh.WaitForSSH(ip, port, string(privateKeyBytes), 5*time.Second)).To(MatchError(ContainSubstring("ssh connection timed out:")))
+			})
+		})
+
+		Context("when private key is bad", func() {
+			It("should return an error", func() {
+				Expect(ssh.WaitForSSH(ip, port, "some-bad-private-key", 5*time.Second)).To(MatchError(ContainSubstring("could not parse private key:")))
 			})
 		})
 	})
@@ -152,16 +171,16 @@ var _ = Describe("ssh", func() {
 			})
 
 			It("should return the output of the ssh command", func() {
-				Expect(ssh.GetSSHOutput("echo -n some-output", ip, port, 5*time.Minute)).To(Equal("some-output"))
+				Expect(ssh.GetSSHOutput("echo -n some-output", ip, port, string(privateKeyBytes), 5*time.Minute)).To(Equal("some-output"))
 			})
 
 			It("should return the stderr of the ssh command", func() {
-				Expect(ssh.GetSSHOutput(">&2 echo -n some-output", ip, port, 5*time.Minute)).To(Equal("some-output"))
+				Expect(ssh.GetSSHOutput(">&2 echo -n some-output", ip, port, string(privateKeyBytes), 5*time.Minute)).To(Equal("some-output"))
 			})
 
 			Context("when the command fails", func() {
 				It("should return an error", func() {
-					output, err := ssh.GetSSHOutput("echo -n some-output; false", ip, port, 5*time.Minute)
+					output, err := ssh.GetSSHOutput("echo -n some-output; false", ip, port, string(privateKeyBytes), 5*time.Minute)
 					Expect(output).To(Equal("some-output"))
 					Expect(err).To(MatchError(ContainSubstring("Process exited with: 1")))
 				})
@@ -170,8 +189,15 @@ var _ = Describe("ssh", func() {
 
 		Context("when SSH connection times out", func() {
 			It("should return an error", func() {
-				_, err := ssh.GetSSHOutput("echo -n some-output", ip, "some-bad-port", time.Second)
+				_, err := ssh.GetSSHOutput("echo -n some-output", ip, "some-bad-port", string(privateKeyBytes), time.Second)
 				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
+			})
+		})
+
+		Context("when private key is bad", func() {
+			It("should return an error", func() {
+				_, err := ssh.GetSSHOutput("echo -n some-output", ip, port, "some-bad-private-key", time.Second)
+				Expect(err).To(MatchError(ContainSubstring("could not parse private key:")))
 			})
 		})
 	})
@@ -211,7 +237,7 @@ var _ = Describe("ssh", func() {
 				fmt.Fprintln(stdin, "exit")
 			}()
 
-			err := ssh.StartSSHSession("127.0.0.1", port, 5*time.Minute, stdin, stdout, stderr)
+			err := ssh.StartSSHSession("127.0.0.1", port, string(privateKeyBytes), 5*time.Minute, stdin, stdout, stderr)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(stdout).Should(gbytes.Say("Welcome to Ubuntu"))
@@ -219,9 +245,28 @@ var _ = Describe("ssh", func() {
 
 		Context("when there is an error creating the ssh session", func() {
 			It("should return the error", func() {
-				err := ssh.StartSSHSession("127.0.0.1", "some-bad-port", time.Second, stdin, stdout, stderr)
+				err := ssh.StartSSHSession("127.0.0.1", "some-bad-port", string(privateKeyBytes), time.Second, stdin, stdout, stderr)
 				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
+		})
+
+		Context("when the private key is bad", func() {
+			It("should return the error", func() {
+				err := ssh.StartSSHSession("127.0.0.1", port, "some-bad-private-key", time.Second, stdin, stdout, stderr)
+				Expect(err).To(MatchError(ContainSubstring("could not parse private key:")))
+			})
+		})
+	})
+
+	Describe("#GenerateKeypair", func() {
+		It("should generate an rsa keypair", func() {
+			privateKey, publicKey, err := ssh.GenerateKeypair()
+			Expect(err).NotTo(HaveOccurred())
+
+			signer, err := gossh.ParsePrivateKey([]byte(privateKey))
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(string(gossh.MarshalAuthorizedKey(signer.PublicKey()))).To(Equal(publicKey))
 		})
 	})
 })

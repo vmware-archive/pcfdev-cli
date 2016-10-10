@@ -3,6 +3,7 @@ package vm_test
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/golang/mock/gomock"
@@ -87,15 +88,17 @@ var _ = Describe("Unprovisioned", func() {
 	Describe("Provision", func() {
 		It("should provision the VM", func() {
 			gomock.InOrder(
-				mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", 30*time.Second, os.Stdout, os.Stderr),
+				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+				mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", "some-private-key", 30*time.Second, os.Stdout, os.Stderr),
 				mockSSH.EXPECT().GetSSHOutput(
 					"cat /var/pcfdev/provision-options.json",
 					"127.0.0.1",
 					"some-port",
+					"some-private-key",
 					30*time.Second,
 				).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-service,some-other-service","registries":["some-registry","some-other-registry"]}`, nil),
 				mockUI.EXPECT().Say("Provisioning VM..."),
-				mockSSH.EXPECT().RunSSHCommand(`sudo -H /var/pcfdev/provision "some-domain" "some-ip" "some-service,some-other-service" "some-registry,some-other-registry"`, "127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+				mockSSH.EXPECT().RunSSHCommand(`sudo -H /var/pcfdev/provision "some-domain" "some-ip" "some-service,some-other-service" "some-registry,some-other-registry"`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
 				mockHelpText.EXPECT().Print("some-domain", false),
 			)
 
@@ -105,15 +108,17 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when the VM is autotargeted", func() {
 			It("should provision the VM", func() {
 				gomock.InOrder(
-					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", 30*time.Second, os.Stdout, os.Stderr),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", "some-private-key", 30*time.Second, os.Stdout, os.Stderr),
 					mockSSH.EXPECT().GetSSHOutput(
 						"cat /var/pcfdev/provision-options.json",
 						"127.0.0.1",
 						"some-port",
+						"some-private-key",
 						30*time.Second,
 					).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-service,some-other-service","registries":["some-registry","some-other-registry"]}`, nil),
 					mockUI.EXPECT().Say("Provisioning VM..."),
-					mockSSH.EXPECT().RunSSHCommand(`sudo -H /var/pcfdev/provision "some-domain" "some-ip" "some-service,some-other-service" "some-registry,some-other-registry"`, "127.0.0.1", "some-port", 5*time.Minute, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().RunSSHCommand(`sudo -H /var/pcfdev/provision "some-domain" "some-ip" "some-service,some-other-service" "some-registry,some-other-registry"`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdout, os.Stderr),
 					mockHelpText.EXPECT().Print("some-domain", true),
 				)
 
@@ -121,10 +126,19 @@ var _ = Describe("Unprovisioned", func() {
 			})
 		})
 
+		Context("when reading the private key fails", func() {
+			It("should return an error", func() {
+				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error"))
+
+				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
+			})
+		})
+
 		Context("when there is an error finding the provision config", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", 30*time.Second, os.Stdout, os.Stderr).Return(errors.New("some-error")),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", "some-private-key", 30*time.Second, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
 				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError("failed to provision VM: missing provision configuration"))
@@ -134,8 +148,9 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when there is an error reading the provision config", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", 30*time.Second, os.Stdout, os.Stderr),
-					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", 30*time.Second).Return("", errors.New("some-error")),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", "some-private-key", 30*time.Second, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", "some-private-key", 30*time.Second).Return("", errors.New("some-error")),
 				)
 
 				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError("failed to provision VM: some-error"))
@@ -145,8 +160,9 @@ var _ = Describe("Unprovisioned", func() {
 		Context("when there is an error parsing the provision config", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
-					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", 30*time.Second, os.Stdout, os.Stderr),
-					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", 30*time.Second).Return("{some-bad-json}", nil),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", "some-port", "some-private-key", 30*time.Second, os.Stdout, os.Stderr),
+					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", "some-port", "some-private-key", 30*time.Second).Return("{some-bad-json}", nil),
 				)
 
 				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError(ContainSubstring(`failed to provision VM: invalid character 's'`)))
@@ -186,14 +202,28 @@ var _ = Describe("Unprovisioned", func() {
 
 	Describe("SSH", func() {
 		It("should execute ssh on the client", func() {
-			mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
+			gomock.InOrder(
+				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+				mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr),
+			)
 
 			Expect(unprovisioned.SSH()).To(Succeed())
 		})
 
+		Context("when reading the private key fails", func() {
+			It("should return an error", func() {
+				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error"))
+
+				Expect(unprovisioned.SSH()).To(MatchError("some-error"))
+			})
+		})
+
 		Context("when executing ssh fails", func() {
 			It("should return an error", func() {
-				mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr).Return(errors.New("some-error"))
+				gomock.InOrder(
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", "some-private-key", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr).Return(errors.New("some-error")),
+				)
 
 				Expect(unprovisioned.SSH()).To(MatchError("some-error"))
 			})

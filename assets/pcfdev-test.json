@@ -11,14 +11,14 @@
             "vm_name": "pcfdev-test",
             "guest_os_type": "Ubuntu_64",
             "disk_size": "{{user `disk_size`}}000",
-            "ssh_username": "vagrant",
-            "ssh_password": "vagrant",
+            "ssh_username": "vcap",
+            "ssh_password": "vcap",
             "iso_url": "https://pcfdev.s3.amazonaws.com/artifacts/ubuntu-14.04.3-server-amd64.iso",
             "iso_checksum": "9e5fecc94b3925bededed0fdca1bd417",
             "iso_checksum_type": "md5",
             "http_directory": "http",
             "ssh_timeout": "20m",
-            "shutdown_command": "echo vagrant | sudo -S shutdown -P now",
+            "shutdown_command": "echo vcap | sudo -S shutdown -P now",
             "format": "ova",
             "boot_command": [
                 "<esc><esc><enter><wait>",
@@ -53,8 +53,13 @@
             "destination": "/tmp/fake_pcfdev_server.conf"
         },
         {
+            "type": "file",
+            "source": "insecure.pub",
+            "destination": "/tmp/insecure.pub"
+        },
+        {
             "type": "shell",
-            "execute_command": "echo vagrant | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "execute_command": "echo vcap | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
             "inline": [
                 "useradd -m --comment 'BOSH System User' vcap",
                 "echo 'vcap:vcap' | chpasswd",
@@ -63,8 +68,8 @@
         },
         {
             "type": "shell",
-            "execute_command": "echo vagrant | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
-            "inline": [ "echo 'vagrant ALL=(ALL) NOPASSWD: ALL\nvcap ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers" ]
+            "execute_command": "echo vcap | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "inline": [ "echo 'vcap ALL=(ALL) NOPASSWD: ALL\nvcap ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers" ]
         },
         {
             "type": "shell",
@@ -79,6 +84,9 @@
                 "echo '#!/bin/bash' > /var/pcfdev/provision",
                 "echo \"echo 'Waiting for services to start...'\necho -n 'ok' > /var/pcfdev/status\nservice fake_pcfdev_server start\necho 'Services started'\necho\" >> /var/pcfdev/provision",
                 "chmod +x /var/pcfdev/provision",
+
+				"mkdir -p /home/vcap/.ssh",
+				"mv /tmp/insecure.pub /home/vcap/.ssh/authorized_keys",
 
                 "echo '#!/bin/bash' > /var/pcfdev/health-check",
                 "echo \"if [ -f /var/pcfdev/status ]\nthen\ncat /var/pcfdev/status\nfi\" >> /var/pcfdev/health-check",

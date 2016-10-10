@@ -39,6 +39,17 @@ func (_mr *_MockFSRecorder) Compress(arg0, arg1, arg2 interface{}) *gomock.Call 
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Compress", arg0, arg1, arg2)
 }
 
+func (_m *MockFS) Read(_param0 string) ([]byte, error) {
+	ret := _m.ctrl.Call(_m, "Read", _param0)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockFSRecorder) Read(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Read", arg0)
+}
+
 func (_m *MockFS) TempDir() (string, error) {
 	ret := _m.ctrl.Call(_m, "TempDir")
 	ret0, _ := ret[0].(string)

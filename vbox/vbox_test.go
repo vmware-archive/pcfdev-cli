@@ -37,12 +37,13 @@ var _ = Describe("vbox", func() {
 		mockPicker = mocks.NewMockNetworkPicker(mockCtrl)
 
 		conf = &config.Config{
-			PCFDevHome: "some-pcfdev-home",
-			OVADir:     "some-ova-dir",
-			VMDir:      "some-vm-dir",
-			HTTPProxy:  "some-http-proxy",
-			HTTPSProxy: "some-https-proxy",
-			NoProxy:    "some-no-proxy",
+			PCFDevHome:         "some-pcfdev-home",
+			OVADir:             "some-ova-dir",
+			VMDir:              "some-vm-dir",
+			HTTPProxy:          "some-http-proxy",
+			HTTPSProxy:         "some-https-proxy",
+			NoProxy:            "some-no-proxy",
+			InsecurePrivateKey: "some-insecure-private-key",
 
 			MinMemory: uint64(1000),
 			MaxMemory: uint64(2000),
@@ -615,6 +616,10 @@ var _ = Describe("vbox", func() {
 			It("starts without reimporting", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().StartVM("some-vm"),
+					mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+					mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -625,7 +630,8 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=some-http-proxy
@@ -636,6 +642,7 @@ https_proxy=some-https-proxy
 no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 						"127.0.0.1",
 						"some-port",
+						"some-private-key",
 						5*time.Minute,
 						ioutil.Discard,
 						ioutil.Discard),
@@ -657,6 +664,10 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 
 				gomock.InOrder(
 					mockDriver.EXPECT().StartVM("some-vm"),
+					mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+					mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -667,7 +678,8 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
@@ -678,6 +690,7 @@ https_proxy=192.168.22.1:8080
 no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 						"127.0.0.1",
 						"some-port",
+						"some-private-key",
 						5*time.Minute,
 						ioutil.Discard,
 						ioutil.Discard),
@@ -697,6 +710,10 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 				It("should return an error", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -707,7 +724,7 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address some-bad-ip
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -725,6 +742,10 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-p
 					conf.HTTPSProxy = "127.0.0.1"
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -735,7 +756,8 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 
@@ -746,6 +768,7 @@ https_proxy=192.168.22.1
 no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 							"127.0.0.1",
 							"some-port",
+							"some-private-key",
 							5*time.Minute,
 							ioutil.Discard,
 							ioutil.Discard),
@@ -769,6 +792,10 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 					conf.HTTPSProxy = ""
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -779,7 +806,8 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
@@ -790,6 +818,7 @@ http_proxy=192.168.22.1
 no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 							"127.0.0.1",
 							"some-port",
+							"some-private-key",
 							5*time.Minute,
 							ioutil.Discard,
 							ioutil.Discard),
@@ -814,6 +843,10 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 					conf.NoProxy = ""
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -824,7 +857,8 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=192.168.22.1
@@ -835,6 +869,7 @@ https_proxy=192.168.22.1
 no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io' | sudo tee /etc/environment`,
 							"127.0.0.1",
 							"some-port",
+							"some-private-key",
 							5*time.Minute,
 							ioutil.Discard,
 							ioutil.Discard),
@@ -867,10 +902,84 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 				})
 			})
 
+			Context("when there is an error generating a private keypair", func() {
+				It("should return the error", func() {
+					gomock.InOrder(
+						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("", "", errors.New("some-error")),
+					)
+
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.22.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(MatchError("some-error"))
+				})
+			})
+
+			Context("when there is an error replacing the authorized keys in the ova", func() {
+				It("should return the error", func() {
+					gomock.InOrder(
+						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
+					)
+
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.22.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(MatchError("some-error"))
+				})
+			})
+
+			Context("when there is an error writing the secure private key to the .pcfdev dir", func() {
+				It("should return the error", func() {
+					gomock.InOrder(
+						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false).Return(errors.New("some-error")),
+					)
+
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.22.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(MatchError("some-error"))
+				})
+			})
+
+			Context("when there is an error reading the private key", func() {
+				It("should return the error", func() {
+					gomock.InOrder(
+						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error")),
+					)
+
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.22.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(MatchError("some-error"))
+				})
+			})
+
 			Context("when SSH Command to set static ip fails", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf(`echo -e '
 auto lo
 iface lo inet loopback
@@ -881,7 +990,7 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address some-ip
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard).Return(errors.New("some-error")),
 					)
 
 					Expect(vbx.StartVM(&config.VMConfig{
@@ -893,10 +1002,45 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), "127.0.0.1", "some-
 				})
 			})
 
+			Context("when there is an error reading the private key", func() {
+				It("should return an error", func() {
+					gomock.InOrder(
+						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf(`echo -e '
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address 192.168.22.11
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error")),
+					)
+
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.22.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(MatchError("some-error"))
+				})
+			})
+
 			Context("when VM fails to stop", func() {
 				It("should return an error", func() {
 					gomock.InOrder(
 						mockDriver.EXPECT().StartVM("some-vm"),
+						mockSSH.EXPECT().GenerateKeypair().Return("some-private-key", "some-public-key", nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, "127.0.0.1", "some-port", "some-insecure-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Write(filepath.Join("some-vm-dir", "key.pem"), strings.NewReader("some-private-key"), false),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
 iface lo inet loopback
@@ -907,7 +1051,8 @@ iface eth0 inet dhcp
 auto eth1
 iface eth1 inet static
 address 192.168.11.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, "127.0.0.1", "some-port", "some-private-key", 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 HTTP_PROXY=some-http-proxy
@@ -918,6 +1063,7 @@ https_proxy=some-https-proxy
 no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
 							"127.0.0.1",
 							"some-port",
+							"some-private-key",
 							5*time.Minute,
 							ioutil.Discard,
 							ioutil.Discard),

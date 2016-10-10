@@ -30,6 +30,7 @@ type Config struct {
 	SpringCloudMaxMemory     uint64
 	DefaultCPUs              func() (int, error)
 	ExpectedMD5              string
+	InsecurePrivateKey       string
 	Version                  *Version
 }
 
@@ -46,7 +47,7 @@ type System interface {
 	PhysicalCores() (int, error)
 }
 
-func New(defaultVMName string, expectedMD5 string, system System, version *Version) (*Config, error) {
+func New(defaultVMName string, expectedMD5 string, insecurePrivateKey string, system System, version *Version) (*Config, error) {
 	pcfdevHome, err := getPCFDevHome()
 	if err != nil {
 		return nil, err
@@ -84,6 +85,7 @@ func New(defaultVMName string, expectedMD5 string, system System, version *Versi
 		SpringCloudMinMemory:     springCloudMinMemory,
 		SpringCloudMaxMemory:     springCloudMaxMemory,
 		DefaultCPUs:              system.PhysicalCores,
+		InsecurePrivateKey:       insecurePrivateKey,
 		Version:                  version,
 	}, nil
 }

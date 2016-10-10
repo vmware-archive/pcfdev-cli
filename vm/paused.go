@@ -2,6 +2,7 @@ package vm
 
 import (
 	"errors"
+	"path/filepath"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -9,10 +10,12 @@ import (
 
 type Paused struct {
 	VMConfig *config.VMConfig
+	Config   *config.Config
 
 	UI        UI
 	VBox      VBox
 	SSHClient SSH
+	FS        FS
 }
 
 func (p *Paused) Stop() error {
@@ -62,7 +65,12 @@ func (p *Paused) Resume() error {
 		return &ResumeVMError{err}
 	}
 
-	if err := p.SSHClient.WaitForSSH(p.VMConfig.IP, "22", 5*time.Minute); err != nil {
+	privateKeyBytes, err := p.FS.Read(filepath.Join(p.Config.VMDir, "key.pem"))
+	if err != nil {
+		return &ResumeVMError{err}
+	}
+
+	if err := p.SSHClient.WaitForSSH(p.VMConfig.IP, "22", string(privateKeyBytes), 5*time.Minute); err != nil {
 		return &ResumeVMError{err}
 	}
 

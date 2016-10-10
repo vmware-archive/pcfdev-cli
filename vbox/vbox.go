@@ -60,7 +60,8 @@ type FS interface {
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
 type SSH interface {
 	GenerateAddress() (host string, port string, err error)
-	RunSSHCommand(command string, ip string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
+	GenerateKeypair() (privateKey string, publicKey string, err error)
+	RunSSHCommand(command string, ip string, port string, privateKey string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/picker.go github.com/pivotal-cf/pcfdev-cli/vbox NetworkPicker
@@ -123,6 +124,10 @@ func (v *VBox) StartVM(vmConfig *config.VMConfig) error {
 		return err
 	}
 
+	if err := v.insertSecureKeypair(vmConfig); err != nil {
+		return err
+	}
+
 	if err := v.configureNetwork(vmConfig); err != nil {
 		return err
 	}
@@ -137,7 +142,33 @@ func (v *VBox) StartVM(vmConfig *config.VMConfig) error {
 	return v.Driver.StartVM(vmConfig.Name)
 }
 
+func (v *VBox) insertSecureKeypair(vmConfig *config.VMConfig) error {
+	privateKey, publicKey, err := v.SSH.GenerateKeypair()
+	if err != nil {
+		return err
+	}
+
+	if err = v.SSH.RunSSHCommand(
+		fmt.Sprintf(`echo -n "%s" > /home/vcap/.ssh/authorized_keys`, publicKey),
+		"127.0.0.1",
+		vmConfig.SSHPort,
+		v.Config.InsecurePrivateKey,
+		5*time.Minute,
+		ioutil.Discard,
+		ioutil.Discard,
+	); err != nil {
+		return err
+	}
+
+	return v.FS.Write(filepath.Join(v.Config.VMDir, "key.pem"), strings.NewReader(privateKey), false)
+}
+
 func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {
+	privateKeyBytes, err := v.FS.Read(filepath.Join(v.Config.VMDir, "key.pem"))
+	if err != nil {
+		return err
+	}
+
 	t, err := template.New("properties template").Parse(networkTemplate)
 	if err != nil {
 		return err
@@ -152,6 +183,7 @@ func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {
 		fmt.Sprintf("echo -e '%s' | sudo tee /etc/network/interfaces", sshCommand.String()),
 		"127.0.0.1",
 		vmConfig.SSHPort,
+		string(privateKeyBytes),
 		5*time.Minute,
 		ioutil.Discard,
 		ioutil.Discard,
@@ -164,7 +196,20 @@ func (v *VBox) configureEnvironment(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	return v.SSH.RunSSHCommand(fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings), "127.0.0.1", vmConfig.SSHPort, 5*time.Minute, ioutil.Discard, ioutil.Discard)
+	privateKeyBytes, err := v.FS.Read(filepath.Join(v.Config.VMDir, "key.pem"))
+	if err != nil {
+		return err
+	}
+
+	return v.SSH.RunSSHCommand(
+		fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings),
+		"127.0.0.1",
+		vmConfig.SSHPort,
+		string(privateKeyBytes),
+		5*time.Minute,
+		ioutil.Discard,
+		ioutil.Discard,
+	)
 }
 
 func (v *VBox) proxySettings(vmConfig *config.VMConfig) (settings string, err error) {

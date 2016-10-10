@@ -38,6 +38,10 @@ var _ = Describe("LogFetcher", func() {
 				SSHPort: "some-port",
 				Name:    "some-vm-name",
 			},
+
+			Config: &config.Config{
+				VMDir: "some-vm-dir",
+			},
 		}
 	})
 
@@ -48,18 +52,19 @@ var _ = Describe("LogFetcher", func() {
 	Describe("#GetDebugLogs", func() {
 		It("should say a message", func() {
 			gomock.InOrder(
+				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 				mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-provision-log", nil),
+				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-provision-log", nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log"), false),
-				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
+				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-reset-log", nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log"), false),
-				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
+				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-kern-log", nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "kern.log"), strings.NewReader("some-kern-log"), false),
-				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", 20*time.Second).Return("some-dmesg-log", nil),
+				mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-dmesg-log", nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "dmesg"), strings.NewReader("some-dmesg-log"), false),
-				mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", 20*time.Second).Return("some-ifconfig-log", nil),
+				mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-ifconfig-log", nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "ifconfig"), strings.NewReader("some-ifconfig-log"), false),
-				mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("some-routes-log", nil),
+				mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-routes-log", nil),
 				mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log"), false),
 
 				mockDriver.EXPECT().VBoxManage("list", "vms", "--long").Return([]byte("some-vm-list"), nil),
@@ -91,18 +96,19 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is sensitive information", func() {
 			It("should remove the sensitive information", func() {
 				gomock.InOrder(
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("http://some-private-domain.com", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("http://some-private-domain.com", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("<redacted uri>"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-reset-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-kern-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "kern.log"), strings.NewReader("some-kern-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", 20*time.Second).Return("some-dmesg-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-dmesg-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "dmesg"), strings.NewReader("some-dmesg-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", 20*time.Second).Return("some-ifconfig-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-ifconfig-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "ifconfig"), strings.NewReader("some-ifconfig-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("http://some-private-domain.com", nil),
+					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("http://some-private-domain.com", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("http://some-private-domain.com"), false),
 
 					mockDriver.EXPECT().VBoxManage("list", "vms", "--long").Return([]byte("http://some-private-domain.com"), nil),
@@ -134,7 +140,10 @@ var _ = Describe("LogFetcher", func() {
 
 		Context("when there is an error creating a temporary directory", func() {
 			It("should return the error", func() {
-				mockFS.EXPECT().TempDir().Return("", errors.New("some-error"))
+				gomock.InOrder(
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockFS.EXPECT().TempDir().Return("", errors.New("some-error")),
+				)
 
 				Expect(logFetcher.FetchLogs()).To(MatchError("some-error"))
 			})
@@ -143,8 +152,9 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error getting ssh output of vm log file", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("", errors.New("some-error")),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("", errors.New("some-error")),
 				)
 
 				Expect(logFetcher.FetchLogs()).To(MatchError("some-error"))
@@ -154,8 +164,9 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error writing the temporary file for the vm log file", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-provision-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-provision-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log"), false).Return(errors.New("some-error")),
 				)
 
@@ -166,18 +177,19 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error getting output of logging shell command", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-provision-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-provision-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-reset-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-kern-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "kern.log"), strings.NewReader("some-kern-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", 20*time.Second).Return("some-dmesg-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-dmesg-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "dmesg"), strings.NewReader("some-dmesg-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", 20*time.Second).Return("some-ifconfig-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-ifconfig-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "ifconfig"), strings.NewReader("some-ifconfig-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("some-routes-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-routes-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log"), false),
 
 					mockDriver.EXPECT().VBoxManage("list", "vms", "--long").Return(nil, errors.New("some-error")),
@@ -190,18 +202,19 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error writing the temporary file for the logging shell command", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-provision-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-provision-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-reset-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-kern-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "kern.log"), strings.NewReader("some-kern-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", 20*time.Second).Return("some-dmesg-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-dmesg-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "dmesg"), strings.NewReader("some-dmesg-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", 20*time.Second).Return("some-ifconfig-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-ifconfig-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "ifconfig"), strings.NewReader("some-ifconfig-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("some-routes-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-routes-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log"), false),
 
 					mockDriver.EXPECT().VBoxManage("list", "vms", "--long").Return([]byte("some-vm-list"), nil),
@@ -215,18 +228,19 @@ var _ = Describe("LogFetcher", func() {
 		Context("when there is an error compressing a tar ball of the log files", func() {
 			It("should return the error", func() {
 				gomock.InOrder(
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
 					mockFS.EXPECT().TempDir().Return("some-temp-dir", nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-provision-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/provision.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-provision-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "provision.log"), strings.NewReader("some-pcfdev-provision-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-pcfdev-reset-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/pcfdev/reset.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-pcfdev-reset-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "reset.log"), strings.NewReader("some-pcfdev-reset-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", 20*time.Second).Return("some-kern-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/kern.log", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-kern-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "kern.log"), strings.NewReader("some-kern-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", 20*time.Second).Return("some-dmesg-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo cat /var/log/dmesg", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-dmesg-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "dmesg"), strings.NewReader("some-dmesg-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", 20*time.Second).Return("some-ifconfig-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("ifconfig", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-ifconfig-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "ifconfig"), strings.NewReader("some-ifconfig-log"), false),
-					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", 20*time.Second).Return("some-routes-log", nil),
+					mockSSH.EXPECT().GetSSHOutput("route -n", "127.0.0.1", "some-port", "some-private-key", 20*time.Second).Return("some-routes-log", nil),
 					mockFS.EXPECT().Write(filepath.Join("some-temp-dir", "routes"), strings.NewReader("some-routes-log"), false),
 
 					mockDriver.EXPECT().VBoxManage("list", "vms", "--long").Return([]byte("some-vm-list"), nil),
@@ -251,6 +265,14 @@ var _ = Describe("LogFetcher", func() {
 							filepath.Join("some-temp-dir", "vm-hostonlyifs"),
 						}).Return(errors.New("some-error")),
 				)
+
+				Expect(logFetcher.FetchLogs()).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when there is an error reading the private key", func() {
+			It("should return the error", func() {
+				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error"))
 
 				Expect(logFetcher.FetchLogs()).To(MatchError("some-error"))
 			})

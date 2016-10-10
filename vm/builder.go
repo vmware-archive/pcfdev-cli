@@ -82,6 +82,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				},
 				LogFetcher: &debug.LogFetcher{
 					VMConfig: vmConfig,
+					Config:   b.Config,
 					FS:       b.FS,
 					SSH:      b.SSH,
 					Driver: &vbox.VBoxDriver{
@@ -92,6 +93,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			}, nil
 		} else {
 			return &Running{
+				Config:    b.Config,
 				VMConfig:  vmConfig,
 				FS:        b.FS,
 				UI:        termUI,
@@ -111,6 +113,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				},
 				LogFetcher: &debug.LogFetcher{
 					VMConfig: vmConfig,
+					Config:   b.Config,
 					FS:       b.FS,
 					SSH:      b.SSH,
 					Driver: &vbox.VBoxDriver{
@@ -137,6 +140,8 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			SSHClient: b.SSH,
 			UI:        termUI,
 			VBox:      b.VBox,
+			Config:    b.Config,
+			FS:        b.FS,
 		}, nil
 	case vbox.StatusSaved:
 		return &Saved{
@@ -145,6 +150,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			UI:        termUI,
 			VBox:      b.VBox,
 			Config:    b.Config,
+			FS:        b.FS,
 		}, nil
 	default:
 		return &Invalid{
@@ -167,13 +173,18 @@ func (b *VBoxBuilder) healthcheck(ip string, sshPort string) (string, error) {
 	outputChan := make(chan string, 1)
 	errChan := make(chan error, 1)
 
+	privateKeyBytes, err := b.FS.Read(filepath.Join(b.Config.VMDir, "key.pem"))
+	if err != nil {
+		return "", err
+	}
+
 	go func() {
-		output, err := b.SSH.GetSSHOutput(healthCheckCommand, "127.0.0.1", sshPort, 20*time.Second)
+		output, err := b.SSH.GetSSHOutput(healthCheckCommand, "127.0.0.1", sshPort, string(privateKeyBytes), 20*time.Second)
 		outputChan <- output
 		errChan <- err
 	}()
 	go func() {
-		output, err := b.SSH.GetSSHOutput(healthCheckCommand, ip, "22", 20*time.Second)
+		output, err := b.SSH.GetSSHOutput(healthCheckCommand, ip, "22", string(privateKeyBytes), 20*time.Second)
 		outputChan <- output
 		errChan <- err
 	}()

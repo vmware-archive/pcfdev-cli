@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	"errors"
+	"path/filepath"
 	"time"
 
 	"github.com/golang/mock/gomock"
@@ -19,6 +20,7 @@ var _ = Describe("Paused", func() {
 		mockUI   *mocks.MockUI
 		mockVBox *mocks.MockVBox
 		mockSSH  *mocks.MockSSH
+		mockFS   *mocks.MockFS
 		pausedVM vm.Paused
 	)
 
@@ -27,6 +29,7 @@ var _ = Describe("Paused", func() {
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
+		mockFS = mocks.NewMockFS(mockCtrl)
 
 		pausedVM = vm.Paused{
 			VMConfig: &config.VMConfig{
@@ -38,6 +41,11 @@ var _ = Describe("Paused", func() {
 			VBox:      mockVBox,
 			UI:        mockUI,
 			SSHClient: mockSSH,
+			FS:        mockFS,
+
+			Config: &config.Config{
+				VMDir: "some-vm-dir",
+			},
 		}
 	})
 
@@ -64,7 +72,8 @@ var _ = Describe("Paused", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
-				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
+				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
@@ -82,12 +91,25 @@ var _ = Describe("Paused", func() {
 			})
 		})
 
+		Context("when reading the private key fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Resuming VM..."),
+					mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error")),
+				)
+
+				Expect(pausedVM.Start(&vm.StartOpts{})).To(MatchError("failed to resume VM: some-error"))
+			})
+		})
+
 		Context("when waiting for SSH fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
 					mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
-					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute).Return(errors.New("some-error")),
 				)
 
 				Expect(pausedVM.Start(&vm.StartOpts{})).To(MatchError("failed to resume VM: some-error"))
@@ -148,7 +170,8 @@ var _ = Describe("Paused", func() {
 			gomock.InOrder(
 				mockUI.EXPECT().Say("Resuming VM..."),
 				mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
-				mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute),
+				mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+				mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute),
 				mockUI.EXPECT().Say("PCF Dev is now running."),
 			)
 
@@ -160,7 +183,20 @@ var _ = Describe("Paused", func() {
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Resuming VM..."),
 					mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
-					mockSSH.EXPECT().WaitForSSH("some-ip", "22", 5*time.Minute).Return(errors.New("some-error")),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return([]byte("some-private-key"), nil),
+					mockSSH.EXPECT().WaitForSSH("some-ip", "22", "some-private-key", 5*time.Minute).Return(errors.New("some-error")),
+				)
+
+				Expect(pausedVM.Resume()).To(MatchError("failed to resume VM: some-error"))
+			})
+		})
+
+		Context("when reading the private key fails", func() {
+			It("should return an error", func() {
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Resuming VM..."),
+					mockVBox.EXPECT().ResumePausedVM(pausedVM.VMConfig),
+					mockFS.EXPECT().Read(filepath.Join("some-vm-dir", "key.pem")).Return(nil, errors.New("some-error")),
 				)
 
 				Expect(pausedVM.Resume()).To(MatchError("failed to resume VM: some-error"))

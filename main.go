@@ -30,13 +30,14 @@ import (
 )
 
 var (
-	buildVersion    string
-	buildSHA        string
-	ovaBuildVersion string
-	releaseId       string
-	productFileId   string
-	md5             string
-	vmName          string
+	buildVersion       string
+	buildSHA           string
+	ovaBuildVersion    string
+	releaseId          string
+	productFileId      string
+	md5                string
+	vmName             string
+	insecurePrivateKey string
 )
 
 func main() {
@@ -57,6 +58,7 @@ func main() {
 	conf, err := config.New(
 		vmName,
 		md5,
+		insecurePrivateKey,
 		&system.System{
 			FS: fileSystem,
 		},

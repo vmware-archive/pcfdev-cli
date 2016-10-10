@@ -42,12 +42,24 @@ func (_mr *_MockSSHRecorder) GenerateAddress() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GenerateAddress")
 }
 
-func (_m *MockSSH) RunSSHCommand(_param0 string, _param1 string, _param2 string, _param3 time.Duration, _param4 io.Writer, _param5 io.Writer) error {
-	ret := _m.ctrl.Call(_m, "RunSSHCommand", _param0, _param1, _param2, _param3, _param4, _param5)
+func (_m *MockSSH) GenerateKeypair() (string, string, error) {
+	ret := _m.ctrl.Call(_m, "GenerateKeypair")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+func (_mr *_MockSSHRecorder) GenerateKeypair() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GenerateKeypair")
+}
+
+func (_m *MockSSH) RunSSHCommand(_param0 string, _param1 string, _param2 string, _param3 string, _param4 time.Duration, _param5 io.Writer, _param6 io.Writer) error {
+	ret := _m.ctrl.Call(_m, "RunSSHCommand", _param0, _param1, _param2, _param3, _param4, _param5, _param6)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockSSHRecorder) RunSSHCommand(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunSSHCommand", arg0, arg1, arg2, arg3, arg4, arg5)
+func (_mr *_MockSSHRecorder) RunSSHCommand(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunSSHCommand", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 }

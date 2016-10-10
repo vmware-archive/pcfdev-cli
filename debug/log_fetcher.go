@@ -11,6 +11,7 @@ import (
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/debug FS
 type FS interface {
+	Read(path string) (contents []byte, err error)
 	Write(path string, contents io.Reader, append bool) error
 	Compress(name string, path string, contentPaths []string) error
 	TempDir() (tempDir string, err error)
@@ -18,7 +19,7 @@ type FS interface {
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/debug SSH
 type SSH interface {
-	GetSSHOutput(command string, ip string, port string, timeout time.Duration) (combinedOutput string, err error)
+	GetSSHOutput(command string, ip string, port string, privateKey string, timeout time.Duration) (combinedOutput string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/debug Driver
@@ -32,6 +33,7 @@ type LogFetcher struct {
 	Driver Driver
 
 	VMConfig *config.VMConfig
+	Config   *config.Config
 }
 
 type logFile struct {
@@ -106,6 +108,11 @@ func (l *LogFetcher) FetchLogs() error {
 
 	sensitiveInformationScrubber := &SensitiveInformationScrubber{}
 
+	privateKeyBytes, err := l.FS.Read(filepath.Join(l.Config.VMDir, "key.pem"))
+	if err != nil {
+		return err
+	}
+
 	dir, err := l.FS.TempDir()
 	if err != nil {
 		return err
@@ -114,7 +121,7 @@ func (l *LogFetcher) FetchLogs() error {
 	for _, logFile := range logFiles {
 		switch logFile.reciever {
 		case ReceiverGuest:
-			output, err := l.SSH.GetSSHOutput(strings.Join(logFile.command, " "), "127.0.0.1", l.VMConfig.SSHPort, 20*time.Second)
+			output, err := l.SSH.GetSSHOutput(strings.Join(logFile.command, " "), "127.0.0.1", l.VMConfig.SSHPort, string(privateKeyBytes), 20*time.Second)
 			if err != nil {
 				return err
 			}

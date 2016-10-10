@@ -44,5 +44,5 @@ pushd "$pcfdev_cli_path" >/dev/null
      -X main.releaseId=${release_id}
      -X main.productFileId=${product_file_id}
      -X main.md5=${md5}
-	 -X \"main.insecurePrivateKey=$insecure_private_key\""
+     -X \"main.insecurePrivateKey=$insecure_private_key\""
 popd >/dev/null

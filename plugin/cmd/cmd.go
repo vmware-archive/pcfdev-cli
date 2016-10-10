@@ -205,6 +205,12 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 			Config:     b.Config,
 			AutoTarget: false,
 		}, nil
+	case "ssh":
+		return &SSHCmd{
+			VBox:      b.VBox,
+			VMBuilder: b.VMBuilder,
+			Config:    b.Config,
+		}, nil
 	default:
 		return nil, errors.New("")
 	}

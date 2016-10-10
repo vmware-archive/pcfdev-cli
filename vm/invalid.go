@@ -46,6 +46,10 @@ func (i *Invalid) Target(autoTarget bool) error {
 	return i.err()
 }
 
+func (i *Invalid) SSH() error {
+	return i.err()
+}
+
 func (i *Invalid) message() string {
 	return "PCF Dev is in an invalid state. Please run 'cf dev destroy'"
 }

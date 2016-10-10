@@ -642,4 +642,12 @@ var _ = Describe("Not Created", func() {
 			Expect(notCreatedVM.Target(false)).To(Succeed())
 		})
 	})
+
+	Describe("SSH", func() {
+		It("should say message", func() {
+			mockUI.EXPECT().Say("No VM created, cannot SSH to PCF Dev.")
+
+			Expect(notCreatedVM.SSH()).To(Succeed())
+		})
+	})
 })

@@ -114,7 +114,7 @@ var _ = Describe("Builder", func() {
 					switch u := stoppedVM.(type) {
 					case *vm.Stopped:
 						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
-						Expect(u.SSH).NotTo(BeNil())
+						Expect(u.SSHClient).NotTo(BeNil())
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
 					default:
@@ -169,7 +169,7 @@ var _ = Describe("Builder", func() {
 						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
-						Expect(u.SSH).NotTo(BeNil())
+						Expect(u.SSHClient).NotTo(BeNil())
 						Expect(u.FS).NotTo(BeNil())
 						Expect(u.LogFetcher).NotTo(BeNil())
 						Expect(u.Builder).NotTo(BeNil())
@@ -209,7 +209,7 @@ var _ = Describe("Builder", func() {
 						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.UI).NotTo(BeNil())
-						Expect(u.SSH).NotTo(BeNil())
+						Expect(u.SSHClient).NotTo(BeNil())
 						Expect(u.FS).NotTo(BeNil())
 						Expect(u.LogFetcher).NotTo(BeNil())
 						Expect(u.Builder).NotTo(BeNil())

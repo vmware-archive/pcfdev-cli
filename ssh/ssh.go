@@ -57,6 +57,33 @@ func (s *SSH) RunSSHCommand(command string, ip string, port string, timeout time
 	return session.Run(command)
 }
 
+func (s *SSH) StartSSHSession(ip string, port string, timeout time.Duration, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+	client, session, err := s.newSession(ip, port, timeout)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,
+		ssh.TTY_OP_ISPEED: 115200,
+		ssh.TTY_OP_OSPEED: 115200,
+	}
+
+	session.Stdin = stdin
+	session.Stdout = stdout
+	session.Stderr = stderr
+	if err := session.RequestPty("xterm", 50, 50, modes); err != nil {
+		return err
+	}
+
+	if err := session.Shell(); err != nil {
+		return err
+	}
+
+	return session.Wait()
+}
+
 func (s *SSH) WaitForSSH(ip string, port string, timeout time.Duration) error {
 	_, err := s.waitForSSH(ip, port, timeout)
 	return err

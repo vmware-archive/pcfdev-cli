@@ -17,11 +17,11 @@ type Stopped struct {
 	Config   *config.Config
 	VMConfig *config.VMConfig
 
-	FS      FS
-	VBox    VBox
-	SSH     SSH
-	UI      UI
-	Builder Builder
+	FS        FS
+	VBox      VBox
+	SSHClient SSH
+	UI        UI
+	Builder   Builder
 }
 
 func (s *Stopped) Stop() error {
@@ -114,7 +114,7 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		return &StartVMError{err}
 	}
 
-	if err := s.SSH.RunSSHCommand("echo '"+string(data)+"' | sudo tee /var/pcfdev/provision-options.json >/dev/null", "127.0.0.1", s.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
+	if err := s.SSHClient.RunSSHCommand("echo '"+string(data)+"' | sudo tee /var/pcfdev/provision-options.json >/dev/null", "127.0.0.1", s.VMConfig.SSHPort, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &StartVMError{err}
 	}
 
@@ -156,5 +156,10 @@ func (s *Stopped) Trust(startOps *StartOpts) error {
 
 func (s *Stopped) Target(autoTarget bool) error {
 	s.UI.Say("Your VM is currently stopped. Start VM to target PCF Dev.")
+	return nil
+}
+
+func (s *Stopped) SSH() error {
+	s.UI.Say("Your VM is currently stopped. Start VM to SSH to PCF Dev.")
 	return nil
 }

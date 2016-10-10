@@ -175,4 +175,53 @@ var _ = Describe("ssh", func() {
 			})
 		})
 	})
+
+	Describe("#StartSSHSession", func() {
+		var (
+			stdin  *gbytes.Buffer
+			stdout *gbytes.Buffer
+			stderr *gbytes.Buffer
+		)
+
+		BeforeEach(func() {
+			ssh = &SSH{}
+
+			var err error
+			stdin = gbytes.NewBuffer()
+			stdout = gbytes.NewBuffer()
+			stderr = gbytes.NewBuffer()
+			vmName, err = test_helpers.ImportSnappy()
+			Expect(err).NotTo(HaveOccurred())
+
+			_, port, err = ssh.GenerateAddress()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
+			Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
+			Expect(exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()).To(Succeed())
+		})
+
+		It("should start an ssh session into the VM", func() {
+			go func() {
+				time.Sleep(5 * time.Second)
+				fmt.Fprintln(stdin, "exit")
+			}()
+
+			err := ssh.StartSSHSession("127.0.0.1", port, 5*time.Minute, stdin, stdout, stderr)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(stdout).Should(gbytes.Say("Welcome to Ubuntu"))
+		})
+
+		Context("when there is an error creating the ssh session", func() {
+			It("should return the error", func() {
+				err := ssh.StartSSHSession("127.0.0.1", "some-bad-port", time.Second, stdin, stdout, stderr)
+				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
+			})
+		})
+	})
 })

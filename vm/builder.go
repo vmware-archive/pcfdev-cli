@@ -71,12 +71,12 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	case vbox.StatusRunning:
 		if output, err := b.healthcheck(vmConfig.IP, vmConfig.SSHPort); strings.TrimSpace(output) != "ok" || err != nil {
 			return &Unprovisioned{
-				VMConfig: vmConfig,
-				Config:   b.Config,
-				UI:       termUI,
-				VBox:     b.VBox,
-				FS:       b.FS,
-				SSH:      b.SSH,
+				VMConfig:  vmConfig,
+				Config:    b.Config,
+				UI:        termUI,
+				VBox:      b.VBox,
+				FS:        b.FS,
+				SSHClient: b.SSH,
 				HelpText: &ui.HelpText{
 					UI: termUI,
 				},
@@ -96,7 +96,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				FS:        b.FS,
 				UI:        termUI,
 				VBox:      b.VBox,
-				SSH:       b.SSH,
+				SSHClient: b.SSH,
 				Builder:   b,
 				CmdRunner: &runner.CmdRunner{},
 				HelpText: &ui.HelpText{
@@ -125,26 +125,26 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			VMConfig: vmConfig,
 			Config:   b.Config,
 
-			FS:      b.FS,
-			UI:      termUI,
-			SSH:     b.SSH,
-			VBox:    b.VBox,
-			Builder: b,
+			FS:        b.FS,
+			UI:        termUI,
+			SSHClient: b.SSH,
+			VBox:      b.VBox,
+			Builder:   b,
 		}, nil
 	case vbox.StatusPaused:
 		return &Paused{
-			VMConfig: vmConfig,
-			SSH:      b.SSH,
-			UI:       termUI,
-			VBox:     b.VBox,
+			VMConfig:  vmConfig,
+			SSHClient: b.SSH,
+			UI:        termUI,
+			VBox:      b.VBox,
 		}, nil
 	case vbox.StatusSaved:
 		return &Saved{
-			VMConfig: vmConfig,
-			SSH:      b.SSH,
-			UI:       termUI,
-			VBox:     b.VBox,
-			Config:   b.Config,
+			VMConfig:  vmConfig,
+			SSHClient: b.SSH,
+			UI:        termUI,
+			VBox:      b.VBox,
+			Config:    b.Config,
 		}, nil
 	default:
 		return &Invalid{

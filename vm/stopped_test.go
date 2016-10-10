@@ -43,11 +43,11 @@ var _ = Describe("Stopped", func() {
 				SSHPort: "some-port",
 			},
 
-			VBox:    mockVBox,
-			FS:      mockFS,
-			UI:      mockUI,
-			SSH:     mockSSH,
-			Builder: mockBuilder,
+			VBox:      mockVBox,
+			FS:        mockFS,
+			UI:        mockUI,
+			SSHClient: mockSSH,
+			Builder:   mockBuilder,
 			Config: &config.Config{
 				VMDir: "some-vm-dir",
 			},
@@ -471,6 +471,13 @@ var _ = Describe("Stopped", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Say("Your VM is currently stopped. Start VM to target PCF Dev.")
 			Expect(stoppedVM.Target(false)).To(Succeed())
+		})
+	})
+
+	Describe("SSH", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("Your VM is currently stopped. Start VM to SSH to PCF Dev.")
+			Expect(stoppedVM.SSH()).To(Succeed())
 		})
 	})
 })

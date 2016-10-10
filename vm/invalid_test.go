@@ -73,4 +73,10 @@ var _ = Describe("Invalid", func() {
 			Expect(invalid.Target(false)).To(MatchError("some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"))
 		})
 	})
+
+	Describe("SSH", func() {
+		It("should say a message", func() {
+			Expect(invalid.SSH()).To(MatchError("some-error.\nPCF Dev is in an invalid state. Please run 'cf dev destroy'"))
+		})
+	})
 })

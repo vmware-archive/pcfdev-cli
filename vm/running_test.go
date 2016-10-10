@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/golang/mock/gomock"
@@ -55,7 +56,7 @@ var _ = Describe("Running", func() {
 			FS:         mockFS,
 			UI:         mockUI,
 			Builder:    mockBuilder,
-			SSH:        mockSSH,
+			SSHClient:  mockSSH,
 			LogFetcher: mockLogFetcher,
 			CertStore:  mockCertStore,
 			CmdRunner:  mockCmdRunner,
@@ -278,6 +279,22 @@ var _ = Describe("Running", func() {
 				)
 
 				Expect(runningVM.Trust(&vm.StartOpts{PrintCA: true})).To(Succeed())
+			})
+		})
+	})
+
+	Describe("SSH", func() {
+		It("should execute ssh on the client", func() {
+			mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
+
+			Expect(runningVM.SSH()).To(Succeed())
+		})
+
+		Context("when executing ssh fails", func() {
+			It("should return an error", func() {
+				mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr).Return(errors.New("some-error"))
+
+				Expect(runningVM.SSH()).To(MatchError("some-error"))
 			})
 		})
 	})

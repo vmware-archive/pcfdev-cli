@@ -35,9 +35,9 @@ var _ = Describe("Paused", func() {
 				IP:      "some-ip",
 				SSHPort: "some-port",
 			},
-			VBox: mockVBox,
-			UI:   mockUI,
-			SSH:  mockSSH,
+			VBox:      mockVBox,
+			UI:        mockUI,
+			SSHClient: mockSSH,
 		}
 	})
 
@@ -203,6 +203,13 @@ var _ = Describe("Paused", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Say("Your VM is suspended. Resume to target PCF Dev.")
 			Expect(pausedVM.Target(false)).To(Succeed())
+		})
+	})
+
+	Describe("SSH", func() {
+		It("should say a message", func() {
+			mockUI.EXPECT().Say("Your VM is suspended. Resume to SSH to PCF Dev.")
+			Expect(pausedVM.SSH()).To(Succeed())
 		})
 	})
 })

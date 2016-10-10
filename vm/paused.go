@@ -10,9 +10,9 @@ import (
 type Paused struct {
 	VMConfig *config.VMConfig
 
-	UI   UI
-	VBox VBox
-	SSH  SSH
+	UI        UI
+	VBox      VBox
+	SSHClient SSH
 }
 
 func (p *Paused) Stop() error {
@@ -62,7 +62,7 @@ func (p *Paused) Resume() error {
 		return &ResumeVMError{err}
 	}
 
-	if err := p.SSH.WaitForSSH(p.VMConfig.IP, "22", 5*time.Minute); err != nil {
+	if err := p.SSHClient.WaitForSSH(p.VMConfig.IP, "22", 5*time.Minute); err != nil {
 		return &ResumeVMError{err}
 	}
 
@@ -83,5 +83,10 @@ func (p *Paused) Trust(startOps *StartOpts) error {
 
 func (p *Paused) Target(autoTarget bool) error {
 	p.UI.Say("Your VM is suspended. Resume to target PCF Dev.")
+	return nil
+}
+
+func (p *Paused) SSH() error {
+	p.UI.Say("Your VM is suspended. Resume to SSH to PCF Dev.")
 	return nil
 }

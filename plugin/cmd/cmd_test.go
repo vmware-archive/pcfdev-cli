@@ -286,6 +286,22 @@ var _ = Describe("Builder", func() {
 			})
 		})
 
+		Context("when is is passed 'ssh'", func() {
+			It("should return a ssh command", func() {
+				sshCmd, err := builder.Cmd("ssh")
+				Expect(err).NotTo(HaveOccurred())
+
+				switch c := sshCmd.(type) {
+				case *cmd.SSHCmd:
+					Expect(c.VBox).To(BeIdenticalTo(builder.VBox))
+					Expect(c.VMBuilder).To(BeIdenticalTo(builder.VMBuilder))
+					Expect(c.Config).To(BeIdenticalTo(builder.Config))
+				default:
+					Fail("wrong type")
+				}
+			})
+		})
+
 		Context("when it is passed an unknown subcommand", func() {
 			It("should return an error", func() {
 				_, err := builder.Cmd("some-bad-subcommand")

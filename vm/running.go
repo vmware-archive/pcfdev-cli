@@ -3,6 +3,7 @@ package vm
 import (
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
@@ -14,7 +15,7 @@ type Running struct {
 	VBox       VBox
 	FS         FS
 	UI         UI
-	SSH        SSH
+	SSHClient  SSH
 	Builder    Builder
 	LogFetcher LogFetcher
 	CertStore  CertStore
@@ -33,7 +34,7 @@ func (r *Running) Stop() error {
 }
 
 func (r *Running) Provision(opts *StartOpts) error {
-	if _, err := r.SSH.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", r.VMConfig.IP, "22", 30*time.Second); err != nil {
+	if _, err := r.SSHClient.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", r.VMConfig.IP, "22", 30*time.Second); err != nil {
 		return err
 	}
 	unprovisionedVM, err := r.Builder.VM(r.VMConfig.Name)
@@ -88,7 +89,7 @@ func (r *Running) Resume() error {
 }
 
 func (r *Running) Trust(startOpts *StartOpts) error {
-	output, err := r.SSH.GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", r.VMConfig.SSHPort, 5*time.Minute)
+	output, err := r.SSHClient.GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", r.VMConfig.SSHPort, 5*time.Minute)
 	if err != nil {
 		return &TrustError{err}
 	}
@@ -135,4 +136,8 @@ func (r *Running) GetDebugLogs() error {
 
 	r.UI.Say("Debug logs written to pcfdev-debug.tgz. While some scrubbing has taken place, please remove any remaining sensitive information from these logs before sharing.")
 	return nil
+}
+
+func (r *Running) SSH() error {
+	return r.SSHClient.StartSSHSession("127.0.0.1", r.VMConfig.SSHPort, 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
 }

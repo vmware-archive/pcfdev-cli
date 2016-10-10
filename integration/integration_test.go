@@ -131,6 +131,20 @@ var _ = Describe("PCF Dev", func() {
 		Eventually(session).Should(gbytes.Say("Running"))
 		Expect(filepath.Join(tempHome, "pcfdev", "vms", vmName, vmName+"-disk1.vmdk")).To(BeAnExistingFile())
 
+		By("SSHing to the VM")
+		sshCommand := exec.Command("cf", "dev", "ssh")
+		sshStdin, err := sshCommand.StdinPipe()
+		Expect(err).NotTo(HaveOccurred())
+		session, err = gexec.Start(sshCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+
+		fmt.Fprintln(sshStdin, "echo some-stdout")
+		Eventually(session, "2m").Should(gbytes.Say("some-stdout"))
+		fmt.Fprintln(sshStdin, ">&2 echo some-stderr")
+		Eventually(session, "2m").Should(gbytes.Say("some-stderr"))
+		fmt.Fprintln(sshStdin, "exit")
+		Eventually(session, "2m").Should(gexec.Exit(0))
+
 		By("re-running 'cf dev start' with no effect")
 		restartCommand := exec.Command("cf", "dev", "start")
 		session, err = gexec.Start(restartCommand, GinkgoWriter, GinkgoWriter)

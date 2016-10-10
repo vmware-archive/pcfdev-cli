@@ -198,3 +198,8 @@ func (n *NotCreated) Target(autoTarget bool) error {
 	n.UI.Say("No VM created, cannot target PCF Dev.")
 	return nil
 }
+
+func (n *NotCreated) SSH() error {
+	n.UI.Say("No VM created, cannot SSH to PCF Dev.")
+	return nil
+}

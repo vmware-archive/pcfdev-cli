@@ -39,7 +39,7 @@ var _ = Describe("Unprovisioned", func() {
 			UI:         mockUI,
 			VBox:       mockVBox,
 			FS:         mockFS,
-			SSH:        mockSSH,
+			SSHClient:  mockSSH,
 			LogFetcher: mockLogFetcher,
 			HelpText:   mockHelpText,
 			Config: &conf.Config{
@@ -181,6 +181,22 @@ var _ = Describe("Unprovisioned", func() {
 	Describe("Target", func() {
 		It("should return an error", func() {
 			Expect(unprovisioned.Target(false)).To(MatchError("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'"))
+		})
+	})
+
+	Describe("SSH", func() {
+		It("should execute ssh on the client", func() {
+			mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
+
+			Expect(unprovisioned.SSH()).To(Succeed())
+		})
+
+		Context("when executing ssh fails", func() {
+			It("should return an error", func() {
+				mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", 5*time.Minute, os.Stdin, os.Stdout, os.Stderr).Return(errors.New("some-error"))
+
+				Expect(unprovisioned.SSH()).To(MatchError("some-error"))
+			})
 		})
 	})
 

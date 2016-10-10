@@ -128,6 +128,7 @@ SUBCOMMANDS:
    destroy                           Delete the PCF Dev VM. All data is destroyed.
    status                            Query for the status of the PCF Dev VM.
    import /path/to/ova               Import OVA from local filesystem.
+   ssh                               Start an SSH session into a running PCF Dev VM.
    target                            Perform a CF login to PCF Dev, as the 'user' user.
    trust                             Import VM certificates into host's trusted certificate store.
       [-p]                           Print the PCF Dev Root CA Certificate to stdout.

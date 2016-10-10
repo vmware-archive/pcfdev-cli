@@ -30,6 +30,7 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vm SSH
 type SSH interface {
+	StartSSHSession(ip string, port string, timeout time.Duration, stdin io.Reader, stdout io.Writer, stderr io.Writer) error
 	GenerateAddress() (host string, port string, err error)
 	WaitForSSH(ip string, port string, timeout time.Duration) error
 	RunSSHCommand(command string, ip string, port string, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
@@ -47,6 +48,7 @@ type VM interface {
 	GetDebugLogs() error
 	Trust(*StartOpts) error
 	Target(autoTarget bool) error
+	SSH() error
 
 	VerifyStartOpts(*StartOpts) error
 }

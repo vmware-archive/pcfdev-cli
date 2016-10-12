@@ -257,11 +257,11 @@ var _ = Describe("PCF Dev", func() {
 		stderr := gbytes.NewBuffer()
 		sshClient := &ssh.SSH{}
 		sshPort := getForwardedPort("pcfdev-custom")
-		sshClient.RunSSHCommand("echo $HTTP_PROXY", "127.0.0.1", sshPort, securePrivateKey, time.Minute, stdout, stderr)
+		sshClient.RunSSHCommand("echo $HTTP_PROXY", []ssh.SSHAddress{{IP: "127.0.0.1", Port: sshPort}}, securePrivateKey, time.Minute, stdout, stderr)
 		Eventually(stdout, "30s").Should(gbytes.Say("192.168.93.23"))
-		sshClient.RunSSHCommand("echo $HTTPS_PROXY", "127.0.0.1", sshPort, securePrivateKey, time.Minute, stdout, stderr)
+		sshClient.RunSSHCommand("echo $HTTPS_PROXY", []ssh.SSHAddress{{IP: "127.0.0.1", Port: sshPort}}, securePrivateKey, time.Minute, stdout, stderr)
 		Eventually(stdout, "10s").Should(gbytes.Say("192.168.38.29"))
-		sshClient.RunSSHCommand("echo $NO_PROXY", "127.0.0.1", sshPort, securePrivateKey, time.Minute, stdout, stderr)
+		sshClient.RunSSHCommand("echo $NO_PROXY", []ssh.SSHAddress{{IP: "127.0.0.1", Port: sshPort}}, securePrivateKey, time.Minute, stdout, stderr)
 		Eventually(stdout, "10s").Should(gbytes.Say("192.168.98.98"))
 
 		response, err = getResponseFromFakeServerWithHostname("http://192.168.200.138.xip.io")

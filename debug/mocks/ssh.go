@@ -5,6 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	ssh "github.com/pivotal-cf/pcfdev-cli/ssh"
 	time "time"
 )
 
@@ -29,13 +30,13 @@ func (_m *MockSSH) EXPECT() *_MockSSHRecorder {
 	return _m.recorder
 }
 
-func (_m *MockSSH) GetSSHOutput(_param0 string, _param1 string, _param2 string, _param3 []byte, _param4 time.Duration) (string, error) {
-	ret := _m.ctrl.Call(_m, "GetSSHOutput", _param0, _param1, _param2, _param3, _param4)
+func (_m *MockSSH) GetSSHOutput(_param0 string, _param1 []ssh.SSHAddress, _param2 []byte, _param3 time.Duration) (string, error) {
+	ret := _m.ctrl.Call(_m, "GetSSHOutput", _param0, _param1, _param2, _param3)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockSSHRecorder) GetSSHOutput(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetSSHOutput", arg0, arg1, arg2, arg3, arg4)
+func (_mr *_MockSSHRecorder) GetSSHOutput(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetSSHOutput", arg0, arg1, arg2, arg3)
 }

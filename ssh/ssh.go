@@ -27,8 +27,8 @@ func (*SSH) GenerateAddress() (host string, port string, err error) {
 	return address[0], address[1], nil
 }
 
-func (s *SSH) GetSSHOutput(command string, ip string, port string, privateKey []byte, timeout time.Duration) (string, error) {
-	client, session, err := s.newSession(ip, port, privateKey, timeout)
+func (s *SSH) GetSSHOutput(command string, addresses []SSHAddress, privateKey []byte, timeout time.Duration) (string, error) {
+	client, session, err := s.newSession(addresses, privateKey, timeout)
 	if err != nil {
 		return "", err
 	}
@@ -39,8 +39,8 @@ func (s *SSH) GetSSHOutput(command string, ip string, port string, privateKey []
 	return string(output), err
 }
 
-func (s *SSH) RunSSHCommand(command string, ip string, port string, privateKey []byte, timeout time.Duration, stdout io.Writer, stderr io.Writer) (err error) {
-	client, session, err := s.newSession(ip, port, privateKey, timeout)
+func (s *SSH) RunSSHCommand(command string, addresses []SSHAddress, privateKey []byte, timeout time.Duration, stdout io.Writer, stderr io.Writer) (err error) {
+	client, session, err := s.newSession(addresses, privateKey, timeout)
 	if err != nil {
 		return err
 	}
@@ -62,8 +62,8 @@ func (s *SSH) RunSSHCommand(command string, ip string, port string, privateKey [
 	return session.Run(command)
 }
 
-func (s *SSH) StartSSHSession(ip string, port string, privateKey []byte, timeout time.Duration, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-	client, session, err := s.newSession(ip, port, privateKey, timeout)
+func (s *SSH) StartSSHSession(addresses []SSHAddress, privateKey []byte, timeout time.Duration, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+	client, session, err := s.newSession(addresses, privateKey, timeout)
 	if err != nil {
 		return err
 	}
@@ -89,8 +89,8 @@ func (s *SSH) StartSSHSession(ip string, port string, privateKey []byte, timeout
 	return session.Wait()
 }
 
-func (s *SSH) WaitForSSH(ip string, port string, privateKey []byte, timeout time.Duration) error {
-	_, err := s.waitForSSH(ip, port, privateKey, timeout)
+func (s *SSH) WaitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.Duration) error {
+	_, err := s.waitForSSH(addresses, privateKey, timeout)
 	return err
 }
 
@@ -114,8 +114,8 @@ func (s *SSH) GenerateKeypair() ([]byte, []byte, error) {
 	return encodedPrivateKey.Bytes(), ssh.MarshalAuthorizedKey(publicKey), nil
 }
 
-func (s *SSH) newSession(ip string, port string, privateKey []byte, timeout time.Duration) (*ssh.Client, *ssh.Session, error) {
-	client, err := s.waitForSSH(ip, port, privateKey, timeout)
+func (s *SSH) newSession(addresses []SSHAddress, privateKey []byte, timeout time.Duration) (*ssh.Client, *ssh.Session, error) {
+	client, err := s.waitForSSH(addresses, privateKey, timeout)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -129,7 +129,7 @@ func (s *SSH) newSession(ip string, port string, privateKey []byte, timeout time
 	return client, session, nil
 }
 
-func (*SSH) waitForSSH(ip string, port string, privateKey []byte, timeout time.Duration) (client *ssh.Client, err error) {
+func (*SSH) waitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.Duration) (client *ssh.Client, err error) {
 	signer, err := ssh.ParsePrivateKey(privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse private key: %s", err)
@@ -140,19 +140,29 @@ func (*SSH) waitForSSH(ip string, port string, privateKey []byte, timeout time.D
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		Timeout: timeout,
+		Timeout: 10 * time.Second,
 	}
 
+	clientChan := make(chan (*ssh.Client), 1)
+	errorChan := make(chan (error), 1)
 	timeoutChan := time.After(timeout)
 
-	for {
-		select {
-		case <-timeoutChan:
-			return nil, fmt.Errorf("ssh connection timed out: %s", err)
-		default:
-			if client, err = ssh.Dial("tcp", ip+":"+port, config); err == nil {
-				return client, nil
+	for _, address := range addresses {
+		go func(ip string, port string) {
+			for {
+				select {
+				case <-timeoutChan:
+					clientChan <- nil
+					errorChan <- fmt.Errorf("ssh connection timed out: %s", err)
+				default:
+					if client, err = ssh.Dial("tcp", ip+":"+port, config); err == nil {
+						clientChan <- client
+						errorChan <- nil
+					}
+				}
 			}
-		}
+		}(address.IP, address.Port)
 	}
+
+	return <-clientChan, <-errorChan
 }

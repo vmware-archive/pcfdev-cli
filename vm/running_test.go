@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	conf "github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 
@@ -151,9 +152,14 @@ var _ = Describe("Running", func() {
 
 	Describe("Provision", func() {
 		It("should provision the VM", func() {
+			sshAddresses := []ssh.SSHAddress{
+				{IP: "127.0.0.1", Port: "some-port"},
+				{IP: "some-ip", Port: "22"},
+			}
+
 			gomock.InOrder(
 				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-				mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", []byte("some-private-key"), 30*time.Second).Return("", nil),
+				mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", sshAddresses, []byte("some-private-key"), 30*time.Second).Return("", nil),
 				mockBuilder.EXPECT().VM("some-vm").Return(mockVM, nil),
 				mockVM.EXPECT().Provision(&vm.StartOpts{}),
 			)
@@ -163,9 +169,13 @@ var _ = Describe("Running", func() {
 
 		Context("when removing healthcheck file fails", func() {
 			It("should return an error", func() {
+				sshAddresses := []ssh.SSHAddress{
+					{IP: "127.0.0.1", Port: "some-port"},
+					{IP: "some-ip", Port: "22"},
+				}
 				gomock.InOrder(
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", []byte("some-private-key"), 30*time.Second).Return("", errors.New("some-error")),
+					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", sshAddresses, []byte("some-private-key"), 30*time.Second).Return("", errors.New("some-error")),
 				)
 
 				Expect(runningVM.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
@@ -182,9 +192,13 @@ var _ = Describe("Running", func() {
 
 		Context("when building unprovisioned vm fails", func() {
 			It("should return an error", func() {
+				sshAddresses := []ssh.SSHAddress{
+					{IP: "127.0.0.1", Port: "some-port"},
+					{IP: "some-ip", Port: "22"},
+				}
 				gomock.InOrder(
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", []byte("some-private-key"), 30*time.Second).Return("", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", sshAddresses, []byte("some-private-key"), 30*time.Second).Return("", nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
 
@@ -194,9 +208,13 @@ var _ = Describe("Running", func() {
 
 		Context("when running the provision command fails", func() {
 			It("should return an error", func() {
+				sshAddresses := []ssh.SSHAddress{
+					{IP: "127.0.0.1", Port: "some-port"},
+					{IP: "some-ip", Port: "22"},
+				}
 				gomock.InOrder(
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", "some-ip", "22", []byte("some-private-key"), 30*time.Second).Return("", nil),
+					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", sshAddresses, []byte("some-private-key"), 30*time.Second).Return("", nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockVM, nil),
 					mockVM.EXPECT().Provision(&vm.StartOpts{}).Return(errors.New("some-error")),
 				)
@@ -260,9 +278,13 @@ var _ = Describe("Running", func() {
 
 	Describe("Trust", func() {
 		It("should trust VM certificates", func() {
+			sshAddresses := []ssh.SSHAddress{
+				{IP: "127.0.0.1", Port: "some-port"},
+				{IP: "some-ip", Port: "22"},
+			}
 			gomock.InOrder(
 				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-				mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", "some-port", []byte("some-private-key"), 5*time.Minute).Return("some-cert", nil),
+				mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", sshAddresses, []byte("some-private-key"), 5*time.Minute).Return("some-cert", nil),
 				mockCertStore.EXPECT().Store("some-cert"),
 				mockUI.EXPECT().Say("***Warning: a self-signed certificate for *.some-domain has been inserted into your OS certificate store. To remove this certificate, run: cf dev untrust***"),
 			)
@@ -280,9 +302,13 @@ var _ = Describe("Running", func() {
 
 		Context("when there is an error getting SSH output", func() {
 			It("should return the error", func() {
+				sshAddresses := []ssh.SSHAddress{
+					{IP: "127.0.0.1", Port: "some-port"},
+					{IP: "some-ip", Port: "22"},
+				}
 				gomock.InOrder(
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", "some-port", []byte("some-private-key"), 5*time.Minute).Return("", errors.New("some-error")),
+					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", sshAddresses, []byte("some-private-key"), 5*time.Minute).Return("", errors.New("some-error")),
 				)
 
 				Expect(runningVM.Trust(&vm.StartOpts{})).To(MatchError("failed to trust VM certificates: some-error"))
@@ -291,9 +317,13 @@ var _ = Describe("Running", func() {
 
 		Context("when there is an error storing the certificate", func() {
 			It("should return the error", func() {
+				sshAddresses := []ssh.SSHAddress{
+					{IP: "127.0.0.1", Port: "some-port"},
+					{IP: "some-ip", Port: "22"},
+				}
 				gomock.InOrder(
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", "some-port", []byte("some-private-key"), 5*time.Minute).Return("some-cert", nil),
+					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", sshAddresses, []byte("some-private-key"), 5*time.Minute).Return("some-cert", nil),
 					mockCertStore.EXPECT().Store("some-cert").Return(errors.New("some-error")),
 				)
 
@@ -303,9 +333,13 @@ var _ = Describe("Running", func() {
 
 		Context("when the user specifies the 'PrintCA' flag", func() {
 			It("should print the CA", func() {
+				sshAddresses := []ssh.SSHAddress{
+					{IP: "127.0.0.1", Port: "some-port"},
+					{IP: "some-ip", Port: "22"},
+				}
 				gomock.InOrder(
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", "some-port", []byte("some-private-key"), 5*time.Minute).Return("some-cert", nil),
+					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", sshAddresses, []byte("some-private-key"), 5*time.Minute).Return("some-cert", nil),
 					mockUI.EXPECT().Say("some-cert"),
 				)
 
@@ -316,9 +350,13 @@ var _ = Describe("Running", func() {
 
 	Describe("SSH", func() {
 		It("should execute ssh on the client", func() {
+			addresses := []ssh.SSHAddress{
+				{IP: "127.0.0.1", Port: "some-port"},
+				{IP: "some-ip", Port: "22"},
+			}
 			gomock.InOrder(
 				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-				mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", []byte("some-private-key"), 5*time.Minute, os.Stdin, os.Stdout, os.Stderr),
+				mockSSH.EXPECT().StartSSHSession(addresses, []byte("some-private-key"), 5*time.Minute, os.Stdin, os.Stdout, os.Stderr),
 			)
 
 			Expect(runningVM.SSH()).To(Succeed())
@@ -326,9 +364,13 @@ var _ = Describe("Running", func() {
 
 		Context("when executing ssh fails", func() {
 			It("should return an error", func() {
+				addresses := []ssh.SSHAddress{
+					{IP: "127.0.0.1", Port: "some-port"},
+					{IP: "some-ip", Port: "22"},
+				}
 				gomock.InOrder(
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().StartSSHSession("127.0.0.1", "some-port", []byte("some-private-key"), 5*time.Minute, os.Stdin, os.Stdout, os.Stderr).Return(errors.New("some-error")),
+					mockSSH.EXPECT().StartSSHSession(addresses, []byte("some-private-key"), 5*time.Minute, os.Stdin, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
 				Expect(runningVM.SSH()).To(MatchError("some-error"))

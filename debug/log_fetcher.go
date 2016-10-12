@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
 )
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/debug FS
@@ -19,7 +20,7 @@ type FS interface {
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/debug SSH
 type SSH interface {
-	GetSSHOutput(command string, ip string, port string, privateKey []byte, timeout time.Duration) (combinedOutput string, err error)
+	GetSSHOutput(command string, addresses []ssh.SSHAddress, privateKey []byte, timeout time.Duration) (combinedOutput string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/debug Driver
@@ -118,10 +119,21 @@ func (l *LogFetcher) FetchLogs() error {
 		return err
 	}
 
+	addresses := []ssh.SSHAddress{
+		{
+			IP:   "127.0.0.1",
+			Port: l.VMConfig.SSHPort,
+		},
+		{
+			IP:   l.VMConfig.IP,
+			Port: "22",
+		},
+	}
+
 	for _, logFile := range logFiles {
 		switch logFile.reciever {
 		case ReceiverGuest:
-			output, err := l.SSH.GetSSHOutput(strings.Join(logFile.command, " "), "127.0.0.1", l.VMConfig.SSHPort, privateKeyBytes, 20*time.Second)
+			output, err := l.SSH.GetSSHOutput(strings.Join(logFile.command, " "), addresses, privateKeyBytes, 20*time.Second)
 			if err != nil {
 				return err
 			}

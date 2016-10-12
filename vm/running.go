@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
 )
 
 type Running struct {
@@ -40,7 +41,18 @@ func (r *Running) Provision(opts *StartOpts) error {
 		return err
 	}
 
-	if _, err := r.SSHClient.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", r.VMConfig.IP, "22", privateKeyBytes, 30*time.Second); err != nil {
+	addresses := []ssh.SSHAddress{
+		{
+			IP:   "127.0.0.1",
+			Port: r.VMConfig.SSHPort,
+		},
+		{
+			IP:   r.VMConfig.IP,
+			Port: "22",
+		},
+	}
+
+	if _, err := r.SSHClient.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", addresses, privateKeyBytes, 30*time.Second); err != nil {
 		return err
 	}
 	unprovisionedVM, err := r.Builder.VM(r.VMConfig.Name)
@@ -100,7 +112,18 @@ func (r *Running) Trust(startOpts *StartOpts) error {
 		return &TrustError{err}
 	}
 
-	output, err := r.SSHClient.GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", "127.0.0.1", r.VMConfig.SSHPort, privateKeyBytes, 5*time.Minute)
+	addresses := []ssh.SSHAddress{
+		{
+			IP:   "127.0.0.1",
+			Port: r.VMConfig.SSHPort,
+		},
+		{
+			IP:   r.VMConfig.IP,
+			Port: "22",
+		},
+	}
+
+	output, err := r.SSHClient.GetSSHOutput("cat /var/pcfdev/openssl/ca_cert.pem", addresses, privateKeyBytes, 5*time.Minute)
 	if err != nil {
 		return &TrustError{err}
 	}
@@ -155,5 +178,9 @@ func (r *Running) SSH() error {
 		return err
 	}
 
-	return r.SSHClient.StartSSHSession("127.0.0.1", r.VMConfig.SSHPort, privateKeyBytes, 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
+	addresses := []ssh.SSHAddress{
+		{IP: "127.0.0.1", Port: r.VMConfig.SSHPort},
+		{IP: r.VMConfig.IP, Port: "22"},
+	}
+	return r.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
 }

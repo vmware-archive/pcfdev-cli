@@ -15,6 +15,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/network"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
 )
 
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vbox Driver
@@ -61,7 +62,7 @@ type FS interface {
 type SSH interface {
 	GenerateAddress() (host string, port string, err error)
 	GenerateKeypair() (privateKey []byte, publicKey []byte, err error)
-	RunSSHCommand(command string, ip string, port string, privateKey []byte, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
+	RunSSHCommand(command string, addresses []ssh.SSHAddress, privateKey []byte, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/picker.go github.com/pivotal-cf/pcfdev-cli/vbox NetworkPicker
@@ -150,8 +151,12 @@ func (v *VBox) insertSecureKeypair(vmConfig *config.VMConfig) error {
 
 	if err = v.SSH.RunSSHCommand(
 		fmt.Sprintf(`echo -n "%s" > /home/vcap/.ssh/authorized_keys`, publicKey),
-		"127.0.0.1",
-		vmConfig.SSHPort,
+		[]ssh.SSHAddress{
+			{
+				IP:   "127.0.0.1",
+				Port: vmConfig.SSHPort,
+			},
+		},
 		v.Config.InsecurePrivateKey,
 		5*time.Minute,
 		ioutil.Discard,
@@ -181,8 +186,12 @@ func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {
 
 	return v.SSH.RunSSHCommand(
 		fmt.Sprintf("echo -e '%s' | sudo tee /etc/network/interfaces", sshCommand.String()),
-		"127.0.0.1",
-		vmConfig.SSHPort,
+		[]ssh.SSHAddress{
+			{
+				IP:   "127.0.0.1",
+				Port: vmConfig.SSHPort,
+			},
+		},
 		privateKeyBytes,
 		5*time.Minute,
 		ioutil.Discard,
@@ -203,8 +212,12 @@ func (v *VBox) configureEnvironment(vmConfig *config.VMConfig) error {
 
 	return v.SSH.RunSSHCommand(
 		fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings),
-		"127.0.0.1",
-		vmConfig.SSHPort,
+		[]ssh.SSHAddress{
+			{
+				IP:   "127.0.0.1",
+				Port: vmConfig.SSHPort,
+			},
+		},
 		privateKeyBytes,
 		5*time.Minute,
 		ioutil.Discard,

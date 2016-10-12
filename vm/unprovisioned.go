@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
 )
 
 type Unprovisioned struct {
@@ -47,11 +48,22 @@ func (u *Unprovisioned) Provision(opts *StartOpts) error {
 		return err
 	}
 
-	if err := u.SSHClient.RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", "127.0.0.1", u.VMConfig.SSHPort, privateKeyBytes, 30*time.Second, os.Stdout, os.Stderr); err != nil {
+	addresses := []ssh.SSHAddress{
+		{
+			IP:   "127.0.0.1",
+			Port: u.VMConfig.SSHPort,
+		},
+		{
+			IP:   u.VMConfig.IP,
+			Port: "22",
+		},
+	}
+
+	if err := u.SSHClient.RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", addresses, privateKeyBytes, 30*time.Second, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{errors.New("missing provision configuration")}
 	}
 
-	data, err := u.SSHClient.GetSSHOutput("cat /var/pcfdev/provision-options.json", "127.0.0.1", u.VMConfig.SSHPort, privateKeyBytes, 30*time.Second)
+	data, err := u.SSHClient.GetSSHOutput("cat /var/pcfdev/provision-options.json", addresses, privateKeyBytes, 30*time.Second)
 	if err != nil {
 		return &ProvisionVMError{err}
 	}
@@ -63,7 +75,7 @@ func (u *Unprovisioned) Provision(opts *StartOpts) error {
 
 	u.UI.Say("Provisioning VM...")
 	provisionCommand := fmt.Sprintf(`sudo -H /var/pcfdev/provision "%s" "%s" "%s" "%s"`, provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services, strings.Join(provisionConfig.Registries, ","))
-	if err := u.SSHClient.RunSSHCommand(provisionCommand, "127.0.0.1", u.VMConfig.SSHPort, privateKeyBytes, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
+	if err := u.SSHClient.RunSSHCommand(provisionCommand, addresses, privateKeyBytes, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{err}
 	}
 
@@ -94,7 +106,11 @@ func (u *Unprovisioned) SSH() error {
 		return err
 	}
 
-	return u.SSHClient.StartSSHSession("127.0.0.1", u.VMConfig.SSHPort, privateKeyBytes, 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
+	addresses := []ssh.SSHAddress{
+		{IP: "127.0.0.1", Port: u.VMConfig.SSHPort},
+		{IP: u.VMConfig.IP, Port: "22"},
+	}
+	return u.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
 }
 
 func (u *Unprovisioned) err() error {

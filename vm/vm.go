@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
 )
 
 //go:generate mockgen -package mocks -destination mocks/vbox.go github.com/pivotal-cf/pcfdev-cli/vm VBox
@@ -30,11 +31,11 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vm SSH
 type SSH interface {
-	StartSSHSession(ip string, port string, privateKey []byte, timeout time.Duration, stdin io.Reader, stdout io.Writer, stderr io.Writer) error
 	GenerateAddress() (host string, port string, err error)
-	WaitForSSH(ip string, port string, privateKey []byte, timeout time.Duration) error
-	RunSSHCommand(command string, ip string, port string, privateKey []byte, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
-	GetSSHOutput(command string, ip string, port string, privateKey []byte, timeout time.Duration) (combinedOutput string, err error)
+	StartSSHSession(addresses []ssh.SSHAddress, privateKey []byte, timeout time.Duration, stdin io.Reader, stdout io.Writer, stderr io.Writer) error
+	WaitForSSH(addresses []ssh.SSHAddress, privateKey []byte, timeout time.Duration) error
+	RunSSHCommand(command string, addresses []ssh.SSHAddress, privateKey []byte, timeout time.Duration, stdout io.Writer, stderr io.Writer) error
+	GetSSHOutput(command string, addresses []ssh.SSHAddress, privateKey []byte, timeout time.Duration) (combinedOutput string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM

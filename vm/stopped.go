@@ -11,6 +11,7 @@ import (
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
 )
 
 type Stopped struct {
@@ -119,7 +120,18 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		return &StartVMError{err}
 	}
 
-	if err := s.SSHClient.RunSSHCommand("echo '"+string(data)+"' | sudo tee /var/pcfdev/provision-options.json >/dev/null", "127.0.0.1", s.VMConfig.SSHPort, privateKeyBytes, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
+	addresses := []ssh.SSHAddress{
+		{
+			IP:   "127.0.0.1",
+			Port: s.VMConfig.SSHPort,
+		},
+		{
+			IP:   s.VMConfig.IP,
+			Port: "22",
+		},
+	}
+
+	if err := s.SSHClient.RunSSHCommand("echo '"+string(data)+"' | sudo tee /var/pcfdev/provision-options.json >/dev/null", addresses, privateKeyBytes, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &StartVMError{err}
 	}
 

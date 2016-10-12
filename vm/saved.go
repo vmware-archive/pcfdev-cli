@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
 )
 
 type Saved struct {
@@ -76,7 +77,11 @@ func (s *Saved) Resume() error {
 		return &ResumeVMError{err}
 	}
 
-	if err := s.SSHClient.WaitForSSH(s.VMConfig.IP, "22", privateKeyBytes, 5*time.Minute); err != nil {
+	addresses := []ssh.SSHAddress{
+		{IP: "127.0.0.1", Port: s.VMConfig.SSHPort},
+		{IP: s.VMConfig.IP, Port: "22"},
+	}
+	if err := s.SSHClient.WaitForSSH(addresses, privateKeyBytes, 5*time.Minute); err != nil {
 		return &ResumeVMError{err}
 	}
 

@@ -15,6 +15,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/runner"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/ui"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 )
@@ -170,24 +171,24 @@ func (b *VBoxBuilder) getVMConfig(vmName string, status string) (*config.VMConfi
 
 func (b *VBoxBuilder) healthcheck(ip string, sshPort string) (string, error) {
 	healthCheckCommand := "sudo /var/pcfdev/health-check"
-	outputChan := make(chan string, 1)
-	errChan := make(chan error, 1)
-
 	privateKeyBytes, err := b.FS.Read(b.Config.PrivateKeyPath)
 	if err != nil {
 		return "", err
 	}
 
-	go func() {
-		output, err := b.SSH.GetSSHOutput(healthCheckCommand, "127.0.0.1", sshPort, privateKeyBytes, 20*time.Second)
-		outputChan <- output
-		errChan <- err
-	}()
-	go func() {
-		output, err := b.SSH.GetSSHOutput(healthCheckCommand, ip, "22", privateKeyBytes, 20*time.Second)
-		outputChan <- output
-		errChan <- err
-	}()
-
-	return <-outputChan, <-errChan
+	return b.SSH.GetSSHOutput(
+		healthCheckCommand,
+		[]ssh.SSHAddress{
+			{
+				IP:   "127.0.0.1",
+				Port: sshPort,
+			},
+			{
+				IP:   ip,
+				Port: "22",
+			},
+		},
+		privateKeyBytes,
+		20*time.Second,
+	)
 }

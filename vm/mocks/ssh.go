@@ -5,6 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	ssh "github.com/pivotal-cf/pcfdev-cli/ssh"
 	io "io"
 	time "time"
 )
@@ -42,43 +43,43 @@ func (_mr *_MockSSHRecorder) GenerateAddress() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GenerateAddress")
 }
 
-func (_m *MockSSH) GetSSHOutput(_param0 string, _param1 string, _param2 string, _param3 []byte, _param4 time.Duration) (string, error) {
-	ret := _m.ctrl.Call(_m, "GetSSHOutput", _param0, _param1, _param2, _param3, _param4)
+func (_m *MockSSH) GetSSHOutput(_param0 string, _param1 []ssh.SSHAddress, _param2 []byte, _param3 time.Duration) (string, error) {
+	ret := _m.ctrl.Call(_m, "GetSSHOutput", _param0, _param1, _param2, _param3)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockSSHRecorder) GetSSHOutput(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetSSHOutput", arg0, arg1, arg2, arg3, arg4)
+func (_mr *_MockSSHRecorder) GetSSHOutput(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetSSHOutput", arg0, arg1, arg2, arg3)
 }
 
-func (_m *MockSSH) RunSSHCommand(_param0 string, _param1 string, _param2 string, _param3 []byte, _param4 time.Duration, _param5 io.Writer, _param6 io.Writer) error {
-	ret := _m.ctrl.Call(_m, "RunSSHCommand", _param0, _param1, _param2, _param3, _param4, _param5, _param6)
+func (_m *MockSSH) RunSSHCommand(_param0 string, _param1 []ssh.SSHAddress, _param2 []byte, _param3 time.Duration, _param4 io.Writer, _param5 io.Writer) error {
+	ret := _m.ctrl.Call(_m, "RunSSHCommand", _param0, _param1, _param2, _param3, _param4, _param5)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockSSHRecorder) RunSSHCommand(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunSSHCommand", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+func (_mr *_MockSSHRecorder) RunSSHCommand(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "RunSSHCommand", arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
-func (_m *MockSSH) StartSSHSession(_param0 string, _param1 string, _param2 []byte, _param3 time.Duration, _param4 io.Reader, _param5 io.Writer, _param6 io.Writer) error {
-	ret := _m.ctrl.Call(_m, "StartSSHSession", _param0, _param1, _param2, _param3, _param4, _param5, _param6)
+func (_m *MockSSH) StartSSHSession(_param0 []ssh.SSHAddress, _param1 []byte, _param2 time.Duration, _param3 io.Reader, _param4 io.Writer, _param5 io.Writer) error {
+	ret := _m.ctrl.Call(_m, "StartSSHSession", _param0, _param1, _param2, _param3, _param4, _param5)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockSSHRecorder) StartSSHSession(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "StartSSHSession", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+func (_mr *_MockSSHRecorder) StartSSHSession(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "StartSSHSession", arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
-func (_m *MockSSH) WaitForSSH(_param0 string, _param1 string, _param2 []byte, _param3 time.Duration) error {
-	ret := _m.ctrl.Call(_m, "WaitForSSH", _param0, _param1, _param2, _param3)
+func (_m *MockSSH) WaitForSSH(_param0 []ssh.SSHAddress, _param1 []byte, _param2 time.Duration) error {
+	ret := _m.ctrl.Call(_m, "WaitForSSH", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockSSHRecorder) WaitForSSH(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "WaitForSSH", arg0, arg1, arg2, arg3)
+func (_mr *_MockSSHRecorder) WaitForSSH(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "WaitForSSH", arg0, arg1, arg2)
 }

@@ -2,13 +2,6 @@
 
 set -ex
 
-if [[ "$1" != "test" ]]; then
-	if [[ -z "$PCFDEV_INSECURE_PRIVATE_KEY" ]]; then
-		echo "PCFDEV_INSECURE_PRIVATE_KEY must be set"
-		exit 1
-	fi
-fi
-
 pcfdev_cli_path=$(cd `dirname $0` && cd .. && pwd)
 
 if [[ "$1" == "test" ]]
@@ -31,7 +24,7 @@ else
   product_file_id=$(echo "$metadata" | jq -r .id)
   md5=$(echo "$metadata" | jq -r .md5)
   ova_version=$(echo "$metadata" | jq -r .version | tr -d v)
-  insecure_private_key=$PCFDEV_INSECURE_PRIVATE_KEY
+  insecure_private_key=$(cat $pcfdev_cli_path/assets/secure.key)
 fi
 
 pushd "$pcfdev_cli_path" >/dev/null

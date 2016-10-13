@@ -35,7 +35,7 @@ var (
 	vBoxManagePath  string
 )
 
-var _ = BeforeSuite(func() {
+var _ = BeforeEach(func() {
 	Expect(os.Getenv("PIVNET_TOKEN")).NotTo(BeEmpty(), "PIVNET_TOKEN must be set")
 
 	oldCFHome = os.Getenv("CF_HOME")
@@ -63,7 +63,7 @@ var _ = BeforeSuite(func() {
 			" -X main.ovaBuildVersion=some-ova-version"+
 			" -X main.releaseId=1622"+
 			" -X main.productFileId=5689"+
-			" -X main.md5=4c19b7f03b6d70ff932fbd79bb35cef2"+
+			" -X main.md5=c48e9706abae6f36af9e2473f90b10bd"+
 			fmt.Sprintf(` -X "main.insecurePrivateKey=%s"`, string(insecurePrivateKeyBytes)))
 	Expect(err).NotTo(HaveOccurred())
 
@@ -76,7 +76,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-var _ = AfterSuite(func() {
+var _ = AfterEach(func() {
 	Expect(os.RemoveAll(tempHome)).To(Succeed())
 	os.Setenv("CF_HOME", oldCFHome)
 	os.Setenv("CF_PLUGIN_HOME", oldCFPluginHome)
@@ -121,7 +121,7 @@ var _ = Describe("PCF Dev", func() {
 		})
 	})
 
-	It("should start, stop, and destroy a virtualbox instance", func() {
+	It("should start, stop, start again and destroy a virtualbox instance", func() {
 		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1")
 		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
@@ -206,6 +206,13 @@ var _ = Describe("PCF Dev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Stopped"))
+
+		pcfdevCommand = exec.Command("cf", "dev", "start")
+		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "5m").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Waiting for services to start..."))
+		Expect(session).To(gbytes.Say("Services started"))
 
 		pcfdevCommand = exec.Command("cf", "dev", "destroy")
 		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)

@@ -16,7 +16,7 @@ then
   vm_name="pcfdev-test"
   release_id="1622"
   product_file_id="5689"
-  md5="4c19b7f03b6d70ff932fbd79bb35cef2"
+  md5="c48e9706abae6f36af9e2473f90b10bd"
   ova_version="0"
   insecure_private_key=$(cat $pcfdev_cli_path/assets/insecure.key)
 else

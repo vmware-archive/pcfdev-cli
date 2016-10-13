@@ -29,6 +29,17 @@ func (_m *MockFS) EXPECT() *_MockFSRecorder {
 	return _m.recorder
 }
 
+func (_m *MockFS) Exists(_param0 string) (bool, error) {
+	ret := _m.ctrl.Call(_m, "Exists", _param0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockFSRecorder) Exists(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Exists", arg0)
+}
+
 func (_m *MockFS) Extract(_param0 string, _param1 string, _param2 string) error {
 	ret := _m.ctrl.Call(_m, "Extract", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)

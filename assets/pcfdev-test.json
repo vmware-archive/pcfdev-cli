@@ -82,14 +82,14 @@
                 "chmod +x /var/pcfdev/fake_pcfdev_server",
 
                 "echo '#!/bin/bash' > /var/pcfdev/provision",
-                "echo \"echo 'Waiting for services to start...'\necho -n 'ok' > /var/pcfdev/status\nservice fake_pcfdev_server start\necho 'Services started'\necho\" >> /var/pcfdev/provision",
+                "echo \"echo 'Waiting for services to start...'\necho -n 'ok' > /run/pcfdev-healthcheck\nservice fake_pcfdev_server start\necho 'Services started'\necho\" >> /var/pcfdev/provision",
                 "chmod +x /var/pcfdev/provision",
 
 				"mkdir -p /home/vcap/.ssh",
 				"mv /tmp/insecure.pub /home/vcap/.ssh/authorized_keys",
 
                 "echo '#!/bin/bash' > /var/pcfdev/health-check",
-                "echo \"if [ -f /var/pcfdev/status ]\nthen\ncat /var/pcfdev/status\nfi\" >> /var/pcfdev/health-check",
+                "echo \"if [ -f /run/pcfdev-healthcheck ]\nthen\ncat /run/pcfdev-healthcheck\nfi\" >> /var/pcfdev/health-check",
                 "chmod +x /var/pcfdev/health-check",
 
                 "echo 'some-pcfdev-provision-log' > /var/pcfdev/provision.log",

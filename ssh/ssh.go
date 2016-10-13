@@ -149,16 +149,21 @@ func (*SSH) waitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.D
 
 	for _, address := range addresses {
 		go func(ip string, port string) {
+			var dialErr error
 			for {
 				select {
 				case <-timeoutChan:
 					clientChan <- nil
-					errorChan <- fmt.Errorf("ssh connection timed out: %s", err)
+					errorChan <- fmt.Errorf("ssh connection timed out: %s", dialErr)
+					return
 				default:
-					if client, err = ssh.Dial("tcp", ip+":"+port, config); err == nil {
+					if client, dialErr = ssh.Dial("tcp", ip+":"+port, config); dialErr == nil {
 						clientChan <- client
 						errorChan <- nil
+						return
 					}
+
+					time.Sleep(time.Second)
 				}
 			}
 		}(address.IP, address.Port)

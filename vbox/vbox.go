@@ -52,6 +52,7 @@ type Driver interface {
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vbox FS
 type FS interface {
+	Exists(path string) (exists bool, err error)
 	Extract(archivePath string, destinationPath string, filename string) error
 	Remove(path string) error
 	Write(path string, contents io.Reader, append bool) error
@@ -144,6 +145,15 @@ func (v *VBox) StartVM(vmConfig *config.VMConfig) error {
 }
 
 func (v *VBox) insertSecureKeypair(vmConfig *config.VMConfig) error {
+	exists, err := v.FS.Exists(v.Config.PrivateKeyPath)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return nil
+	}
+
 	privateKey, publicKey, err := v.SSH.GenerateKeypair()
 	if err != nil {
 		return err
@@ -155,6 +165,10 @@ func (v *VBox) insertSecureKeypair(vmConfig *config.VMConfig) error {
 			{
 				IP:   "127.0.0.1",
 				Port: vmConfig.SSHPort,
+			},
+			{
+				IP:   vmConfig.IP,
+				Port: "22",
 			},
 		},
 		v.Config.InsecurePrivateKey,
@@ -191,6 +205,10 @@ func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {
 				IP:   "127.0.0.1",
 				Port: vmConfig.SSHPort,
 			},
+			{
+				IP:   vmConfig.IP,
+				Port: "22",
+			},
 		},
 		privateKeyBytes,
 		5*time.Minute,
@@ -216,6 +234,10 @@ func (v *VBox) configureEnvironment(vmConfig *config.VMConfig) error {
 			{
 				IP:   "127.0.0.1",
 				Port: vmConfig.SSHPort,
+			},
+			{
+				IP:   vmConfig.IP,
+				Port: "22",
 			},
 		},
 		privateKeyBytes,

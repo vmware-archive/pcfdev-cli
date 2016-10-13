@@ -129,7 +129,7 @@ func (s *SSH) newSession(addresses []SSHAddress, privateKey []byte, timeout time
 	return client, session, nil
 }
 
-func (*SSH) waitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.Duration) (client *ssh.Client, err error) {
+func (*SSH) waitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.Duration) (*ssh.Client, error) {
 	signer, err := ssh.ParsePrivateKey(privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse private key: %s", err)
@@ -143,18 +143,22 @@ func (*SSH) waitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.D
 		Timeout: 10 * time.Second,
 	}
 
-	clientChan := make(chan (*ssh.Client), 1)
-	errorChan := make(chan (error), 1)
-	timeoutChan := time.After(timeout)
+	clientChan := make(chan *ssh.Client, len(addresses))
+	errorChan := make(chan error, len(addresses))
+	doneChan := make(chan bool)
 
 	for _, address := range addresses {
 		go func(ip string, port string) {
+			var client *ssh.Client
 			var dialErr error
+			timeoutChan := time.After(timeout)
 			for {
 				select {
 				case <-timeoutChan:
 					clientChan <- nil
 					errorChan <- fmt.Errorf("ssh connection timed out: %s", dialErr)
+					return
+				case <-doneChan:
 					return
 				default:
 					if client, dialErr = ssh.Dial("tcp", ip+":"+port, config); dialErr == nil {
@@ -162,12 +166,14 @@ func (*SSH) waitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.D
 						errorChan <- nil
 						return
 					}
-
 					time.Sleep(time.Second)
 				}
 			}
 		}(address.IP, address.Port)
 	}
 
-	return <-clientChan, <-errorChan
+	client := <-clientChan
+	err = <-errorChan
+	close(doneChan)
+	return client, err
 }

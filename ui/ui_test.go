@@ -47,6 +47,7 @@ var _ = Describe("ui", func() {
 			It("should return true", func(done Done) {
 				mockTextScroller.EXPECT().SetText("some-text")
 				mockTextScroller.EXPECT().Buffer().Return(termui.NewBuffer())
+				allowResizeOnWindows(mockTextScroller)
 
 				go func() {
 					defer GinkgoRecover()
@@ -62,6 +63,7 @@ var _ = Describe("ui", func() {
 			It("should return true", func(done Done) {
 				mockTextScroller.EXPECT().SetText("some-text")
 				mockTextScroller.EXPECT().Buffer().Return(termui.NewBuffer())
+				allowResizeOnWindows(mockTextScroller)
 
 				go func() {
 					defer GinkgoRecover()
@@ -77,6 +79,7 @@ var _ = Describe("ui", func() {
 			It("should return false", func(done Done) {
 				mockTextScroller.EXPECT().SetText("some-text")
 				mockTextScroller.EXPECT().Buffer().Return(termui.NewBuffer())
+				allowResizeOnWindows(mockTextScroller)
 
 				go func() {
 					defer GinkgoRecover()
@@ -92,6 +95,7 @@ var _ = Describe("ui", func() {
 			It("should return false", func(done Done) {
 				mockTextScroller.EXPECT().SetText("some-text")
 				mockTextScroller.EXPECT().Buffer().Return(termui.NewBuffer())
+				allowResizeOnWindows(mockTextScroller)
 
 				go func() {
 					defer GinkgoRecover()
@@ -108,6 +112,7 @@ var _ = Describe("ui", func() {
 				mockTextScroller.EXPECT().SetText("some-text")
 				mockTextScroller.EXPECT().Buffer().Times(2).Return(termui.NewBuffer())
 				mockTextScroller.EXPECT().ScrollDown()
+				allowResizeOnWindows(mockTextScroller)
 
 				go func() {
 					defer GinkgoRecover()
@@ -125,6 +130,7 @@ var _ = Describe("ui", func() {
 				mockTextScroller.EXPECT().SetText("some-text")
 				mockTextScroller.EXPECT().Buffer().Times(2).Return(termui.NewBuffer())
 				mockTextScroller.EXPECT().ScrollUp()
+				allowResizeOnWindows(mockTextScroller)
 
 				go func() {
 					defer GinkgoRecover()
@@ -142,6 +148,7 @@ var _ = Describe("ui", func() {
 				mockTextScroller.EXPECT().SetText("some-text")
 				mockTextScroller.EXPECT().Buffer().Times(2).Return(termui.NewBuffer())
 				mockTextScroller.EXPECT().PageDown()
+				allowResizeOnWindows(mockTextScroller)
 
 				go func() {
 					defer GinkgoRecover()
@@ -159,6 +166,7 @@ var _ = Describe("ui", func() {
 				mockTextScroller.EXPECT().SetText("some-text")
 				mockTextScroller.EXPECT().Buffer().Times(2).Return(termui.NewBuffer())
 				mockTextScroller.EXPECT().PageUp()
+				allowResizeOnWindows(mockTextScroller)
 
 				go func() {
 					defer GinkgoRecover()
@@ -176,6 +184,7 @@ var _ = Describe("ui", func() {
 				mockTextScroller.EXPECT().SetText("some-text")
 				mockTextScroller.EXPECT().Buffer().Times(2).Return(termui.NewBuffer())
 				mockTextScroller.EXPECT().Home()
+				allowResizeOnWindows(mockTextScroller)
 
 				go func() {
 					defer GinkgoRecover()
@@ -193,6 +202,7 @@ var _ = Describe("ui", func() {
 				mockTextScroller.EXPECT().SetText("some-text")
 				mockTextScroller.EXPECT().Buffer().Times(2).Return(termui.NewBuffer())
 				mockTextScroller.EXPECT().End()
+				allowResizeOnWindows(mockTextScroller)
 
 				go func() {
 					defer GinkgoRecover()
@@ -230,3 +240,10 @@ var _ = Describe("ui", func() {
 		})
 	})
 })
+
+func allowResizeOnWindows(mockTextScroller *mocks.MockTextScroller) {
+	if runtime.GOOS == "windows" {
+		mockTextScroller.EXPECT().Buffer().Return(termui.NewBuffer()).MaxTimes(2)
+		mockTextScroller.EXPECT().Resize(gomock.Any(), gomock.Any()).MaxTimes(2)
+	}
+}

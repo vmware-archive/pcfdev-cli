@@ -323,7 +323,7 @@ var _ = Describe("PCF Dev", func() {
 			listVmsCommand := exec.Command(vBoxManagePath, "list", "vms")
 			session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "10s").Should(gexec.Exit(0))
+			Eventually(session).Should(gexec.Exit(0))
 			Expect(session).NotTo(gbytes.Say(vmName))
 
 			By("rerunning download with no effect")

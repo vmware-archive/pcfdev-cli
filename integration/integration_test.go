@@ -17,6 +17,8 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
+	"github.com/kr/pty"
+	"runtime"
 )
 
 const (
@@ -121,6 +123,36 @@ var _ = Describe("PCF Dev", func() {
 		})
 	})
 
+	It("should allow SSH access and forward interrupts", func() {
+		if runtime.GOOS == "windows" {
+			Skip("pty is not available on windows")
+		}
+
+		const interrupt = "\x03"
+
+		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1")
+		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "10m").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Services started"))
+
+		sshCommand := exec.Command("cf", "dev", "ssh")
+		sshPty, err := pty.Start(sshCommand)
+		Expect(err).NotTo(HaveOccurred())
+
+		time.Sleep(time.Second)
+		fmt.Fprintln(sshPty, "sleep 99999999")
+		fmt.Fprintln(sshPty, interrupt)
+		fmt.Fprintln(sshPty, "echo 'Program was stopped by interrupt successfully'")
+		fmt.Fprintln(sshPty, ">&2 echo 'Printing to stderr also works'")
+		fmt.Fprintln(sshPty, "exit")
+		ptyOutput, err := ioutil.ReadAll(sshPty)
+		Expect(ptyOutput).To(ContainSubstring("Program was stopped by interrupt successfully"))
+		Expect(ptyOutput).To(ContainSubstring("Printing to stderr also works"))
+		Expect(ptyOutput).To(ContainSubstring("logout"))
+		Expect(sshCommand.Wait()).To(Succeed())
+	})
+
 	It("should start, stop, start again and destroy a virtualbox instance", func() {
 		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1")
 		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
@@ -134,20 +166,6 @@ var _ = Describe("PCF Dev", func() {
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Running"))
 		Expect(filepath.Join(tempHome, "pcfdev", "vms", vmName, vmName+"-disk1.vmdk")).To(BeAnExistingFile())
-
-		By("SSHing to the VM")
-		sshCommand := exec.Command("cf", "dev", "ssh")
-		sshStdin, err := sshCommand.StdinPipe()
-		Expect(err).NotTo(HaveOccurred())
-		session, err = gexec.Start(sshCommand, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-
-		fmt.Fprintln(sshStdin, "echo some-stdout")
-		Eventually(session, "2m").Should(gbytes.Say("some-stdout"))
-		fmt.Fprintln(sshStdin, ">&2 echo some-stderr")
-		Eventually(session, "2m").Should(gbytes.Say("some-stderr"))
-		fmt.Fprintln(sshStdin, "exit")
-		Eventually(session, "2m").Should(gexec.Exit(0))
 
 		By("re-running 'cf dev start' with no effect")
 		restartCommand := exec.Command("cf", "dev", "start")

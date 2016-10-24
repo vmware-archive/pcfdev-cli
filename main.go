@@ -83,8 +83,11 @@ func main() {
 		Token:         token,
 	}
 	token.Client = client
+	sshClient := &ssh.SSH{
+		Terminal: &ssh.TerminalWrapper{},
+	}
 	vbx := &vbox.VBox{
-		SSH:    &ssh.SSH{},
+		SSH:    sshClient,
 		FS:     fileSystem,
 		Driver: driver,
 		Picker: &address.Picker{
@@ -117,7 +120,7 @@ func main() {
 				VBox:   vbx,
 				Config: conf,
 				FS:     fileSystem,
-				SSH:    &ssh.SSH{},
+				SSH:    sshClient,
 			},
 		},
 	})

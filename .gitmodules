@@ -40,3 +40,6 @@
 [submodule "vendor/github.com/nsf/termbox-go"]
 	path = vendor/github.com/nsf/termbox-go
 	url = https://github.com/nsf/termbox-go.git
+[submodule "vendor/github.com/kr/pty"]
+	path = vendor/github.com/kr/pty
+	url = https://github.com/pcfdev-forks/pty.git

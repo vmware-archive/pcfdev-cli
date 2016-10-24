@@ -1,6 +1,7 @@
 package ssh_test
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os/exec"
@@ -8,39 +9,56 @@ import (
 	"time"
 
 	gossh "golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
-	. "github.com/pivotal-cf/pcfdev-cli/ssh"
+	"github.com/pivotal-cf/pcfdev-cli/ssh"
+	"github.com/pivotal-cf/pcfdev-cli/ssh/mocks"
 	"github.com/pivotal-cf/pcfdev-cli/test_helpers"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 )
 
-var (
-	vBoxManagePath  string
-	vmName          string
-	port            string
-	privateKeyBytes []byte
-
-	ssh *SSH
-)
-
-var _ = BeforeSuite(func() {
-	var err error
-	vBoxManagePath, err = helpers.VBoxManagePath()
-	Expect(err).NotTo(HaveOccurred())
-
-	privateKeyBytes, err = ioutil.ReadFile(filepath.Join("..", "assets", "insecure.key"))
-	Expect(err).NotTo(HaveOccurred())
-})
-
 var _ = Describe("ssh", func() {
+	var (
+		vBoxManagePath  string
+		vmName          string
+		ip              string
+		port            string
+		privateKeyBytes []byte
+		mockCtrl        *gomock.Controller
+		mockTerminal    *mocks.MockTerminal
+
+		s *ssh.SSH
+	)
+
+	BeforeSuite(func() {
+		var err error
+		vBoxManagePath, err = helpers.VBoxManagePath()
+		Expect(err).NotTo(HaveOccurred())
+
+		privateKeyBytes, err = ioutil.ReadFile(filepath.Join("..", "assets", "insecure.key"))
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	BeforeEach(func() {
+		mockCtrl = gomock.NewController(GinkgoT())
+		mockTerminal = mocks.NewMockTerminal(mockCtrl)
+		s = &ssh.SSH{
+			Terminal: mockTerminal,
+		}
+	})
+
+	AfterEach(func() {
+		mockCtrl.Finish()
+	})
+
 	Describe("GenerateAddress", func() {
 		It("Should return a host and free port", func() {
-			ssh = &SSH{}
-			host, port, err := ssh.GenerateAddress()
+			host, port, err := s.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(host).To(Equal("127.0.0.1"))
 			Expect(port).To(MatchRegexp("^[\\d]+$"))
@@ -55,15 +73,13 @@ var _ = Describe("ssh", func() {
 			)
 
 			BeforeEach(func() {
-				ssh = &SSH{}
-
 				var err error
 				stdout = gbytes.NewBuffer()
 				stderr = gbytes.NewBuffer()
 				vmName, err = test_helpers.ImportSnappy()
 				Expect(err).NotTo(HaveOccurred())
 
-				_, port, err = ssh.GenerateAddress()
+				ip, port, err = s.GenerateAddress()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
@@ -79,47 +95,44 @@ var _ = Describe("ssh", func() {
 
 			Context("when the command succeeds", func() {
 				It("should stream stdout to the terminal", func() {
-					Expect(ssh.RunSSHCommand("echo -n some-output", []SSHAddress{{IP: "127.0.0.1", Port: port}}, privateKeyBytes, 5*time.Minute, stdout, stderr)).To(Succeed())
+					Expect(s.RunSSHCommand("echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdout, stderr)).To(Succeed())
 					Eventually(string(stdout.Contents()), 20*time.Second).Should(Equal("some-output"))
 				})
 
 				It("should stream stderr to the terminal", func() {
-					Expect(ssh.RunSSHCommand(">&2 echo -n some-output", []SSHAddress{{IP: "127.0.0.1", Port: port}}, privateKeyBytes, 5*time.Minute, stdout, stderr)).To(Succeed())
+					Expect(s.RunSSHCommand(">&2 echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdout, stderr)).To(Succeed())
 					Eventually(string(stderr.Contents()), 20*time.Second).Should(Equal("some-output"))
 				})
 			})
 
 			Context("when the command fails", func() {
 				It("should return an error", func() {
-					Expect(ssh.RunSSHCommand("false", []SSHAddress{{IP: "127.0.0.1", Port: port}}, privateKeyBytes, 5*time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("Process exited with: 1")))
+					Expect(s.RunSSHCommand("false", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("Process exited with: 1")))
 				})
 			})
 
 			Context("when private key is bad", func() {
 				It("should return an error", func() {
-					Expect(ssh.RunSSHCommand("false", []SSHAddress{{IP: "127.0.0.1", Port: port}}, []byte("some-bad-private-key"), 5*time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("could not parse private key:")))
+					Expect(s.RunSSHCommand("false", []ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), 5*time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("could not parse private key:")))
 				})
 			})
 		})
 
 		Context("when SSH connection times out", func() {
 			It("should return an error", func() {
-				Expect(ssh.RunSSHCommand("echo -n some-output", []SSHAddress{{IP: "127.0.0.1", Port: "some-bad-port"}}, privateKeyBytes, time.Second, ioutil.Discard, ioutil.Discard)).To(MatchError(ContainSubstring("ssh connection timed out:")))
+				Expect(s.RunSSHCommand("echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: "some-bad-port"}}, privateKeyBytes, time.Second, ioutil.Discard, ioutil.Discard)).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})
 	})
 
 	Describe("#WaitForSSH", func() {
-		var ip string
 		Context("when SSH is available", func() {
 			BeforeEach(func() {
-				ssh = &SSH{}
-
 				var err error
 				vmName, err = test_helpers.ImportSnappy()
 				Expect(err).NotTo(HaveOccurred())
 
-				ip, port, err = ssh.GenerateAddress()
+				ip, port, err = s.GenerateAddress()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
@@ -134,30 +147,28 @@ var _ = Describe("ssh", func() {
 			})
 
 			It("should succeed", func() {
-				Expect(ssh.WaitForSSH([]SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Succeed())
+				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Succeed())
 			})
 
 			Context("when a bad ssh address is passed in along with a good one", func() {
 				It("should succeed", func() {
-					Expect(ssh.WaitForSSH([]SSHAddress{{IP: ip, Port: port}, {IP: "some-bad-ip", Port: "some-port"}}, privateKeyBytes, 5*time.Minute)).To(Succeed())
+					Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}, {IP: "some-bad-ip", Port: "some-port"}}, privateKeyBytes, 5*time.Minute)).To(Succeed())
 				})
 			})
 		})
 
 		Context("when there is more than one ssh port to the VM", func() {
 			BeforeEach(func() {
-				ssh = &SSH{}
-
 				var err error
 				vmName, err = test_helpers.ImportSnappy()
 				Expect(err).NotTo(HaveOccurred())
 
-				ip, port, err = ssh.GenerateAddress()
+				ip, port, err = s.GenerateAddress()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
 
-				ip, port, err = ssh.GenerateAddress()
+				ip, port, err = s.GenerateAddress()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh2,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
@@ -170,37 +181,33 @@ var _ = Describe("ssh", func() {
 					return exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()
 				}, "10s").Should(Succeed())
 			})
+
 			It("should succeed", func() {
-				Expect(ssh.WaitForSSH([]SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Succeed())
+				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Succeed())
 			})
 		})
 
 		Context("when SSH connection times out", func() {
 			It("should return an error", func() {
-				Expect(ssh.WaitForSSH([]SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Second)).To(MatchError(ContainSubstring("ssh connection timed out:")))
+				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Second)).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})
 
 		Context("when private key is bad", func() {
 			It("should return an error", func() {
-				Expect(ssh.WaitForSSH([]SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), 5*time.Second)).To(MatchError(ContainSubstring("could not parse private key:")))
+				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), 5*time.Second)).To(MatchError(ContainSubstring("could not parse private key:")))
 			})
 		})
-
 	})
 
 	Describe("#GetSSHOutput", func() {
-		var ip string
-
 		Context("when SSH is available", func() {
 			BeforeEach(func() {
-				ssh = &SSH{}
-
 				var err error
 				vmName, err = test_helpers.ImportSnappy()
 				Expect(err).NotTo(HaveOccurred())
 
-				ip, port, err = ssh.GenerateAddress()
+				ip, port, err = s.GenerateAddress()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
@@ -215,16 +222,16 @@ var _ = Describe("ssh", func() {
 			})
 
 			It("should return the output of the ssh command", func() {
-				Expect(ssh.GetSSHOutput("echo -n some-output", []SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Equal("some-output"))
+				Expect(s.GetSSHOutput("echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Equal("some-output"))
 			})
 
 			It("should return the stderr of the ssh command", func() {
-				Expect(ssh.GetSSHOutput(">&2 echo -n some-output", []SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Equal("some-output"))
+				Expect(s.GetSSHOutput(">&2 echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Equal("some-output"))
 			})
 
 			Context("when the command fails", func() {
 				It("should return an error", func() {
-					output, err := ssh.GetSSHOutput("echo -n some-output; false", []SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)
+					output, err := s.GetSSHOutput("echo -n some-output; false", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)
 					Expect(output).To(Equal("some-output"))
 					Expect(err).To(MatchError(ContainSubstring("Process exited with: 1")))
 				})
@@ -233,14 +240,14 @@ var _ = Describe("ssh", func() {
 
 		Context("when SSH connection times out", func() {
 			It("should return an error", func() {
-				_, err := ssh.GetSSHOutput("echo -n some-output", []SSHAddress{{IP: ip, Port: "some-bad-port"}}, privateKeyBytes, time.Second)
+				_, err := s.GetSSHOutput("echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: "some-bad-port"}}, privateKeyBytes, time.Second)
 				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})
 
 		Context("when private key is bad", func() {
 			It("should return an error", func() {
-				_, err := ssh.GetSSHOutput("echo -n some-output", []SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), time.Second)
+				_, err := s.GetSSHOutput("echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), time.Second)
 				Expect(err).To(MatchError(ContainSubstring("could not parse private key:")))
 			})
 		})
@@ -254,8 +261,6 @@ var _ = Describe("ssh", func() {
 		)
 
 		BeforeEach(func() {
-			ssh = &SSH{}
-
 			var err error
 			stdin = gbytes.NewBuffer()
 			stdout = gbytes.NewBuffer()
@@ -263,7 +268,7 @@ var _ = Describe("ssh", func() {
 			vmName, err = test_helpers.ImportSnappy()
 			Expect(err).NotTo(HaveOccurred())
 
-			_, port, err = ssh.GenerateAddress()
+			ip, port, err = s.GenerateAddress()
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
@@ -277,13 +282,19 @@ var _ = Describe("ssh", func() {
 			}, "10s").Should(Succeed())
 		})
 
-		It("should start an ssh session into the VM", func() {
+		It("should start an ssh session into the VM using a raw terminal", func() {
 			go func() {
 				time.Sleep(5 * time.Second)
 				fmt.Fprintln(stdin, "exit")
 			}()
 
-			err := ssh.StartSSHSession([]SSHAddress{{IP: "127.0.0.1", Port: port}}, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
+			terminalState := &terminal.State{}
+			gomock.InOrder(
+				mockTerminal.EXPECT().MakeRaw(0).Return(terminalState, nil),
+				mockTerminal.EXPECT().Restore(0, terminalState),
+			)
+
+			err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(stdout).Should(gbytes.Say("Welcome to Ubuntu"))
@@ -291,22 +302,31 @@ var _ = Describe("ssh", func() {
 
 		Context("when there is an error creating the ssh session", func() {
 			It("should return the error", func() {
-				err := ssh.StartSSHSession([]SSHAddress{{IP: "127.0.0.1", Port: "some-bad-port"}}, privateKeyBytes, time.Second, stdin, stdout, stderr)
+				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: "some-bad-port"}}, privateKeyBytes, time.Second, stdin, stdout, stderr)
 				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})
 
 		Context("when the private key is bad", func() {
 			It("should return the error", func() {
-				err := ssh.StartSSHSession([]SSHAddress{{IP: "127.0.0.1", Port: port}}, []byte("some-bad-private-key"), time.Second, stdin, stdout, stderr)
+				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), time.Second, stdin, stdout, stderr)
 				Expect(err).To(MatchError(ContainSubstring("could not parse private key:")))
+			})
+		})
+
+		Context("when there is an error making the terminal raw", func() {
+			It("should return the error", func() {
+				mockTerminal.EXPECT().MakeRaw(0).Return(nil, errors.New("some-error"))
+
+				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
+				Expect(err).To(MatchError("some-error"))
 			})
 		})
 	})
 
 	Describe("#GenerateKeypair", func() {
 		It("should generate an rsa keypair", func() {
-			privateKey, publicKey, err := ssh.GenerateKeypair()
+			privateKey, publicKey, err := s.GenerateKeypair()
 			Expect(err).NotTo(HaveOccurred())
 
 			signer, err := gossh.ParsePrivateKey(privateKey)

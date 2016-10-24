@@ -110,17 +110,17 @@ var _ = Describe("ssh", func() {
 					Expect(s.RunSSHCommand("false", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("Process exited with: 1")))
 				})
 			})
-
-			Context("when private key is bad", func() {
-				It("should return an error", func() {
-					Expect(s.RunSSHCommand("false", []ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), 5*time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("could not parse private key:")))
-				})
-			})
 		})
 
 		Context("when SSH connection times out", func() {
 			It("should return an error", func() {
 				Expect(s.RunSSHCommand("echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: "some-bad-port"}}, privateKeyBytes, time.Second, ioutil.Discard, ioutil.Discard)).To(MatchError(ContainSubstring("ssh connection timed out:")))
+			})
+		})
+
+		Context("when private key is bad", func() {
+			It("should return an error", func() {
+				Expect(s.RunSSHCommand("false", []ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard)).To(MatchError(ContainSubstring("could not parse private key:")))
 			})
 		})
 	})
@@ -254,72 +254,74 @@ var _ = Describe("ssh", func() {
 	})
 
 	Describe("#StartSSHSession", func() {
-		var (
-			stdin  *gbytes.Buffer
-			stdout *gbytes.Buffer
-			stderr *gbytes.Buffer
-		)
-
-		BeforeEach(func() {
-			var err error
-			stdin = gbytes.NewBuffer()
-			stdout = gbytes.NewBuffer()
-			stderr = gbytes.NewBuffer()
-			vmName, err = test_helpers.ImportSnappy()
-			Expect(err).NotTo(HaveOccurred())
-
-			ip, port, err = s.GenerateAddress()
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
-			Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
-		})
-
-		AfterEach(func() {
-			Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
-			Eventually(func() error {
-				return exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()
-			}, "10s").Should(Succeed())
-		})
-
-		It("should start an ssh session into the VM using a raw terminal", func() {
-			go func() {
-				time.Sleep(5 * time.Second)
-				fmt.Fprintln(stdin, "exit")
-			}()
-
-			terminalState := &terminal.State{}
-			gomock.InOrder(
-				mockTerminal.EXPECT().MakeRaw(0).Return(terminalState, nil),
-				mockTerminal.EXPECT().Restore(0, terminalState),
+		Context("when SSH is available", func() {
+			var (
+				stdin  *gbytes.Buffer
+				stdout *gbytes.Buffer
+				stderr *gbytes.Buffer
 			)
 
-			err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
-			Expect(err).NotTo(HaveOccurred())
+			BeforeEach(func() {
+				var err error
+				stdin = gbytes.NewBuffer()
+				stdout = gbytes.NewBuffer()
+				stderr = gbytes.NewBuffer()
+				vmName, err = test_helpers.ImportSnappy()
+				Expect(err).NotTo(HaveOccurred())
 
-			Eventually(stdout).Should(gbytes.Say("Welcome to Ubuntu"))
+				ip, port, err = s.GenerateAddress()
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
+				Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
+			})
+
+			AfterEach(func() {
+				Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
+				Eventually(func() error {
+					return exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()
+				}, "10s").Should(Succeed())
+			})
+
+			It("should start an ssh session into the VM using a raw terminal", func() {
+				go func() {
+					time.Sleep(5 * time.Second)
+					fmt.Fprintln(stdin, "exit")
+				}()
+
+				terminalState := &terminal.State{}
+				gomock.InOrder(
+					mockTerminal.EXPECT().MakeRaw(0).Return(terminalState, nil),
+					mockTerminal.EXPECT().Restore(0, terminalState),
+				)
+
+				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(stdout).Should(gbytes.Say("Welcome to Ubuntu"))
+			})
+
+			Context("when there is an error making the terminal raw", func() {
+				It("should return the error", func() {
+					mockTerminal.EXPECT().MakeRaw(0).Return(nil, errors.New("some-error"))
+
+					err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, gbytes.NewBuffer(), ioutil.Discard, ioutil.Discard)
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
 		})
 
 		Context("when there is an error creating the ssh session", func() {
 			It("should return the error", func() {
-				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: "some-bad-port"}}, privateKeyBytes, time.Second, stdin, stdout, stderr)
+				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: "some-bad-port"}}, privateKeyBytes, time.Second, gbytes.NewBuffer(), ioutil.Discard, ioutil.Discard)
 				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})
 
 		Context("when the private key is bad", func() {
 			It("should return the error", func() {
-				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), time.Second, stdin, stdout, stderr)
+				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), time.Second, gbytes.NewBuffer(), ioutil.Discard, ioutil.Discard)
 				Expect(err).To(MatchError(ContainSubstring("could not parse private key:")))
-			})
-		})
-
-		Context("when there is an error making the terminal raw", func() {
-			It("should return the error", func() {
-				mockTerminal.EXPECT().MakeRaw(0).Return(nil, errors.New("some-error"))
-
-				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
-				Expect(err).To(MatchError("some-error"))
 			})
 		})
 	})

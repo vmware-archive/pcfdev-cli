@@ -17,14 +17,17 @@ import (
 	"os"
 )
 
-type SSH struct{
+type SSH struct {
 	Terminal Terminal
+
+	WindowResizer *WindowResizer
 }
 
 //go:generate mockgen -package mocks -destination mocks/terminal.go github.com/pivotal-cf/pcfdev-cli/ssh Terminal
 type Terminal interface {
 	SetRawTerminal(fd uintptr) (*term.State, error)
 	RestoreTerminal(fd uintptr, state *term.State) error
+	GetWinsize(fd uintptr) (*term.Winsize, error)
 }
 
 func (*SSH) GenerateAddress() (host string, port string, err error) {
@@ -78,6 +81,7 @@ func (s *SSH) StartSSHSession(addresses []SSHAddress, privateKey []byte, timeout
 		return err
 	}
 	defer client.Close()
+	defer session.Close()
 
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          1,
@@ -95,9 +99,17 @@ func (s *SSH) StartSSHSession(addresses []SSHAddress, privateKey []byte, timeout
 	}
 	defer s.Terminal.RestoreTerminal(os.Stdin.Fd(), state)
 
-	if err := session.RequestPty("xterm", 50, 50, modes); err != nil {
+	winSize, err := s.Terminal.GetWinsize(os.Stdout.Fd())
+	if err != nil {
+		return  err
+	}
+
+	if err := session.RequestPty("xterm", int(winSize.Height), int(winSize.Width), modes); err != nil {
 		return err
 	}
+
+	s.WindowResizer.StartResizing(session)
+	defer s.WindowResizer.StopResizing()
 
 	if err := session.Shell(); err != nil {
 		return err

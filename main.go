@@ -85,6 +85,10 @@ func main() {
 	token.Client = client
 	sshClient := &ssh.SSH{
 		Terminal: &ssh.TerminalWrapper{},
+		WindowResizer: &ssh.WindowResizer{
+			Terminal: &ssh.TerminalWrapper{},
+			DoneChannel: make(chan bool),
+		},
 	}
 	vbx := &vbox.VBox{
 		SSH:    sshClient,

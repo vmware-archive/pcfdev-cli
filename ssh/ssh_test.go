@@ -9,7 +9,7 @@ import (
 	"time"
 
 	gossh "golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
+	"github.com/docker/docker/pkg/term"
 
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
@@ -289,10 +289,10 @@ var _ = Describe("ssh", func() {
 					fmt.Fprintln(stdin, "exit")
 				}()
 
-				terminalState := &terminal.State{}
+				terminalState := &term.State{}
 				gomock.InOrder(
-					mockTerminal.EXPECT().MakeRaw(0).Return(terminalState, nil),
-					mockTerminal.EXPECT().Restore(0, terminalState),
+					mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(terminalState, nil),
+					mockTerminal.EXPECT().RestoreTerminal(gomock.Any(), terminalState),
 				)
 
 				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
@@ -303,7 +303,7 @@ var _ = Describe("ssh", func() {
 
 			Context("when there is an error making the terminal raw", func() {
 				It("should return the error", func() {
-					mockTerminal.EXPECT().MakeRaw(0).Return(nil, errors.New("some-error"))
+					mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(nil, errors.New("some-error"))
 
 					err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, gbytes.NewBuffer(), ioutil.Discard, ioutil.Discard)
 					Expect(err).To(MatchError("some-error"))

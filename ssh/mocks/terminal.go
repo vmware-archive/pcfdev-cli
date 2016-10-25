@@ -4,8 +4,8 @@
 package mocks
 
 import (
+	term "github.com/docker/docker/pkg/term"
 	gomock "github.com/golang/mock/gomock"
-	terminal "golang.org/x/crypto/ssh/terminal"
 )
 
 // Mock of Terminal interface
@@ -29,23 +29,23 @@ func (_m *MockTerminal) EXPECT() *_MockTerminalRecorder {
 	return _m.recorder
 }
 
-func (_m *MockTerminal) MakeRaw(_param0 int) (*terminal.State, error) {
-	ret := _m.ctrl.Call(_m, "MakeRaw", _param0)
-	ret0, _ := ret[0].(*terminal.State)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockTerminalRecorder) MakeRaw(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "MakeRaw", arg0)
-}
-
-func (_m *MockTerminal) Restore(_param0 int, _param1 *terminal.State) error {
-	ret := _m.ctrl.Call(_m, "Restore", _param0, _param1)
+func (_m *MockTerminal) RestoreTerminal(_param0 uintptr, _param1 *term.State) error {
+	ret := _m.ctrl.Call(_m, "RestoreTerminal", _param0, _param1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockTerminalRecorder) Restore(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Restore", arg0, arg1)
+func (_mr *_MockTerminalRecorder) RestoreTerminal(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "RestoreTerminal", arg0, arg1)
+}
+
+func (_m *MockTerminal) SetRawTerminal(_param0 uintptr) (*term.State, error) {
+	ret := _m.ctrl.Call(_m, "SetRawTerminal", _param0)
+	ret0, _ := ret[0].(*term.State)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockTerminalRecorder) SetRawTerminal(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetRawTerminal", arg0)
 }

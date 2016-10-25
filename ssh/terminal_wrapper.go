@@ -1,13 +1,15 @@
 package ssh
 
-import "golang.org/x/crypto/ssh/terminal"
+import "github.com/docker/docker/pkg/term"
 
 type TerminalWrapper struct{}
 
-func (TerminalWrapper) MakeRaw(fd int) (*terminal.State, error) {
-	return terminal.MakeRaw(fd)
+func (*TerminalWrapper) SetRawTerminal(fd uintptr) (*term.State, error) {
+	return term.SetRawTerminal(fd)
 }
 
-func (TerminalWrapper) Restore(fd int, state *terminal.State) error {
-	return terminal.Restore(fd, state)
+
+func (*TerminalWrapper) RestoreTerminal(fd uintptr, state *term.State) error {
+	return term.RestoreTerminal(fd, state)
 }
+

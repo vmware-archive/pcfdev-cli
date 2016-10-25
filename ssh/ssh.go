@@ -12,8 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/docker/pkg/term"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
+	"os"
 )
 
 type SSH struct{
@@ -22,8 +23,8 @@ type SSH struct{
 
 //go:generate mockgen -package mocks -destination mocks/terminal.go github.com/pivotal-cf/pcfdev-cli/ssh Terminal
 type Terminal interface {
-	MakeRaw(fd int) (*terminal.State, error)
-	Restore(fd int, state *terminal.State) error
+	SetRawTerminal(fd uintptr) (*term.State, error)
+	RestoreTerminal(fd uintptr, state *term.State) error
 }
 
 func (*SSH) GenerateAddress() (host string, port string, err error) {
@@ -88,11 +89,11 @@ func (s *SSH) StartSSHSession(addresses []SSHAddress, privateKey []byte, timeout
 	session.Stdout = stdout
 	session.Stderr = stderr
 
-	oldState, err := s.Terminal.MakeRaw(0)
+	state, err := s.Terminal.SetRawTerminal(os.Stdin.Fd())
 	if err != nil {
 		return err
 	}
-	defer s.Terminal.Restore(0, oldState)
+	defer s.Terminal.RestoreTerminal(os.Stdin.Fd(), state)
 
 	if err := session.RequestPty("xterm", 50, 50, modes); err != nil {
 		return err

@@ -39,17 +39,6 @@ func (_mr *_MockTerminalRecorder) GetFdInfo(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetFdInfo", arg0)
 }
 
-func (_m *MockTerminal) GetWinsize(_param0 uintptr) (*term.Winsize, error) {
-	ret := _m.ctrl.Call(_m, "GetWinsize", _param0)
-	ret0, _ := ret[0].(*term.Winsize)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockTerminalRecorder) GetWinsize(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetWinsize", arg0)
-}
-
 func (_m *MockTerminal) RestoreTerminal(_param0 uintptr, _param1 *term.State) error {
 	ret := _m.ctrl.Call(_m, "RestoreTerminal", _param0, _param1)
 	ret0, _ := ret[0].(error)

@@ -13,10 +13,6 @@ func (*TerminalWrapper) RestoreTerminal(fd uintptr, state *term.State) error {
 	return term.RestoreTerminal(fd, state)
 }
 
-func (*TerminalWrapper) GetWinsize(fd uintptr) (*term.Winsize, error) {
-	return term.GetWinsize(fd)
-}
-
 func (*TerminalWrapper) GetFdInfo(in interface{}) uintptr {
 	fd, _ := term.GetFdInfo(in)
 	return fd

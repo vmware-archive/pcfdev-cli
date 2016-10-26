@@ -26,7 +26,6 @@ type SSH struct {
 type Terminal interface {
 	SetRawTerminal(fd uintptr) (*term.State, error)
 	RestoreTerminal(fd uintptr, state *term.State) error
-	GetWinsize(fd uintptr) (*term.Winsize, error)
 	GetFdInfo(in interface{}) uintptr
 }
 

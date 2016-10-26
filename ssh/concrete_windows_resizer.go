@@ -3,6 +3,7 @@ package ssh
 import (
 	"golang.org/x/crypto/ssh"
 	"os"
+	"github.com/docker/docker/pkg/term"
 )
 
 type ConcreteWindowResizer struct {
@@ -15,7 +16,7 @@ func (w *ConcreteWindowResizer) StopResizing() {
 }
 
 func (w *ConcreteWindowResizer) resize(session *ssh.Session, previousHeight, previousWidth uint16) (newHeight, newWidth uint16) {
-	winSize, err := w.Terminal.GetWinsize(os.Stdout.Fd())
+	winSize, err := term.GetWinsize(os.Stdout.Fd())
 	if err != nil {
 		return previousWidth, previousHeight
 	}

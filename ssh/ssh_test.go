@@ -24,13 +24,14 @@ import (
 
 var _ = Describe("ssh", func() {
 	var (
-		vBoxManagePath  string
-		vmName          string
-		ip              string
-		port            string
+		vBoxManagePath string
+		vmName string
+		ip string
+		port string
 		privateKeyBytes []byte
 		mockCtrl        *gomock.Controller
 		mockTerminal    *mocks.MockTerminal
+		mockWindowsResizer *mocks.MockWindowResizer
 
 		s *ssh.SSH
 	)
@@ -47,8 +48,10 @@ var _ = Describe("ssh", func() {
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockTerminal = mocks.NewMockTerminal(mockCtrl)
+		mockWindowsResizer = mocks.NewMockWindowResizer(mockCtrl)
 		s = &ssh.SSH{
 			Terminal: mockTerminal,
+			WindowResizer: mockWindowsResizer,
 		}
 	})
 
@@ -95,19 +98,19 @@ var _ = Describe("ssh", func() {
 
 			Context("when the command succeeds", func() {
 				It("should stream stdout to the terminal", func() {
-					Expect(s.RunSSHCommand("echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdout, stderr)).To(Succeed())
-					Eventually(string(stdout.Contents()), 20*time.Second).Should(Equal("some-output"))
+					Expect(s.RunSSHCommand("echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute, stdout, stderr)).To(Succeed())
+					Eventually(string(stdout.Contents()), 20 * time.Second).Should(Equal("some-output"))
 				})
 
 				It("should stream stderr to the terminal", func() {
-					Expect(s.RunSSHCommand(">&2 echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdout, stderr)).To(Succeed())
-					Eventually(string(stderr.Contents()), 20*time.Second).Should(Equal("some-output"))
+					Expect(s.RunSSHCommand(">&2 echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute, stdout, stderr)).To(Succeed())
+					Eventually(string(stderr.Contents()), 20 * time.Second).Should(Equal("some-output"))
 				})
 			})
 
 			Context("when the command fails", func() {
 				It("should return an error", func() {
-					Expect(s.RunSSHCommand("false", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("Process exited with: 1")))
+					Expect(s.RunSSHCommand("false", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute, stdout, stderr)).To(MatchError(ContainSubstring("Process exited with: 1")))
 				})
 			})
 		})
@@ -120,7 +123,7 @@ var _ = Describe("ssh", func() {
 
 		Context("when private key is bad", func() {
 			It("should return an error", func() {
-				Expect(s.RunSSHCommand("false", []ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard)).To(MatchError(ContainSubstring("could not parse private key:")))
+				Expect(s.RunSSHCommand("false", []ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), 5 * time.Minute, ioutil.Discard, ioutil.Discard)).To(MatchError(ContainSubstring("could not parse private key:")))
 			})
 		})
 	})
@@ -147,12 +150,12 @@ var _ = Describe("ssh", func() {
 			})
 
 			It("should succeed", func() {
-				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Succeed())
+				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute)).To(Succeed())
 			})
 
 			Context("when a bad ssh address is passed in along with a good one", func() {
 				It("should succeed", func() {
-					Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}, {IP: "some-bad-ip", Port: "some-port"}}, privateKeyBytes, 5*time.Minute)).To(Succeed())
+					Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}, {IP: "some-bad-ip", Port: "some-port"}}, privateKeyBytes, 5 * time.Minute)).To(Succeed())
 				})
 			})
 		})
@@ -183,19 +186,19 @@ var _ = Describe("ssh", func() {
 			})
 
 			It("should succeed", func() {
-				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Succeed())
+				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute)).To(Succeed())
 			})
 		})
 
 		Context("when SSH connection times out", func() {
 			It("should return an error", func() {
-				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Second)).To(MatchError(ContainSubstring("ssh connection timed out:")))
+				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Second)).To(MatchError(ContainSubstring("ssh connection timed out:")))
 			})
 		})
 
 		Context("when private key is bad", func() {
 			It("should return an error", func() {
-				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), 5*time.Second)).To(MatchError(ContainSubstring("could not parse private key:")))
+				Expect(s.WaitForSSH([]ssh.SSHAddress{{IP: ip, Port: port}}, []byte("some-bad-private-key"), 5 * time.Second)).To(MatchError(ContainSubstring("could not parse private key:")))
 			})
 		})
 	})
@@ -222,16 +225,16 @@ var _ = Describe("ssh", func() {
 			})
 
 			It("should return the output of the ssh command", func() {
-				Expect(s.GetSSHOutput("echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Equal("some-output"))
+				Expect(s.GetSSHOutput("echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute)).To(Equal("some-output"))
 			})
 
 			It("should return the stderr of the ssh command", func() {
-				Expect(s.GetSSHOutput(">&2 echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)).To(Equal("some-output"))
+				Expect(s.GetSSHOutput(">&2 echo -n some-output", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute)).To(Equal("some-output"))
 			})
 
 			Context("when the command fails", func() {
 				It("should return an error", func() {
-					output, err := s.GetSSHOutput("echo -n some-output; false", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute)
+					output, err := s.GetSSHOutput("echo -n some-output; false", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute)
 					Expect(output).To(Equal("some-output"))
 					Expect(err).To(MatchError(ContainSubstring("Process exited with: 1")))
 				})
@@ -284,6 +287,10 @@ var _ = Describe("ssh", func() {
 			})
 
 			It("should start an ssh session into the VM using a raw terminal", func() {
+				stdinX, stdoutX, _ := term.StdStreams()
+				stdinFd, _ := term.GetFdInfo(stdinX)
+				stdoutFd, _ := term.GetFdInfo(stdoutX)
+
 				go func() {
 					time.Sleep(5 * time.Second)
 					fmt.Fprintln(stdin, "exit")
@@ -291,11 +298,15 @@ var _ = Describe("ssh", func() {
 
 				terminalState := &term.State{}
 				gomock.InOrder(
+					mockTerminal.EXPECT().GetFdInfo(stdin).Return(stdinFd),
+					mockTerminal.EXPECT().GetFdInfo(stdout).Return(stdoutFd),
 					mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(terminalState, nil),
+					mockWindowsResizer.EXPECT().StartResizing(gomock.Any()),
+					mockWindowsResizer.EXPECT().StopResizing(),
 					mockTerminal.EXPECT().RestoreTerminal(gomock.Any(), terminalState),
 				)
 
-				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
+				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute, stdin, stdout, stderr)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(stdout).Should(gbytes.Say("Welcome to Ubuntu"))
@@ -305,7 +316,7 @@ var _ = Describe("ssh", func() {
 				It("should return the error", func() {
 					mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(nil, errors.New("some-error"))
 
-					err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Minute, gbytes.NewBuffer(), ioutil.Discard, ioutil.Discard)
+					err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute, gbytes.NewBuffer(), ioutil.Discard, ioutil.Discard)
 					Expect(err).To(MatchError("some-error"))
 				})
 			})

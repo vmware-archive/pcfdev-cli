@@ -10,6 +10,7 @@ import (
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
+	"github.com/docker/docker/pkg/term"
 )
 
 type Unprovisioned struct {
@@ -110,7 +111,9 @@ func (u *Unprovisioned) SSH() error {
 		{IP: "127.0.0.1", Port: u.VMConfig.SSHPort},
 		{IP: u.VMConfig.IP, Port: "22"},
 	}
-	return u.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
+
+	stdin, stdout, stderr := term.StdStreams()
+	return u.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
 }
 
 func (u *Unprovisioned) err() error {

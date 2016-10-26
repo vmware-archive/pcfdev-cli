@@ -5,12 +5,16 @@ import (
 	"os"
 )
 
-type WindowResizer struct {
+type ConcreteWindowResizer struct {
 	Terminal    Terminal
 	DoneChannel chan bool
 }
 
-func (w *WindowResizer) resize(session *ssh.Session, previousHeight, previousWidth uint16) (newHeight, newWidth uint16) {
+func (w *ConcreteWindowResizer) StopResizing() {
+	close(w.DoneChannel)
+}
+
+func (w *ConcreteWindowResizer) resize(session *ssh.Session, previousHeight, previousWidth uint16) (newHeight, newWidth uint16) {
 	winSize, err := w.Terminal.GetWinsize(os.Stdout.Fd())
 	if err != nil {
 		return previousWidth, previousHeight
@@ -41,8 +45,4 @@ func (w *WindowResizer) resize(session *ssh.Session, previousHeight, previousWid
 	}
 
 	return previousHeight, previousWidth
-}
-
-func (w *WindowResizer) StopResizing() {
-	close(w.DoneChannel)
 }

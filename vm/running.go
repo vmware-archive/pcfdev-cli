@@ -3,8 +3,9 @@ package vm
 import (
 	"errors"
 	"fmt"
-	"os"
 	"time"
+
+	"github.com/docker/docker/pkg/term"
 
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
@@ -182,5 +183,7 @@ func (r *Running) SSH() error {
 		{IP: "127.0.0.1", Port: r.VMConfig.SSHPort},
 		{IP: r.VMConfig.IP, Port: "22"},
 	}
-	return r.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, os.Stdin, os.Stdout, os.Stderr)
+
+	stdin, stdout, stderr := term.StdStreams()
+	return r.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute,  stdin, stdout, stderr)
 }

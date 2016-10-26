@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-func (w *WindowResizer) StartResizing(session *ssh.Session) {
+func (w *ConcreteWindowResizer) StartResizing(session *ssh.Session) {
 	go func() {
 		var previousWidth, previousHeight uint16
 

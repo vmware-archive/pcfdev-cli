@@ -14,13 +14,12 @@ import (
 
 	"github.com/docker/docker/pkg/term"
 	"golang.org/x/crypto/ssh"
-	"os"
+
 )
 
 type SSH struct {
-	Terminal Terminal
-
-	WindowResizer *WindowResizer
+	Terminal      Terminal
+	WindowResizer WindowResizer
 }
 
 //go:generate mockgen -package mocks -destination mocks/terminal.go github.com/pivotal-cf/pcfdev-cli/ssh Terminal
@@ -28,6 +27,13 @@ type Terminal interface {
 	SetRawTerminal(fd uintptr) (*term.State, error)
 	RestoreTerminal(fd uintptr, state *term.State) error
 	GetWinsize(fd uintptr) (*term.Winsize, error)
+	GetFdInfo(in interface{}) uintptr
+}
+
+//go:generate mockgen -package mocks -destination mocks/windows_resizer.go github.com/pivotal-cf/pcfdev-cli/ssh WindowResizer
+type WindowResizer interface {
+	StartResizing(session *ssh.Session)
+	StopResizing()
 }
 
 func (*SSH) GenerateAddress() (host string, port string, err error) {
@@ -93,15 +99,18 @@ func (s *SSH) StartSSHSession(addresses []SSHAddress, privateKey []byte, timeout
 	session.Stdout = stdout
 	session.Stderr = stderr
 
-	state, err := s.Terminal.SetRawTerminal(os.Stdin.Fd())
+	stdinFd := s.Terminal.GetFdInfo(stdin)
+	stdoutFd := s.Terminal.GetFdInfo(stdout)
+
+	state, err := s.Terminal.SetRawTerminal(stdinFd)
 	if err != nil {
 		return err
 	}
-	defer s.Terminal.RestoreTerminal(os.Stdin.Fd(), state)
+	defer s.Terminal.RestoreTerminal(stdinFd, state)
 
-	winSize, err := s.Terminal.GetWinsize(os.Stdout.Fd())
+	winSize, err := term.GetWinsize(stdoutFd)
 	if err != nil {
-		return  err
+		return err
 	}
 
 	if err := session.RequestPty("xterm", int(winSize.Height), int(winSize.Width), modes); err != nil {
@@ -190,7 +199,7 @@ func (*SSH) waitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.D
 				case <-doneChan:
 					return
 				default:
-					if client, dialErr = ssh.Dial("tcp", ip+":"+port, config); dialErr == nil {
+					if client, dialErr = ssh.Dial("tcp", ip + ":" + port, config); dialErr == nil {
 						clientChan <- client
 						errorChan <- nil
 						return

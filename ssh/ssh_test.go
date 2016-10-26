@@ -314,7 +314,11 @@ var _ = Describe("ssh", func() {
 
 			Context("when there is an error making the terminal raw", func() {
 				It("should return the error", func() {
-					mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(nil, errors.New("some-error"))
+					gomock.InOrder(
+						mockTerminal.EXPECT().GetFdInfo(gomock.Any()),
+						mockTerminal.EXPECT().GetFdInfo(gomock.Any()),
+						mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(nil, errors.New("some-error")),
+					)
 
 					err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute, gbytes.NewBuffer(), ioutil.Discard, ioutil.Discard)
 					Expect(err).To(MatchError("some-error"))

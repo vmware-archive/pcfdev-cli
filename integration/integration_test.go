@@ -146,6 +146,7 @@ var _ = Describe("PCF Dev", func() {
 		fmt.Fprintln(sshPty, "echo 'Program was stopped by interrupt successfully'")
 		fmt.Fprintln(sshPty, ">&2 echo 'Printing to stderr also works'")
 		fmt.Fprintln(sshPty, "exit")
+		time.Sleep(10 * time.Second)
 		ptyOutput, err := ioutil.ReadAll(sshPty)
 		Expect(ptyOutput).To(ContainSubstring("Program was stopped by interrupt successfully"))
 		Expect(ptyOutput).To(ContainSubstring("Printing to stderr also works"))

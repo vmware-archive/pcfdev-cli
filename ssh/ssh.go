@@ -27,6 +27,7 @@ type Terminal interface {
 	SetRawTerminal(fd uintptr) (*term.State, error)
 	RestoreTerminal(fd uintptr, state *term.State) error
 	GetFdInfo(in interface{}) uintptr
+	GetWinSize(fd uintptr) (*term.Winsize, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/windows_resizer.go github.com/pivotal-cf/pcfdev-cli/ssh WindowResizer
@@ -107,7 +108,7 @@ func (s *SSH) StartSSHSession(addresses []SSHAddress, privateKey []byte, timeout
 	}
 	defer s.Terminal.RestoreTerminal(stdinFd, state)
 
-	winSize, err := term.GetWinsize(stdoutFd)
+	winSize, err := s.Terminal.GetWinSize(stdoutFd)
 	if err != nil {
 		return err
 	}

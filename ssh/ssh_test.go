@@ -290,6 +290,7 @@ var _ = Describe("ssh", func() {
 				stdinX, stdoutX, _ := term.StdStreams()
 				stdinFd, _ := term.GetFdInfo(stdinX)
 				stdoutFd, _ := term.GetFdInfo(stdoutX)
+				winsize := &term.Winsize{}
 
 				go func() {
 					time.Sleep(5 * time.Second)
@@ -300,10 +301,11 @@ var _ = Describe("ssh", func() {
 
 				mockTerminal.EXPECT().GetFdInfo(stdin).Return(stdinFd)
 				mockTerminal.EXPECT().GetFdInfo(stdout).Return(stdoutFd)
-				mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(terminalState, nil)
+				mockTerminal.EXPECT().SetRawTerminal(stdinFd).Return(terminalState, nil)
+				mockTerminal.EXPECT().GetWinSize(stdoutFd).Return(winsize, nil)
 				mockWindowsResizer.EXPECT().StartResizing(gomock.Any())
 				mockWindowsResizer.EXPECT().StopResizing()
-				mockTerminal.EXPECT().RestoreTerminal(gomock.Any(), terminalState)
+				mockTerminal.EXPECT().RestoreTerminal(stdinFd, terminalState)
 
 				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute, stdin, stdout, stderr)
 				Expect(err).NotTo(HaveOccurred())
@@ -313,11 +315,23 @@ var _ = Describe("ssh", func() {
 
 			Context("when there is an error making the terminal raw", func() {
 				It("should return the error", func() {
-					gomock.InOrder(
-						mockTerminal.EXPECT().GetFdInfo(gomock.Any()),
-						mockTerminal.EXPECT().GetFdInfo(gomock.Any()),
-						mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(nil, errors.New("some-error")),
-					)
+
+					mockTerminal.EXPECT().GetFdInfo(gomock.Any()).Times(2)
+					mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(nil, errors.New("some-error"))
+
+					err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute, gbytes.NewBuffer(), ioutil.Discard, ioutil.Discard)
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
+
+			Context("when there is an error getting the windows size", func() {
+				It("should return the error", func() {
+					terminalState := &term.State{}
+
+					mockTerminal.EXPECT().GetFdInfo(gomock.Any()).Times(2)
+					mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(terminalState, nil)
+					mockTerminal.EXPECT().GetWinSize(gomock.Any()).Return(nil, errors.New("some-error"))
+					mockTerminal.EXPECT().RestoreTerminal(gomock.Any(), terminalState)
 
 					err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute, gbytes.NewBuffer(), ioutil.Discard, ioutil.Discard)
 					Expect(err).To(MatchError("some-error"))

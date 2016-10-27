@@ -297,14 +297,13 @@ var _ = Describe("ssh", func() {
 				}()
 
 				terminalState := &term.State{}
-				gomock.InOrder(
-					mockTerminal.EXPECT().GetFdInfo(stdin).Return(stdinFd),
-					mockTerminal.EXPECT().GetFdInfo(stdout).Return(stdoutFd),
-					mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(terminalState, nil),
-					mockWindowsResizer.EXPECT().StartResizing(gomock.Any()),
-					mockWindowsResizer.EXPECT().StopResizing(),
-					mockTerminal.EXPECT().RestoreTerminal(gomock.Any(), terminalState),
-				)
+
+				mockTerminal.EXPECT().GetFdInfo(stdin).Return(stdinFd)
+				mockTerminal.EXPECT().GetFdInfo(stdout).Return(stdoutFd)
+				mockTerminal.EXPECT().SetRawTerminal(gomock.Any()).Return(terminalState, nil)
+				mockWindowsResizer.EXPECT().StartResizing(gomock.Any())
+				mockWindowsResizer.EXPECT().StopResizing()
+				mockTerminal.EXPECT().RestoreTerminal(gomock.Any(), terminalState)
 
 				err := s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5 * time.Minute, stdin, stdout, stderr)
 				Expect(err).NotTo(HaveOccurred())

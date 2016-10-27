@@ -1,13 +1,12 @@
 package ssh
 
 import (
+	"github.com/docker/docker/pkg/term"
 	"golang.org/x/crypto/ssh"
 	"os"
-	"github.com/docker/docker/pkg/term"
 )
 
 type ConcreteWindowResizer struct {
-	Terminal    Terminal
 	DoneChannel chan bool
 }
 

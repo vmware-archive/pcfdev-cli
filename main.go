@@ -86,7 +86,6 @@ func main() {
 	sshClient := &ssh.SSH{
 		Terminal: &ssh.TerminalWrapper{},
 		WindowResizer: &ssh.ConcreteWindowResizer{
-			Terminal: &ssh.TerminalWrapper{},
 			DoneChannel: make(chan bool),
 		},
 	}

@@ -8,4 +8,5 @@ type VMConfig struct {
 	Memory  uint64
 	CPUs    int
 	SSHPort string
+	Provider string
 }

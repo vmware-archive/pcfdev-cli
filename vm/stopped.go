@@ -93,6 +93,7 @@ func (s *Stopped) Start(opts *StartOpts) error {
 	provisionConfig := &config.ProvisionConfig{
 		Domain:     s.VMConfig.Domain,
 		IP:         s.VMConfig.IP,
+		Provider:   s.VMConfig.Provider,
 		Services:   strings.Join(services, ","),
 		Registries: registries,
 	}

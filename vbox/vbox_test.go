@@ -1429,6 +1429,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 				Memory:  uint64(4000),
 				Name:    "some-vm",
 				SSHPort: "some-port",
+				Provider: "virtualbox",
 			}))
 		})
 

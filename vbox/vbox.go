@@ -470,6 +470,7 @@ func (v *VBox) VMConfig(vmName string) (*config.VMConfig, error) {
 		Memory:  memory,
 		Name:    vmName,
 		SSHPort: port,
+		Provider: "virtualbox",
 	}
 	if err := json.Unmarshal(vmConfigBytes, &vmConfig); err != nil {
 		return nil, err

@@ -42,6 +42,7 @@ var _ = Describe("Stopped", func() {
 				Domain:  "some-domain",
 				IP:      "some-ip",
 				SSHPort: "some-port",
+				Provider: "some-provider",
 			},
 
 			VBox:      mockVBox,
@@ -170,7 +171,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "none"}),
 				)
@@ -197,7 +198,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "all"}),
 				)
@@ -224,7 +225,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "default"}),
 				)
@@ -251,7 +252,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "spring-cloud-services"}),
 				)
@@ -278,7 +279,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "scs"}),
 				)
@@ -305,7 +306,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "rabbitmq"}),
 				)
@@ -332,7 +333,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "redis"}),
 				)
@@ -359,7 +360,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "mysql"}),
 				)
@@ -386,7 +387,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "default,spring-cloud-services,scs"}),
 				)
@@ -413,7 +414,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{}),
 				)
@@ -440,7 +441,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-custom-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-custom-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{IP: "some-custom-ip"}),
 				)
@@ -467,7 +468,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-custom-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-custom-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Domain: "some-custom-domain"}),
 				)
@@ -494,7 +495,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":["some-private-registry","some-other-private-registry"]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":["some-private-registry","some-other-private-registry"],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Registries: "some-private-registry,some-other-private-registry"}),
 				)
@@ -545,7 +546,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr).Return(errors.New("some-error")),
 				)
 
@@ -571,7 +572,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm"),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUI.EXPECT().Say("VM will not be provisioned because '-n' (no-provision) flag was specified."),
 				)
@@ -612,7 +613,7 @@ var _ = Describe("Stopped", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[]}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
 						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
 					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{}).Return(errors.New("some-error")),
 				)

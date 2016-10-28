@@ -5,13 +5,13 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
-type ConcreteAutoTrustCmd struct {
+type AutoTrustCmd struct {
 	VMBuilder VMBuilder
 	VBox      VBox
 	Config    *config.Config
 }
 
-func (t *ConcreteAutoTrustCmd) Run() error {
+func (t *AutoTrustCmd) Run() error {
 	currentVM, err := t.getVM()
 	if err != nil {
 		return err
@@ -19,7 +19,7 @@ func (t *ConcreteAutoTrustCmd) Run() error {
 	return currentVM.Trust(&vm.StartOpts{})
 }
 
-func (t *ConcreteAutoTrustCmd) getVM() (vm vm.VM, err error) {
+func (t *AutoTrustCmd) getVM() (vm vm.VM, err error) {
 	name, err := t.VBox.GetVMName()
 	if err != nil {
 		return nil, err

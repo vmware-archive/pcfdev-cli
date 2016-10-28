@@ -22,7 +22,7 @@ var _ = Describe("StartCmd", func() {
 		mockVBox         *mocks.MockVBox
 		mockVM           *vmMocks.MockVM
 		mockStartedVM    *vmMocks.MockVM
-		mockAutoTrustCmd *mocks.MockAutoTrustCmd
+		mockAutoTrustCmd *mocks.MockAutoCmd
 		mockDownloadCmd  *mocks.MockCmd
 		mockTargetCmd    *mocks.MockCmd
 	)
@@ -34,7 +34,7 @@ var _ = Describe("StartCmd", func() {
 		mockVM = vmMocks.NewMockVM(mockCtrl)
 		mockStartedVM = vmMocks.NewMockVM(mockCtrl)
 		mockDownloadCmd = mocks.NewMockCmd(mockCtrl)
-		mockAutoTrustCmd = mocks.NewMockAutoTrustCmd(mockCtrl)
+		mockAutoTrustCmd = mocks.NewMockAutoCmd(mockCtrl)
 		mockTargetCmd = mocks.NewMockCmd(mockCtrl)
 		startCmd = &cmd.StartCmd{
 			VBox:      mockVBox,

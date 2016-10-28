@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("AutoTrustCmd", func() {
 	var (
-		autoTrustCmd  *cmd.ConcreteAutoTrustCmd
+		autoTrustCmd  *cmd.AutoTrustCmd
 		mockCtrl      *gomock.Controller
 		mockVBox      *mocks.MockVBox
 		mockVMBuilder *mocks.MockVMBuilder
@@ -27,7 +27,7 @@ var _ = Describe("AutoTrustCmd", func() {
 		mockVBox = mocks.NewMockVBox(mockCtrl)
 		mockVMBuilder = mocks.NewMockVMBuilder(mockCtrl)
 		mockVM = vmMocks.NewMockVM(mockCtrl)
-		autoTrustCmd = &cmd.ConcreteAutoTrustCmd{
+		autoTrustCmd = &cmd.AutoTrustCmd{
 			VBox:      mockVBox,
 			VMBuilder: mockVMBuilder,
 			Config: &config.Config{

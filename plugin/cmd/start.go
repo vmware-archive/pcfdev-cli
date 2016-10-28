@@ -15,7 +15,7 @@ type StartCmd struct {
 	VBox         VBox
 	VMBuilder    VMBuilder
 	Config       *config.Config
-	AutoTrustCmd AutoTrustCmd
+	AutoTrustCmd AutoCmd
 	DownloadCmd  Cmd
 	TargetCmd    Cmd
 	flagContext  flags.FlagContext

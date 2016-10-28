@@ -56,8 +56,8 @@ type Cmd interface {
 	Run() error
 }
 
-//go:generate mockgen -package mocks -destination mocks/auto_trust_cmd.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd AutoTrustCmd
-type AutoTrustCmd interface {
+//go:generate mockgen -package mocks -destination mocks/auto_cmd.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd AutoCmd
+type AutoCmd interface {
 	Run() error
 }
 
@@ -141,7 +141,7 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 				FS:                b.FS,
 				Config:            b.Config,
 			},
-			AutoTrustCmd: &ConcreteAutoTrustCmd{
+			AutoTrustCmd: &AutoTrustCmd{
 				VBox:      b.VBox,
 				VMBuilder: b.VMBuilder,
 				Config:    b.Config,

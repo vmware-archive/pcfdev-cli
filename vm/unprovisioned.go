@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/docker/pkg/term"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
-	"github.com/docker/docker/pkg/term"
 )
 
 type Unprovisioned struct {
@@ -67,11 +67,11 @@ func (u *Unprovisioned) Provision(opts *StartOpts) error {
 		},
 	}
 
-	if err := u.SSHClient.RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", addresses, privateKeyBytes, 30 * time.Second, os.Stdout, os.Stderr); err != nil {
+	if err := u.SSHClient.RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", addresses, privateKeyBytes, 30*time.Second, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{errors.New("missing provision configuration")}
 	}
 
-	data, err := u.SSHClient.GetSSHOutput("cat /var/pcfdev/provision-options.json", addresses, privateKeyBytes, 30 * time.Second)
+	data, err := u.SSHClient.GetSSHOutput("cat /var/pcfdev/provision-options.json", addresses, privateKeyBytes, 30*time.Second)
 	if err != nil {
 		return &ProvisionVMError{err}
 	}
@@ -83,7 +83,7 @@ func (u *Unprovisioned) Provision(opts *StartOpts) error {
 
 	u.UI.Say("Provisioning VM...")
 	provisionCommand := fmt.Sprintf(`sudo -H /var/pcfdev/provision "%s" "%s" "%s" "%s" "%s"`, provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services, strings.Join(provisionConfig.Registries, ","), provisionConfig.Provider)
-	if err := u.SSHClient.RunSSHCommand(provisionCommand, addresses, privateKeyBytes, 5 * time.Minute, os.Stdout, os.Stderr); err != nil {
+	if err := u.SSHClient.RunSSHCommand(provisionCommand, addresses, privateKeyBytes, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{err}
 	}
 
@@ -120,7 +120,7 @@ func (u *Unprovisioned) SSH() error {
 	}
 
 	stdin, stdout, stderr := term.StdStreams()
-	return u.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5 * time.Minute, stdin, stdout, stderr)
+	return u.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
 }
 
 func (u *Unprovisioned) err() error {

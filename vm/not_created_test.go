@@ -395,12 +395,12 @@ var _ = Describe("Not Created", func() {
 		Context("when opts are provided", func() {
 			It("should import and start the vm with given options", func() {
 				startOpts := &vm.StartOpts{
-					Memory:   uint64(4000),
-					CPUs:     3,
-					OVAPath:  "some-ova-path",
-					Services: "all",
-					IP:       "some-ip",
-					Domain:   "some-domain",
+					Memory:         uint64(4000),
+					CPUs:           3,
+					OVAPath:        "some-ova-path",
+					Services:       "all",
+					IP:             "some-ip",
+					Domain:         "some-domain",
 					MasterPassword: "some-master-password",
 				}
 				gomock.InOrder(

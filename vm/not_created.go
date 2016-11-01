@@ -156,7 +156,7 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 		OVAPath: ovaPath,
 		IP:      opts.IP,
 
-		Domain:  opts.Domain,
+		Domain: opts.Domain,
 	}); err != nil {
 		return &ImportVMError{err}
 	}

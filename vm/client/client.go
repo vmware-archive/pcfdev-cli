@@ -1,8 +1,8 @@
 package client
 
 import (
-	"net/http"
 	"fmt"
+	"net/http"
 	"strings"
 )
 

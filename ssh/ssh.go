@@ -14,7 +14,6 @@ import (
 
 	"github.com/docker/docker/pkg/term"
 	"golang.org/x/crypto/ssh"
-
 )
 
 type SSH struct {
@@ -199,7 +198,7 @@ func (*SSH) waitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.D
 				case <-doneChan:
 					return
 				default:
-					if client, dialErr = ssh.Dial("tcp", ip + ":" + port, config); dialErr == nil {
+					if client, dialErr = ssh.Dial("tcp", ip+":"+port, config); dialErr == nil {
 						clientChan <- client
 						errorChan <- nil
 						return

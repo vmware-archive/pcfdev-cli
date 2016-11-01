@@ -185,5 +185,5 @@ func (r *Running) SSH() error {
 	}
 
 	stdin, stdout, stderr := term.StdStreams()
-	return r.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute,  stdin, stdout, stderr)
+	return r.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
 }

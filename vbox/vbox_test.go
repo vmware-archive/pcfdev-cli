@@ -1424,11 +1424,11 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 			)
 
 			Expect(vbx.VMConfig("some-vm")).To(Equal(&config.VMConfig{
-				Domain:  "local2.pcfdev.io",
-				IP:      "192.168.22.11",
-				Memory:  uint64(4000),
-				Name:    "some-vm",
-				SSHPort: "some-port",
+				Domain:   "local2.pcfdev.io",
+				IP:       "192.168.22.11",
+				Memory:   uint64(4000),
+				Name:     "some-vm",
+				SSHPort:  "some-port",
 				Provider: "virtualbox",
 			}))
 		})

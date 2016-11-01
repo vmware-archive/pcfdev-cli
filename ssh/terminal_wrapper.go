@@ -8,7 +8,6 @@ func (*TerminalWrapper) SetRawTerminal(fd uintptr) (*term.State, error) {
 	return term.SetRawTerminal(fd)
 }
 
-
 func (*TerminalWrapper) RestoreTerminal(fd uintptr, state *term.State) error {
 	return term.RestoreTerminal(fd, state)
 }

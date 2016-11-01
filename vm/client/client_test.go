@@ -5,14 +5,14 @@ import (
 	. "github.com/onsi/gomega"
 
 	c "github.com/pivotal-cf/pcfdev-cli/vm/client"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"io/ioutil"
 )
 
 var _ = Describe("Pivnet Client", func() {
 	var (
-		client    *c.Client
+		client *c.Client
 	)
 
 	BeforeEach(func() {

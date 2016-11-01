@@ -105,16 +105,16 @@ type Network interface {
 }
 
 type StartOpts struct {
-	CPUs        int
-	Memory      uint64
-	NoProvision bool
-	OVAPath     string
-	Registries  string
-	Services    string
-	Trust       bool
-	PrintCA     bool
-	Target      bool
-	IP          string
-	Domain      string
+	CPUs           int
+	Memory         uint64
+	NoProvision    bool
+	OVAPath        string
+	Registries     string
+	Services       string
+	Trust          bool
+	PrintCA        bool
+	Target         bool
+	IP             string
+	Domain         string
 	MasterPassword string
 }

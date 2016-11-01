@@ -38,10 +38,10 @@ var _ = Describe("Stopped", func() {
 
 		stoppedVM = vm.Stopped{
 			VMConfig: &config.VMConfig{
-				Name:    "some-vm",
-				Domain:  "some-domain",
-				IP:      "some-ip",
-				SSHPort: "some-port",
+				Name:     "some-vm",
+				Domain:   "some-domain",
+				IP:       "some-ip",
+				SSHPort:  "some-port",
 				Provider: "some-provider",
 			},
 

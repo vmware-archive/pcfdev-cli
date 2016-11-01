@@ -217,6 +217,7 @@ var _ = Describe("Builder", func() {
 						Expect(u.VBox).NotTo(BeNil())
 						Expect(u.LogFetcher).NotTo(BeNil())
 						Expect(u.VMConfig).To(BeIdenticalTo(expectedVMConfig))
+						Expect(u.Client).NotTo(BeNil())
 					default:
 						Fail("wrong type")
 					}

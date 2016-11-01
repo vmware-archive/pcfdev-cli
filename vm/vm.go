@@ -64,6 +64,11 @@ type CertStore interface {
 	Store(cert string) error
 }
 
+//go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/vm Client
+type Client interface {
+	ReplaceSecrets(password string) error
+}
+
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vm FS
 type FS interface {
 	Remove(path string) error
@@ -111,4 +116,5 @@ type StartOpts struct {
 	Target      bool
 	IP          string
 	Domain      string
+	MasterPassword string
 }

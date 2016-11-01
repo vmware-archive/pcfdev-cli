@@ -22,6 +22,7 @@ var _ = Describe("Unprovisioned", func() {
 		mockUI         *mocks.MockUI
 		mockVBox       *mocks.MockVBox
 		mockSSH        *mocks.MockSSH
+		mockClient     *mocks.MockClient
 		mockLogFetcher *mocks.MockLogFetcher
 		mockHelpText   *mocks.MockHelpText
 		unprovisioned  vm.Unprovisioned
@@ -33,6 +34,7 @@ var _ = Describe("Unprovisioned", func() {
 		mockUI = mocks.NewMockUI(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockSSH = mocks.NewMockSSH(mockCtrl)
+		mockClient = mocks.NewMockClient(mockCtrl)
 		mockLogFetcher = mocks.NewMockLogFetcher(mockCtrl)
 		mockHelpText = mocks.NewMockHelpText(mockCtrl)
 
@@ -43,6 +45,7 @@ var _ = Describe("Unprovisioned", func() {
 			SSHClient:  mockSSH,
 			LogFetcher: mockLogFetcher,
 			HelpText:   mockHelpText,
+			Client:     mockClient,
 			Config: &conf.Config{
 				PrivateKeyPath: "some-private-key-path",
 			},
@@ -122,6 +125,53 @@ var _ = Describe("Unprovisioned", func() {
 			Expect(unprovisioned.Provision(&vm.StartOpts{})).To(Succeed())
 		})
 
+		Context("when the user passes in a master password", func() {
+			It("should provision the VM after replacing the secrets", func() {
+				sshAddresses := []ssh.SSHAddress{
+					{IP: "127.0.0.1", Port: "some-port"},
+					{IP: "some-ip", Port: "22"},
+				}
+				gomock.InOrder(
+					mockClient.EXPECT().ReplaceSecrets("some-master-password"),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
+					mockSSH.EXPECT().RunSSHCommand(
+						"if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi",
+						sshAddresses,
+						[]byte("some-private-key"),
+						30*time.Second,
+						os.Stdout,
+						os.Stderr,
+					),
+					mockSSH.EXPECT().GetSSHOutput(
+						"cat /var/pcfdev/provision-options.json",
+						sshAddresses,
+						[]byte("some-private-key"),
+						30*time.Second,
+					).Return(`{"domain":"some-domain","ip":"some-ip","services":"some-service,some-other-service","registries":["some-registry","some-other-registry"],"provider":"some-provider"}`, nil),
+					mockUI.EXPECT().Say("Provisioning VM..."),
+					mockSSH.EXPECT().RunSSHCommand(
+						`sudo -H /var/pcfdev/provision "some-domain" "some-ip" "some-service,some-other-service" "some-registry,some-other-registry" "some-provider"`,
+						sshAddresses,
+						[]byte("some-private-key"),
+						5*time.Minute,
+						os.Stdout,
+						os.Stderr,
+					),
+					mockHelpText.EXPECT().Print("some-domain", false),
+				)
+
+				Expect(unprovisioned.Provision(&vm.StartOpts{MasterPassword: "some-master-password"})).To(Succeed())
+			})
+		})
+
+		Context("when the user passes in a master password and there is an error", func() {
+			It("should provision the VM after replacing the secrets", func() {
+				mockClient.EXPECT().ReplaceSecrets("some-master-password").Return(errors.New("some-error"))
+
+				Expect(unprovisioned.Provision(&vm.StartOpts{MasterPassword: "some-master-password"})).To(MatchError("some-error"))
+			})
+		})
+
 		Context("when the VM is autotargeted", func() {
 			It("should provision the VM", func() {
 				sshAddresses := []ssh.SSHAddress{
@@ -129,6 +179,7 @@ var _ = Describe("Unprovisioned", func() {
 					{IP: "some-ip", Port: "22"},
 				}
 				gomock.InOrder(
+
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi",
 						sshAddresses,

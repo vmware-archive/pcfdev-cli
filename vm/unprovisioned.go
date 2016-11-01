@@ -22,6 +22,7 @@ type Unprovisioned struct {
 	Config     *config.Config
 	VMConfig   *config.VMConfig
 	HelpText   HelpText
+	Client     Client
 }
 
 func (u *Unprovisioned) Stop() error {
@@ -44,6 +45,12 @@ func (u *Unprovisioned) Status() string {
 }
 
 func (u *Unprovisioned) Provision(opts *StartOpts) error {
+	if opts.MasterPassword != "" {
+		if err := u.Client.ReplaceSecrets(opts.MasterPassword); err != nil {
+			return err
+		}
+	}
+
 	privateKeyBytes, err := u.FS.Read(u.Config.PrivateKeyPath)
 	if err != nil {
 		return err
@@ -60,11 +67,11 @@ func (u *Unprovisioned) Provision(opts *StartOpts) error {
 		},
 	}
 
-	if err := u.SSHClient.RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", addresses, privateKeyBytes, 30*time.Second, os.Stdout, os.Stderr); err != nil {
+	if err := u.SSHClient.RunSSHCommand("if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi", addresses, privateKeyBytes, 30 * time.Second, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{errors.New("missing provision configuration")}
 	}
 
-	data, err := u.SSHClient.GetSSHOutput("cat /var/pcfdev/provision-options.json", addresses, privateKeyBytes, 30*time.Second)
+	data, err := u.SSHClient.GetSSHOutput("cat /var/pcfdev/provision-options.json", addresses, privateKeyBytes, 30 * time.Second)
 	if err != nil {
 		return &ProvisionVMError{err}
 	}
@@ -76,7 +83,7 @@ func (u *Unprovisioned) Provision(opts *StartOpts) error {
 
 	u.UI.Say("Provisioning VM...")
 	provisionCommand := fmt.Sprintf(`sudo -H /var/pcfdev/provision "%s" "%s" "%s" "%s" "%s"`, provisionConfig.Domain, provisionConfig.IP, provisionConfig.Services, strings.Join(provisionConfig.Registries, ","), provisionConfig.Provider)
-	if err := u.SSHClient.RunSSHCommand(provisionCommand, addresses, privateKeyBytes, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
+	if err := u.SSHClient.RunSSHCommand(provisionCommand, addresses, privateKeyBytes, 5 * time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &ProvisionVMError{err}
 	}
 
@@ -113,7 +120,7 @@ func (u *Unprovisioned) SSH() error {
 	}
 
 	stdin, stdout, stderr := term.StdStreams()
-	return u.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
+	return u.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5 * time.Minute, stdin, stdout, stderr)
 }
 
 func (u *Unprovisioned) err() error {

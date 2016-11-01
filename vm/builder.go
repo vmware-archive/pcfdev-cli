@@ -18,6 +18,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/ui"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
+	"github.com/pivotal-cf/pcfdev-cli/vm/client"
 )
 
 type VBoxBuilder struct {
@@ -80,6 +81,9 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 				SSHClient: b.SSH,
 				HelpText: &ui.HelpText{
 					UI: termUI,
+				},
+				Client: &client.Client{
+					Host: "http://" + vmConfig.Domain + ":8090",
 				},
 				LogFetcher: &debug.LogFetcher{
 					VMConfig: vmConfig,

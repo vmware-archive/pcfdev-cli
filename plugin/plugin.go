@@ -122,6 +122,7 @@ SUBCOMMANDS:
                                         Default: redis, rabbitmq
                                         (MySQL is always available and cannot be disabled.)
       [-t]                           Perform a CF login to PCF Dev after starting, as the 'user' user.
+      [-x]                           Replace all passwords for externally available services.
    stop                              Shutdown the PCF Dev VM. All data is preserved.
    suspend                           Save the current state of the PCF Dev VM to disk and then stop the VM.
    resume                            Resume PCF Dev VM from suspended state.

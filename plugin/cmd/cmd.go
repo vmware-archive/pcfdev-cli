@@ -15,6 +15,7 @@ import (
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd UI
 type UI interface {
+	AskForPassword(string) string
 	Say(message string, args ...interface{})
 	Confirm(message string) bool
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	vmMocks "github.com/pivotal-cf/pcfdev-cli/vm/mocks"
+	"os"
 )
 
 var _ = Describe("StartCmd", func() {
@@ -20,6 +21,7 @@ var _ = Describe("StartCmd", func() {
 		mockCtrl         *gomock.Controller
 		mockVMBuilder    *mocks.MockVMBuilder
 		mockVBox         *mocks.MockVBox
+		mockUI           *mocks.MockUI
 		mockVM           *vmMocks.MockVM
 		mockStartedVM    *vmMocks.MockVM
 		mockAutoTrustCmd *mocks.MockAutoCmd
@@ -36,6 +38,7 @@ var _ = Describe("StartCmd", func() {
 		mockDownloadCmd = mocks.NewMockCmd(mockCtrl)
 		mockAutoTrustCmd = mocks.NewMockAutoCmd(mockCtrl)
 		mockTargetCmd = mocks.NewMockCmd(mockCtrl)
+		mockUI = mocks.NewMockUI(mockCtrl)
 		startCmd = &cmd.StartCmd{
 			VBox:      mockVBox,
 			VMBuilder: mockVMBuilder,
@@ -46,6 +49,7 @@ var _ = Describe("StartCmd", func() {
 			DownloadCmd:  mockDownloadCmd,
 			AutoTrustCmd: mockAutoTrustCmd,
 			TargetCmd:    mockTargetCmd,
+			UI:           mockUI,
 		}
 	})
 
@@ -78,6 +82,7 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Opts.Target).To(BeTrue())
 				Expect(startCmd.Opts.Domain).To(Equal("some-domain"))
 				Expect(startCmd.Opts.IP).To(Equal("some-ip"))
+				Expect(startCmd.Opts.MasterPassword).To(Equal(""))
 			})
 		})
 
@@ -93,6 +98,63 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Opts.Target).To(BeFalse())
 				Expect(startCmd.Opts.Domain).To(BeEmpty())
 				Expect(startCmd.Opts.IP).To(BeEmpty())
+				Expect(startCmd.Opts.MasterPassword).To(BeEmpty())
+			})
+		})
+
+		Context("when the PCFDEV_PASSWORD env var is set", func() {
+			var savedPassword string
+
+			BeforeEach(func() {
+				savedPassword = os.Getenv("PCFDEV_PASSWORD")
+				os.Setenv("PCFDEV_PASSWORD", "some-master-password")
+			})
+
+			AfterEach(func() {
+				os.Setenv("PCFDEV_PASSWORD", savedPassword)
+			})
+
+			It("the -x flag uses the env var instead of prompting", func() {
+				Expect(startCmd.Parse([]string{
+					"-x",
+				})).To(Succeed())
+				Expect(startCmd.Opts.MasterPassword).To(Equal("some-master-password"))
+			})
+
+			It("the env var is ignored without the -x flag", func() {
+				Expect(startCmd.Parse([]string{})).To(Succeed())
+				Expect(startCmd.Opts.MasterPassword).To(BeEmpty())
+			})
+		})
+
+		Context("when the -x flag is specified", func() {
+			It("should prompt the user for a password twice", func() {
+				mockUI.EXPECT().AskForPassword("Choose master password").Return("some-master-password")
+				mockUI.EXPECT().AskForPassword("Confirm master password").Return("some-master-password")
+
+				Expect(startCmd.Parse([]string{
+					"-x",
+				})).To(Succeed())
+
+				Expect(startCmd.Opts.MasterPassword).To(Equal("some-master-password"))
+			})
+
+			It("does not allow an empty password", func() {
+				mockUI.EXPECT().AskForPassword("Choose master password").Return("")
+				mockUI.EXPECT().AskForPassword("Confirm master password").Return("")
+
+				Expect(startCmd.Parse([]string{
+					"-x",
+				})).To(MatchError("password cannot be empty"))
+			})
+
+			It("does not allow an mismatched password", func() {
+				mockUI.EXPECT().AskForPassword("Choose master password").Return("some-master-password")
+				mockUI.EXPECT().AskForPassword("Confirm master password").Return("some-bad-password")
+
+				Expect(startCmd.Parse([]string{
+					"-x",
+				})).To(MatchError("passwords do not match"))
 			})
 		})
 

@@ -401,6 +401,7 @@ var _ = Describe("Not Created", func() {
 					Services: "all",
 					IP:       "some-ip",
 					Domain:   "some-domain",
+					MasterPassword: "some-master-password",
 				}
 				gomock.InOrder(
 					mockUI.EXPECT().Say("Allocating 4000 MB out of 8000 MB total system memory (5000 MB free)."),

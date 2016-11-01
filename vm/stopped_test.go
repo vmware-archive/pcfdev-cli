@@ -504,6 +504,33 @@ var _ = Describe("Stopped", func() {
 			})
 		})
 
+		Context("when the master password is specified", func() {
+			It("should start the vm with the master password", func() {
+				addresses := []ssh.SSHAddress{
+					{
+						IP:   "127.0.0.1",
+						Port: "some-port",
+					},
+					{
+						IP:   "some-ip",
+						Port: "22",
+					},
+				}
+				gomock.InOrder(
+					mockUI.EXPECT().Say("Starting VM..."),
+					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
+					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
+					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
+					mockSSH.EXPECT().RunSSHCommand("echo "+
+						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
+					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{MasterPassword: "some-master-password"}),
+				)
+
+				stoppedVM.Start(&vm.StartOpts{MasterPassword: "some-master-password"})
+			})
+		})
+
 		Context("when starting the vm fails", func() {
 			It("should return an error", func() {
 				gomock.InOrder(

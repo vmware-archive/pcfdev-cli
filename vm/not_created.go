@@ -155,6 +155,7 @@ func (n *NotCreated) Start(opts *StartOpts) error {
 		CPUs:    cpus,
 		OVAPath: ovaPath,
 		IP:      opts.IP,
+
 		Domain:  opts.Domain,
 	}); err != nil {
 		return &ImportVMError{err}

@@ -6,6 +6,7 @@ import (
 	"github.com/cloudfoundry/cli/cf/flags"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
+	"os"
 )
 
 const START_ARGS = 0
@@ -18,6 +19,7 @@ type StartCmd struct {
 	AutoTrustCmd AutoCmd
 	DownloadCmd  Cmd
 	TargetCmd    Cmd
+	UI           UI
 	flagContext  flags.FlagContext
 }
 
@@ -34,20 +36,31 @@ func (s *StartCmd) Parse(args []string) error {
 	s.flagContext.NewStringFlag("s", "", "<services to start with>")
 	s.flagContext.NewStringFlag("d", "", "<domain>")
 	s.flagContext.NewStringFlag("i", "", "<IP>")
+	s.flagContext.NewBoolFlag("x", "", "<master password>")
 	if err := parse(s.flagContext, args, START_ARGS); err != nil {
 		return err
 	}
 
+	var password string
+	if s.flagContext.Bool("x") {
+		var err error
+		password, err = s.getPCFDevPassword()
+		if err != nil {
+			return err
+		}
+	}
+
 	s.Opts = &vm.StartOpts{
-		CPUs:        s.flagContext.Int("c"),
-		Memory:      uint64(s.flagContext.Int("m")),
-		NoProvision: s.flagContext.Bool("n"),
-		OVAPath:     s.flagContext.String("o"),
-		Registries:  s.flagContext.String("r"),
-		Services:    s.flagContext.String("s"),
-		Target:      s.flagContext.Bool("t"),
-		Domain:      s.flagContext.String("d"),
-		IP:          s.flagContext.String("i"),
+		CPUs:           s.flagContext.Int("c"),
+		Memory:         uint64(s.flagContext.Int("m")),
+		NoProvision:    s.flagContext.Bool("n"),
+		OVAPath:        s.flagContext.String("o"),
+		Registries:     s.flagContext.String("r"),
+		Services:       s.flagContext.String("s"),
+		Target:         s.flagContext.Bool("t"),
+		Domain:         s.flagContext.String("d"),
+		IP:             s.flagContext.String("i"),
+		MasterPassword: password,
 	}
 	return nil
 }
@@ -123,4 +136,23 @@ func (s *StartCmd) Run() error {
 
 		return nil
 	}
+}
+
+func (s *StartCmd) getPCFDevPassword() (string, error) {
+	if os.Getenv("PCFDEV_PASSWORD") != "" {
+		return os.Getenv("PCFDEV_PASSWORD"), nil
+	}
+
+	password := s.UI.AskForPassword("Choose master password")
+	passwordConfirmation := s.UI.AskForPassword("Confirm master password")
+
+	if password == "" && passwordConfirmation == "" {
+		return "", errors.New("password cannot be empty")
+	}
+
+	if password != passwordConfirmation {
+		return "", errors.New("passwords do not match")
+	}
+
+	return password, nil
 }

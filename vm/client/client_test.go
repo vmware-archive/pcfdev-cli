@@ -40,7 +40,7 @@ var _ = Describe("Pivnet Client", func() {
 
 		Context("when there is a bad response from the api", func() {
 			It("should return an error", func() {
-				client.Host = "http://example.com/some-bad-host"
+				client.Host = "http://some-bad-host"
 				Expect(client.ReplaceSecrets("some-master-password")).To(MatchError(ContainSubstring("failed to talk to PCF Dev VM:")))
 			})
 		})

@@ -123,7 +123,8 @@ func (s *SSH) StartSSHSession(addresses []SSHAddress, privateKey []byte, timeout
 		return err
 	}
 
-	return session.Wait()
+	session.Wait()
+	return nil
 }
 
 func (s *SSH) WaitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.Duration) error {

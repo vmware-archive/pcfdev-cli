@@ -4,6 +4,7 @@ import "os"
 
 type Exit struct{}
 
-func (*Exit) Exit(status int) {
-	os.Exit(status)
+func (*Exit) Exit() {
+	someStatusCodeThatCfCliNeverReads := 1
+	os.Exit(someStatusCodeThatCfCliNeverReads)
 }

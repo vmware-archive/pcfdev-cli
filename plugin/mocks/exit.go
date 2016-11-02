@@ -28,10 +28,10 @@ func (_m *MockExit) EXPECT() *_MockExitRecorder {
 	return _m.recorder
 }
 
-func (_m *MockExit) Exit(_param0 int) {
-	_m.ctrl.Call(_m, "Exit", _param0)
+func (_m *MockExit) Exit() {
+	_m.ctrl.Call(_m, "Exit")
 }
 
-func (_mr *_MockExitRecorder) Exit(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Exit", arg0)
+func (_mr *_MockExitRecorder) Exit() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Exit")
 }

@@ -86,7 +86,7 @@ var _ = Describe("Plugin", func() {
 					mockCmd.EXPECT().Parse([]string{}),
 					mockCmd.EXPECT().Run().Return(errors.New("some-error")),
 					mockUI.EXPECT().Failed("Error: some-error."),
-					mockExit.EXPECT().Exit(1),
+					mockExit.EXPECT().Exit(),
 				)
 
 				pcfdev.Run(fakeCliConnection, []string{"dev", "some-command"})
@@ -119,7 +119,7 @@ var _ = Describe("Plugin", func() {
 				gomock.InOrder(
 					mockCmdBuilder.EXPECT().Cmd("help").Return(nil, errors.New("")),
 					mockUI.EXPECT().Failed("Error: some-error."),
-					mockExit.EXPECT().Exit(1),
+					mockExit.EXPECT().Exit(),
 				)
 
 				fakeCliConnection.CliCommandReturns(nil, errors.New("some-error"))

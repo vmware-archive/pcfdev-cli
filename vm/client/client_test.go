@@ -19,10 +19,6 @@ var _ = Describe("Pivnet Client", func() {
 		client = &c.Client{}
 	})
 
-	AfterEach(func() {
-		//mockCtrl.Finish()
-	})
-
 	Describe("#ReplaceSecrets", func() {
 		It("should replace secrets on the VM", func() {
 			handler := func(w http.ResponseWriter, r *http.Request) {

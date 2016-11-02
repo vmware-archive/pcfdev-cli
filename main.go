@@ -117,7 +117,7 @@ func main() {
 			},
 			EULAUI: &ui.UI{},
 			FS:     fileSystem,
-			UI:     &plugin.NonTranslatingUI{cfui},
+			UI:     cfui,
 			VBox:   vbx,
 			VMBuilder: &vm.VBoxBuilder{
 				VBox:   vbx,

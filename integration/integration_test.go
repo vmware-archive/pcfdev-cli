@@ -22,12 +22,18 @@ import (
 )
 
 const (
-	vmName = "pcfdev-test"
+	vmName                = "pcfdev-test"
+	releaseID             = "1622"
+	testOvaProductFileID  = "5689"
+	testOvaMd5            = "c48e9706abae6f36af9e2473f90b10bd"
+	emptyOvaProductFileId = "8883"
+	emptyOvaMd5           = "8cfb57f0b6f0305cf6797fe361ed738a"
 )
 
 var (
 	pluginPath      string
 	tempHome        string
+	ovaPath         string
 	oldCFHome       string
 	oldCFPluginHome string
 	oldPCFDevHome   string
@@ -37,9 +43,32 @@ var (
 	vBoxManagePath  string
 )
 
-var _ = BeforeEach(func() {
+var _ = BeforeSuite(func() {
 	Expect(os.Getenv("PIVNET_TOKEN")).NotTo(BeEmpty(), "PIVNET_TOKEN must be set")
 
+	var ovaDir string
+	if path := os.Getenv("INTEGRATION_TEST_OVA_HOME"); path != "" {
+		ovaDir = path
+	} else {
+		var err error
+		ovaDir, err = ioutil.TempDir("", "ova")
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	ovaPath = filepath.Join(ovaDir, "ova")
+	if !fileExists(ovaPath) {
+		Expect(exec.Command(
+			"wget",
+			"--no-verbose",
+			"--header", "Authorization: Token "+os.Getenv("PIVNET_TOKEN"),
+			"--post-data", "",
+			fmt.Sprintf("https://network.pivotal.io/api/v2/products/pcfdev/releases/%s/product_files/%s/download", releaseID, testOvaProductFileID),
+			"-O", ovaPath).Run(),
+		).To(Succeed())
+	}
+})
+
+var _ = BeforeEach(func() {
 	oldCFHome = os.Getenv("CF_HOME")
 	oldCFPluginHome = os.Getenv("CF_PLUGIN_HOME")
 	oldPCFDevHome = os.Getenv("PCFDEV_HOME")
@@ -55,24 +84,7 @@ var _ = BeforeEach(func() {
 	os.Setenv("CF_PLUGIN_HOME", filepath.Join(tempHome, "plugins"))
 	os.Setenv("PCFDEV_HOME", filepath.Join(tempHome, "pcfdev"))
 
-	insecurePrivateKeyBytes, err := ioutil.ReadFile(filepath.Join("..", "assets", "insecure.key"))
-	Expect(err).NotTo(HaveOccurred())
-
-	pluginPath, err = gexec.Build(filepath.Join("github.com", "pivotal-cf", "pcfdev-cli"), "-ldflags",
-		"-X main.vmName="+vmName+
-			" -X main.buildVersion=0.0.0"+
-			" -X main.buildSHA=some-cli-sha"+
-			" -X main.ovaBuildVersion=some-ova-version"+
-			" -X main.releaseId=1622"+
-			" -X main.productFileId=5689"+
-			" -X main.md5=c48e9706abae6f36af9e2473f90b10bd"+
-			fmt.Sprintf(` -X "main.insecurePrivateKey=%s"`, string(insecurePrivateKeyBytes)))
-	Expect(err).NotTo(HaveOccurred())
-
-	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(session, "1m").Should(gexec.Exit(0))
-	Expect(session).To(gbytes.Say("Plugin successfully installed. Current version: 0.0.0. For more info run: cf dev help"))
+	pluginPath = compileCLI(releaseID, testOvaProductFileID, testOvaMd5)
 
 	vBoxManagePath, err = helpers.VBoxManagePath()
 	Expect(err).NotTo(HaveOccurred())
@@ -123,6 +135,45 @@ var _ = Describe("PCF Dev", func() {
 		})
 	})
 
+	Context("when downloading from Pivotal Network", func() {
+		It("should download from Pivotal Network when cf dev start is specified", func() {
+			pcfdevCommand := exec.Command("cf", "dev", "start")
+			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "10m").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("Services started"))
+			Expect(filepath.Join(tempHome, "pcfdev", "vms", vmName, vmName+"-disk1.vmdk")).To(BeAnExistingFile())
+		})
+
+		Context("Using a small file", func() {
+			BeforeEach(func() {
+				pluginPath = compileCLI(releaseID, emptyOvaProductFileId, emptyOvaMd5)
+			})
+
+			It("should successfully download", func() {
+				By("running download")
+				pcfdevCommand := exec.Command("cf", "dev", "download")
+				session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, "1h").Should(gexec.Exit(0))
+
+				Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova")).To(BeAnExistingFile())
+
+				listVmsCommand := exec.Command(vBoxManagePath, "list", "vms")
+				session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session).Should(gexec.Exit(0))
+				Expect(session).NotTo(gbytes.Say(vmName))
+
+				By("rerunning download with no effect")
+				pcfdevCommand = exec.Command("cf", "dev", "download")
+				session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, "3m").Should(gexec.Exit(0))
+			})
+		})
+	})
+
 	It("should allow SSH access and forward interrupts", func() {
 		if runtime.GOOS == "windows" {
 			Skip("pty is not available on windows")
@@ -130,7 +181,7 @@ var _ = Describe("PCF Dev", func() {
 
 		const interrupt = "\x03"
 
-		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1")
+		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1", "-o", ovaPath)
 		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
@@ -146,7 +197,8 @@ var _ = Describe("PCF Dev", func() {
 		fmt.Fprintln(sshPty, "echo 'Program was stopped by interrupt successfully'")
 		fmt.Fprintln(sshPty, ">&2 echo 'Printing to stderr also works'")
 		fmt.Fprintln(sshPty, "exit")
-		time.Sleep(10 * time.Second)
+		fmt.Fprintln(sshPty, "")
+		time.Sleep(time.Second)
 		ptyOutput, err := ioutil.ReadAll(sshPty)
 		Expect(ptyOutput).To(ContainSubstring("Program was stopped by interrupt successfully"))
 		Expect(ptyOutput).To(ContainSubstring("Printing to stderr also works"))
@@ -155,7 +207,7 @@ var _ = Describe("PCF Dev", func() {
 	})
 
 	It("should start, stop, start again and destroy a virtualbox instance", func() {
-		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1")
+		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1", "-o", ovaPath)
 		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "10m").Should(gexec.Exit(0))
@@ -166,7 +218,7 @@ var _ = Describe("PCF Dev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Running"))
-		Expect(filepath.Join(tempHome, "pcfdev", "vms", vmName, vmName+"-disk1.vmdk")).To(BeAnExistingFile())
+		Expect(filepath.Join(tempHome, "pcfdev", "vms", "pcfdev-custom", "pcfdev-custom-disk1.vmdk")).To(BeAnExistingFile())
 
 		By("re-running 'cf dev start' with no effect")
 		restartCommand := exec.Command("cf", "dev", "start")
@@ -205,7 +257,7 @@ var _ = Describe("PCF Dev", func() {
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Running"))
 
-		output, err := exec.Command(vBoxManagePath, "showvminfo", vmName, "--machinereadable").Output()
+		output, err := exec.Command(vBoxManagePath, "showvminfo", "pcfdev-custom", "--machinereadable").Output()
 		Expect(err).NotTo(HaveOccurred())
 		regex := regexp.MustCompile(`hostonlyadapter2="(.*)"`)
 		interfaceName := regex.FindStringSubmatch(string(output))[1]
@@ -259,7 +311,7 @@ var _ = Describe("PCF Dev", func() {
 		pcfdevCommand = exec.Command("cf", "dev", "start",
 			"-m", "3456",
 			"-c", "1",
-			"-o", filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova"),
+			"-o", ovaPath,
 			"-i", "192.168.200.138",
 			"-d", "192.168.200.138.xip.io",
 		)
@@ -331,40 +383,20 @@ var _ = Describe("PCF Dev", func() {
 		})
 
 		It("should download or import an ova", func() {
-			By("running download")
-			pcfdevCommand := exec.Command("cf", "dev", "download")
-			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "1h").Should(gexec.Exit(0))
-
-			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova")).To(BeAnExistingFile())
-
-			listVmsCommand := exec.Command(vBoxManagePath, "list", "vms")
-			session, err = gexec.Start(listVmsCommand, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(session).Should(gexec.Exit(0))
-			Expect(session).NotTo(gbytes.Say(vmName))
-
-			By("rerunning download with no effect")
-			pcfdevCommand = exec.Command("cf", "dev", "download")
-			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "3m").Should(gexec.Exit(0))
-
 			By("removing")
 			os.Rename(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova"), filepath.Join(tempOVALocation, "pcfdev-test.ova"))
 			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova")).NotTo(BeAnExistingFile())
 
 			By("running import")
-			importCommand := exec.Command("cf", "dev", "import", filepath.Join(tempOVALocation, "pcfdev-test.ova"))
-			session, err = gexec.Start(importCommand, GinkgoWriter, GinkgoWriter)
+			importCommand := exec.Command("cf", "dev", "import", ovaPath)
+			session, err := gexec.Start(importCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "5m").Should(gexec.Exit(0))
 			Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova")).To(BeAnExistingFile())
 			Eventually(session).Should(gbytes.Say("OVA version some-ova-version imported successfully."))
 
 			By("rerunning import")
-			importCommand = exec.Command("cf", "dev", "import", filepath.Join(tempOVALocation, "pcfdev-test.ova"))
+			importCommand = exec.Command("cf", "dev", "import", ovaPath)
 			session, err = gexec.Start(importCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "3m").Should(gexec.Exit(0))
@@ -394,7 +426,7 @@ var _ = Describe("PCF Dev", func() {
 			Expect(session).To(gbytes.Say("Services started"))
 
 			By("running 'cf dev debug'")
-			pcfdevCommand = exec.Command("cf", "dev", "debug")
+			pcfdevCommand := exec.Command("cf", "dev", "debug")
 			session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "2m").Should(gexec.Exit(0))
@@ -489,4 +521,34 @@ func getResponseFromFakeServerWithHostname(hostname string) (response string, er
 			return string(responseBody), err
 		}
 	}
+}
+
+func fileExists(path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		return false
+	}
+	return true
+}
+
+func compileCLI(releaseID, productFileID, md5 string) string {
+	insecurePrivateKeyBytes, err := ioutil.ReadFile(filepath.Join("..", "assets", "insecure.key"))
+	Expect(err).NotTo(HaveOccurred())
+
+	pluginPath, err := gexec.Build(filepath.Join("github.com", "pivotal-cf", "pcfdev-cli"), "-ldflags",
+		"-X main.vmName="+vmName+
+			" -X main.buildVersion=0.0.0"+
+			" -X main.buildSHA=some-cli-sha"+
+			" -X main.ovaBuildVersion=some-ova-version"+
+			" -X main.releaseId="+releaseID+
+			" -X main.productFileId="+productFileID+
+			" -X main.md5="+md5+
+			fmt.Sprintf(` -X "main.insecurePrivateKey=%s"`, string(insecurePrivateKeyBytes)))
+	Expect(err).NotTo(HaveOccurred())
+
+	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)
+	Expect(err).NotTo(HaveOccurred())
+	Eventually(session, "1m").Should(gexec.Exit(0))
+	Expect(session).To(gbytes.Say("Plugin successfully .* Current version: 0.0.0. For more info run: cf dev help"))
+
+	return pluginPath
 }

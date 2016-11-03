@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"runtime"
+
 	"github.com/kr/pty"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,7 +20,6 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
-	"runtime"
 )
 
 const (
@@ -194,10 +195,7 @@ var _ = Describe("PCF Dev", func() {
 		time.Sleep(time.Second)
 		fmt.Fprintln(sshPty, "sleep 99999999")
 		fmt.Fprintln(sshPty, interrupt)
-		fmt.Fprintln(sshPty, "echo 'Program was stopped by interrupt successfully'")
-		fmt.Fprintln(sshPty, ">&2 echo 'Printing to stderr also works'")
-		fmt.Fprintln(sshPty, "exit")
-		fmt.Fprintln(sshPty, "")
+		fmt.Fprintln(sshPty, "echo 'Program was stopped by interrupt successfully' && >&2 echo 'Printing to stderr also works' && exit")
 		time.Sleep(time.Second)
 		ptyOutput, err := ioutil.ReadAll(sshPty)
 		Expect(ptyOutput).To(ContainSubstring("Program was stopped by interrupt successfully"))

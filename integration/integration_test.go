@@ -13,6 +13,8 @@ import (
 
 	"runtime"
 
+	"io"
+
 	"github.com/kr/pty"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -58,14 +60,7 @@ var _ = BeforeSuite(func() {
 
 	ovaPath = filepath.Join(ovaDir, "ova")
 	if !fileExists(ovaPath) {
-		Expect(exec.Command(
-			"wget",
-			"--no-verbose",
-			"--header", "Authorization: Token "+os.Getenv("PIVNET_TOKEN"),
-			"--post-data", "",
-			fmt.Sprintf("https://network.pivotal.io/api/v2/products/pcfdev/releases/%s/product_files/%s/download", releaseID, testOvaProductFileID),
-			"-O", ovaPath).Run(),
-		).To(Succeed())
+		downloadTestOva(releaseID, testOvaProductFileID, ovaPath)
 	}
 })
 
@@ -526,6 +521,22 @@ func fileExists(path string) bool {
 		return false
 	}
 	return true
+}
+
+func downloadTestOva(releaseID, productFileID, destination string) {
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://network.pivotal.io/api/v2/products/pcfdev/releases/%s/product_files/%s/download", releaseID, productFileID), nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	req.Header.Set("Authorization", "Token "+os.Getenv("PIVNET_TOKEN"))
+
+	resp, err := http.DefaultClient.Do(req)
+	Expect(err).NotTo(HaveOccurred())
+
+	destinationWriter, err := os.Create(destination)
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = io.Copy(destinationWriter, resp.Body)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 func compileCLI(releaseID, productFileID, md5 string) string {

@@ -212,6 +212,12 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 			VMBuilder: b.VMBuilder,
 			Config:    b.Config,
 		}, nil
+	case "services":
+		return &ServicesCmd{
+			VBox:      b.VBox,
+			VMBuilder: b.VMBuilder,
+			Config:    b.Config,
+		}, nil
 	default:
 		return nil, errors.New("")
 	}

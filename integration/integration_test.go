@@ -151,7 +151,7 @@ var _ = Describe("PCF Dev", func() {
 				pcfdevCommand := exec.Command("cf", "dev", "download")
 				session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "1h").Should(gexec.Exit(0))
+				Eventually(session, "10s").Should(gexec.Exit(0))
 
 				Expect(filepath.Join(os.Getenv("PCFDEV_HOME"), "ova", "pcfdev-test.ova")).To(BeAnExistingFile())
 
@@ -165,7 +165,7 @@ var _ = Describe("PCF Dev", func() {
 				pcfdevCommand = exec.Command("cf", "dev", "download")
 				session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "3m").Should(gexec.Exit(0))
+				Eventually(session, "5s").Should(gexec.Exit(0))
 			})
 		})
 	})

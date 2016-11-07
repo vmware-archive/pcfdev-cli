@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
-	gouuid "github.com/nu7hatch/gouuid"
+	guid "github.com/nu7hatch/gouuid"
 )
 
 func ImportSnappy() (vmName string, err error) {
@@ -33,7 +33,7 @@ func ImportSnappy() (vmName string, err error) {
 
 	tmpDir := os.TempDir()
 
-	uuid, err := gouuid.NewV4()
+	uuid, err := guid.NewV4()
 	if err != nil {
 		return "", err
 	}

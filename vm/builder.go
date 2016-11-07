@@ -4,8 +4,9 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
+
+	"fmt"
 
 	"github.com/cloudfoundry/cli/cf/terminal"
 	"github.com/cloudfoundry/cli/cf/trace"
@@ -26,6 +27,7 @@ type VBoxBuilder struct {
 	VBox   VBox
 	FS     FS
 	SSH    SSH
+	Client Client
 }
 
 func (b *VBoxBuilder) VM(vmName string) (VM, error) {
@@ -46,6 +48,59 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		return &Invalid{
 			Err: err,
 		}, nil
+	}
+
+	unprovisionedVm := &Unprovisioned{
+		VMConfig:  vmConfig,
+		Config:    b.Config,
+		UI:        termUI,
+		VBox:      b.VBox,
+		FS:        b.FS,
+		SSHClient: b.SSH,
+		HelpText: &ui.HelpText{
+			UI: termUI,
+		},
+		Client: b.Client,
+		LogFetcher: &debug.LogFetcher{
+			VMConfig: vmConfig,
+			Config:   b.Config,
+			FS:       b.FS,
+			SSH:      b.SSH,
+			Driver: &vbox.VBoxDriver{
+				FS:        &fs.FS{},
+				CmdRunner: &runner.CmdRunner{},
+			},
+		},
+	}
+	runningVm := &Running{
+		Config:    b.Config,
+		VMConfig:  vmConfig,
+		FS:        b.FS,
+		UI:        termUI,
+		VBox:      b.VBox,
+		SSHClient: b.SSH,
+		Builder:   b,
+		CmdRunner: &runner.CmdRunner{},
+		HelpText: &ui.HelpText{
+			UI: termUI,
+		},
+		CertStore: &cert.CertStore{
+			FS: b.FS,
+			SystemStore: &cert.ConcreteSystemStore{
+				FS:        b.FS,
+				CmdRunner: &runner.CmdRunner{},
+			},
+		},
+		LogFetcher: &debug.LogFetcher{
+			VMConfig: vmConfig,
+			Config:   b.Config,
+			FS:       b.FS,
+			SSH:      b.SSH,
+			Driver: &vbox.VBoxDriver{
+				FS:        &fs.FS{},
+				CmdRunner: &runner.CmdRunner{},
+			},
+		},
 	}
 
 	switch status {
@@ -71,63 +126,17 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			Network:  &network.Network{},
 		}, nil
 	case vbox.StatusRunning:
-		if output, err := b.healthcheck(vmConfig.IP, vmConfig.SSHPort); strings.TrimSpace(output) != "ok" || err != nil {
-			return &Unprovisioned{
-				VMConfig:  vmConfig,
-				Config:    b.Config,
-				UI:        termUI,
-				VBox:      b.VBox,
-				FS:        b.FS,
-				SSHClient: b.SSH,
-				HelpText: &ui.HelpText{
-					UI: termUI,
-				},
-				Client: &client.Client{
-					Host: "http://" + vmConfig.Domain + ":8090",
-				},
-				LogFetcher: &debug.LogFetcher{
-					VMConfig: vmConfig,
-					Config:   b.Config,
-					FS:       b.FS,
-					SSH:      b.SSH,
-					Driver: &vbox.VBoxDriver{
-						FS:        &fs.FS{},
-						CmdRunner: &runner.CmdRunner{},
-					},
-				},
-			}, nil
+		output, err := b.Client.Status(fmt.Sprintf("http://%s:%d", vmConfig.Domain, client.APIPort))
+		if output == "Unprovisioned" || err != nil {
+			return unprovisionedVm, nil
+		} else if output == "Running" {
+			return runningVm, nil
 		} else {
-			return &Running{
-				Config:    b.Config,
-				VMConfig:  vmConfig,
-				FS:        b.FS,
-				UI:        termUI,
-				VBox:      b.VBox,
-				SSHClient: b.SSH,
-				Builder:   b,
-				CmdRunner: &runner.CmdRunner{},
-				HelpText: &ui.HelpText{
-					UI: termUI,
-				},
-				CertStore: &cert.CertStore{
-					FS: b.FS,
-					SystemStore: &cert.ConcreteSystemStore{
-						FS:        b.FS,
-						CmdRunner: &runner.CmdRunner{},
-					},
-				},
-				LogFetcher: &debug.LogFetcher{
-					VMConfig: vmConfig,
-					Config:   b.Config,
-					FS:       b.FS,
-					SSH:      b.SSH,
-					Driver: &vbox.VBoxDriver{
-						FS:        &fs.FS{},
-						CmdRunner: &runner.CmdRunner{},
-					},
-				},
+			return &Invalid{
+				Err: errors.New("vm in unknown state"),
 			}, nil
 		}
+
 	case vbox.StatusStopped:
 		return &Stopped{
 			VMConfig: vmConfig,

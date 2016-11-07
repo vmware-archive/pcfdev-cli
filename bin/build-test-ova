@@ -6,6 +6,7 @@ set -ex
 
 pushd $dir >/dev/null
   GOOS=linux go build fake_pcfdev_server.go
+  GOOS=linux go build fake_api.go
   packer build -force pcfdev-test.json
   aws s3 cp $dir/output-virtualbox-iso/pcfdev-test.ova s3://pivotalnetwork/product_files/pcfdev/pcfdev-test.ova
   md5=$(md5 $dir/output-virtualbox-iso/pcfdev-test.ova | cut -d ' ' -f 4)

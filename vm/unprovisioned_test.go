@@ -132,7 +132,7 @@ var _ = Describe("Unprovisioned", func() {
 					{IP: "some-ip", Port: "22"},
 				}
 				gomock.InOrder(
-					mockClient.EXPECT().ReplaceSecrets("some-master-password"),
+					mockClient.EXPECT().ReplaceSecrets("http://some-domain:8090", "some-master-password"),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(
 						"if [ -e /var/pcfdev/provision-options.json ]; then exit 0; else exit 1; fi",
@@ -166,7 +166,7 @@ var _ = Describe("Unprovisioned", func() {
 
 		Context("when the user passes in a master password and there is an error", func() {
 			It("should provision the VM after replacing the secrets", func() {
-				mockClient.EXPECT().ReplaceSecrets("some-master-password").Return(errors.New("some-error"))
+				mockClient.EXPECT().ReplaceSecrets("http://some-domain:8090", "some-master-password").Return(errors.New("some-error"))
 
 				Expect(unprovisioned.Provision(&vm.StartOpts{MasterPassword: "some-master-password"})).To(MatchError("some-error"))
 			})

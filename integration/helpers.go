@@ -20,7 +20,7 @@ const (
 	VmName = "pcfdev-test"
 	ReleaseID = "1622"
 	TestOvaProductFileID = "5689"
-	TestOvaMd5 = "c48e9706abae6f36af9e2473f90b10bd"
+	TestOvaMd5 = "2fb049f68e568322d6d8b264a0d26ab1"
 	EmptyOvaProductFileId = "8883"
 	EmptyOvaMd5 = "8cfb57f0b6f0305cf6797fe361ed738a"
 )

@@ -51,6 +51,15 @@
             "type": "file",
             "source": "fake_pcfdev_server.conf",
             "destination": "/tmp/fake_pcfdev_server.conf"
+        },        {
+            "type": "file",
+            "source": "fake_api",
+            "destination": "/tmp/fake_api"
+        },
+        {
+            "type": "file",
+            "source": "fake_api.conf",
+            "destination": "/tmp/fake_api.conf"
         },
         {
             "type": "file",
@@ -81,8 +90,12 @@
                 "mv /tmp/fake_pcfdev_server /var/pcfdev",
                 "chmod +x /var/pcfdev/fake_pcfdev_server",
 
+                "mv /tmp/fake_api.conf /etc/init",
+                "mv /tmp/fake_api /var/pcfdev",
+                "chmod +x /var/pcfdev/fake_api",
+
                 "echo '#!/bin/bash' > /var/pcfdev/provision",
-                "echo \"echo 'Waiting for services to start...'\necho -n 'ok' > /run/pcfdev-healthcheck\nservice fake_pcfdev_server start\necho 'Services started'\necho\" >> /var/pcfdev/provision",
+                "echo \"echo 'Waiting for services to start...'\nservice fake_api start\nservice fake_pcfdev_server start\necho 'Services started'\necho\" >> /var/pcfdev/provision",
                 "chmod +x /var/pcfdev/provision",
 
 				"mkdir -p /home/vcap/.ssh",

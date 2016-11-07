@@ -16,10 +16,10 @@ import (
 	"github.com/kr/pty"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/pivotal-cf/pcfdev-cli/integration"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
+	. "github.com/pivotal-cf/pcfdev-cli/integration"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 )
 
@@ -109,7 +109,7 @@ var _ = Describe("PCF Dev", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "10m").Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("Services started"))
-			Expect(filepath.Join(tempHome, "pcfdev", "vms", VmName, VmName +"-disk1.vmdk")).To(BeAnExistingFile())
+			Expect(filepath.Join(tempHome, "pcfdev", "vms", VmName, VmName+"-disk1.vmdk")).To(BeAnExistingFile())
 		})
 
 		Context("Using a small file", func() {

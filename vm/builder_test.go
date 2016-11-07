@@ -156,7 +156,7 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockClient.EXPECT().Status("http://local.pcfdev.io:8090").Return("Running", nil),
+						mockClient.EXPECT().Status("http://192.168.11.11:8090").Return("Running", nil),
 					)
 
 					runningVM, err := builder.VM("some-vm")
@@ -193,7 +193,7 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockClient.EXPECT().Status("http://local.pcfdev.io:8090").Return("Unprovisioned", nil),
+						mockClient.EXPECT().Status("http://192.168.11.11:8090").Return("Unprovisioned", nil),
 					)
 
 					unprovisionedVM, err := builder.VM("some-vm")
@@ -224,7 +224,7 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockClient.EXPECT().Status("http://local.pcfdev.io:8090").Return("some-unexpected-status", nil),
+						mockClient.EXPECT().Status("http://192.168.11.11:8090").Return("some-unexpected-status", nil),
 					)
 
 					invalidVM, err := builder.VM("some-vm")
@@ -251,7 +251,7 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockClient.EXPECT().Status("http://local.pcfdev.io:8090").Return("", errors.New("some-error")),
+						mockClient.EXPECT().Status("http://192.168.11.11:8090").Return("", errors.New("some-error")),
 					)
 
 					unprovisionedVM, err := builder.VM("some-vm")

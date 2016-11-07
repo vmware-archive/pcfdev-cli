@@ -127,7 +127,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			Network:  &network.Network{},
 		}, nil
 	case vbox.StatusRunning:
-		output, err := b.Client.Status(fmt.Sprintf("http://%s:%d", vmConfig.Domain, client.APIPort))
+		output, err := b.Client.Status(fmt.Sprintf("http://%s:%d", vmConfig.IP, client.APIPort))
 		if output == "Unprovisioned" || err != nil {
 			return unprovisionedVm, nil
 		} else if output == "Running" {

@@ -47,7 +47,7 @@ func (u *Unprovisioned) Status() string {
 
 func (u *Unprovisioned) Provision(opts *StartOpts) error {
 	if opts.MasterPassword != "" {
-		if err := u.Client.ReplaceSecrets(fmt.Sprintf("http://%s:%d", u.VMConfig.Domain, client.APIPort), opts.MasterPassword); err != nil {
+		if err := u.Client.ReplaceSecrets(fmt.Sprintf("http://%s:%d", u.VMConfig.IP, client.APIPort), opts.MasterPassword); err != nil {
 			return err
 		}
 	}

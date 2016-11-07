@@ -5,31 +5,6 @@ dir=$( cd $( dirname "${BASH_SOURCE[0]}" ) && cd ../assets && pwd )
 set -ex
 
 pushd $dir >/dev/null
-  cat > fake_pcfdev_server.conf <<EOF
-  description "fake PCF Dev server"
-
-  exec /var/pcfdev/fake_pcfdev_server
-EOF
-
-  cat > fake_pcfdev_server.go <<EOF
-  package main
-
-  import (
-	"log"
-	"net/http"
-  )
-
-  func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	  w.Write([]byte("PCF Dev Test VM"))
-	})
-
-	if err := http.ListenAndServe(":80", nil); err != nil {
-	  log.Fatal("ListenAndServe: ", err)
-	}
-  }
-EOF
-
   GOOS=linux go build fake_pcfdev_server.go
   packer build -force pcfdev-test.json
   aws s3 cp $dir/output-virtualbox-iso/pcfdev-test.ova s3://pivotalnetwork/product_files/pcfdev/pcfdev-test.ova

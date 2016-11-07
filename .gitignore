@@ -69,4 +69,4 @@ fixtures/config/plugin-config/.cf/plugins/empty_plugin
 assets/packer_cache
 assets/output-virtualbox-iso
 assets/*.box
-assets/fake*
+assets/fake_pcfdev_server

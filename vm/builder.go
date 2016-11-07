@@ -20,6 +20,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/ui"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm/client"
+	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 )
 
 type VBoxBuilder struct {
@@ -66,7 +67,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			Config:   b.Config,
 			FS:       b.FS,
 			SSH:      b.SSH,
-			Driver: &vbox.VBoxDriver{
+			Driver: &vboxdriver.VBoxDriver{
 				FS:        &fs.FS{},
 				CmdRunner: &runner.CmdRunner{},
 			},
@@ -96,7 +97,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			Config:   b.Config,
 			FS:       b.FS,
 			SSH:      b.SSH,
-			Driver: &vbox.VBoxDriver{
+			Driver: &vboxdriver.VBoxDriver{
 				FS:        &fs.FS{},
 				CmdRunner: &runner.CmdRunner{},
 			},

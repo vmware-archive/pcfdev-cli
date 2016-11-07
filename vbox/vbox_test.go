@@ -18,6 +18,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 )
 
 var _ = Describe("vbox", func() {
@@ -1321,7 +1322,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 			It("should return a running status", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
-					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateRunning, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return(vboxdriver.StateRunning, nil),
 				)
 				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusRunning))
 			})
@@ -1332,7 +1333,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 			It("should return a stopped status", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
-					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateStopped, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return(vboxdriver.StateStopped, nil),
 				)
 
 				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusStopped))
@@ -1343,7 +1344,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 			It("should return a stopped status", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
-					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateAborted, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return(vboxdriver.StateAborted, nil),
 				)
 
 				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusStopped))
@@ -1354,7 +1355,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 			It("should return a saved status", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
-					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StateSaved, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return(vboxdriver.StateSaved, nil),
 				)
 
 				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusSaved))
@@ -1365,7 +1366,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 			It("should return a paused status", func() {
 				gomock.InOrder(
 					mockDriver.EXPECT().VMExists("some-vm").Return(true, nil),
-					mockDriver.EXPECT().VMState("some-vm").Return(vbox.StatePaused, nil),
+					mockDriver.EXPECT().VMState("some-vm").Return(vboxdriver.StatePaused, nil),
 				)
 
 				Expect(vbx.VMStatus("some-vm")).To(Equal(vbox.StatusPaused))
@@ -1564,7 +1565,7 @@ no_proxy=localhost,127.0.0.1,192.168.11.1,192.168.11.11,local.pcfdev.io,.local.p
 
 	Describe("#Version", func() {
 		It("return the VBoxDriver version", func() {
-			driverVersion := &vbox.VBoxDriverVersion{Major: 1, Minor: 0, Build: 0}
+			driverVersion := &vboxdriver.VBoxDriverVersion{Major: 1, Minor: 0, Build: 0}
 			mockDriver.EXPECT().Version().Return(driverVersion, nil)
 
 			Expect(vbx.Version()).To(Equal(driverVersion))

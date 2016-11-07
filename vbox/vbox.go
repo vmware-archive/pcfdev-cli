@@ -16,6 +16,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
+	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 )
 
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vbox Driver
@@ -47,7 +48,7 @@ type Driver interface {
 	UseDNSProxy(vmName string) error
 	GetMemory(vmName string) (uint64, error)
 	VMState(vmName string) (string, error)
-	Version() (version *VBoxDriverVersion, err error)
+	Version() (version *vboxdriver.VBoxDriverVersion, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vbox FS
@@ -495,19 +496,19 @@ func (v *VBox) VMStatus(vmName string) (status string, err error) {
 	}
 
 	switch state {
-	case StateRunning:
+	case vboxdriver.StateRunning:
 		return StatusRunning, nil
-	case StateStopped, StateAborted:
+	case vboxdriver.StateStopped, vboxdriver.StateAborted:
 		return StatusStopped, nil
-	case StateSaved:
+	case vboxdriver.StateSaved:
 		return StatusSaved, nil
-	case StatePaused:
+	case vboxdriver.StatePaused:
 		return StatusPaused, nil
 	default:
 		return StatusUnknown, nil
 	}
 }
 
-func (v *VBox) Version() (version *VBoxDriverVersion, err error) {
+func (v *VBox) Version() (version *vboxdriver.VBoxDriverVersion, err error) {
 	return v.Driver.Version()
 }

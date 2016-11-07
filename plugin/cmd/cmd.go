@@ -9,8 +9,8 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/downloader"
 	"github.com/pivotal-cf/pcfdev-cli/runner"
-	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
+	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 )
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd UI
@@ -25,7 +25,7 @@ type VBox interface {
 	GetVMName() (name string, err error)
 	VMConfig(vmName string) (vmConfig *config.VMConfig, err error)
 	DestroyPCFDevVMs() (err error)
-	Version() (version *vbox.VBoxDriverVersion, err error)
+	Version() (version *vboxdriver.VBoxDriverVersion, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd FS

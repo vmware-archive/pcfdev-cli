@@ -1,4 +1,4 @@
-package vbox_test
+package vboxdriver_test
 
 import (
 	"archive/tar"
@@ -17,12 +17,11 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/runner"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/test_helpers"
-	"github.com/pivotal-cf/pcfdev-cli/vbox"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 )
 
 var (
@@ -41,12 +40,12 @@ var _ = BeforeSuite(func() {
 
 var _ = Describe("driver", func() {
 	var (
-		driver *vbox.VBoxDriver
+		driver *vboxdriver.VBoxDriver
 		vmName string
 	)
 
 	BeforeEach(func() {
-		driver = &vbox.VBoxDriver{
+		driver = &vboxdriver.VBoxDriver{
 			FS:        &fs.FS{},
 			CmdRunner: &runner.CmdRunner{},
 		}
@@ -86,7 +85,7 @@ var _ = Describe("driver", func() {
 			Expect(driver.ForwardPort(vmName, "some-rule-name", port, "22")).To(Succeed())
 
 			Expect(driver.StartVM(vmName)).To(Succeed())
-			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vboxdriver.StateRunning))
 
 			stdout := gbytes.NewBuffer()
 			Expect(sshClient.RunSSHCommand("cat /etc/resolv.conf", []ssh.SSHAddress{{IP: "127.0.0.1", Port: port}}, privateKeyBytes, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
@@ -127,33 +126,33 @@ var _ = Describe("driver", func() {
 			Expect(driver.ForwardPort(vmName, "some-rule-name", port, "22")).To(Succeed())
 
 			Expect(driver.StartVM(vmName)).To(Succeed())
-			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vboxdriver.StateRunning))
 
 			stdout := gbytes.NewBuffer()
 			Expect(sshClient.RunSSHCommand("hostname", []ssh.SSHAddress{{IP: "127.0.0.1", Port: port}}, privateKeyBytes, 5*time.Minute, stdout, ioutil.Discard)).To(Succeed())
 			Expect(string(stdout.Contents())).To(ContainSubstring("ubuntu-core-stable-15"))
 
 			Expect(driver.StopVM(vmName)).To(Succeed())
-			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateStopped))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vboxdriver.StateStopped))
 
 			Expect(driver.StartVM(vmName)).To(Succeed())
-			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vboxdriver.StateRunning))
 
 			Expect(driver.SuspendVM(vmName)).To(Succeed())
-			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateSaved))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vboxdriver.StateSaved))
 
 			Expect(driver.StartVM(vmName)).To(Succeed())
-			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vboxdriver.StateRunning))
 
 			_, err = driver.VBoxManage("controlvm", vmName, "pause")
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StatePaused))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vboxdriver.StatePaused))
 
 			Expect(driver.ResumeVM(vmName)).To(Succeed())
-			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateRunning))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vboxdriver.StateRunning))
 
 			Expect(driver.PowerOffVM(vmName)).To(Succeed())
-			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vbox.StateStopped))
+			Eventually(func() (string, error) { return driver.VMState(vmName) }, 120*time.Second).Should(Equal(vboxdriver.StateStopped))
 
 			Expect(driver.DestroyVM(vmName)).To(Succeed())
 
@@ -232,7 +231,7 @@ var _ = Describe("driver", func() {
 
 				Expect(driver.StartVM(vmName)).To(Succeed())
 
-				Expect(driver.VMState(vmName)).To(Equal(vbox.StateRunning))
+				Expect(driver.VMState(vmName)).To(Equal(vboxdriver.StateRunning))
 			})
 		})
 
@@ -248,13 +247,13 @@ var _ = Describe("driver", func() {
 				Expect(driver.StartVM(vmName)).To(Succeed())
 				Expect(driver.SuspendVM(vmName)).To(Succeed())
 
-				Expect(driver.VMState(vmName)).To(Equal(vbox.StateSaved))
+				Expect(driver.VMState(vmName)).To(Equal(vboxdriver.StateSaved))
 			})
 		})
 
 		Context("when the VM is stopped", func() {
 			It("should return StateStopped", func() {
-				Expect(driver.VMState(vmName)).To(Equal(vbox.StateStopped))
+				Expect(driver.VMState(vmName)).To(Equal(vboxdriver.StateStopped))
 			})
 		})
 

@@ -4,9 +4,9 @@
 package mocks
 
 import (
-	gomock "github.com/golang/mock/gomock"
-	config "github.com/pivotal-cf/pcfdev-cli/config"
-	vbox "github.com/pivotal-cf/pcfdev-cli/vbox"
+	"github.com/golang/mock/gomock"
+	"github.com/pivotal-cf/pcfdev-cli/config"
+	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 )
 
 // Mock of VBox interface
@@ -62,9 +62,9 @@ func (_mr *_MockVBoxRecorder) VMConfig(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "VMConfig", arg0)
 }
 
-func (_m *MockVBox) Version() (*vbox.VBoxDriverVersion, error) {
+func (_m *MockVBox) Version() (*vboxdriver.VBoxDriverVersion, error) {
 	ret := _m.ctrl.Call(_m, "Version")
-	ret0, _ := ret[0].(*vbox.VBoxDriverVersion)
+	ret0, _ := ret[0].(*vboxdriver.VBoxDriverVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

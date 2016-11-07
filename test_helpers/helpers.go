@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
-
 	gouuid "github.com/nu7hatch/gouuid"
 )
 

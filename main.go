@@ -28,6 +28,7 @@ import (
 	cfplugin "github.com/cloudfoundry/cli/plugin"
 	"github.com/kardianos/osext"
 	vmClient "github.com/pivotal-cf/pcfdev-cli/vm/client"
+	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 )
 
 var (
@@ -52,7 +53,7 @@ func main() {
 	confirmInstalled(cfui)
 
 	fileSystem := &fs.FS{}
-	driver := &vbox.VBoxDriver{
+	driver := &vboxdriver.VBoxDriver{
 		FS:        fileSystem,
 		CmdRunner: &runner.CmdRunner{},
 	}

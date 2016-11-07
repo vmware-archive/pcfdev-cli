@@ -1,4 +1,4 @@
-package vbox
+package vboxdriver
 
 import (
 	"errors"

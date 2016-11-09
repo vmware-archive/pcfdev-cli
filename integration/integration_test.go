@@ -53,7 +53,7 @@ var _ = Describe("PCF Dev", func() {
 		os.Setenv("CF_PLUGIN_HOME", filepath.Join(tempHome, "plugins"))
 		os.Setenv("PCFDEV_HOME", filepath.Join(tempHome, "pcfdev"))
 
-		ovaPath = SetupOva(ReleaseID, TestOvaProductFileID)
+		ovaPath = SetupOva(ReleaseID, TestOvaProductFileID, TestOvaMd5)
 		pluginPath = CompileCLI(ReleaseID, TestOvaProductFileID, TestOvaMd5, VmName)
 
 		vBoxManagePath, err = helpers.VBoxManagePath()

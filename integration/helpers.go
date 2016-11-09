@@ -1,28 +1,28 @@
 package integration
 
 import (
-	"net/http"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 
-	. "github.com/onsi/gomega"
+	cMD5 "crypto/md5"
 	. "github.com/onsi/ginkgo"
-
-	"github.com/onsi/gomega/gexec"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"os"
+	"github.com/onsi/gomega/gexec"
 	"io"
+	"os"
 	"os/exec"
 )
 
 const (
-	VmName = "pcfdev-test"
-	ReleaseID = "1622"
-	TestOvaProductFileID = "5689"
-	TestOvaMd5 = "5b0ec261b849ea3f2845e111fcc22bea"
+	VmName                = "pcfdev-test"
+	ReleaseID             = "1622"
+	TestOvaProductFileID  = "5689"
+	TestOvaMd5            = "5b0ec261b849ea3f2845e111fcc22bea"
 	EmptyOvaProductFileId = "8883"
-	EmptyOvaMd5 = "8cfb57f0b6f0305cf6797fe361ed738a"
+	EmptyOvaMd5           = "8cfb57f0b6f0305cf6797fe361ed738a"
 )
 
 func FileExists(path string) bool {
@@ -71,7 +71,7 @@ func CompileCLI(releaseID, productFileID, md5 string, vmName string) string {
 	return pluginPath
 }
 
-func SetupOva(releaseID string, testOvaProductFileID string) string {
+func SetupOva(releaseID string, testOvaProductFileID string, md5 string) string {
 	Expect(os.Getenv("PIVNET_TOKEN")).NotTo(BeEmpty(), "PIVNET_TOKEN must be set")
 
 	var ovaDir string
@@ -84,8 +84,33 @@ func SetupOva(releaseID string, testOvaProductFileID string) string {
 	}
 
 	ovaPath := filepath.Join(ovaDir, "ova")
+	if FileExists(ovaPath) {
+		matches, err := MD5Matches(ovaPath, md5)
+		Expect(err).NotTo(HaveOccurred())
+
+		if !matches {
+			os.Remove(ovaPath)
+		}
+	}
+
 	if !FileExists(ovaPath) {
 		DownloadTestOva(releaseID, testOvaProductFileID, ovaPath)
 	}
 	return ovaPath
+}
+
+func MD5Matches(path, md5 string) (bool, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+
+	hash := cMD5.New()
+
+	if _, err = io.Copy(hash, file); err != nil {
+		return false, err
+	}
+
+	return fmt.Sprintf("%x", hash.Sum([]byte{})) == md5, nil
 }

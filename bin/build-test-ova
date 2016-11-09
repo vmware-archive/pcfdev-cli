@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/bin/bash -e
 
 dir=$( cd $( dirname "${BASH_SOURCE[0]}" ) && cd ../assets && pwd )
 
-set -ex
+eval $(~/Dropbox/export-pivnet-aws)
+
+set -x
 
 pushd $dir >/dev/null
   GOOS=linux go build fake_pcfdev_server.go
@@ -16,4 +18,7 @@ pushd $dir >/dev/null
     -d "{\"product_file\":{\"md5\":\"${md5}\"}}" \
     https://network.pivotal.io/api/v2/products/pcfdev/product_files/5689
   echo "MD5: $md5"
+  if [[ -n $INTEGRATION_TEST_OVA_HOME ]]; then
+    cp output-virtualbox-iso/pcfdev-test.ova $INTEGRATION_TEST_OVA_HOME/ova
+  fi
 popd >/dev/null

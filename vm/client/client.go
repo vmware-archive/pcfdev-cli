@@ -126,7 +126,7 @@ func (c *Client) waitForPing(host string) bool {
 					pingChannel <- true
 					return
 				}
-				time.Sleep(time.Second)
+				time.Sleep(10 * time.Millisecond)
 			}
 		}
 	}()

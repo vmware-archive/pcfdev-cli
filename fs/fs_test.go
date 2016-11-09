@@ -358,6 +358,7 @@ var _ = Describe("Filesystem", func() {
 			})
 		})
 	})
+
 	Describe("#Compress", func() {
 		BeforeEach(func() {
 			_, err := os.Create(filepath.Join(tmpDir, "some-file"))
@@ -383,9 +384,30 @@ var _ = Describe("Filesystem", func() {
 			})
 		})
 	})
+
 	Describe("#TempDir", func() {
 		It("should create a temp directory", func() {
 			Expect(fs.TempDir()).To(BeAnExistingFile())
+		})
+	})
+
+	Describe("#Chmod", func() {
+		It("should change permissions of a file or directory", func() {
+			path := filepath.Join(tmpDir, "some-file")
+			Expect(ioutil.WriteFile(path, []byte{}, 0644)).To(Succeed())
+
+			Expect(fs.Chmod(path, 0755)).To(Succeed())
+			file, err := os.Open(path)
+			Expect(err).NotTo((HaveOccurred()))
+			fileStat, err := file.Stat()
+			Expect(err).NotTo((HaveOccurred()))
+			Expect(fileStat.Mode()).To(Equal(os.FileMode(0755)))
+		})
+
+		Context("when the path is invalid", func() {
+			It("should return an error", func() {
+				Expect(fs.Chmod("some-bad-path", 0644)).To(MatchError(ContainSubstring("no such file or directory")))
+			})
 		})
 	})
 })

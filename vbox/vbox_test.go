@@ -19,6 +19,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
+	"os"
 )
 
 var _ = Describe("vbox", func() {
@@ -635,6 +636,7 @@ var _ = Describe("vbox", func() {
 					mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+					mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
@@ -748,6 +750,7 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 					mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+					mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
@@ -804,6 +807,7 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+						mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
 						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
@@ -847,6 +851,7 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, addresses, []byte("s
 						mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+						mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
 						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
@@ -907,6 +912,7 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+						mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
 						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
@@ -968,6 +974,7 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+						mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
 						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo
@@ -1113,6 +1120,36 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 				})
 			})
 
+			Context("when there is an error changing permissions of the private key", func() {
+				It("should return the error", func() {
+					addresses := []ssh.SSHAddress{
+						{
+							IP:   "127.0.0.1",
+							Port: "some-port",
+						},
+						{
+							IP:   "192.168.22.11",
+							Port: "22",
+						},
+					}
+					gomock.InOrder(
+						mockDriver.EXPECT().StartVM("some-vm"),
+						mockFS.EXPECT().Exists("some-private-key-path").Return(false, nil),
+						mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
+						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
+						mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+						mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)).Return(errors.New("some-error")),
+					)
+
+					Expect(vbx.StartVM(&config.VMConfig{
+						Name:    "some-vm",
+						IP:      "192.168.22.11",
+						SSHPort: "some-port",
+						Domain:  "some-domain",
+					})).To(MatchError("some-error"))
+				})
+			})
+
 			Context("when there is an error reading the private key", func() {
 				It("should return the error", func() {
 					addresses := []ssh.SSHAddress{
@@ -1131,6 +1168,7 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+						mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
 						mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error")),
 					)
 
@@ -1161,6 +1199,7 @@ no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2
 						mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+						mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
 						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf(`echo -e '
 auto lo
@@ -1202,6 +1241,7 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), addresses, []byte("
 						mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+						mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
 						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(fmt.Sprintf(`echo -e '
 auto lo
@@ -1244,6 +1284,7 @@ netmask 255.255.255.0' | sudo tee /etc/network/interfaces`), addresses, []byte("
 						mockSSH.EXPECT().GenerateKeypair().Return([]byte("some-private-key"), []byte("some-public-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 						mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
+						mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
 						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 						mockSSH.EXPECT().RunSSHCommand(`echo -e '
 auto lo

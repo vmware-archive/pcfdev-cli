@@ -17,6 +17,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
+	"os"
 )
 
 //go:generate mockgen -package mocks -destination mocks/driver.go github.com/pivotal-cf/pcfdev-cli/vbox Driver
@@ -58,6 +59,7 @@ type FS interface {
 	Remove(path string) error
 	Write(path string, contents io.Reader, append bool) error
 	Read(path string) (contents []byte, err error)
+	Chmod(path string, mode os.FileMode) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/ssh.go github.com/pivotal-cf/pcfdev-cli/vbox SSH
@@ -180,7 +182,14 @@ func (v *VBox) insertSecureKeypair(vmConfig *config.VMConfig) error {
 		return err
 	}
 
-	return v.FS.Write(v.Config.PrivateKeyPath, bytes.NewReader(privateKey), false)
+	return v.writePrivateKey(privateKey)
+}
+
+func (v *VBox) writePrivateKey(privateKey []byte) error {
+	if err := v.FS.Write(v.Config.PrivateKeyPath, bytes.NewReader(privateKey), false); err != nil {
+		return err
+	}
+	return v.FS.Chmod(v.Config.PrivateKeyPath, 0600)
 }
 
 func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {

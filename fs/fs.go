@@ -211,3 +211,12 @@ func (fs *FS) Compress(name string, path string, contentPaths []string) error {
 func (fs *FS) TempDir() (string, error) {
 	return ioutil.TempDir("", "")
 }
+
+func (fs *FS) Chmod(path string, mode os.FileMode) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	return file.Chmod(mode)
+}

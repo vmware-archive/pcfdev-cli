@@ -6,6 +6,7 @@ package mocks
 import (
 	gomock "github.com/golang/mock/gomock"
 	io "io"
+	os "os"
 )
 
 // Mock of FS interface
@@ -27,6 +28,16 @@ func NewMockFS(ctrl *gomock.Controller) *MockFS {
 
 func (_m *MockFS) EXPECT() *_MockFSRecorder {
 	return _m.recorder
+}
+
+func (_m *MockFS) Chmod(_param0 string, _param1 os.FileMode) error {
+	ret := _m.ctrl.Call(_m, "Chmod", _param0, _param1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockFSRecorder) Chmod(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Chmod", arg0, arg1)
 }
 
 func (_m *MockFS) Exists(_param0 string) (bool, error) {

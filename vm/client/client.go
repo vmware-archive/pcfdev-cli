@@ -11,6 +11,7 @@ import (
 
 type Client struct {
 	Timeout time.Duration
+	HttpClient *http.Client
 }
 
 type StatusResponse struct {
@@ -33,7 +34,7 @@ func (c *Client) Status(host string) (string, error) {
 		return "", err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.HttpClient.Do(req)
 	if err != nil {
 		return "", &PCFDevVmUnreachableError{err}
 	}
@@ -113,7 +114,6 @@ func (e *ReplaceMasterPasswordError) Error() string {
 
 func (c *Client) waitForPing(host string) bool {
 	pingChannel := make(chan bool)
-	httpClient := http.DefaultClient
 	timeoutChannel := time.After(c.Timeout)
 	go func() {
 		for {
@@ -122,7 +122,7 @@ func (c *Client) waitForPing(host string) bool {
 				pingChannel <- false
 				return
 			default:
-				if _, err := httpClient.Get(host); err == nil {
+				if _, err := c.HttpClient.Get(host); err == nil {
 					pingChannel <- true
 					return
 				}

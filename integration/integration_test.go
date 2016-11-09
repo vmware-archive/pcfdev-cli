@@ -329,6 +329,25 @@ var _ = Describe("PCF Dev", func() {
 		Expect(string(output)).To(Equal("PCF Dev version 0.0.0 (CLI: some-cli-sha, OVA: some-ova-version)\n"))
 	})
 
+	It("starts up with proxy envs set", func() {
+		os.Setenv("HTTP_PROXY", "192.168.93.23")
+		os.Setenv("HTTPS_PROXY", "192.168.38.29")
+		os.Setenv("NO_PROXY", "192.168.98.98")
+
+		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1", "-o", ovaPath)
+
+		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "10m").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Waiting for services to start..."))
+		Expect(session).To(gbytes.Say("Services started"))
+		pcfdevCommand = exec.Command("cf", "dev", "status")
+		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "2m").Should(gexec.Exit(0))
+		Eventually(session).Should(gbytes.Say("Running"))
+	})
+
 	Context("when ova is on pivnet or in a temp dir", func() {
 		var (
 			tempOVALocation string

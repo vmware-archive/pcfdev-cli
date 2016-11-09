@@ -29,6 +29,7 @@ import (
 	"github.com/kardianos/osext"
 	vmClient "github.com/pivotal-cf/pcfdev-cli/vm/client"
 	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
+	"net/http"
 )
 
 var (
@@ -101,7 +102,11 @@ func main() {
 		},
 		Config: conf,
 	}
-
+	httpClientIgnoringEnvironmentProxies := &http.Client{
+		Transport: &http.Transport{
+			Proxy: nil,
+		},
+	}
 	cfplugin.Start(&plugin.Plugin{
 		UI:     &plugin.NonTranslatingUI{cfui},
 		Config: conf,
@@ -126,7 +131,10 @@ func main() {
 				Config: conf,
 				FS:     fileSystem,
 				SSH:    sshClient,
-				Client: &vmClient.Client{Timeout: time.Second * 20},
+				Client: &vmClient.Client{
+					Timeout: time.Second * 20,
+					HttpClient: httpClientIgnoringEnvironmentProxies,
+				},
 			},
 		},
 	})

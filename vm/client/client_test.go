@@ -19,6 +19,7 @@ var _ = Describe("Pivnet Client", func() {
 	BeforeEach(func() {
 		client = &c.Client{
 			Timeout: time.Millisecond,
+			HttpClient: http.DefaultClient,
 		}
 	})
 

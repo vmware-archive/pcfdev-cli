@@ -61,7 +61,6 @@ var _ = Describe("PCF Dev", func() {
 	})
 
 	AfterEach(func() {
-		Expect(os.RemoveAll(tempHome)).To(Succeed())
 		os.Setenv("CF_HOME", oldCFHome)
 		os.Setenv("CF_PLUGIN_HOME", oldCFPluginHome)
 		os.Setenv("PCFDEV_HOME", oldPCFDevHome)
@@ -73,6 +72,8 @@ var _ = Describe("PCF Dev", func() {
 			exec.Command(vBoxManagePath, "controlvm", vm, "poweroff").Run()
 			exec.Command(vBoxManagePath, "unregistervm", vm, "--delete").Run()
 		}
+
+		Expect(os.RemoveAll(tempHome)).To(Succeed())
 	})
 
 	Context("when run directly", func() {

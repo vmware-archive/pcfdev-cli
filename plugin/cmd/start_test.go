@@ -9,10 +9,10 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/cmd"
 	"github.com/pivotal-cf/pcfdev-cli/plugin/cmd/mocks"
+	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	vmMocks "github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 	"os"
-	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 )
 
 var _ = Describe("StartCmd", func() {

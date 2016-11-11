@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	guid "github.com/nu7hatch/gouuid"
+	"github.com/pivotal-cf/pcfdev-cli/helpers"
 )
 
 func ImportSnappy() (vmName string, err error) {

@@ -28,23 +28,23 @@ func (_m *MockClient) EXPECT() *_MockClientRecorder {
 	return _m.recorder
 }
 
-func (_m *MockClient) ReplaceSecrets(_param0 string, _param1 string) error {
-	ret := _m.ctrl.Call(_m, "ReplaceSecrets", _param0, _param1)
+func (_m *MockClient) ReplaceSecrets(_param0 string, _param1 string, _param2 []byte) error {
+	ret := _m.ctrl.Call(_m, "ReplaceSecrets", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockClientRecorder) ReplaceSecrets(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ReplaceSecrets", arg0, arg1)
+func (_mr *_MockClientRecorder) ReplaceSecrets(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ReplaceSecrets", arg0, arg1, arg2)
 }
 
-func (_m *MockClient) Status(_param0 string) (string, error) {
-	ret := _m.ctrl.Call(_m, "Status", _param0)
+func (_m *MockClient) Status(_param0 string, _param1 []byte) (string, error) {
+	ret := _m.ctrl.Call(_m, "Status", _param0, _param1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockClientRecorder) Status(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Status", arg0)
+func (_mr *_MockClientRecorder) Status(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Status", arg0, arg1)
 }

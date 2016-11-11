@@ -9,8 +9,8 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/downloader"
 	"github.com/pivotal-cf/pcfdev-cli/runner"
-	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
+	"github.com/pivotal-cf/pcfdev-cli/vm"
 )
 
 //go:generate mockgen -package mocks -destination mocks/ui.go github.com/pivotal-cf/pcfdev-cli/plugin/cmd UI

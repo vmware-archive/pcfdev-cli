@@ -152,6 +152,51 @@ func (s *SSH) GenerateKeypair() ([]byte, []byte, error) {
 	return encodedPrivateKey.Bytes(), ssh.MarshalAuthorizedKey(publicKey), nil
 }
 
+func (s *SSH) WithSSHTunnel(remoteAddress string, sshAddresses []SSHAddress, privateKey []byte, timeout time.Duration, block func(forwardingAddress string)) error {
+	client, err := s.waitForSSH(sshAddresses, privateKey, timeout)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	localListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return err
+	}
+	defer localListener.Close()
+
+	var tunnelError error
+	go func() {
+		for {
+			localConn, err := localListener.Accept()
+			if err != nil {
+				tunnelError = err
+				return
+			}
+
+			go func(conn net.Conn) {
+				defer conn.Close()
+
+				sshTunnel, err := client.Dial("tcp", remoteAddress)
+				if err != nil {
+					tunnelError = err
+					return
+				}
+				defer sshTunnel.Close()
+
+				go func() {
+					io.Copy(conn, sshTunnel)
+				}()
+
+				io.Copy(sshTunnel, conn)
+			}(localConn)
+		}
+	}()
+
+	block("http://" + localListener.Addr().String())
+	return tunnelError
+}
+
 func (s *SSH) newSession(addresses []SSHAddress, privateKey []byte, timeout time.Duration) (*ssh.Client, *ssh.Session, error) {
 	client, err := s.waitForSSH(addresses, privateKey, timeout)
 	if err != nil {

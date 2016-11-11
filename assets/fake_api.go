@@ -10,7 +10,7 @@ func main() {
 		w.Write([]byte(`{"status":"Running"}`))
 	})
 
-	if err := http.ListenAndServe(":8090", nil); err != nil {
+	if err := http.ListenAndServe("127.0.0.1:8090", nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }

@@ -27,8 +27,8 @@ import (
 	"github.com/cloudfoundry/cli/cf/terminal"
 	cfplugin "github.com/cloudfoundry/cli/plugin"
 	"github.com/kardianos/osext"
-	vmClient "github.com/pivotal-cf/pcfdev-cli/vm/client"
 	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
+	vmClient "github.com/pivotal-cf/pcfdev-cli/vm/client"
 	"net/http"
 )
 
@@ -132,8 +132,9 @@ func main() {
 				FS:     fileSystem,
 				SSH:    sshClient,
 				Client: &vmClient.Client{
-					Timeout: time.Second * 20,
+					Timeout:    time.Second * 20,
 					HttpClient: httpClientIgnoringEnvironmentProxies,
+					SSHClient:  sshClient,
 				},
 			},
 		},

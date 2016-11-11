@@ -16,6 +16,8 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/ssh/mocks"
 	"github.com/pivotal-cf/pcfdev-cli/test_helpers"
 
+	"net/http"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -265,18 +267,12 @@ var _ = Describe("ssh", func() {
 			)
 
 			BeforeEach(func() {
-				var err error
 				stdin = gbytes.NewBuffer()
 				stdout = gbytes.NewBuffer()
 				stderr = gbytes.NewBuffer()
-				vmName, err = test_helpers.ImportSnappy()
-				Expect(err).NotTo(HaveOccurred())
-
-				ip, port, err = s.GenerateAddress()
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
-				Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
+			})
+			BeforeEach(func() {
+				vmName, ip, port = setupSnappyWithSSHAccess(s, vBoxManagePath)
 			})
 
 			AfterEach(func() {
@@ -365,4 +361,85 @@ var _ = Describe("ssh", func() {
 			Expect(gossh.MarshalAuthorizedKey(signer.PublicKey())).To(Equal(publicKey))
 		})
 	})
+
+	Describe("#WithSSHTunnel", func() {
+		Context("when SSH is available", func() {
+			BeforeEach(func() {
+				vmName, ip, port = setupSnappyWithSSHAccess(s, vBoxManagePath)
+			})
+
+			AfterEach(func() {
+				Expect(exec.Command(vBoxManagePath, "controlvm", vmName, "poweroff").Run()).To(Succeed())
+				Eventually(func() error {
+					return exec.Command(vBoxManagePath, "unregistervm", vmName, "--delete").Run()
+				}, "10s").Should(Succeed())
+			})
+
+			It("should execute a command after creating an SSH tunnel", func() {
+				remoteListenPort := "8080"
+
+				go func() {
+					defer GinkgoRecover()
+					s.RunSSHCommand("/home/vcap/snappy_server", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Second, GinkgoWriter, GinkgoWriter)
+				}()
+
+				sshAttempts := 0
+				for {
+					output, err := s.GetSSHOutput(fmt.Sprintf("nc -z localhost %s && echo -n success", remoteListenPort), []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Second)
+					if output == "success" && err == nil {
+						break
+					}
+					if sshAttempts == 30 {
+						Fail(fmt.Sprintf("Timeout error trying to connect to Snappy server: %s", err.Error()))
+					}
+					sshAttempts++
+					time.Sleep(time.Second)
+				}
+
+				var responseBody string
+				err := s.WithSSHTunnel("127.0.0.1"+":"+remoteListenPort, []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Second, func(forwardingAddress string) {
+					httpResponse, err := http.DefaultClient.Get(forwardingAddress)
+					Expect(err).NotTo(HaveOccurred())
+					defer httpResponse.Body.Close()
+
+					rawResponseBody, err := ioutil.ReadAll(httpResponse.Body)
+					Expect(err).NotTo(HaveOccurred())
+
+					responseBody = string(rawResponseBody)
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(responseBody).To(Equal("Response from Snappy server"), "Expected to get a response from the tunneled http call")
+			})
+
+			Context("when the remote address is invalid", func() {
+				It("should return an error", func() {
+					err := s.WithSSHTunnel("some-address-without-port", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Second, func(forwardingAddress string) {
+						http.DefaultClient.Get(forwardingAddress)
+					})
+					Expect(err).To(MatchError(ContainSubstring("missing port in address")))
+				})
+			})
+
+		})
+
+		Context("when SSHing fails", func() {
+			It("should return an error", func() {
+				err := s.WithSSHTunnel("some-correct-address", []ssh.SSHAddress{{IP: "some-bad-ip", Port: "some-bad-port"}}, privateKeyBytes, time.Second, func(string) {})
+				Expect(err).To(MatchError(ContainSubstring("ssh connection timed out")))
+			})
+		})
+	})
 })
+
+func setupSnappyWithSSHAccess(sshTools *ssh.SSH, vBoxManagePath string) (string, string, string) {
+	vmName, err := test_helpers.ImportSnappy()
+	Expect(err).NotTo(HaveOccurred())
+
+	ip, port, err := sshTools.GenerateAddress()
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
+	Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
+
+	return vmName, ip, port
+}

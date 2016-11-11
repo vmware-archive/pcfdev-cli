@@ -66,8 +66,8 @@ type CertStore interface {
 
 //go:generate mockgen -package mocks -destination mocks/client.go github.com/pivotal-cf/pcfdev-cli/vm Client
 type Client interface {
-	Status(host string) (string, error)
-	ReplaceSecrets(host, password string) error
+	Status(host string, privateKey []byte) (string, error)
+	ReplaceSecrets(host, password string, privateKey []byte) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/pivotal-cf/pcfdev-cli/vm FS

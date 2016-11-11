@@ -7,20 +7,21 @@ import (
 	"path/filepath"
 
 	cMD5 "crypto/md5"
+	"io"
+	"os"
+	"os/exec"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-	"io"
-	"os"
-	"os/exec"
 )
 
 const (
 	VmName                = "pcfdev-test"
 	ReleaseID             = "1622"
 	TestOvaProductFileID  = "5689"
-	TestOvaMd5            = "5b0ec261b849ea3f2845e111fcc22bea"
+	TestOvaMd5            = "e2783010482b0e01f57583074f587c49"
 	EmptyOvaProductFileId = "8883"
 	EmptyOvaMd5           = "8cfb57f0b6f0305cf6797fe361ed738a"
 )

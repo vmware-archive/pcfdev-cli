@@ -11,7 +11,6 @@ import (
 	"github.com/docker/docker/pkg/term"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
-	"github.com/pivotal-cf/pcfdev-cli/vm/client"
 )
 
 type Unprovisioned struct {
@@ -47,7 +46,12 @@ func (u *Unprovisioned) Status() string {
 
 func (u *Unprovisioned) Provision(opts *StartOpts) error {
 	if opts.MasterPassword != "" {
-		if err := u.Client.ReplaceSecrets(fmt.Sprintf("http://%s:%d", u.VMConfig.IP, client.APIPort), opts.MasterPassword); err != nil {
+		privateKey, err := u.FS.Read(u.Config.PrivateKeyPath)
+		if err != nil {
+			return err
+		}
+
+		if err := u.Client.ReplaceSecrets(u.VMConfig.IP, opts.MasterPassword, privateKey); err != nil {
 			return err
 		}
 	}

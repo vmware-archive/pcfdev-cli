@@ -2,12 +2,6 @@ package vm
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
-	"time"
-
-	"fmt"
-
 	"github.com/cloudfoundry/cli/cf/terminal"
 	"github.com/cloudfoundry/cli/cf/trace"
 	"github.com/pivotal-cf/pcfdev-cli/cert"
@@ -16,11 +10,11 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/fs"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/runner"
-	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/ui"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
-	"github.com/pivotal-cf/pcfdev-cli/vm/client"
 	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
+	"os"
+	"path/filepath"
 )
 
 type VBoxBuilder struct {
@@ -127,7 +121,15 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			Network:  &network.Network{},
 		}, nil
 	case vbox.StatusRunning:
-		output, err := b.Client.Status(fmt.Sprintf("http://%s:%d", vmConfig.IP, client.APIPort))
+		key, err := b.FS.Read(b.Config.PrivateKeyPath)
+		if err != nil {
+			return &Invalid{
+				Err: errors.New("unable to read private key"),
+			}, nil
+		}
+
+		output, err := b.Client.Status(vmConfig.IP, key)
+
 		if output == "Unprovisioned" || err != nil {
 			return unprovisionedVm, nil
 		} else if output == "Running" {
@@ -181,28 +183,4 @@ func (b *VBoxBuilder) getVMConfig(vmName string, status string) (*config.VMConfi
 		}, nil
 	}
 	return b.VBox.VMConfig(vmName)
-}
-
-func (b *VBoxBuilder) healthcheck(ip string, sshPort string) (string, error) {
-	healthCheckCommand := "sudo /var/pcfdev/health-check"
-	privateKeyBytes, err := b.FS.Read(b.Config.PrivateKeyPath)
-	if err != nil {
-		return "", err
-	}
-
-	return b.SSH.GetSSHOutput(
-		healthCheckCommand,
-		[]ssh.SSHAddress{
-			{
-				IP:   "127.0.0.1",
-				Port: sshPort,
-			},
-			{
-				IP:   ip,
-				Port: "22",
-			},
-		},
-		privateKeyBytes,
-		20*time.Second,
-	)
 }

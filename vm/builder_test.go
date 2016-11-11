@@ -2,12 +2,12 @@ package vm_test
 
 import (
 	"errors"
-	"path/filepath"
 	"github.com/golang/mock/gomock"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,13 +16,13 @@ import (
 var _ = Describe("Builder", func() {
 	Describe("#VM", func() {
 		var (
-			mockCtrl *gomock.Controller
-			mockVBox *mocks.MockVBox
-			mockFS   *mocks.MockFS
-			mockSSH  *mocks.MockSSH
+			mockCtrl   *gomock.Controller
+			mockVBox   *mocks.MockVBox
+			mockFS     *mocks.MockFS
+			mockSSH    *mocks.MockSSH
 			mockClient *mocks.MockClient
-			builder  *vm.VBoxBuilder
-			conf     *config.Config
+			builder    *vm.VBoxBuilder
+			conf       *config.Config
 		)
 
 		BeforeEach(func() {
@@ -156,7 +156,8 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockClient.EXPECT().Status("http://192.168.11.11:8090").Return("Running", nil),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
+						mockClient.EXPECT().Status("192.168.11.11", []byte("some-private-key")).Return("Running", nil),
 					)
 
 					runningVM, err := builder.VM("some-vm")
@@ -193,7 +194,8 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockClient.EXPECT().Status("http://192.168.11.11:8090").Return("Unprovisioned", nil),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
+						mockClient.EXPECT().Status("192.168.11.11", []byte("some-private-key")).Return("Unprovisioned", nil),
 					)
 
 					unprovisionedVM, err := builder.VM("some-vm")
@@ -224,7 +226,8 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockClient.EXPECT().Status("http://192.168.11.11:8090").Return("some-unexpected-status", nil),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
+						mockClient.EXPECT().Status("192.168.11.11", []byte("some-private-key")).Return("some-unexpected-status", nil),
 					)
 
 					invalidVM, err := builder.VM("some-vm")
@@ -239,8 +242,8 @@ var _ = Describe("Builder", func() {
 				})
 			})
 
-			Context("when vm is running but the client returns an error", func() {
-				It("should return an error", func() {
+			Context("when getting private key returns an error", func() {
+				It("should return an invalid vm", func() {
 					expectedVMConfig := &config.VMConfig{
 						IP:      "192.168.11.11",
 						Memory:  uint64(3456),
@@ -251,7 +254,35 @@ var _ = Describe("Builder", func() {
 					gomock.InOrder(
 						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
 						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
-						mockClient.EXPECT().Status("http://192.168.11.11:8090").Return("", errors.New("some-error")),
+						mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error")),
+					)
+
+					invalidVM, err := builder.VM("some-vm")
+					Expect(err).NotTo(HaveOccurred())
+
+					switch u := invalidVM.(type) {
+					case *vm.Invalid:
+						Expect(u.Err).To(MatchError("unable to read private key"))
+					default:
+						Fail("wrong type")
+					}
+				})
+			})
+
+			Context("when vm is running but the client returns an error", func() {
+				It("should return an unprovisioned vm", func() {
+					expectedVMConfig := &config.VMConfig{
+						IP:      "192.168.11.11",
+						Memory:  uint64(3456),
+						SSHPort: "some-port",
+						Domain:  "local.pcfdev.io",
+					}
+
+					gomock.InOrder(
+						mockVBox.EXPECT().VMStatus("some-vm").Return(vbox.StatusRunning, nil),
+						mockVBox.EXPECT().VMConfig("some-vm").Return(expectedVMConfig, nil),
+						mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
+						mockClient.EXPECT().Status("192.168.11.11", []byte("some-private-key")).Return("", errors.New("some-error")),
 					)
 
 					unprovisionedVM, err := builder.VM("some-vm")

@@ -71,3 +71,4 @@ assets/output-virtualbox-iso
 assets/*.box
 assets/fake_pcfdev_server
 assets/fake_api
+assets/snappy_server

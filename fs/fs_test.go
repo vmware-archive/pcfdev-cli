@@ -11,6 +11,8 @@ import (
 
 	pcfdevfs "github.com/pivotal-cf/pcfdev-cli/fs"
 
+	"runtime"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -392,6 +394,12 @@ var _ = Describe("Filesystem", func() {
 	})
 
 	Describe("#Chmod", func() {
+		BeforeEach(func() {
+			if runtime.GOOS == "windows" {
+				Skip("Chmod is not applicable to windows")
+			}
+		})
+
 		It("should change permissions of a file or directory", func() {
 			path := filepath.Join(tmpDir, "some-file")
 			Expect(ioutil.WriteFile(path, []byte{}, 0644)).To(Succeed())

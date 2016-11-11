@@ -13,6 +13,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/docker/docker/pkg/term"
 )
 
 var _ = Describe("Unprovisioned", func() {
@@ -329,9 +330,11 @@ var _ = Describe("Unprovisioned", func() {
 				{IP: "127.0.0.1", Port: "some-port"},
 				{IP: "some-ip", Port: "22"},
 			}
+			stdin, stdout, stderr := term.StdStreams()
+
 			gomock.InOrder(
 				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-				mockSSH.EXPECT().StartSSHSession(addresses, []byte("some-private-key"), 5*time.Minute, os.Stdin, os.Stdout, os.Stderr),
+				mockSSH.EXPECT().StartSSHSession(addresses, []byte("some-private-key"), 5*time.Minute, stdin, stdout, stderr),
 			)
 
 			Expect(unprovisioned.SSH()).To(Succeed())
@@ -351,9 +354,11 @@ var _ = Describe("Unprovisioned", func() {
 					{IP: "127.0.0.1", Port: "some-port"},
 					{IP: "some-ip", Port: "22"},
 				}
+				stdin, stdout, stderr := term.StdStreams()
+
 				gomock.InOrder(
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().StartSSHSession(addresses, []byte("some-private-key"), 5*time.Minute, os.Stdin, os.Stdout, os.Stderr).Return(errors.New("some-error")),
+					mockSSH.EXPECT().StartSSHSession(addresses, []byte("some-private-key"), 5*time.Minute, stdin, stdout, stderr).Return(errors.New("some-error")),
 				)
 
 				Expect(unprovisioned.SSH()).To(MatchError("some-error"))

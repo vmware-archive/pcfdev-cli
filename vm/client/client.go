@@ -37,12 +37,6 @@ func (c *Client) Status(sshIP string, privateKey []byte) (string, error) {
 		privateKey,
 		time.Minute,
 		func(host string) {
-			canPing := c.waitForPing(host)
-			if !canPing {
-				errorInTunnel = &PCFDevVmUnreachableError{}
-				return
-			}
-
 			var err error
 			resp, err = c.HttpClient.Get(fmt.Sprintf("%s/status", host))
 			if err != nil {
@@ -151,26 +145,4 @@ type ReplaceMasterPasswordError struct {
 
 func (e *ReplaceMasterPasswordError) Error() string {
 	return fmt.Sprintf("failed to replace master password: %s", e.Err)
-}
-
-func (c *Client) waitForPing(host string) bool {
-	pingChannel := make(chan bool)
-	timeoutChannel := time.After(c.Timeout)
-	go func() {
-		for {
-			select {
-			case <-timeoutChannel:
-				pingChannel <- false
-				return
-			default:
-				if resp, err := c.HttpClient.Get(host); err == nil {
-					resp.Body.Close()
-					pingChannel <- true
-					return
-				}
-				time.Sleep(10 * time.Millisecond)
-			}
-		}
-	}()
-	return <-pingChannel
 }

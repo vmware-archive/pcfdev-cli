@@ -78,17 +78,9 @@ var _ = Describe("ssh", func() {
 			)
 
 			BeforeEach(func() {
-				var err error
 				stdout = gbytes.NewBuffer()
 				stderr = gbytes.NewBuffer()
-				vmName, err = test_helpers.ImportSnappy()
-				Expect(err).NotTo(HaveOccurred())
-
-				ip, port, err = s.GenerateAddress()
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
-				Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
+				vmName, ip, port = setupSnappyWithSSHAccess(s, vBoxManagePath)
 			})
 
 			AfterEach(func() {
@@ -133,15 +125,7 @@ var _ = Describe("ssh", func() {
 	Describe("#WaitForSSH", func() {
 		Context("when SSH is available", func() {
 			BeforeEach(func() {
-				var err error
-				vmName, err = test_helpers.ImportSnappy()
-				Expect(err).NotTo(HaveOccurred())
-
-				ip, port, err = s.GenerateAddress()
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
-				Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
+				vmName, ip, port = setupSnappyWithSSHAccess(s, vBoxManagePath)
 			})
 
 			AfterEach(func() {
@@ -208,15 +192,7 @@ var _ = Describe("ssh", func() {
 	Describe("#GetSSHOutput", func() {
 		Context("when SSH is available", func() {
 			BeforeEach(func() {
-				var err error
-				vmName, err = test_helpers.ImportSnappy()
-				Expect(err).NotTo(HaveOccurred())
-
-				ip, port, err = s.GenerateAddress()
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(exec.Command(vBoxManagePath, "modifyvm", vmName, "--natpf1", fmt.Sprintf("ssh,tcp,127.0.0.1,%s,,22", port)).Run()).To(Succeed())
-				Expect(exec.Command(vBoxManagePath, "startvm", vmName, "--type", "headless").Run()).To(Succeed())
+				vmName, ip, port = setupSnappyWithSSHAccess(s, vBoxManagePath)
 			})
 
 			AfterEach(func() {

@@ -120,7 +120,7 @@ type PCFDevVmUnreachableError struct {
 }
 
 func (e *PCFDevVmUnreachableError) Error() string {
-	return fmt.Sprintf("failed to talk to PCF Dev VM: %s", e.Err)
+	return fmt.Sprintf("failed to talk to PCF Dev VM: %+v", e.Err)
 }
 
 type StatusRetrievalError struct {
@@ -128,7 +128,7 @@ type StatusRetrievalError struct {
 }
 
 func (e *StatusRetrievalError) Error() string {
-	return fmt.Sprintf("failed to retrieve status: %s", e.Err)
+	return fmt.Sprintf("failed to retrieve status: %+v", e.Err)
 }
 
 type InvalidJSONError struct {
@@ -136,7 +136,7 @@ type InvalidJSONError struct {
 }
 
 func (e *InvalidJSONError) Error() string {
-	return fmt.Sprintf("failed to parse JSON response: %s", e.Err)
+	return fmt.Sprintf("failed to parse JSON response: %+v", e.Err)
 }
 
 type ReplaceMasterPasswordError struct {
@@ -144,5 +144,5 @@ type ReplaceMasterPasswordError struct {
 }
 
 func (e *ReplaceMasterPasswordError) Error() string {
-	return fmt.Sprintf("failed to replace master password: %s", e.Err)
+	return fmt.Sprintf("failed to replace master password: %+v", e.Err)
 }

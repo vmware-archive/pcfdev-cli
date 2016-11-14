@@ -87,7 +87,9 @@ var _ = Describe("PCF Dev Client", func() {
 				})
 
 				_, err := client.Status("some-ip", []byte("some-private-key"))
-				Expect(err).To(MatchError(ContainSubstring("failed to talk to PCF Dev VM:")))
+				errorMessage := err.Error()
+				Expect(errorMessage).To(ContainSubstring("failed to talk to PCF Dev VM"))
+				Expect(errorMessage).To(MatchRegexp(`[nN]o such host`))
 			})
 		})
 

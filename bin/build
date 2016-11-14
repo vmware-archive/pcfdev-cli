@@ -9,9 +9,9 @@ then
   vm_name="pcfdev-test"
   release_id="1622"
   product_file_id="5689"
-  md5="e2783010482b0e01f57583074f587c49"
+  md5="bc883063adadf375d830934fd52c367b"
   ova_version="0"
-  insecure_private_key=$(cat $pcfdev_cli_path/assets/insecure.key)
+  insecure_private_key=$(cat $pcfdev_cli_path/assets/test-private-key.pem)
 else
   if [[ "$1" == "internal" ]]
   then
@@ -24,7 +24,7 @@ else
   product_file_id=$(echo "$metadata" | jq -r .id)
   md5=$(echo "$metadata" | jq -r .md5)
   ova_version=$(echo "$metadata" | jq -r .version | tr -d v)
-  insecure_private_key=$(cat $pcfdev_cli_path/assets/secure.key)
+  insecure_private_key=$(cat $pcfdev_cli_path/assets/private-key.pem)
 fi
 
 pushd "$pcfdev_cli_path" >/dev/null

@@ -21,7 +21,7 @@ const (
 	VmName                = "pcfdev-test"
 	ReleaseID             = "1622"
 	TestOvaProductFileID  = "5689"
-	TestOvaMd5            = "e2783010482b0e01f57583074f587c49"
+	TestOvaMd5            = "bc883063adadf375d830934fd52c367b"
 	EmptyOvaProductFileId = "8883"
 	EmptyOvaMd5           = "8cfb57f0b6f0305cf6797fe361ed738a"
 )
@@ -50,7 +50,7 @@ func DownloadTestOva(releaseID, productFileID, destination string) {
 }
 
 func CompileCLI(releaseID, productFileID, md5 string, vmName string) string {
-	insecurePrivateKeyBytes, err := ioutil.ReadFile(filepath.Join("..", "assets", "insecure.key"))
+	insecurePrivateKeyBytes, err := ioutil.ReadFile(filepath.Join("..", "assets", "test-private-key.pem"))
 	Expect(err).NotTo(HaveOccurred())
 
 	pluginPath, err := gexec.Build(filepath.Join("github.com", "pivotal-cf", "pcfdev-cli"), "-ldflags",

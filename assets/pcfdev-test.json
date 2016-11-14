@@ -63,8 +63,8 @@
         },
         {
             "type": "file",
-            "source": "insecure.pub",
-            "destination": "/tmp/insecure.pub"
+            "source": "test-public-key.pem",
+            "destination": "/tmp/test-public-key.pem"
         },
         {
             "type": "shell",
@@ -99,7 +99,7 @@
                 "chmod +x /var/pcfdev/provision",
 
 				"mkdir -p /home/vcap/.ssh",
-				"mv /tmp/insecure.pub /home/vcap/.ssh/authorized_keys",
+				"mv /tmp/test-public-key.pem /home/vcap/.ssh/authorized_keys",
 
                 "echo '#!/bin/bash' > /var/pcfdev/health-check",
                 "echo \"if [ -f /run/pcfdev-healthcheck ]\nthen\ncat /run/pcfdev-healthcheck\nfi\" >> /var/pcfdev/health-check",

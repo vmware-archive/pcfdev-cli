@@ -48,7 +48,7 @@ var _ = Describe("ssh", func() {
 		vBoxManagePath, err = helpers.VBoxManagePath()
 		Expect(err).NotTo(HaveOccurred())
 
-		privateKeyBytes, err = ioutil.ReadFile(filepath.Join("..", "assets", "insecure.key"))
+		privateKeyBytes, err = ioutil.ReadFile(filepath.Join("..", "assets", "test-private-key.pem"))
 		Expect(err).NotTo(HaveOccurred())
 
 		vmName, ip, port, secondIp, secondPort = setupSnappyWithSSHAccess(s, vBoxManagePath)

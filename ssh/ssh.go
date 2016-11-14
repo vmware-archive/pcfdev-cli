@@ -128,7 +128,10 @@ func (s *SSH) StartSSHSession(addresses []SSHAddress, privateKey []byte, timeout
 }
 
 func (s *SSH) WaitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.Duration) error {
-	_, err := s.waitForSSH(addresses, privateKey, timeout)
+	client, err := s.waitForSSH(addresses, privateKey, timeout)
+	if err == nil {
+		client.Close()
+	}
 	return err
 }
 

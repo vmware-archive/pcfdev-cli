@@ -380,7 +380,7 @@ var _ = Describe("ssh", func() {
 
 				go func() {
 					defer GinkgoRecover()
-					s.RunSSHCommand("/home/vcap/snappy_server", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Second, GinkgoWriter, GinkgoWriter)
+					s.RunSSHCommand("/home/vcap/snappy_server", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, time.Minute, GinkgoWriter, GinkgoWriter)
 				}()
 
 				sshAttempts := 0
@@ -413,7 +413,7 @@ var _ = Describe("ssh", func() {
 
 			Context("when the remote address is invalid", func() {
 				It("should return an error", func() {
-					err := s.WithSSHTunnel("some-address-without-port", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, 5*time.Second, func(forwardingAddress string) {
+					err := s.WithSSHTunnel("some-address-without-port", []ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, time.Minute, func(forwardingAddress string) {
 						http.DefaultClient.Get(forwardingAddress)
 					})
 					Expect(err).To(MatchError(ContainSubstring("missing port in address")))

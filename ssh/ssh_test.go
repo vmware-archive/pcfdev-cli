@@ -41,7 +41,7 @@ var _ = Describe("ssh", func() {
 	)
 
 	timeToFail := 10 * time.Millisecond
-	timeToConnect := 5 * time.Second
+	timeToConnect := time.Minute
 
 	BeforeSuite(func() {
 		var err error

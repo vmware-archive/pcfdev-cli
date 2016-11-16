@@ -173,7 +173,7 @@ func (r *Running) GetDebugLogs() error {
 	return nil
 }
 
-func (r *Running) SSH() error {
+func (r *Running) SSH(opts *SSHOpts) error {
 	privateKeyBytes, err := r.FS.Read(r.Config.PrivateKeyPath)
 	if err != nil {
 		return err
@@ -183,7 +183,11 @@ func (r *Running) SSH() error {
 		{IP: "127.0.0.1", Port: r.VMConfig.SSHPort},
 		{IP: r.VMConfig.IP, Port: "22"},
 	}
-
+	timeout := 5 * time.Minute
 	stdin, stdout, stderr := term.StdStreams()
-	return r.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
+
+	if opts.Command != "" {
+		return r.SSHClient.RunSSHCommand(opts.Command, addresses, privateKeyBytes, timeout, stdout, stderr)
+	}
+	return r.SSHClient.StartSSHSession(addresses, privateKeyBytes, timeout, stdin, stdout, stderr)
 }

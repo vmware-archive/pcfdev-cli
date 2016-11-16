@@ -11,9 +11,9 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 
+	"github.com/docker/docker/pkg/term"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/docker/docker/pkg/term"
 )
 
 var _ = Describe("Unprovisioned", func() {
@@ -337,14 +337,34 @@ var _ = Describe("Unprovisioned", func() {
 				mockSSH.EXPECT().StartSSHSession(addresses, []byte("some-private-key"), 5*time.Minute, stdin, stdout, stderr),
 			)
 
-			Expect(unprovisioned.SSH()).To(Succeed())
+			Expect(unprovisioned.SSH(nil)).To(Succeed())
+		})
+
+		FContext("when ssh opts has options", func() {
+			It("should execute command and return", func() {
+				addresses := []ssh.SSHAddress{
+					{IP: "127.0.0.1", Port: "some-port"},
+					{IP: "some-ip", Port: "22"},
+				}
+				_, stdout, stderr := term.StdStreams()
+				opts := &vm.SSHOpts{Command: "echo hello"}
+				privateKey := "some-private-key"
+				privateKeyBytes := []byte(privateKey)
+
+				gomock.InOrder(
+					mockFS.EXPECT().Read("some-private-key-path").Return(privateKeyBytes, nil),
+					mockSSH.EXPECT().RunSSHCommand(opts.Command, addresses, privateKeyBytes, 5*time.Minute, stdout, stderr),
+				)
+
+				Expect(unprovisioned.SSH(opts)).To(Succeed())
+			})
 		})
 
 		Context("when reading the private key fails", func() {
 			It("should return an error", func() {
 				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
 
-				Expect(unprovisioned.SSH()).To(MatchError("some-error"))
+				Expect(unprovisioned.SSH(nil)).To(MatchError("some-error"))
 			})
 		})
 
@@ -361,7 +381,7 @@ var _ = Describe("Unprovisioned", func() {
 					mockSSH.EXPECT().StartSSHSession(addresses, []byte("some-private-key"), 5*time.Minute, stdin, stdout, stderr).Return(errors.New("some-error")),
 				)
 
-				Expect(unprovisioned.SSH()).To(MatchError("some-error"))
+				Expect(unprovisioned.SSH(nil)).To(MatchError("some-error"))
 			})
 		})
 	})

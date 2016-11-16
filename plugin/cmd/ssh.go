@@ -12,10 +12,20 @@ type SSHCmd struct {
 	VMBuilder VMBuilder
 	VBox      VBox
 	Config    *config.Config
+	Opts      *vm.SSHOpts
 }
 
 func (s *SSHCmd) Parse(args []string) error {
-	return parse(flags.New(), args, SSH_ARGS)
+	flagsContext := flags.New()
+	flagsContext.NewStringFlag("c", "", "<command>")
+	if err := parse(flagsContext, args, SSH_ARGS); err != nil {
+		return err
+	}
+
+	s.Opts = &vm.SSHOpts{
+		Command: flagsContext.String("c"),
+	}
+	return nil
 }
 
 func (s *SSHCmd) Run() error {
@@ -23,7 +33,7 @@ func (s *SSHCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return vm.SSH()
+	return vm.SSH(s.Opts)
 }
 
 func (s *SSHCmd) getVM() (vm vm.VM, err error) {

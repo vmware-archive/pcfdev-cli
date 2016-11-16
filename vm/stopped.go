@@ -177,7 +177,7 @@ func (s *Stopped) Target(autoTarget bool) error {
 	return nil
 }
 
-func (s *Stopped) SSH() error {
+func (s *Stopped) SSH(opts *SSHOpts) error {
 	s.UI.Say("Your VM is currently stopped. Start VM to SSH to PCF Dev.")
 	return nil
 }

@@ -46,7 +46,7 @@ func (i *Invalid) Target(autoTarget bool) error {
 	return i.err()
 }
 
-func (i *Invalid) SSH() error {
+func (i *Invalid) SSH(opts *SSHOpts) error {
 	return i.err()
 }
 

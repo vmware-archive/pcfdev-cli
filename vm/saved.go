@@ -114,7 +114,7 @@ func (s *Saved) Target(autoTarget bool) error {
 	return nil
 }
 
-func (s *Saved) SSH() error {
+func (s *Saved) SSH(opts *SSHOpts) error {
 	s.UI.Say("Your VM is suspended. Resume to SSH to PCF Dev.")
 	return nil
 }

@@ -696,7 +696,7 @@ var _ = Describe("Stopped", func() {
 	Describe("SSH", func() {
 		It("should say a message", func() {
 			mockUI.EXPECT().Say("Your VM is currently stopped. Start VM to SSH to PCF Dev.")
-			Expect(stoppedVM.SSH()).To(Succeed())
+			Expect(stoppedVM.SSH(nil)).To(Succeed())
 		})
 	})
 })

@@ -349,6 +349,22 @@ var _ = Describe("PCF Dev", func() {
 		Eventually(session).Should(gbytes.Say("Running"))
 	})
 
+	Context("when ssh is run with a command", func() {
+		It("should parse the ssh command", func() {
+			pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1", "-o", ovaPath)
+			session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).To(BeNil())
+			Eventually(session, "10m").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("Services started"))
+
+			pcfsshWithCommand := exec.Command("cf", "dev", "ssh", "-c", "echo hello")
+			sshOutput, err := gexec.Start(pcfsshWithCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).To(BeNil())
+			Eventually(sshOutput, "10m").Should(gexec.Exit(0))
+			Expect(sshOutput).To(gbytes.Say("hello"))
+		})
+	})
+
 	Context("when ova is on pivnet or in a temp dir", func() {
 		var (
 			tempOVALocation string

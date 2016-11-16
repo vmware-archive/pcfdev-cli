@@ -113,7 +113,7 @@ func (u *Unprovisioned) Target(autoTarget bool) error {
 	return u.err()
 }
 
-func (u *Unprovisioned) SSH() error {
+func (u *Unprovisioned) SSH(opts *SSHOpts) error {
 	privateKeyBytes, err := u.FS.Read(u.Config.PrivateKeyPath)
 	if err != nil {
 		return err
@@ -125,7 +125,12 @@ func (u *Unprovisioned) SSH() error {
 	}
 
 	stdin, stdout, stderr := term.StdStreams()
-	return u.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
+	timeout := 5 * time.Minute
+
+	if opts.Command != "" {
+		return u.SSHClient.RunSSHCommand(opts.Command, addresses, privateKeyBytes, timeout, stdout, stderr)
+	}
+	return u.SSHClient.StartSSHSession(addresses, privateKeyBytes, timeout, stdin, stdout, stderr)
 }
 
 func (u *Unprovisioned) err() error {

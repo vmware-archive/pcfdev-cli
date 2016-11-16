@@ -355,13 +355,34 @@ var _ = Describe("Running", func() {
 				{IP: "some-ip", Port: "22"},
 			}
 			stdin, stdout, stderr := term.StdStreams()
+			opts := &vm.SSHOpts{}
 
 			gomock.InOrder(
 				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 				mockSSH.EXPECT().StartSSHSession(addresses, []byte("some-private-key"), 5*time.Minute, stdin, stdout, stderr),
 			)
 
-			Expect(runningVM.SSH()).To(Succeed())
+			Expect(runningVM.SSH(opts)).To(Succeed())
+		})
+
+		Context("when ssh opts has options", func() {
+			It("should execute command and return", func() {
+				addresses := []ssh.SSHAddress{
+					{IP: "127.0.0.1", Port: "some-port"},
+					{IP: "some-ip", Port: "22"},
+				}
+				_, stdout, stderr := term.StdStreams()
+				opts := &vm.SSHOpts{Command: "echo hello"}
+				privateKey := "some-private-key"
+				privateKeyBytes := []byte(privateKey)
+
+				gomock.InOrder(
+					mockFS.EXPECT().Read("some-private-key-path").Return(privateKeyBytes, nil),
+					mockSSH.EXPECT().RunSSHCommand(opts.Command, addresses, privateKeyBytes, 5*time.Minute, stdout, stderr),
+				)
+
+				Expect(runningVM.SSH(opts)).To(Succeed())
+			})
 		})
 
 		Context("when executing ssh fails", func() {
@@ -371,21 +392,23 @@ var _ = Describe("Running", func() {
 					{IP: "some-ip", Port: "22"},
 				}
 				stdin, stdout, stderr := term.StdStreams()
+				opts := &vm.SSHOpts{}
 
 				gomock.InOrder(
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().StartSSHSession(addresses, []byte("some-private-key"), 5*time.Minute, stdin, stdout, stderr).Return(errors.New("some-error")),
 				)
 
-				Expect(runningVM.SSH()).To(MatchError("some-error"))
+				Expect(runningVM.SSH(opts)).To(MatchError("some-error"))
 			})
 		})
 
 		Context("when reading the private key fails", func() {
 			It("should return an error", func() {
 				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
+				opts := &vm.SSHOpts{}
 
-				Expect(runningVM.SSH()).To(MatchError("some-error"))
+				Expect(runningVM.SSH(opts)).To(MatchError("some-error"))
 			})
 		})
 	})

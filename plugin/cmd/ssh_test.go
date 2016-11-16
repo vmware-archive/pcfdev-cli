@@ -55,14 +55,23 @@ var _ = Describe("SSHCmd", func() {
 				Expect(sshCmd.Parse([]string{"--some-bad-flag"})).NotTo(Succeed())
 			})
 		})
+		Context("when -c flag is passed", func() {
+			It("should parse command", func() {
+				parse := sshCmd.Parse([]string{"-c", "echo hello"})
+				Expect(parse).To(Succeed())
+				Expect(sshCmd.Opts.Command).To(Equal("echo hello"))
+			})
+		})
 	})
 
 	Describe("Run", func() {
 		It("should call SSH on the VM", func() {
+			sshCmd.Parse([]string{})
+			opts := sshCmd.Opts
 			gomock.InOrder(
 				mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
 				mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-				mockVM.EXPECT().SSH(),
+				mockVM.EXPECT().SSH(opts),
 			)
 
 			Expect(sshCmd.Run()).To(Succeed())
@@ -89,13 +98,28 @@ var _ = Describe("SSHCmd", func() {
 
 		Context("when there is an error SSHing to PCF Dev", func() {
 			It("should return the error", func() {
+				sshCmd.Parse([]string{})
+				opts := sshCmd.Opts
 				gomock.InOrder(
 					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
 					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-					mockVM.EXPECT().SSH().Return(errors.New("some-error")),
+					mockVM.EXPECT().SSH(opts).Return(errors.New("some-error")),
 				)
 
 				Expect(sshCmd.Run()).To(MatchError("some-error"))
+			})
+		})
+
+		Context("when -c flag is set", func() {
+			It("should run the command passed", func() {
+				sshCmd.Parse([]string{"-c", "echo hello"})
+				opts := sshCmd.Opts
+				gomock.InOrder(
+					mockVBox.EXPECT().GetVMName().Return("some-default-vm-name", nil),
+					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
+					mockVM.EXPECT().SSH(opts),
+				)
+				Expect(sshCmd.Run()).To(Succeed())
 			})
 		})
 	})

@@ -49,7 +49,7 @@ type VM interface {
 	GetDebugLogs() error
 	Trust(*StartOpts) error
 	Target(autoTarget bool) error
-	SSH() error
+	SSH(opts *SSHOpts) error
 
 	VerifyStartOpts(*StartOpts) error
 }
@@ -118,4 +118,8 @@ type StartOpts struct {
 	IP             string
 	Domain         string
 	MasterPassword string
+}
+
+type SSHOpts struct {
+	Command string
 }

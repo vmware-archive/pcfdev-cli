@@ -59,14 +59,14 @@ func (_mr *_MockVMRecorder) Resume() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Resume")
 }
 
-func (_m *MockVM) SSH() error {
-	ret := _m.ctrl.Call(_m, "SSH")
+func (_m *MockVM) SSH(_param0 *vm.SSHOpts) error {
+	ret := _m.ctrl.Call(_m, "SSH", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockVMRecorder) SSH() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SSH")
+func (_mr *_MockVMRecorder) SSH(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SSH", arg0)
 }
 
 func (_m *MockVM) Start(_param0 *vm.StartOpts) error {

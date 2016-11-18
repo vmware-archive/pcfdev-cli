@@ -162,11 +162,15 @@ var _ = Describe("PCF Dev", func() {
 		time.Sleep(time.Second)
 		fmt.Fprintln(sshPty, "sleep 99999999")
 		fmt.Fprintln(sshPty, interrupt)
-		fmt.Fprintln(sshPty, "echo 'Program was stopped by interrupt successfully' && >&2 echo 'Printing to stderr also works' && exit")
+		fmt.Fprintln(sshPty, "hostname && exit")
+
+		time.Sleep(5 * time.Second)
 		ptyOutput, err := ioutil.ReadAll(sshPty)
-		Expect(ptyOutput).To(ContainSubstring("Program was stopped by interrupt successfully"))
-		Expect(ptyOutput).To(ContainSubstring("Printing to stderr also works"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ptyOutput).To(ContainSubstring("Welcome to Ubuntu"))
+		Expect(ptyOutput).To(ContainSubstring("pcfdev"))
 		Expect(ptyOutput).To(ContainSubstring("logout"))
+
 		Expect(sshCommand.Wait()).To(Succeed())
 	})
 

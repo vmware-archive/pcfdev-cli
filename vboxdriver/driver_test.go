@@ -381,7 +381,7 @@ var _ = Describe("driver", func() {
 		})
 
 		It("should configure a preexisting hostonlyif", func() {
-			Expect(driver.ConfigureHostOnlyInterface(interfaceName, "192.168.11.1")).To(Succeed())
+			Expect(driver.ConfigureHostOnlyInterface(interfaceName, "192.192.99.1")).To(Succeed())
 
 			var name string
 			var ipAddress string
@@ -408,7 +408,7 @@ var _ = Describe("driver", func() {
 			}
 
 			Expect(name).To(Equal(interfaceName))
-			Expect(ipAddress).To(Equal("192.168.11.1"))
+			Expect(ipAddress).To(Equal("192.192.99.1"))
 			Expect(netMask).To(Equal("255.255.255.0"))
 		})
 

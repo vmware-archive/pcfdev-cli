@@ -153,6 +153,7 @@ func (b *Builder) Cmd(subcommand string) (Cmd, error) {
 				Config:     b.Config,
 				AutoTarget: true,
 			},
+			UI: b.UI,
 		}, nil
 	case "status":
 		return &StatusCmd{

@@ -35,6 +35,7 @@ var _ = Describe("PCF Dev", func() {
 		oldHTTPSProxy   string
 		oldNoProxy      string
 		vBoxManagePath  string
+		oldMasterPassword string
 	)
 
 	BeforeEach(func() {
@@ -44,6 +45,7 @@ var _ = Describe("PCF Dev", func() {
 		oldHTTPProxy = os.Getenv("HTTP_PROXY")
 		oldHTTPSProxy = os.Getenv("HTTPS_PROXY")
 		oldNoProxy = os.Getenv("NO_PROXY")
+		oldMasterPassword = os.Getenv("PCFDEV_MASTER_PASSWORD")
 
 		var err error
 		tempHome, err = ioutil.TempDir("", "pcfdev")
@@ -67,6 +69,7 @@ var _ = Describe("PCF Dev", func() {
 		os.Setenv("HTTP_PROXY", oldHTTPProxy)
 		os.Setenv("HTTPS_PROXY", oldHTTPSProxy)
 		os.Setenv("NO_PROXY", oldNoProxy)
+		os.Setenv("PCFDEV_MASTER_PASSWORD", oldMasterPassword)
 
 		for _, vm := range []string{VmName, "pcfdev-custom"} {
 			exec.Command(vBoxManagePath, "controlvm", vm, "poweroff").Run()
@@ -171,7 +174,7 @@ var _ = Describe("PCF Dev", func() {
 		Expect(sshCommand.Wait()).To(Succeed())
 	})
 
-	It("should start, stop, start again and destroy a virtualbox instance", func() {
+	FIt("should start, stop, start again and destroy a virtualbox instance", func() {
 		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1", "-o", ovaPath)
 		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
@@ -347,6 +350,22 @@ var _ = Describe("PCF Dev", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "2m").Should(gexec.Exit(0))
 		Eventually(session).Should(gbytes.Say("Running"))
+	})
+
+	It("starts with credentials replaced", func() {
+		os.Setenv("PCFDEV_MASTER_PASSWORD", "some-master-password")
+		pcfdevStartCommand := exec.Command("cf", "dev", "start", "-x", "-o", ovaPath)
+		session, err := gexec.Start(pcfdevStartCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "10m").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Services started"))
+		//
+		//pcfdevLoginCommand := exec.Command("cf", "login", "-u", "admin", "-p", "admin", "-a", "https://api.local.pcfdev.io", "--skip-ssl-validation", ovaPath)
+		//session, err = gexec.Start(pcfdevLoginCommand, GinkgoWriter, GinkgoWriter)
+		//Expect(err).NotTo(HaveOccurred())
+		//Eventually(session).Should(gbytes.Say("Credentials were rejected, please try again."))
+		//session.Kill()
+
 	})
 
 	Context("when ova is on pivnet or in a temp dir", func() {

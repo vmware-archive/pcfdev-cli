@@ -139,8 +139,8 @@ func (s *StartCmd) Run() error {
 }
 
 func (s *StartCmd) getPCFDevPassword() (string, error) {
-	if os.Getenv("PCFDEV_PASSWORD") != "" {
-		return os.Getenv("PCFDEV_PASSWORD"), nil
+	if os.Getenv("PCFDEV_MASTER_PASSWORD") != "" {
+		return os.Getenv("PCFDEV_MASTER_PASSWORD"), nil
 	}
 
 	password := s.UI.AskForPassword("Choose master password")

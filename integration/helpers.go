@@ -20,8 +20,6 @@ import (
 const (
 	VmName                = "pcfdev-test"
 	ReleaseID             = "1622"
-	TestOvaProductFileID  = "5689"
-	TestOvaMd5            = "bc883063adadf375d830934fd52c367b"
 	EmptyOvaProductFileId = "8883"
 	EmptyOvaMd5           = "8cfb57f0b6f0305cf6797fe361ed738a"
 )

@@ -1,23 +1,70 @@
 #!/bin/bash -e
 
-dir=$( cd $( dirname "${BASH_SOURCE[0]}" ) && cd ../assets && pwd )
+assets_dir=$( cd $( dirname "${BASH_SOURCE[0]}" ) && cd ../assets && pwd )
 
+eval $(~/Dropbox/export-pivnet)
 eval $(~/Dropbox/export-pivnet-aws)
 
 set -x
 
-pushd $dir >/dev/null
+timestamp=$(date +%s)
+internal_release_id=1622
+
+pushd $assets_dir >/dev/null
   GOOS=linux go build fake_pcfdev_server.go
   GOOS=linux go build fake_api.go
   packer build -force pcfdev-test.json
-  aws s3 cp $dir/output-virtualbox-iso/pcfdev-test.ova s3://pivotalnetwork/product_files/pcfdev/pcfdev-test.ova
-  md5=$(md5 $dir/output-virtualbox-iso/pcfdev-test.ova | cut -d ' ' -f 4)
-  curl \
-    -X PATCH \
-    -H "Authorization: Token $PIVNET_TOKEN" \
-    -d "{\"product_file\":{\"md5\":\"${md5}\"}}" \
-    https://network.pivotal.io/api/v2/products/pcfdev/product_files/5689
-  echo "MD5: $md5"
+
+  aws s3 cp $assets_dir/output-virtualbox-iso/pcfdev-test.ova s3://pivotalnetwork/product_files/pcfdev/pcfdev-test-${timestamp}.ova
+  md5=$(md5 $assets_dir/output-virtualbox-iso/pcfdev-test.ova | cut -d ' ' -f 4)
+
+  data=$(cat <<EOF
+{
+    "product_file": {
+        "aws_object_key": "product_files/pcfdev/pcfdev-test-${timestamp}.ova",
+        "file_type": "Software",
+        "file_version": "${timestamp}",
+        "md5": "${md5}",
+        "name": "pcfdev-test-${timestamp}.ova"
+    }
+}
+EOF
+)
+  response=$(curl -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Token ${PIVNET_TOKEN}" \
+    -X POST https://network.pivotal.io/api/v2/products/pcfdev/product_files \
+    -d "${data}"
+  )
+  product_file_id=$(echo ${response} | jq -r .product_file.id)
+  if [[ $product_file_id == "null" ]]; then
+    echo "failed to get product_file_id from pivnet response: ${response}"
+    exit 1
+  fi
+
+  data=$(cat <<EOF
+{
+    "product_file": {
+        "id": "${product_file_id}"
+    }
+}
+EOF
+)
+  response=$(curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Token ${PIVNET_TOKEN}" \
+    -X PATCH "https://network.pivotal.io/api/v2/products/pcfdev/releases/${internal_release_id}/add_product_file" \
+    -d "${data}"
+  )
+  if ! echo "$response" | grep -q "HTTP/1.1 204" ; then
+    echo "failed to add product file to release: ${response}"
+    exit 1
+  fi
+
+  cat <<EOF > $assets_dir/test-ova-metadata.json
+{
+    "version": "${timestamp}",
+    "product_file_id": "${product_file_id}",
+    "md5": "${md5}"
+}
+EOF
+
   if [[ -n $INTEGRATION_TEST_OVA_HOME ]]; then
     cp output-virtualbox-iso/pcfdev-test.ova $INTEGRATION_TEST_OVA_HOME/ova
   fi

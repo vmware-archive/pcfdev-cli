@@ -21,6 +21,7 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	. "github.com/pivotal-cf/pcfdev-cli/integration"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
+	"encoding/json"
 )
 
 var _ = Describe("PCF Dev", func() {
@@ -53,8 +54,16 @@ var _ = Describe("PCF Dev", func() {
 		os.Setenv("CF_PLUGIN_HOME", filepath.Join(tempHome, "plugins"))
 		os.Setenv("PCFDEV_HOME", filepath.Join(tempHome, "pcfdev"))
 
-		ovaPath = SetupOva(ReleaseID, TestOvaProductFileID, TestOvaMd5)
-		pluginPath = CompileCLI(ReleaseID, TestOvaProductFileID, TestOvaMd5, VmName)
+		testOvaMetadata, err := ioutil.ReadFile(filepath.Join("..", "assets", "test-ova-metadata.json"))
+		Expect(err).NotTo(HaveOccurred())
+		var testOva struct {
+			ProductFileID string `json:"product_file_id"`
+			MD5           string `json:"md5"`
+		}
+		Expect(json.Unmarshal(testOvaMetadata, &testOva)).To(Succeed())
+
+		ovaPath = SetupOva(ReleaseID, testOva.ProductFileID, testOva.MD5)
+		pluginPath = CompileCLI(ReleaseID, testOva.ProductFileID, testOva.MD5, VmName)
 
 		vBoxManagePath, err = helpers.VBoxManagePath()
 		Expect(err).NotTo(HaveOccurred())

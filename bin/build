@@ -8,8 +8,8 @@ if [[ "$1" == "test" ]]
 then
   vm_name="pcfdev-test"
   release_id="1622"
-  product_file_id="5689"
-  md5="bc883063adadf375d830934fd52c367b"
+  product_file_id=$(cat ${pcfdev_cli_path}/assets/test-ova-metadata.json | jq -r .product_file_id)
+  md5=$(cat ${pcfdev_cli_path}/assets/test-ova-metadata.json | jq -r .md5)
   ova_version="0"
   insecure_private_key=$(cat $pcfdev_cli_path/assets/test-private-key.pem)
 else

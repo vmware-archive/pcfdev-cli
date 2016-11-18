@@ -221,7 +221,8 @@ var _ = Describe("ssh", func() {
 
 				fmt.Fprintln(stdin, "exit")
 				go func() {
-					s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, timeToConnect, stdin, stdout, stderr)
+					defer GinkgoRecover()
+					Expect(s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, timeToConnect, stdin, stdout, stderr)).To(Succeed())
 				}()
 				Eventually(stdout, 20).Should(gbytes.Say("Welcome to Ubuntu"))
 				Eventually(stdout).Should(gbytes.Say("logout"))

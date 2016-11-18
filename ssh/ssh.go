@@ -65,17 +65,8 @@ func (s *SSH) RunSSHCommand(command string, addresses []SSHAddress, privateKey [
 	defer client.Close()
 	defer session.Close()
 
-	sessionStdout, err := session.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	go io.Copy(stdout, sessionStdout)
-
-	sessionStderr, err := session.StderrPipe()
-	if err != nil {
-		return err
-	}
-	go io.Copy(stderr, sessionStderr)
+	session.Stdout = stdout
+	session.Stderr = stderr
 
 	return session.Run(command)
 }

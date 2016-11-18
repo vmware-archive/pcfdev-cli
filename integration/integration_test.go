@@ -159,14 +159,13 @@ var _ = Describe("PCF Dev", func() {
 		sshPty, err := pty.Start(sshCommand)
 		Expect(err).NotTo(HaveOccurred())
 
-		time.Sleep(time.Second)
+		time.Sleep(5 * time.Second)
 		fmt.Fprintln(sshPty, "sleep 99999999")
 		fmt.Fprintln(sshPty, interrupt)
 		fmt.Fprintln(sshPty, "hostname && exit")
 
 		time.Sleep(5 * time.Second)
-		ptyOutput, err := ioutil.ReadAll(sshPty)
-		Expect(err).NotTo(HaveOccurred())
+		ptyOutput, _ := ioutil.ReadAll(sshPty)
 		Expect(ptyOutput).To(ContainSubstring("Welcome to Ubuntu"))
 		Expect(ptyOutput).To(ContainSubstring("pcfdev"))
 		Expect(ptyOutput).To(ContainSubstring("logout"))

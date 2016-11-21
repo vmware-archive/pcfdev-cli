@@ -203,7 +203,7 @@ var _ = Describe("ssh", func() {
 				stderr = gbytes.NewBuffer()
 			})
 
-			It("should start an ssh session into the VM using a raw terminal", func() {
+			It("should start an ssh session into the VM using a raw terminal", func(done Done) {
 				stdinX, stdoutX, _ := term.StdStreams()
 				stdinFd, _ := term.GetFdInfo(stdinX)
 				stdoutFd, _ := term.GetFdInfo(stdoutX)
@@ -223,11 +223,11 @@ var _ = Describe("ssh", func() {
 				go func() {
 					defer GinkgoRecover()
 					Expect(s.StartSSHSession([]ssh.SSHAddress{{IP: ip, Port: port}}, privateKeyBytes, timeToConnect, stdin, stdout, stderr)).To(Succeed())
+					close(done)
 				}()
 				Eventually(stdout, 20).Should(gbytes.Say("Welcome to Ubuntu"))
 				Eventually(stdout).Should(gbytes.Say("logout"))
-
-			})
+			}, 60)
 
 			Context("when there is an error making the terminal raw", func() {
 				It("should return the error", func() {

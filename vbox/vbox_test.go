@@ -24,13 +24,14 @@ import (
 
 var _ = Describe("vbox", func() {
 	var (
-		mockCtrl   *gomock.Controller
-		mockDriver *mocks.MockDriver
-		mockSSH    *mocks.MockSSH
-		mockPicker *mocks.MockNetworkPicker
-		mockFS     *mocks.MockFS
-		vbx        *vbox.VBox
-		conf       *config.Config
+		mockCtrl                *gomock.Controller
+		mockDriver              *mocks.MockDriver
+		mockSSH                 *mocks.MockSSH
+		mockPicker              *mocks.MockNetworkPicker
+		mockFS                  *mocks.MockFS
+		mockSystemConfiguration *mocks.MockVBoxSystemConfiguration
+		vbx                     *vbox.VBox
+		conf                    *config.Config
 	)
 
 	BeforeEach(func() {
@@ -39,6 +40,7 @@ var _ = Describe("vbox", func() {
 		mockSSH = mocks.NewMockSSH(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockPicker = mocks.NewMockNetworkPicker(mockCtrl)
+		mockSystemConfiguration = mocks.NewMockVBoxSystemConfiguration(mockCtrl)
 
 		conf = &config.Config{
 			PCFDevHome:         "some-pcfdev-home",
@@ -55,11 +57,12 @@ var _ = Describe("vbox", func() {
 		}
 
 		vbx = &vbox.VBox{
-			Driver: mockDriver,
-			SSH:    mockSSH,
-			FS:     mockFS,
-			Picker: mockPicker,
-			Config: conf,
+			Driver:              mockDriver,
+			SSH:                 mockSSH,
+			FS:                  mockFS,
+			Picker:              mockPicker,
+			SystemConfiguration: mockSystemConfiguration,
+			Config:              conf,
 		}
 	})
 
@@ -618,7 +621,7 @@ var _ = Describe("vbox", func() {
 
 	Describe("#StartVM", func() {
 		Context("when VM is already imported", func() {
-			It("starts without reimporting", func() {
+			FIt("starts without reimporting", func() {
 				addresses := []ssh.SSHAddress{
 					{
 						IP:   "127.0.0.1",
@@ -637,32 +640,12 @@ var _ = Describe("vbox", func() {
 					mockSSH.EXPECT().RunSSHCommand(`echo -n "some-public-key" > /home/vcap/.ssh/authorized_keys`, addresses, []byte("some-insecure-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					mockFS.EXPECT().Write("some-private-key-path", bytes.NewReader([]byte("some-private-key")), false),
 					mockFS.EXPECT().Chmod("some-private-key-path", os.FileMode(0600)),
+					mockSystemConfiguration.EXPECT().NetworkConfiguration("192.168.22.11").Return("some-network-configuration", nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand(`echo -e '
-auto lo
-iface lo inet loopback
-
-auto eth0
-iface eth0 inet dhcp
-
-auto eth1
-iface eth1 inet static
-address 192.168.22.11
-netmask 255.255.255.0' | sudo tee /etc/network/interfaces`, addresses, []byte("some-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockSSH.EXPECT().RunSSHCommand(`echo -e 'some-network-configuration' | sudo tee /etc/network/interfaces`, addresses, []byte("some-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
+					mockSystemConfiguration.EXPECT().EnvironmentConfiguration("some-http-proxy", "some-https-proxy", "some-no-proxy", "local2.pcfdev.io", "192.168.22.11").Return("some-environment-configuration", nil),
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand(`echo -e '
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
-HTTP_PROXY=some-http-proxy
-HTTPS_PROXY=some-https-proxy
-NO_PROXY=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy
-http_proxy=some-http-proxy
-https_proxy=some-https-proxy
-no_proxy=localhost,127.0.0.1,192.168.22.1,192.168.22.11,local2.pcfdev.io,.local2.pcfdev.io,some-no-proxy' | sudo tee /etc/environment`,
-						addresses,
-						[]byte("some-private-key"),
-						5*time.Minute,
-						ioutil.Discard,
-						ioutil.Discard),
+					mockSSH.EXPECT().RunSSHCommand(`echo -e 'some-environment-configuration' | sudo tee /etc/environment`, addresses, []byte("some-private-key"), 5*time.Minute, ioutil.Discard, ioutil.Discard),
 					mockDriver.EXPECT().StopVM("some-vm"),
 					mockDriver.EXPECT().StartVM("some-vm"),
 				)

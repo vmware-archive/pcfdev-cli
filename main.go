@@ -100,6 +100,7 @@ func main() {
 			Network: &network.Network{},
 			Driver:  driver,
 		},
+		SystemConfiguration: &vbox.SystemConfiguration{},
 		Config: conf,
 	}
 	httpClientIgnoringEnvironmentProxies := &http.Client{

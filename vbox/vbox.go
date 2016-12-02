@@ -9,10 +9,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
-	"text/template"
 	"time"
 
-	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
@@ -74,12 +72,19 @@ type NetworkPicker interface {
 	SelectAvailableInterface(vboxnets []*network.Interface, vmConfig *config.VMConfig) (networkConfig *config.NetworkConfig, err error)
 }
 
+//go:generate mockgen -package mocks -destination mocks/vbox_system_configuration.go github.com/pivotal-cf/pcfdev-cli/vbox VBoxSystemConfiguration
+type VBoxSystemConfiguration interface {
+	NetworkConfiguration(interfaceIP string) (configuration string, err error)
+	EnvironmentConfiguration(httpProxy, httpsProxy, noProxy, domain, ip string) (configuration string, err error)
+}
+
 type VBox struct {
-	Config *config.Config
-	Driver Driver
-	FS     FS
-	Picker NetworkPicker
-	SSH    SSH
+	Config              *config.Config
+	Driver              Driver
+	FS                  FS
+	Picker              NetworkPicker
+	SSH                 SSH
+	SystemConfiguration VBoxSystemConfiguration
 }
 
 type VMProperties struct {
@@ -99,29 +104,6 @@ const (
 	StatusStopped    = "Stopped"
 	StatusNotCreated = "Not created"
 	StatusUnknown    = "Unknown"
-)
-
-var (
-	networkTemplate = `
-auto lo
-iface lo inet loopback
-
-auto eth0
-iface eth0 inet dhcp
-
-auto eth1
-iface eth1 inet static
-address {{.IPAddress}}
-netmask 255.255.255.0`
-
-	proxyTemplate = `
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
-{{if .HTTPProxy}}HTTP_PROXY={{.HTTPProxy}}{{end}}
-{{if .HTTPSProxy}}HTTPS_PROXY={{.HTTPSProxy}}{{end}}
-NO_PROXY={{.NOProxy}}
-{{if .HTTPProxy}}http_proxy={{.HTTPProxy}}{{end}}
-{{if .HTTPSProxy}}https_proxy={{.HTTPSProxy}}{{end}}
-no_proxy={{.NOProxy}}`
 )
 
 func (v *VBox) StartVM(vmConfig *config.VMConfig) error {
@@ -152,7 +134,6 @@ func (v *VBox) insertSecureKeypair(vmConfig *config.VMConfig) error {
 	if err != nil {
 		return err
 	}
-
 	if exists {
 		return nil
 	}
@@ -165,14 +146,8 @@ func (v *VBox) insertSecureKeypair(vmConfig *config.VMConfig) error {
 	if err = v.SSH.RunSSHCommand(
 		fmt.Sprintf(`echo -n "%s" > /home/vcap/.ssh/authorized_keys`, publicKey),
 		[]ssh.SSHAddress{
-			{
-				IP:   "127.0.0.1",
-				Port: vmConfig.SSHPort,
-			},
-			{
-				IP:   vmConfig.IP,
-				Port: "22",
-			},
+			{IP: "127.0.0.1", Port: vmConfig.SSHPort},
+			{IP: vmConfig.IP, Port: "22"},
 		},
 		v.Config.InsecurePrivateKey,
 		5*time.Minute,
@@ -193,32 +168,21 @@ func (v *VBox) writePrivateKey(privateKey []byte) error {
 }
 
 func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {
+	networkConfiguration, err := v.SystemConfiguration.NetworkConfiguration(vmConfig.IP)
+	if err != nil {
+		panic(err)
+	}
+
 	privateKeyBytes, err := v.FS.Read(v.Config.PrivateKeyPath)
 	if err != nil {
 		return err
 	}
 
-	t, err := template.New("properties template").Parse(networkTemplate)
-	if err != nil {
-		return err
-	}
-
-	var sshCommand bytes.Buffer
-	if err = t.Execute(&sshCommand, VMProperties{IPAddress: vmConfig.IP}); err != nil {
-		return err
-	}
-
 	return v.SSH.RunSSHCommand(
-		fmt.Sprintf("echo -e '%s' | sudo tee /etc/network/interfaces", sshCommand.String()),
+		fmt.Sprintf("echo -e '%s' | sudo tee /etc/network/interfaces", networkConfiguration),
 		[]ssh.SSHAddress{
-			{
-				IP:   "127.0.0.1",
-				Port: vmConfig.SSHPort,
-			},
-			{
-				IP:   vmConfig.IP,
-				Port: "22",
-			},
+			{IP: "127.0.0.1", Port: vmConfig.SSHPort},
+			{IP: vmConfig.IP, Port: "22"},
 		},
 		privateKeyBytes,
 		5*time.Minute,
@@ -228,9 +192,9 @@ func (v *VBox) configureNetwork(vmConfig *config.VMConfig) error {
 }
 
 func (v *VBox) configureEnvironment(vmConfig *config.VMConfig) error {
-	proxySettings, err := v.proxySettings(vmConfig)
+	environmentConfiguration, err := v.SystemConfiguration.EnvironmentConfiguration(v.Config.HTTPProxy, v.Config.HTTPSProxy, v.Config.NoProxy, vmConfig.Domain, vmConfig.IP)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	privateKeyBytes, err := v.FS.Read(v.Config.PrivateKeyPath)
@@ -239,55 +203,16 @@ func (v *VBox) configureEnvironment(vmConfig *config.VMConfig) error {
 	}
 
 	return v.SSH.RunSSHCommand(
-		fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", proxySettings),
+		fmt.Sprintf("echo -e '%s' | sudo tee /etc/environment", environmentConfiguration),
 		[]ssh.SSHAddress{
-			{
-				IP:   "127.0.0.1",
-				Port: vmConfig.SSHPort,
-			},
-			{
-				IP:   vmConfig.IP,
-				Port: "22",
-			},
+			{IP: "127.0.0.1", Port: vmConfig.SSHPort},
+			{IP: vmConfig.IP, Port: "22"},
 		},
 		privateKeyBytes,
 		5*time.Minute,
 		ioutil.Discard,
 		ioutil.Discard,
 	)
-}
-
-func (v *VBox) proxySettings(vmConfig *config.VMConfig) (settings string, err error) {
-	subnet, err := address.SubnetForIP(vmConfig.IP)
-	if err != nil {
-		return "", err
-	}
-
-	httpProxy := strings.Replace(v.Config.HTTPProxy, "127.0.0.1", subnet, -1)
-	httpsProxy := strings.Replace(v.Config.HTTPSProxy, "127.0.0.1", subnet, -1)
-	noProxy := strings.Join([]string{
-		"localhost",
-		"127.0.0.1",
-		subnet,
-		vmConfig.IP,
-		vmConfig.Domain,
-		"." + vmConfig.Domain,
-	}, ",")
-	if v.Config.NoProxy != "" {
-		noProxy = strings.Join([]string{noProxy, v.Config.NoProxy}, ",")
-	}
-
-	t, err := template.New("proxy template").Parse(proxyTemplate)
-	if err != nil {
-		return "", err
-	}
-
-	var proxySettings bytes.Buffer
-	if err = t.Execute(&proxySettings, ProxyTypes{HTTPProxy: httpProxy, HTTPSProxy: httpsProxy, NOProxy: noProxy}); err != nil {
-		return "", err
-	}
-
-	return proxySettings.String(), nil
 }
 
 func (v *VBox) ImportVM(vmConfig *config.VMConfig) error {

@@ -46,3 +46,6 @@
 [submodule "vendor/github.com/docker/docker"]
 	path = vendor/github.com/docker/docker
 	url = https://github.com/pcfdev-forks/docker.git
+[submodule "vendor/github.com/kisielk/errcheck"]
+	path = vendor/github.com/kisielk/errcheck
+	url = https://github.com/kisielk/errcheck.git

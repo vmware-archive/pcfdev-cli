@@ -88,7 +88,7 @@ func SetupOva(releaseID string, testOvaProductFileID string, md5 string) string 
 		Expect(err).NotTo(HaveOccurred())
 
 		if !matches {
-			os.Remove(ovaPath)
+			Expect(os.Remove(ovaPath)).To(Succeed())
 		}
 	}
 

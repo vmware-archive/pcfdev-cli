@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/term"
+	. "github.com/pivotal-cf/pcfdev-cli/helpers"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -114,14 +115,14 @@ func (s *SSH) StartSSHSession(addresses []SSHAddress, privateKey []byte, timeout
 		return err
 	}
 
-	session.Wait()
+	IgnoreErrorFrom(session.Wait())
 	return nil
 }
 
 func (s *SSH) WaitForSSH(addresses []SSHAddress, privateKey []byte, timeout time.Duration) error {
 	client, err := s.waitForSSH(addresses, privateKey, timeout)
 	if err == nil {
-		client.Close()
+		IgnoreErrorFrom(client.Close())
 	}
 	return err
 }
@@ -179,10 +180,10 @@ func (s *SSH) WithSSHTunnel(remoteAddress string, sshAddresses []SSHAddress, pri
 				defer sshTunnel.Close()
 
 				go func() {
-					io.Copy(conn, sshTunnel)
+					IgnoreErrorFrom(io.Copy(conn, sshTunnel))
 				}()
 
-				io.Copy(sshTunnel, conn)
+				IgnoreErrorFrom(io.Copy(sshTunnel, conn))
 			}(localConn)
 		}
 	}()
@@ -199,7 +200,7 @@ func (s *SSH) newSession(addresses []SSHAddress, privateKey []byte, timeout time
 
 	session, err := client.NewSession()
 	if err != nil {
-		client.Close()
+		IgnoreErrorFrom(client.Close())
 		return nil, nil, err
 	}
 

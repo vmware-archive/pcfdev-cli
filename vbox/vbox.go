@@ -14,6 +14,7 @@ import (
 
 	"github.com/pivotal-cf/pcfdev-cli/address"
 	"github.com/pivotal-cf/pcfdev-cli/config"
+	. "github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/network"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
 	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
@@ -420,8 +421,8 @@ func (v *VBox) DestroyPCFDevVMs() error {
 
 	for _, vm := range vms {
 		if strings.HasPrefix(vm, "pcfdev-") {
-			v.Driver.PowerOffVM(vm)
-			v.Driver.DestroyVM(vm)
+			IgnoreErrorFrom(v.Driver.PowerOffVM(vm))
+			IgnoreErrorFrom(v.Driver.DestroyVM(vm))
 		}
 	}
 
@@ -444,7 +445,7 @@ func (v *VBox) DestroyPCFDevVMs() error {
 	for _, disk := range disks {
 		filename := filepath.Base(disk)
 		if strings.HasPrefix(filename, "pcfdev-") {
-			v.Driver.DeleteDisk(disk)
+			IgnoreErrorFrom(v.Driver.DeleteDisk(disk))
 		}
 	}
 

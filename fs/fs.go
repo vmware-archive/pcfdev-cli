@@ -154,8 +154,7 @@ func (fs *FS) Extract(archivePath string, destinationPath string, pattern string
 		}
 		matches := regex.FindStringSubmatch(header.Name)
 		if len(matches) > 0 {
-			fs.Write(destinationPath, reader, true)
-			return nil
+			return fs.Write(destinationPath, reader, true)
 		}
 	}
 

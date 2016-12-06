@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/kennygrant/sanitize"
+	. "github.com/pivotal-cf/pcfdev-cli/helpers"
 )
 
 //go:generate mockgen -package mocks -destination mocks/token.go github.com/pivotal-cf/pcfdev-cli/pivnet PivnetToken
@@ -55,7 +56,7 @@ func (c *Client) DownloadOVA(startAtByte int64) (ova *DownloadReader, err error)
 	case http.StatusPartialContent, http.StatusOK:
 		return &DownloadReader{ReadCloser: resp.Body, Writer: os.Stdout, ContentLength: resp.ContentLength, ExistingLength: startAtByte}, nil
 	case http.StatusUnauthorized:
-		c.Token.Destroy()
+		IgnoreErrorFrom(c.Token.Destroy())
 		return nil, &InvalidTokenError{}
 	default:
 		return nil, c.unexpectedResponseError(resp)
@@ -74,7 +75,7 @@ func (c *Client) IsEULAAccepted() (bool, error) {
 	case 451:
 		return false, nil
 	case http.StatusUnauthorized:
-		c.Token.Destroy()
+		IgnoreErrorFrom(c.Token.Destroy())
 		return false, &InvalidTokenError{}
 	default:
 		return false, c.unexpectedResponseError(resp)
@@ -90,7 +91,7 @@ func (c *Client) GetEULA() (eula string, err error) {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		c.Token.Destroy()
+		IgnoreErrorFrom(c.Token.Destroy())
 		return "", &InvalidTokenError{}
 	case 200:
 		break
@@ -116,7 +117,7 @@ func (c *Client) GetEULA() (eula string, err error) {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		c.Token.Destroy()
+		IgnoreErrorFrom(c.Token.Destroy())
 		return "", &InvalidTokenError{}
 	case 200:
 		break
@@ -146,7 +147,7 @@ func (c *Client) AcceptEULA() error {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		c.Token.Destroy()
+		IgnoreErrorFrom(c.Token.Destroy())
 		return &InvalidTokenError{}
 	case 451, 200:
 		break
@@ -173,7 +174,7 @@ func (c *Client) AcceptEULA() error {
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		c.Token.Destroy()
+		IgnoreErrorFrom(c.Token.Destroy())
 		return &InvalidTokenError{}
 	case 200:
 		return nil

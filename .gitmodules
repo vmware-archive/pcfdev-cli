@@ -49,3 +49,6 @@
 [submodule "vendor/github.com/kisielk/errcheck"]
 	path = vendor/github.com/kisielk/errcheck
 	url = https://github.com/kisielk/errcheck.git
+[submodule "vendor/github.com/kisielk/gotool"]
+	path = vendor/github.com/kisielk/gotool
+	url = https://github.com/kisielk/gotool.git

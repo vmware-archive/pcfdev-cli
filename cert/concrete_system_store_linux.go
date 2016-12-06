@@ -3,6 +3,7 @@ package cert
 import (
 	"bytes"
 	"errors"
+	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"os/exec"
 )
 
@@ -25,8 +26,8 @@ func (c *ConcreteSystemStore) Store(path string) error {
 }
 
 func (c *ConcreteSystemStore) Unstore() error {
-	exec.Command("sudo", "update-ca-certificates", "--fresh").Run()
-	exec.Command("sudo", "update-ca-trust", "extract").Run()
+	helpers.IgnoreErrorFrom(exec.Command("sudo", "update-ca-certificates", "--fresh").Run())
+	helpers.IgnoreErrorFrom(exec.Command("sudo", "update-ca-trust", "extract").Run())
 	return nil
 }
 

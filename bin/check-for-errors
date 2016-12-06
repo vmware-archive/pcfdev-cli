@@ -4,10 +4,18 @@ pcfdev_dir=$(cd `dirname $0` && cd .. && pwd)
 
 pushd $pcfdev_dir > /dev/null
   folders=$(ls -d */ | grep -v -E "vendor|mocks|assets|bin")
-popd
+popd > /dev/null
 
 go install github.com/pivotal-cf/pcfdev-cli/vendor/github.com/kisielk/errcheck
+
+errors_exist=0
 for folder in $folders
 do
-  errcheck -blank -ignoretests "github.com/pivotal-cf/pcfdev-cli/$folder/..." | grep -v "defer"
+  if [[ -n "$(errcheck -blank -ignoretests "github.com/pivotal-cf/pcfdev-cli/$folder/..." | grep -v "defer")" ]]
+  then
+    echo "found errors when checking $folder"
+    errors_exist=1
+  fi
 done
+
+exit $errors_exist

@@ -8,7 +8,6 @@ pushd $pcfdev_dir > /dev/null
   folders=$(ls -d */ | grep -v -E "vendor|mocks|assets|bin")
 popd > /dev/null
 
-go install github.com/pivotal-cf/pcfdev-cli/vendor/github.com/kisielk/gotool
 go install github.com/pivotal-cf/pcfdev-cli/vendor/github.com/kisielk/errcheck
 
 errors_exist=0

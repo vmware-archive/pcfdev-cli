@@ -52,3 +52,6 @@
 [submodule "vendor/github.com/kisielk/gotool"]
 	path = vendor/github.com/kisielk/gotool
 	url = https://github.com/kisielk/gotool.git
+[submodule "vendor/golang.org/x/tools"]
+	path = vendor/golang.org/x/tools
+	url = https://github.com/golang/tools.git

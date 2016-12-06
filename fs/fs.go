@@ -131,9 +131,8 @@ func (fs *FS) Copy(source string, destination string) error {
 	if err := fs.CreateDir(destinationDir); err != nil {
 		return err
 	}
-	os.Remove(destination)
 
-	return fs.Write(destination, sourceFile, true)
+	return fs.Write(destination, sourceFile, false)
 }
 
 func (fs *FS) Extract(archivePath string, destinationPath string, pattern string) error {

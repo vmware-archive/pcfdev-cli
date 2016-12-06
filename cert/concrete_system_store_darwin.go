@@ -1,9 +1,9 @@
 package cert
 
 import (
-	"os/exec"
 	"path/filepath"
 
+	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	"github.com/pivotal-cf/pcfdev-cli/user"
 )
 
@@ -13,34 +13,41 @@ func (c *ConcreteSystemStore) Store(path string) error {
 		return err
 	}
 
-	c.CmdRunner.Run("security", "create-keychain", "-p", "pcfdev", "pcfdev.keychain")
-	c.CmdRunner.Run("security", "list-keychains", "-d", "user", "-s", "login.keychain", "pcfdev.keychain")
+	c.createOrReplaceKeychain("pcfdev.keychain", "pcfdev")
+	if err := c.loadKeychain("pcfdev.keychain"); err != nil {
+		return err
+	}
 	_, err = c.CmdRunner.Run("security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", pcfdevKeychain, path)
 	return err
 }
 
 func (c *ConcreteSystemStore) Unstore() error {
-	pcfdevKeychain, err := c.pcfdevKeychain()
+	pcfdevKeychainPath, err := c.pcfdevKeychain()
 	if err != nil {
 		return err
 	}
 
-	tmpDir, err := c.FS.TempDir()
-	if err != nil {
-		return err
+	pcfdevKeychain := &Keychain{
+		CommandRunner: c.CmdRunner,
+		Name:          "pcfdev.keychain",
+		Path:          pcfdevKeychainPath,
+		FS:            c.FS,
 	}
-	defer c.FS.Remove(tmpDir)
 
-	certsPath := filepath.Join(tmpDir, "certs.pem")
-
-	if err := exec.Command("security", "export", "-k", pcfdevKeychain, "-p", "-o", certsPath).Run(); err != nil {
+	if !pcfdevKeychain.Exists() {
 		return nil
 	}
 
-	exec.Command("security", "remove-trusted-cert", "-d", certsPath).Run()
-	exec.Command("security", "delete-keychain", "pcfdev.keychain").Run()
+	return pcfdevKeychain.Delete()
+}
 
-	return nil
+func (c *ConcreteSystemStore) createOrReplaceKeychain(keychain string, password string) {
+	helpers.IgnoreErrorFrom(c.CmdRunner.Run("security", "create-keychain", "-p", password, keychain))
+}
+
+func (c *ConcreteSystemStore) loadKeychain(keychain string) error {
+	_, err := c.CmdRunner.Run("security", "list-keychains", "-d", "user", "-s", "login.keychain", keychain)
+	return err
 }
 
 func (c *ConcreteSystemStore) pcfdevKeychain() (string, error) {
@@ -50,4 +57,39 @@ func (c *ConcreteSystemStore) pcfdevKeychain() (string, error) {
 	}
 
 	return filepath.Join(home, "Library", "Keychains", "pcfdev.keychain"), nil
+}
+
+type Keychain struct {
+	CommandRunner CmdRunner
+	Name          string
+	Path          string
+	FS            FS
+}
+
+func (k *Keychain) Exists() bool {
+	_, err := k.CommandRunner.Run("security", "showkeychaininfo", k.Path)
+	return err == nil
+}
+
+func (k *Keychain) Delete() error {
+	tmpDir, err := k.FS.TempDir()
+	if err != nil {
+		return err
+	}
+	defer k.FS.Remove(tmpDir)
+	certsPath := filepath.Join(tmpDir, "certs.pem")
+
+	if _, err := k.CommandRunner.Run("security", "export", "-k", k.Path, "-p", "-o", certsPath); err != nil {
+		return err
+	}
+
+	if _, err := k.CommandRunner.Run("security", "remove-trusted-cert", "-d", certsPath); err != nil {
+		return err
+	}
+
+	if _, err := k.CommandRunner.Run("security", "delete-keychain", k.Name); err != nil {
+		return err
+	}
+
+	return nil
 }

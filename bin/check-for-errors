@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 pcfdev_dir=$(cd `dirname $0` && cd .. && pwd)
 
 pushd $pcfdev_dir > /dev/null

@@ -13,9 +13,13 @@ go install github.com/pivotal-cf/pcfdev-cli/vendor/github.com/kisielk/errcheck
 errors_exist=0
 for folder in $folders
 do
-  if [[ -n "$(errcheck -blank -ignoretests "github.com/pivotal-cf/pcfdev-cli/$folder/..." | grep -v "defer")" ]]
+  set +e
+  errors=$(errcheck -blank -ignoretests "github.com/pivotal-cf/pcfdev-cli/$folder/..." | grep -v "defer")
+  set -e
+  if [[ -n "$errors" ]]
   then
-    echo "found errors when checking $folder"
+    echo "found errors when checking $folder:"
+    echo "$errors"
     errors_exist=1
   fi
 done

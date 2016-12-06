@@ -46,3 +46,9 @@ func ExecuteWithTimeout(command func() error, timeout time.Duration, delay time.
 		}
 	}
 }
+
+func IgnoreErrorFrom(_ ...interface{}) {
+	// Used as documentation of methods that return errors we are ignoring
+	// This makes Errcheck stop complaining.
+	// Question usage of this method if you see it!
+}

@@ -11,9 +11,9 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/vm"
 	"github.com/pivotal-cf/pcfdev-cli/vm/mocks"
 
+	"github.com/docker/docker/pkg/term"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/docker/docker/pkg/term"
 )
 
 var _ = Describe("Unprovisioned", func() {
@@ -72,6 +72,12 @@ var _ = Describe("Unprovisioned", func() {
 			)
 
 			Expect(unprovisioned.Stop()).To(Succeed())
+		})
+
+		It("should bubble the error up if stopping fails", func() {
+			mockUI.EXPECT().Say("Stopping VM...")
+			mockVBox.EXPECT().StopVM(unprovisioned.VMConfig).Return(errors.New("some error"))
+			Expect(unprovisioned.Stop()).To(MatchError("some error"))
 		})
 	})
 

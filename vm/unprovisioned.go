@@ -27,7 +27,9 @@ type Unprovisioned struct {
 
 func (u *Unprovisioned) Stop() error {
 	u.UI.Say("Stopping VM...")
-	u.VBox.StopVM(u.VMConfig)
+	if err := u.VBox.StopVM(u.VMConfig); err != nil {
+		return err
+	}
 	u.UI.Say("PCF Dev is now stopped.")
 	return nil
 }

@@ -24,29 +24,6 @@ const (
 	EmptyOvaMd5           = "8cfb57f0b6f0305cf6797fe361ed738a"
 )
 
-func FileExists(path string) bool {
-	if _, err := os.Stat(path); err != nil {
-		return false
-	}
-	return true
-}
-
-func DownloadTestOva(releaseID, productFileID, destination string) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("https://network.pivotal.io/api/v2/products/pcfdev/releases/%s/product_files/%s/download", releaseID, productFileID), nil)
-	Expect(err).NotTo(HaveOccurred())
-
-	req.Header.Set("Authorization", "Token "+os.Getenv("PIVNET_TOKEN"))
-
-	resp, err := http.DefaultClient.Do(req)
-	Expect(err).NotTo(HaveOccurred())
-
-	destinationWriter, err := os.Create(destination)
-	Expect(err).NotTo(HaveOccurred())
-
-	_, err = io.Copy(destinationWriter, resp.Body)
-	Expect(err).NotTo(HaveOccurred())
-}
-
 func CompileCLI(releaseID, productFileID, md5 string, vmName string) string {
 	insecurePrivateKeyBytes, err := ioutil.ReadFile(filepath.Join("..", "assets", "test-private-key.pem"))
 	Expect(err).NotTo(HaveOccurred())
@@ -83,8 +60,8 @@ func SetupOva(releaseID string, testOvaProductFileID string, md5 string) string 
 	}
 
 	ovaPath := filepath.Join(ovaDir, "ova")
-	if FileExists(ovaPath) {
-		matches, err := MD5Matches(ovaPath, md5)
+	if fileExists(ovaPath) {
+		matches, err := md5Matches(ovaPath, md5)
 		Expect(err).NotTo(HaveOccurred())
 
 		if !matches {
@@ -92,13 +69,36 @@ func SetupOva(releaseID string, testOvaProductFileID string, md5 string) string 
 		}
 	}
 
-	if !FileExists(ovaPath) {
-		DownloadTestOva(releaseID, testOvaProductFileID, ovaPath)
+	if !fileExists(ovaPath) {
+		downloadTestOva(releaseID, testOvaProductFileID, ovaPath)
 	}
 	return ovaPath
 }
 
-func MD5Matches(path, md5 string) (bool, error) {
+func downloadTestOva(releaseID, productFileID, destination string) {
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://network.pivotal.io/api/v2/products/pcfdev/releases/%s/product_files/%s/download", releaseID, productFileID), nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	req.Header.Set("Authorization", "Token "+os.Getenv("PIVNET_TOKEN"))
+
+	resp, err := http.DefaultClient.Do(req)
+	Expect(err).NotTo(HaveOccurred())
+
+	destinationWriter, err := os.Create(destination)
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = io.Copy(destinationWriter, resp.Body)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func fileExists(path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		return false
+	}
+	return true
+}
+
+func md5Matches(path, md5 string) (bool, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return false, err

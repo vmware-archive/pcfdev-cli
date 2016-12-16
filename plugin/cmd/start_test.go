@@ -179,21 +179,28 @@ var _ = Describe("StartCmd", func() {
 		})
 
 		Context("when starting the default ova", func() {
-			It("should validate start options and start the VM", func() {
-				startOpts := &vm.StartOpts{
-					Memory: uint64(3456),
-					CPUs:   2,
-				}
+			allowHappyPath := func() *gomock.Call {
+				startOpts := &vm.StartOpts{Memory: uint64(3456), CPUs: 2}
 				startCmd.Opts = startOpts
-				gomock.InOrder(
-					mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-					mockVBox.EXPECT().GetVMName().Return("", nil),
-					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-					mockVM.EXPECT().VerifyStartOpts(startOpts),
-					mockDownloadCmd.EXPECT().Run(),
-					mockVM.EXPECT().Start(startOpts),
-				)
 
+				mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil).AnyTimes()
+				mockVBox.EXPECT().GetVMName().Return("", nil).AnyTimes()
+				mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil).AnyTimes()
+				mockVM.EXPECT().VerifyStartOpts(startOpts).AnyTimes()
+				mockDownloadCmd.EXPECT().Run().AnyTimes()
+				return mockVM.EXPECT().Start(startOpts).AnyTimes()
+			}
+
+			It("should validate start options and start the VM", func() {
+				startOpts := &vm.StartOpts{Memory: uint64(3456), CPUs: 2}
+				startCmd.Opts = startOpts
+
+				mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil)
+				mockVBox.EXPECT().GetVMName().Return("", nil)
+				mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil)
+				mockVM.EXPECT().VerifyStartOpts(startOpts)
+				mockDownloadCmd.EXPECT().Run()
+				mockVM.EXPECT().Start(startOpts)
 				Expect(startCmd.Run()).To(Succeed())
 			})
 
@@ -201,15 +208,8 @@ var _ = Describe("StartCmd", func() {
 				It("should trust the VM certificate after starting", func() {
 					startCmd.Parse([]string{"-k"})
 
-					gomock.InOrder(
-						mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-						mockVBox.EXPECT().GetVMName().Return("", nil),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
-						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{}),
-						mockAutoTrustCmd.EXPECT().Run(),
-					)
+					startExpectation := allowHappyPath()
+					mockAutoTrustCmd.EXPECT().Run().After(startExpectation)
 
 					Expect(startCmd.Run()).To(Succeed())
 				})
@@ -219,15 +219,8 @@ var _ = Describe("StartCmd", func() {
 				It("should target PCF Dev after starting", func() {
 					startCmd.Parse([]string{"-t"})
 
-					gomock.InOrder(
-						mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-						mockVBox.EXPECT().GetVMName().Return("", nil),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Target: true}),
-						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{Target: true}),
-						mockTargetCmd.EXPECT().Run(),
-					)
+					startExpectation := allowHappyPath()
+					mockTargetCmd.EXPECT().Run().After(startExpectation)
 
 					Expect(startCmd.Run()).To(Succeed())
 				})
@@ -237,15 +230,8 @@ var _ = Describe("StartCmd", func() {
 				It("should return the error", func() {
 					startCmd.Parse([]string{"-t"})
 
-					gomock.InOrder(
-						mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-						mockVBox.EXPECT().GetVMName().Return("", nil),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Target: true}),
-						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{Target: true}),
-						mockTargetCmd.EXPECT().Run().Return(errors.New("some-error")),
-					)
+					allowHappyPath()
+					mockTargetCmd.EXPECT().Run().Return(errors.New("some-error"))
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))
 				})
@@ -255,16 +241,9 @@ var _ = Describe("StartCmd", func() {
 				It("should target PCF Dev and trust the VM certificates", func() {
 					startCmd.Parse([]string{"-t", "-k"})
 
-					gomock.InOrder(
-						mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-						mockVBox.EXPECT().GetVMName().Return("", nil),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{Target: true}),
-						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{Target: true}),
-						mockAutoTrustCmd.EXPECT().Run(),
-						mockTargetCmd.EXPECT().Run(),
-					)
+					startExpectation := allowHappyPath()
+					mockAutoTrustCmd.EXPECT().Run().After(startExpectation)
+					mockTargetCmd.EXPECT().Run().After(startExpectation)
 
 					Expect(startCmd.Run()).To(Succeed())
 				})
@@ -281,6 +260,7 @@ var _ = Describe("StartCmd", func() {
 			Context("when there is an error retrieving the virtualbox version", func() {
 				It("should return the error", func() {
 					mockVBox.EXPECT().Version().Return(nil, errors.New("some-error"))
+					allowHappyPath()
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))
 				})
@@ -288,8 +268,8 @@ var _ = Describe("StartCmd", func() {
 
 			Context("when there is an old vm present", func() {
 				It("should tell the user to destroy pcfdev", func() {
-					mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil)
 					mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil)
+					allowHappyPath()
 
 					Expect(startCmd.Run()).To(MatchError("old version of PCF Dev already running, please run `cf dev destroy` to continue"))
 				})
@@ -297,8 +277,8 @@ var _ = Describe("StartCmd", func() {
 
 			Context("when there is an error getting the VM name", func() {
 				It("should return the error", func() {
-					mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil)
 					mockVBox.EXPECT().GetVMName().Return("", errors.New("some-error"))
+					allowHappyPath()
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))
 				})
@@ -306,23 +286,17 @@ var _ = Describe("StartCmd", func() {
 
 			Context("when it fails to get VM", func() {
 				It("should return an error", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-						mockVBox.EXPECT().GetVMName().Return("", nil),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error")),
-					)
+					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(nil, errors.New("some-error"))
+					allowHappyPath()
+
 					Expect(startCmd.Run()).To(MatchError("some-error"))
 				})
 			})
 
 			Context("when verifying start options fails", func() {
 				It("should return an error", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-						mockVBox.EXPECT().GetVMName().Return("", nil),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}).Return(errors.New("some-error")),
-					)
+					mockVM.EXPECT().VerifyStartOpts(gomock.Any()).Return(errors.New("some-error"))
+					allowHappyPath()
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))
 				})
@@ -330,13 +304,8 @@ var _ = Describe("StartCmd", func() {
 
 			Context("when the OVA fails to download", func() {
 				It("should print an error message", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-						mockVBox.EXPECT().GetVMName().Return("", nil),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
-						mockDownloadCmd.EXPECT().Run().Return(errors.New("some-error")),
-					)
+					mockDownloadCmd.EXPECT().Run().Return(errors.New("some-error"))
+					allowHappyPath()
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))
 				})
@@ -344,14 +313,8 @@ var _ = Describe("StartCmd", func() {
 
 			Context("when it fails to start VM", func() {
 				It("should return an error", func() {
-					gomock.InOrder(
-						mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-						mockVBox.EXPECT().GetVMName().Return("", nil),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
-						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{}).Return(errors.New("some-error")),
-					)
+					mockVM.EXPECT().Start(gomock.Any()).Return(errors.New("some-error"))
+					allowHappyPath()
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))
 				})
@@ -361,15 +324,8 @@ var _ = Describe("StartCmd", func() {
 				It("should return the error", func() {
 					startCmd.Parse([]string{"-k"})
 
-					gomock.InOrder(
-						mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-						mockVBox.EXPECT().GetVMName().Return("", nil),
-						mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-						mockVM.EXPECT().VerifyStartOpts(&vm.StartOpts{}),
-						mockDownloadCmd.EXPECT().Run(),
-						mockVM.EXPECT().Start(&vm.StartOpts{}),
-						mockAutoTrustCmd.EXPECT().Run().Return(errors.New("some-error")),
-					)
+					mockAutoTrustCmd.EXPECT().Run().Return(errors.New("some-error"))
+					allowHappyPath()
 
 					Expect(startCmd.Run()).To(MatchError("some-error"))
 				})

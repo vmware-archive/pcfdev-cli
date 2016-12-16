@@ -41,7 +41,6 @@ type SSH interface {
 //go:generate mockgen -package mocks -destination mocks/vm.go github.com/pivotal-cf/pcfdev-cli/vm VM
 type VM interface {
 	Start(*StartOpts) error
-	Provision(*StartOpts) error
 	Stop() error
 	Status() string
 	Suspend() error
@@ -109,6 +108,7 @@ type StartOpts struct {
 	CPUs           int
 	Memory         uint64
 	NoProvision    bool
+	Provision      bool
 	OVAPath        string
 	Registries     string
 	Services       string

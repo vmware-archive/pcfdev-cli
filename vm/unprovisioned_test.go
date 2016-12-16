@@ -90,12 +90,12 @@ var _ = Describe("Unprovisioned", func() {
 	})
 
 	Describe("Start", func() {
-		It("should start vm", func() {
-			Expect(unprovisioned.Start(&vm.StartOpts{})).To(MatchError("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'"))
+		Describe("it only runs the first time a vm is created or if the user sets the Provision flag", func() {
+			It("gives an invalid state error", func() {
+				Expect(unprovisioned.Start(&vm.StartOpts{Provision: false})).To(MatchError("PCF Dev is in an invalid state. Please run 'cf dev destroy' or 'cf dev stop'"))
+			})
 		})
-	})
 
-	Describe("Provision", func() {
 		It("should provision the VM", func() {
 			sshAddresses := []ssh.SSHAddress{
 				{IP: "127.0.0.1", Port: "some-port"},
@@ -129,7 +129,7 @@ var _ = Describe("Unprovisioned", func() {
 				mockHelpText.EXPECT().Print("some-domain", false),
 			)
 
-			Expect(unprovisioned.Provision(&vm.StartOpts{})).To(Succeed())
+			Expect(unprovisioned.Start(&vm.StartOpts{Provision: true})).To(Succeed())
 		})
 
 		Context("when the user passes in a master password", func() {
@@ -168,7 +168,7 @@ var _ = Describe("Unprovisioned", func() {
 					mockHelpText.EXPECT().Print("some-domain", false),
 				)
 
-				Expect(unprovisioned.Provision(&vm.StartOpts{MasterPassword: "some-master-password"})).To(Succeed())
+				Expect(unprovisioned.Start(&vm.StartOpts{Provision: true, MasterPassword: "some-master-password"})).To(Succeed())
 			})
 		})
 
@@ -179,7 +179,7 @@ var _ = Describe("Unprovisioned", func() {
 					mockClient.EXPECT().ReplaceSecrets("some-ip", "some-master-password", []byte("some-private-key")).Return(errors.New("some-error")),
 				)
 
-				Expect(unprovisioned.Provision(&vm.StartOpts{MasterPassword: "some-master-password"})).To(MatchError("some-error"))
+				Expect(unprovisioned.Start(&vm.StartOpts{Provision: true, MasterPassword: "some-master-password"})).To(MatchError("some-error"))
 			})
 		})
 
@@ -187,7 +187,7 @@ var _ = Describe("Unprovisioned", func() {
 			It("should return the error", func() {
 				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
 
-				Expect(unprovisioned.Provision(&vm.StartOpts{MasterPassword: "some-master-password"})).To(MatchError("some-error"))
+				Expect(unprovisioned.Start(&vm.StartOpts{Provision: true, MasterPassword: "some-master-password"})).To(MatchError("some-error"))
 			})
 		})
 
@@ -225,7 +225,7 @@ var _ = Describe("Unprovisioned", func() {
 					mockHelpText.EXPECT().Print("some-domain", true),
 				)
 
-				Expect(unprovisioned.Provision(&vm.StartOpts{Target: true})).To(Succeed())
+				Expect(unprovisioned.Start(&vm.StartOpts{Provision: true, Target: true})).To(Succeed())
 			})
 		})
 
@@ -233,7 +233,7 @@ var _ = Describe("Unprovisioned", func() {
 			It("should return an error", func() {
 				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
 
-				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
+				Expect(unprovisioned.Start(&vm.StartOpts{Provision: true})).To(MatchError("some-error"))
 			})
 		})
 
@@ -253,7 +253,7 @@ var _ = Describe("Unprovisioned", func() {
 						os.Stderr).Return(errors.New("some-error")),
 				)
 
-				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError("failed to provision VM: missing provision configuration"))
+				Expect(unprovisioned.Start(&vm.StartOpts{Provision: true})).To(MatchError("failed to provision VM: missing provision configuration"))
 			})
 		})
 
@@ -274,7 +274,7 @@ var _ = Describe("Unprovisioned", func() {
 					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", sshAddresses, []byte("some-private-key"), 30*time.Second).Return("", errors.New("some-error")),
 				)
 
-				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError("failed to provision VM: some-error"))
+				Expect(unprovisioned.Start(&vm.StartOpts{Provision: true})).To(MatchError("failed to provision VM: some-error"))
 			})
 		})
 
@@ -295,7 +295,7 @@ var _ = Describe("Unprovisioned", func() {
 					mockSSH.EXPECT().GetSSHOutput("cat /var/pcfdev/provision-options.json", sshAddresses, []byte("some-private-key"), 30*time.Second).Return("{some-bad-json}", nil),
 				)
 
-				Expect(unprovisioned.Provision(&vm.StartOpts{})).To(MatchError(ContainSubstring(`failed to provision VM: invalid character 's'`)))
+				Expect(unprovisioned.Start(&vm.StartOpts{Provision: true})).To(MatchError(ContainSubstring(`failed to provision VM: invalid character 's'`)))
 			})
 		})
 	})

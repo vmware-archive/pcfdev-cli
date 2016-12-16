@@ -45,10 +45,6 @@ func (s *Saved) Start(opts *StartOpts) error {
 	return s.Resume()
 }
 
-func (s *Saved) Provision(opts *StartOpts) error {
-	return nil
-}
-
 func (s *Saved) Stop() error {
 	s.UI.Say("Your VM is currently suspended. You must resume your VM with `cf dev resume` to shut it down.")
 	return nil

@@ -150,7 +150,7 @@ var _ = Describe("Running", func() {
 		})
 	})
 
-	Describe("Provision", func() {
+	Describe("Start - with reprovision", func() {
 		It("should provision the VM", func() {
 			sshAddresses := []ssh.SSHAddress{
 				{IP: "127.0.0.1", Port: "some-port"},
@@ -161,10 +161,10 @@ var _ = Describe("Running", func() {
 				mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 				mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", sshAddresses, []byte("some-private-key"), 30*time.Second).Return("", nil),
 				mockBuilder.EXPECT().VM("some-vm").Return(mockVM, nil),
-				mockVM.EXPECT().Provision(&vm.StartOpts{}),
+				mockVM.EXPECT().Start(&vm.StartOpts{Provision: true}),
 			)
 
-			runningVM.Provision(&vm.StartOpts{})
+			runningVM.Start(&vm.StartOpts{Provision: true})
 		})
 
 		Context("when removing healthcheck file fails", func() {
@@ -178,7 +178,7 @@ var _ = Describe("Running", func() {
 					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", sshAddresses, []byte("some-private-key"), 30*time.Second).Return("", errors.New("some-error")),
 				)
 
-				Expect(runningVM.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
+				Expect(runningVM.Start(&vm.StartOpts{Provision: true})).To(MatchError("some-error"))
 			})
 		})
 
@@ -186,7 +186,7 @@ var _ = Describe("Running", func() {
 			It("should return an error", func() {
 				mockFS.EXPECT().Read("some-private-key-path").Return(nil, errors.New("some-error"))
 
-				Expect(runningVM.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
+				Expect(runningVM.Start(&vm.StartOpts{Provision: true})).To(MatchError("some-error"))
 			})
 		})
 
@@ -202,7 +202,7 @@ var _ = Describe("Running", func() {
 					mockBuilder.EXPECT().VM("some-vm").Return(nil, errors.New("some-error")),
 				)
 
-				Expect(runningVM.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
+				Expect(runningVM.Start(&vm.StartOpts{Provision: true})).To(MatchError("some-error"))
 			})
 		})
 
@@ -216,10 +216,10 @@ var _ = Describe("Running", func() {
 					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
 					mockSSH.EXPECT().GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", sshAddresses, []byte("some-private-key"), 30*time.Second).Return("", nil),
 					mockBuilder.EXPECT().VM("some-vm").Return(mockVM, nil),
-					mockVM.EXPECT().Provision(&vm.StartOpts{}).Return(errors.New("some-error")),
+					mockVM.EXPECT().Start(&vm.StartOpts{Provision: true}).Return(errors.New("some-error")),
 				)
 
-				Expect(runningVM.Provision(&vm.StartOpts{})).To(MatchError("some-error"))
+				Expect(runningVM.Start(&vm.StartOpts{Provision: true})).To(MatchError("some-error"))
 			})
 		})
 	})

@@ -115,10 +115,6 @@ func (n *NotCreated) hasSCS(services string) bool {
 	return strings.Contains(services, "scs") || strings.Contains(services, "spring-cloud-services") || strings.Contains(services, "all")
 }
 
-func (n *NotCreated) Provision(opts *StartOpts) error {
-	return nil
-}
-
 func (n *NotCreated) Start(opts *StartOpts) error {
 	var memory uint64
 	if opts.Memory != uint64(0) {

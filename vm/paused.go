@@ -46,10 +46,6 @@ func (p *Paused) Start(opts *StartOpts) error {
 	return p.Resume()
 }
 
-func (p *Paused) Provision(opts *StartOpts) error {
-	return nil
-}
-
 func (p *Paused) Status() string {
 	return "Suspended - system memory for the VM is still allocated. Resume and suspend to suspend pcfdev VM to the disk."
 }

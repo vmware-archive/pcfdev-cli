@@ -65,6 +65,7 @@ var _ = Describe("StartCmd", func() {
 					"-k",
 					"-m", "3456",
 					"-n",
+					"-p",
 					"-o", "some-ova-path",
 					"-r", "some-private-registry,some-other-private-registry",
 					"-s", "some-service,some-other-service",
@@ -76,6 +77,7 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Opts.CPUs).To(Equal(2))
 				Expect(startCmd.Opts.Memory).To(Equal(uint64(3456)))
 				Expect(startCmd.Opts.NoProvision).To(BeTrue())
+				Expect(startCmd.Opts.Provision).To(BeTrue())
 				Expect(startCmd.Opts.OVAPath).To(Equal("some-ova-path"))
 				Expect(startCmd.Opts.Registries).To(Equal("some-private-registry,some-other-private-registry"))
 				Expect(startCmd.Opts.Services).To(Equal("some-service,some-other-service"))
@@ -92,6 +94,7 @@ var _ = Describe("StartCmd", func() {
 				Expect(startCmd.Opts.CPUs).To(Equal(0))
 				Expect(startCmd.Opts.Memory).To(Equal(uint64(0)))
 				Expect(startCmd.Opts.NoProvision).To(BeFalse())
+				Expect(startCmd.Opts.Provision).To(BeFalse())
 				Expect(startCmd.Opts.OVAPath).To(BeEmpty())
 				Expect(startCmd.Opts.Registries).To(BeEmpty())
 				Expect(startCmd.Opts.Services).To(BeEmpty())
@@ -401,36 +404,6 @@ var _ = Describe("StartCmd", func() {
 					mockVBox.EXPECT().GetVMName().Return("some-old-vm-name", nil)
 					Expect(startCmd.Run()).To(MatchError("you must destroy your existing VM to use a custom OVA"))
 				})
-			})
-		})
-
-		Context("when the provision option is specified", func() {
-			It("should provision the VM", func() {
-				startCmd.Parse([]string{"-p"})
-
-				gomock.InOrder(
-					mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-					mockVBox.EXPECT().GetVMName().Return("", nil),
-					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-					mockVM.EXPECT().Provision(&vm.StartOpts{}),
-				)
-
-				Expect(startCmd.Run()).To(Succeed())
-			})
-		})
-
-		Context("when provisioning fails", func() {
-			It("return an error", func() {
-				startCmd.Parse([]string{"-p"})
-
-				gomock.InOrder(
-					mockVBox.EXPECT().Version().Return(&vboxdriver.VBoxDriverVersion{Major: 5}, nil),
-					mockVBox.EXPECT().GetVMName().Return("", nil),
-					mockVMBuilder.EXPECT().VM("some-default-vm-name").Return(mockVM, nil),
-					mockVM.EXPECT().Provision(&vm.StartOpts{}).Return(errors.New("some-error")),
-				)
-
-				Expect(startCmd.Run()).To(MatchError("some-error"))
 			})
 		})
 	})

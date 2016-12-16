@@ -4,9 +4,9 @@
 package mocks
 
 import (
-	"github.com/golang/mock/gomock"
-	"github.com/pivotal-cf/pcfdev-cli/network"
-	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
+	gomock "github.com/golang/mock/gomock"
+	network "github.com/pivotal-cf/pcfdev-cli/network"
+	vboxdriver "github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 )
 
 // Mock of Driver interface

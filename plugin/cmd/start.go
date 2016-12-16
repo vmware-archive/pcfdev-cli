@@ -55,6 +55,7 @@ func (s *StartCmd) Parse(args []string) error {
 		CPUs:           s.flagContext.Int("c"),
 		Memory:         uint64(s.flagContext.Int("m")),
 		NoProvision:    s.flagContext.Bool("n"),
+		Provision:      s.flagContext.Bool("p"),
 		OVAPath:        s.flagContext.String("o"),
 		Registries:     s.flagContext.String("r"),
 		Services:       s.flagContext.String("s"),
@@ -85,34 +86,31 @@ func (s *StartCmd) Run() error {
 		return err
 	}
 
-	if s.flagContext.Bool("p") {
-		return v.Provision(&vm.StartOpts{})
-	} else {
-		if err := v.VerifyStartOpts(s.Opts); err != nil {
-			return err
-		}
-		if !s.isCustomOva() {
-			if err := s.DownloadCmd.Run(); err != nil {
-				return err
-			}
-		}
-
-		if err := v.Start(s.Opts); err != nil {
-			return err
-		}
-
-		if s.flagContext.Bool("k") {
-			if err := s.AutoTrustCmd.Run(); err != nil {
-				return err
-			}
-		}
-
-		if s.flagContext.Bool("t") {
-			return s.TargetCmd.Run()
-		}
-
-		return nil
+	if err := v.VerifyStartOpts(s.Opts); err != nil {
+		return err
 	}
+	if !s.isCustomOva() {
+		if err := s.DownloadCmd.Run(); err != nil {
+			return err
+		}
+	}
+
+	if err := v.Start(s.Opts); err != nil {
+		return err
+	}
+
+	if s.flagContext.Bool("k") {
+		if err := s.AutoTrustCmd.Run(); err != nil {
+			return err
+		}
+	}
+
+	if s.flagContext.Bool("t") {
+		return s.TargetCmd.Run()
+	}
+
+	return nil
+
 }
 
 func (s *StartCmd) isIncompatibleVBox() error {

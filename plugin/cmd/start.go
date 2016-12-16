@@ -12,15 +12,16 @@ import (
 const START_ARGS = 0
 
 type StartCmd struct {
-	Opts         *vm.StartOpts
-	VBox         VBox
-	VMBuilder    VMBuilder
-	Config       *config.Config
-	AutoTrustCmd AutoCmd
-	DownloadCmd  Cmd
-	TargetCmd    Cmd
-	UI           UI
-	flagContext  flags.FlagContext
+	Opts           *vm.StartOpts
+	VBox           VBox
+	VMBuilder      VMBuilder
+	Config         *config.Config
+	AutoTrustCmd   AutoCmd
+	DownloadCmd    Cmd
+	TargetCmd      Cmd
+	UI             UI
+	flagContext    flags.FlagContext
+	existingVMName string
 }
 
 func (s *StartCmd) Parse(args []string) error {
@@ -66,44 +67,20 @@ func (s *StartCmd) Parse(args []string) error {
 }
 
 func (s *StartCmd) Run() error {
-	version, err := s.VBox.Version()
+	err := s.isIncompatibleVBox()
 	if err != nil {
 		return err
 	}
 
-	if version.Major < 5 {
-		return &OldDriverError{}
-	}
-
-	var name string
-
-	if s.Opts.OVAPath != "" {
-		name = "pcfdev-custom"
-	} else {
-		name = s.Config.DefaultVMName
-	}
-
-	existingVMName, err := s.VBox.GetVMName()
-	if err != nil {
+	if s.existingVMName, err = s.VBox.GetVMName(); err != nil {
 		return err
 	}
-	if existingVMName != "" {
-		if s.Opts.OVAPath != "" {
-			if existingVMName != "pcfdev-custom" {
-				return errors.New("you must destroy your existing VM to use a custom OVA")
-			}
-		} else {
-			if existingVMName != s.Config.DefaultVMName && existingVMName != "pcfdev-custom" {
-				return &OldVMError{}
-			}
-		}
+
+	if err = s.shouldNotStartVm(); err != nil {
+		return err
 	}
 
-	if existingVMName == "pcfdev-custom" {
-		name = "pcfdev-custom"
-	}
-
-	v, err := s.VMBuilder.VM(name)
+	v, err := s.VMBuilder.VM(s.vmName())
 	if err != nil {
 		return err
 	}
@@ -114,7 +91,7 @@ func (s *StartCmd) Run() error {
 		if err := v.VerifyStartOpts(s.Opts); err != nil {
 			return err
 		}
-		if s.Opts.OVAPath == "" && existingVMName != "pcfdev-custom" {
+		if !s.isCustomOva() {
 			if err := s.DownloadCmd.Run(); err != nil {
 				return err
 			}
@@ -135,6 +112,55 @@ func (s *StartCmd) Run() error {
 		}
 
 		return nil
+	}
+}
+
+func (s *StartCmd) isIncompatibleVBox() error {
+	version, err := s.VBox.Version()
+	if err != nil {
+		return err
+	}
+
+	if version.Major < 5 {
+		return &OldDriverError{}
+	}
+
+	return nil
+}
+
+func (s *StartCmd) shouldNotStartVm() error {
+	if s.vmIsOld() {
+		return &OldVMError{}
+	}
+
+	if s.switchingToCustomOva() {
+		return errors.New("you must destroy your existing VM to use a custom OVA")
+	}
+
+	return nil
+}
+
+func (s *StartCmd) vmIsOld() bool {
+	return !s.isCustomOva() && s.existingVMName != s.Config.DefaultVMName && s.existingVMName != ""
+}
+
+func (s *StartCmd) switchingToCustomOva() bool {
+	if s.existingVMName != "" && s.Opts.OVAPath != "" && s.existingVMName != "pcfdev-custom" {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (s *StartCmd) isCustomOva() bool {
+	return (s.Opts.OVAPath != "" || s.existingVMName == "pcfdev-custom")
+}
+
+func (s *StartCmd) vmName() string {
+	if s.isCustomOva() {
+		return "pcfdev-custom"
+	} else {
+		return s.Config.DefaultVMName
 	}
 }
 

@@ -145,15 +145,11 @@ func (s *StartCmd) vmIsOld() bool {
 }
 
 func (s *StartCmd) switchingToCustomOva() bool {
-	if s.existingVMName != "" && s.Opts.OVAPath != "" && s.existingVMName != "pcfdev-custom" {
-		return true
-	} else {
-		return false
-	}
+	return s.existingVMName != "" && s.Opts.OVAPath != "" && s.existingVMName != "pcfdev-custom"
 }
 
 func (s *StartCmd) isCustomOva() bool {
-	return (s.Opts.OVAPath != "" || s.existingVMName == "pcfdev-custom")
+	return s.Opts.OVAPath != "" || s.existingVMName == "pcfdev-custom"
 }
 
 func (s *StartCmd) vmName() string {

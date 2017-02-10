@@ -18,10 +18,6 @@ func (i *Invalid) Start(opts *StartOpts) error {
 	return i.err()
 }
 
-func (i *Invalid) Provision(opts *StartOpts) error {
-	return i.err()
-}
-
 func (i *Invalid) Status() string {
 	return i.message()
 }

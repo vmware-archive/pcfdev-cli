@@ -36,33 +36,6 @@ func (r *Running) Stop() error {
 	return nil
 }
 
-func (r *Running) Provision(opts *StartOpts) error {
-	privateKeyBytes, err := r.FS.Read(r.Config.PrivateKeyPath)
-	if err != nil {
-		return err
-	}
-
-	addresses := []ssh.SSHAddress{
-		{
-			IP:   "127.0.0.1",
-			Port: r.VMConfig.SSHPort,
-		},
-		{
-			IP:   r.VMConfig.IP,
-			Port: "22",
-		},
-	}
-
-	if _, err := r.SSHClient.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", addresses, privateKeyBytes, 30*time.Second); err != nil {
-		return err
-	}
-	unprovisionedVM, err := r.Builder.VM(r.VMConfig.Name)
-	if err != nil {
-		return err
-	}
-	return unprovisionedVM.Provision(opts)
-}
-
 func (r *Running) VerifyStartOpts(opts *StartOpts) error {
 	if opts.Memory != uint64(0) {
 		return errors.New("memory cannot be changed once the vm has been created")
@@ -83,8 +56,12 @@ func (r *Running) VerifyStartOpts(opts *StartOpts) error {
 }
 
 func (r *Running) Start(opts *StartOpts) error {
-	r.UI.Say("PCF Dev is running.")
-	return nil
+	if opts.Provision {
+		return r.reProvision(opts)
+	} else {
+		r.UI.Say("PCF Dev is running.")
+		return nil
+	}
 }
 
 func (r *Running) Status() string {
@@ -186,4 +163,39 @@ func (r *Running) SSH() error {
 
 	stdin, stdout, stderr := term.StdStreams()
 	return r.SSHClient.StartSSHSession(addresses, privateKeyBytes, 5*time.Minute, stdin, stdout, stderr)
+}
+
+func (r *Running) reProvision(opts *StartOpts) error {
+	if err := r.unprovision(); err != nil {
+		return err
+	}
+	unprovisionedVM, err := r.Builder.VM(r.VMConfig.Name)
+	if err != nil {
+		return err
+	}
+	return unprovisionedVM.Start(opts)
+}
+
+func (r *Running) unprovision() error {
+	privateKeyBytes, err := r.FS.Read(r.Config.PrivateKeyPath)
+	if err != nil {
+		return err
+	}
+
+	addresses := []ssh.SSHAddress{
+		{
+			IP:   "127.0.0.1",
+			Port: r.VMConfig.SSHPort,
+		},
+		{
+			IP:   r.VMConfig.IP,
+			Port: "22",
+		},
+	}
+
+	if _, err := r.SSHClient.GetSSHOutput("sudo rm -f /run/pcfdev-healthcheck", addresses, privateKeyBytes, 30*time.Second); err != nil {
+		return err
+	}
+
+	return nil
 }

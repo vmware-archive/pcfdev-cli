@@ -39,16 +39,6 @@ func (_mr *_MockVMRecorder) GetDebugLogs() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetDebugLogs")
 }
 
-func (_m *MockVM) Provision(_param0 *vm.StartOpts) error {
-	ret := _m.ctrl.Call(_m, "Provision", _param0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-func (_mr *_MockVMRecorder) Provision(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Provision", arg0)
-}
-
 func (_m *MockVM) Resume() error {
 	ret := _m.ctrl.Call(_m, "Resume")
 	ret0, _ := ret[0].(error)

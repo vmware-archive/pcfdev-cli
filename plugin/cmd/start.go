@@ -12,15 +12,16 @@ import (
 const START_ARGS = 0
 
 type StartCmd struct {
-	Opts         *vm.StartOpts
-	VBox         VBox
-	VMBuilder    VMBuilder
-	Config       *config.Config
-	AutoTrustCmd AutoCmd
-	DownloadCmd  Cmd
-	TargetCmd    Cmd
-	UI           UI
-	flagContext  flags.FlagContext
+	Opts           *vm.StartOpts
+	VBox           VBox
+	VMBuilder      VMBuilder
+	Config         *config.Config
+	AutoTrustCmd   AutoCmd
+	DownloadCmd    Cmd
+	TargetCmd      Cmd
+	UI             UI
+	flagContext    flags.FlagContext
+	existingVMName string
 }
 
 func (s *StartCmd) Parse(args []string) error {
@@ -54,6 +55,7 @@ func (s *StartCmd) Parse(args []string) error {
 		CPUs:           s.flagContext.Int("c"),
 		Memory:         uint64(s.flagContext.Int("m")),
 		NoProvision:    s.flagContext.Bool("n"),
+		Provision:      s.flagContext.Bool("p"),
 		OVAPath:        s.flagContext.String("o"),
 		Registries:     s.flagContext.String("r"),
 		Services:       s.flagContext.String("s"),
@@ -66,6 +68,52 @@ func (s *StartCmd) Parse(args []string) error {
 }
 
 func (s *StartCmd) Run() error {
+	err := s.isIncompatibleVBox()
+	if err != nil {
+		return err
+	}
+
+	if s.existingVMName, err = s.VBox.GetVMName(); err != nil {
+		return err
+	}
+
+	if err = s.shouldNotStartVm(); err != nil {
+		return err
+	}
+
+	v, err := s.VMBuilder.VM(s.vmName())
+	if err != nil {
+		return err
+	}
+
+	if err := v.VerifyStartOpts(s.Opts); err != nil {
+		return err
+	}
+	if !s.isCustomOva() {
+		if err := s.DownloadCmd.Run(); err != nil {
+			return err
+		}
+	}
+
+	if err := v.Start(s.Opts); err != nil {
+		return err
+	}
+
+	if s.flagContext.Bool("k") {
+		if err := s.AutoTrustCmd.Run(); err != nil {
+			return err
+		}
+	}
+
+	if s.flagContext.Bool("t") {
+		return s.TargetCmd.Run()
+	}
+
+	return nil
+
+}
+
+func (s *StartCmd) isIncompatibleVBox() error {
 	version, err := s.VBox.Version()
 	if err != nil {
 		return err
@@ -75,66 +123,38 @@ func (s *StartCmd) Run() error {
 		return &OldDriverError{}
 	}
 
-	var name string
+	return nil
+}
 
-	if s.Opts.OVAPath != "" {
-		name = "pcfdev-custom"
+func (s *StartCmd) shouldNotStartVm() error {
+	if s.vmIsOld() {
+		return &OldVMError{}
+	}
+
+	if s.switchingToCustomOva() {
+		return errors.New("you must destroy your existing VM to use a custom OVA")
+	}
+
+	return nil
+}
+
+func (s *StartCmd) vmIsOld() bool {
+	return !s.isCustomOva() && s.existingVMName != s.Config.DefaultVMName && s.existingVMName != ""
+}
+
+func (s *StartCmd) switchingToCustomOva() bool {
+	return s.existingVMName != "" && s.Opts.OVAPath != "" && s.existingVMName != "pcfdev-custom"
+}
+
+func (s *StartCmd) isCustomOva() bool {
+	return s.Opts.OVAPath != "" || s.existingVMName == "pcfdev-custom"
+}
+
+func (s *StartCmd) vmName() string {
+	if s.isCustomOva() {
+		return "pcfdev-custom"
 	} else {
-		name = s.Config.DefaultVMName
-	}
-
-	existingVMName, err := s.VBox.GetVMName()
-	if err != nil {
-		return err
-	}
-	if existingVMName != "" {
-		if s.Opts.OVAPath != "" {
-			if existingVMName != "pcfdev-custom" {
-				return errors.New("you must destroy your existing VM to use a custom OVA")
-			}
-		} else {
-			if existingVMName != s.Config.DefaultVMName && existingVMName != "pcfdev-custom" {
-				return &OldVMError{}
-			}
-		}
-	}
-
-	if existingVMName == "pcfdev-custom" {
-		name = "pcfdev-custom"
-	}
-
-	v, err := s.VMBuilder.VM(name)
-	if err != nil {
-		return err
-	}
-
-	if s.flagContext.Bool("p") {
-		return v.Provision(&vm.StartOpts{})
-	} else {
-		if err := v.VerifyStartOpts(s.Opts); err != nil {
-			return err
-		}
-		if s.Opts.OVAPath == "" && existingVMName != "pcfdev-custom" {
-			if err := s.DownloadCmd.Run(); err != nil {
-				return err
-			}
-		}
-
-		if err := v.Start(s.Opts); err != nil {
-			return err
-		}
-
-		if s.flagContext.Bool("k") {
-			if err := s.AutoTrustCmd.Run(); err != nil {
-				return err
-			}
-		}
-
-		if s.flagContext.Bool("t") {
-			return s.TargetCmd.Run()
-		}
-
-		return nil
+		return s.Config.DefaultVMName
 	}
 }
 

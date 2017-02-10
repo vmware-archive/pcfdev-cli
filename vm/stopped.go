@@ -141,7 +141,9 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		return nil
 	}
 
-	return unprovisionedVM.Provision(opts)
+	opts.Provision = true
+
+	return unprovisionedVM.Start(opts)
 }
 
 func (s *Stopped) Provision(opts *StartOpts) error {

@@ -39,14 +39,10 @@ func (u *Unprovisioned) VerifyStartOpts(opts *StartOpts) error {
 }
 
 func (u *Unprovisioned) Start(opts *StartOpts) error {
-	return u.err()
-}
+	if !opts.Provision {
+		return u.err()
+	}
 
-func (u *Unprovisioned) Status() string {
-	return u.err().Error()
-}
-
-func (u *Unprovisioned) Provision(opts *StartOpts) error {
 	if opts.MasterPassword != "" {
 		privateKey, err := u.FS.Read(u.Config.PrivateKeyPath)
 		if err != nil {
@@ -97,6 +93,10 @@ func (u *Unprovisioned) Provision(opts *StartOpts) error {
 	u.HelpText.Print(u.VMConfig.Domain, opts.Target)
 
 	return nil
+}
+
+func (u *Unprovisioned) Status() string {
+	return u.err().Error()
 }
 
 func (u *Unprovisioned) Suspend() error {

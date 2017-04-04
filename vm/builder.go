@@ -2,8 +2,6 @@ package vm
 
 import (
 	"errors"
-	"github.com/cloudfoundry/cli/cf/terminal"
-	"github.com/cloudfoundry/cli/cf/trace"
 	"github.com/pivotal-cf/pcfdev-cli/cert"
 	"github.com/pivotal-cf/pcfdev-cli/config"
 	"github.com/pivotal-cf/pcfdev-cli/debug"
@@ -13,7 +11,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/ui"
 	"github.com/pivotal-cf/pcfdev-cli/vbox"
 	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
-	"os"
 	"path/filepath"
 )
 
@@ -23,16 +20,10 @@ type VBoxBuilder struct {
 	FS     FS
 	SSH    SSH
 	Client Client
+	UI     UI
 }
 
 func (b *VBoxBuilder) VM(vmName string) (VM, error) {
-	termUI := terminal.NewUI(
-		os.Stdin,
-		os.Stdout,
-		terminal.NewTeePrinter(os.Stdout),
-		trace.NewLogger(os.Stdout, false, "", ""),
-	)
-
 	status, err := b.VBox.VMStatus(vmName)
 	if err != nil {
 		return nil, err
@@ -48,12 +39,12 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 	unprovisionedVm := &Unprovisioned{
 		VMConfig:  vmConfig,
 		Config:    b.Config,
-		UI:        termUI,
+		UI:        b.UI,
 		VBox:      b.VBox,
 		FS:        b.FS,
 		SSHClient: b.SSH,
 		HelpText: &ui.HelpText{
-			UI: termUI,
+			UI: b.UI,
 		},
 		Client: b.Client,
 		LogFetcher: &debug.LogFetcher{
@@ -71,13 +62,13 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		Config:    b.Config,
 		VMConfig:  vmConfig,
 		FS:        b.FS,
-		UI:        termUI,
+		UI:        b.UI,
 		VBox:      b.VBox,
 		SSHClient: b.SSH,
 		Builder:   b,
 		CmdRunner: &runner.CmdRunner{},
 		HelpText: &ui.HelpText{
-			UI: termUI,
+			UI: b.UI,
 		},
 		CertStore: &cert.CertStore{
 			FS: b.FS,
@@ -113,7 +104,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 
 		return &NotCreated{
 			VBox:     b.VBox,
-			UI:       termUI,
+			UI:       b.UI,
 			Builder:  b,
 			Config:   b.Config,
 			FS:       b.FS,
@@ -146,7 +137,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 			Config:   b.Config,
 
 			FS:        b.FS,
-			UI:        termUI,
+			UI:        b.UI,
 			SSHClient: b.SSH,
 			VBox:      b.VBox,
 			Builder:   b,
@@ -155,7 +146,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		return &Paused{
 			VMConfig:  vmConfig,
 			SSHClient: b.SSH,
-			UI:        termUI,
+			UI:        b.UI,
 			VBox:      b.VBox,
 			Config:    b.Config,
 			FS:        b.FS,
@@ -164,7 +155,7 @@ func (b *VBoxBuilder) VM(vmName string) (VM, error) {
 		return &Saved{
 			VMConfig:  vmConfig,
 			SSHClient: b.SSH,
-			UI:        termUI,
+			UI:        b.UI,
 			VBox:      b.VBox,
 			Config:    b.Config,
 			FS:        b.FS,

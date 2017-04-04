@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
@@ -29,7 +30,6 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/pivotal-cf/pcfdev-cli/vboxdriver"
 	vmClient "github.com/pivotal-cf/pcfdev-cli/vm/client"
-	"net/http"
 )
 
 var (
@@ -131,6 +131,7 @@ func main() {
 				Config: conf,
 				FS:     fileSystem,
 				SSH:    sshClient,
+				UI:     &plugin.NonTranslatingUI{cfui},
 				Client: &vmClient.Client{
 					Timeout:    time.Second * 20,
 					HttpClient: httpClientIgnoringEnvironmentProxies,

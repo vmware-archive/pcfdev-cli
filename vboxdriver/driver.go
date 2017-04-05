@@ -65,6 +65,9 @@ func (d *VBoxDriver) AttachDisk(vmName string, diskPath string) error {
 	if _, err := d.VBoxManage("storagectl", vmName, "--name", "SATA", "--add", "sata"); err != nil {
 		return err
 	}
+	if _, err := d.VBoxManage("storagectl", vmName, "--name", "SATA", "--hostiocache", "on"); err != nil {
+		return err
+	}
 	if _, err := d.VBoxManage("storageattach", vmName, "--storagectl", "SATA", "--medium", diskPath, "--type", "hdd", "--port", "0", "--device", "0"); err != nil {
 		return err
 	}

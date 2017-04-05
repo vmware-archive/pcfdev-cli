@@ -152,7 +152,6 @@ var _ = Describe("Stopped", func() {
 	})
 
 	Describe("Start", func() {
-
 		var addresses []ssh.SSHAddress
 
 		BeforeEach(func() {
@@ -170,6 +169,7 @@ var _ = Describe("Stopped", func() {
 
 		allowHappyPathInteractions := func() {
 			mockSSH.EXPECT().RunSSHCommand(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+			mockSSH.EXPECT().GetSSHOutput(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 			mockUI.EXPECT().Say(gomock.Any()).AnyTimes()
 			mockVBox.EXPECT().StartVM(gomock.Any()).AnyTimes()
 			mockBuilder.EXPECT().VM(gomock.Any()).AnyTimes().Return(mockUnprovisioned, nil)
@@ -179,16 +179,11 @@ var _ = Describe("Stopped", func() {
 
 		Context("when 'none' services are specified", func() {
 			It("should start vm with no extra services", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "none"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "none"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Services: "none"})
 			})
@@ -196,16 +191,11 @@ var _ = Describe("Stopped", func() {
 
 		Context("when 'all' services are specified", func() {
 			It("should start the vm with services", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "all"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "all"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Services: "all"})
 			})
@@ -213,16 +203,11 @@ var _ = Describe("Stopped", func() {
 
 		Context("when 'default' services are specified", func() {
 			It("should start the vm with rabbitmq and redis", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "default"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "default"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Services: "default"})
 			})
@@ -230,16 +215,11 @@ var _ = Describe("Stopped", func() {
 
 		Context("when 'spring-cloud-services' services are specified", func() {
 			It("should start the vm with spring-cloud-services and rabbitmq", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "spring-cloud-services"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "spring-cloud-services"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Services: "spring-cloud-services"})
 			})
@@ -247,16 +227,11 @@ var _ = Describe("Stopped", func() {
 
 		Context("when 'scs' is specified", func() {
 			It("should start the vm with spring-cloud-services and rabbitmq", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "scs"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "scs"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Services: "scs"})
 			})
@@ -264,16 +239,11 @@ var _ = Describe("Stopped", func() {
 
 		Context("when 'rabbitmq' services are specified", func() {
 			It("should start the vm with rabbitmq", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "rabbitmq"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "rabbitmq"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Services: "rabbitmq"})
 			})
@@ -281,16 +251,11 @@ var _ = Describe("Stopped", func() {
 
 		Context("when 'redis' services are specified", func() {
 			It("should start the vm with redis", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "redis"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "redis"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Services: "redis"})
 			})
@@ -298,16 +263,11 @@ var _ = Describe("Stopped", func() {
 
 		Context("when 'mysql' services are specified", func() {
 			It("should start the vm with no extra services", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "mysql"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "mysql"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Services: "mysql"})
 			})
@@ -315,16 +275,11 @@ var _ = Describe("Stopped", func() {
 
 		Context("when duplicate services are specified", func() {
 			It("should start the vm without duplicates services", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "default,spring-cloud-services,scs"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis,spring-cloud-services","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Services: "default,spring-cloud-services,scs"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Services: "default,spring-cloud-services,scs"})
 			})
@@ -332,50 +287,35 @@ var _ = Describe("Stopped", func() {
 
 		Context("when '' services are specified", func() {
 			It("should start the vm with default services", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{})
 			})
 		})
 
-		Context("when ip is specified specified", func() {
+		Context("when ip is specified", func() {
 			It("should start the vm with the custom ip", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-custom-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{IP: "some-custom-ip"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-custom-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{IP: "some-custom-ip"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{IP: "some-custom-ip"})
 			})
 		})
 
-		Context("when domain is specified specified", func() {
+		Context("when domain is specified", func() {
 			It("should start the vm with the custom domain", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-custom-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Domain: "some-custom-domain"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-custom-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Domain: "some-custom-domain"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Domain: "some-custom-domain"})
 			})
@@ -383,16 +323,11 @@ var _ = Describe("Stopped", func() {
 
 		Context("when docker registries are specified", func() {
 			It("should start the vm with the registries accessible", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":["some-private-registry","some-other-private-registry"],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Registries: "some-private-registry,some-other-private-registry"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":["some-private-registry","some-other-private-registry"],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{Registries: "some-private-registry,some-other-private-registry"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{Registries: "some-private-registry,some-other-private-registry"})
 			})
@@ -400,37 +335,39 @@ var _ = Describe("Stopped", func() {
 
 		Context("when the master password is specified", func() {
 			It("should start the vm with the master password", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm").Return(mockUnprovisioned, nil),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{MasterPassword: "some-master-password"}),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{MasterPassword: "some-master-password"})
+				allowHappyPathInteractions()
 
 				stoppedVM.Start(&vm.StartOpts{MasterPassword: "some-master-password"})
 			})
 		})
 
+		Context("when the provision-options.json already exists in the VM", func() {
+			It("should not overwrite the services or registries", func() {
+				mockSSH.EXPECT().GetSSHOutput("if [[ -f /var/pcfdev/provision-options.json ]]; then cat /var/pcfdev/provision-options.json; fi",
+					addresses, []byte("some-private-key"), 5*time.Minute).Return(`{"services":"some-existing-service", "registries":["some-existing-registry"]}`, nil)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"some-existing-service","registries":["some-existing-registry"],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUnprovisioned.EXPECT().Provision(&vm.StartOpts{})
+				allowHappyPathInteractions()
+
+				stoppedVM.Start(&vm.StartOpts{})
+			})
+		})
+
 		Context("when '-n' (no-provision) flag is passed in", func() {
 			It("should not provision the vm", func() {
-				gomock.InOrder(
-					mockUI.EXPECT().Say("Starting VM..."),
-					mockVBox.EXPECT().StartVM(stoppedVM.VMConfig),
-					mockBuilder.EXPECT().VM("some-vm"),
-					mockFS.EXPECT().Read("some-private-key-path").Return([]byte("some-private-key"), nil),
-					mockSSH.EXPECT().RunSSHCommand("echo "+
-						`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
-						addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr),
-					mockUI.EXPECT().Say("VM will not be provisioned because '-n' (no-provision) flag was specified."),
-				)
+				mockSSH.EXPECT().RunSSHCommand("echo "+
+					`'{"domain":"some-domain","ip":"some-ip","services":"rabbitmq,redis","registries":[],"provider":"some-provider"}' | sudo tee /var/pcfdev/provision-options.json >/dev/null`,
+					addresses, []byte("some-private-key"), 5*time.Minute, os.Stdout, os.Stderr)
+				mockUI.EXPECT().Say("VM will not be provisioned because '-n' (no-provision) flag was specified.")
+				allowHappyPathInteractions()
 
-				stoppedVM.Start(&vm.StartOpts{
-					NoProvision: true,
-				})
+				stoppedVM.Start(&vm.StartOpts{NoProvision: true})
 			})
 		})
 
@@ -449,6 +386,26 @@ var _ = Describe("Stopped", func() {
 				allowHappyPathInteractions()
 
 				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("failed to start VM: some-error"))
+			})
+		})
+
+		Context("when reading provision-options.json fails", func() {
+			It("returns an error", func() {
+				mockSSH.EXPECT().GetSSHOutput("if [[ -f /var/pcfdev/provision-options.json ]]; then cat /var/pcfdev/provision-options.json; fi",
+					addresses, []byte("some-private-key"), 5*time.Minute).Return("", errors.New("some-error"))
+				allowHappyPathInteractions()
+
+				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("failed to start VM: some-error"))
+			})
+		})
+
+		Context("when unmarshaling provision-options.json fails", func() {
+			It("returns an error", func() {
+				mockSSH.EXPECT().GetSSHOutput("if [[ -f /var/pcfdev/provision-options.json ]]; then cat /var/pcfdev/provision-options.json; fi",
+					addresses, []byte("some-private-key"), 5*time.Minute).Return("some-invalid-json", nil)
+				allowHappyPathInteractions()
+
+				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError(HavePrefix("failed to start VM: ")))
 			})
 		})
 
@@ -478,7 +435,6 @@ var _ = Describe("Stopped", func() {
 				Expect(stoppedVM.Start(&vm.StartOpts{})).To(MatchError("some-error"))
 			})
 		})
-
 	})
 
 	Describe("Status", func() {

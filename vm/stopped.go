@@ -106,16 +106,6 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		provisionConfig.Domain = opts.Domain
 	}
 
-	data, err := json.Marshal(provisionConfig)
-	if err != nil {
-		return &StartVMError{err}
-	}
-
-	unprovisionedVM, err := s.Builder.VM(s.VMConfig.Name)
-	if err != nil {
-		return &StartVMError{err}
-	}
-
 	privateKeyBytes, err := s.FS.Read(s.Config.PrivateKeyPath)
 	if err != nil {
 		return &StartVMError{err}
@@ -132,6 +122,27 @@ func (s *Stopped) Start(opts *StartOpts) error {
 		},
 	}
 
+	output, err := s.SSHClient.GetSSHOutput("if [[ -f /var/pcfdev/provision-options.json ]]; then cat /var/pcfdev/provision-options.json; fi", addresses, privateKeyBytes, 5*time.Minute)
+	if err != nil {
+		return &StartVMError{err}
+	}
+	if output != "" {
+		var existingProvisionConfig struct {
+			Services   string
+			Registries []string
+		}
+		if err := json.Unmarshal([]byte(output), &existingProvisionConfig); err != nil {
+			return &StartVMError{err}
+		}
+		provisionConfig.Services = existingProvisionConfig.Services
+		provisionConfig.Registries = existingProvisionConfig.Registries
+	}
+
+	data, err := json.Marshal(provisionConfig)
+	if err != nil {
+		return &StartVMError{err}
+	}
+
 	if err := s.SSHClient.RunSSHCommand("echo '"+string(data)+"' | sudo tee /var/pcfdev/provision-options.json >/dev/null", addresses, privateKeyBytes, 5*time.Minute, os.Stdout, os.Stderr); err != nil {
 		return &StartVMError{err}
 	}
@@ -139,6 +150,11 @@ func (s *Stopped) Start(opts *StartOpts) error {
 	if opts.NoProvision {
 		s.UI.Say("VM will not be provisioned because '-n' (no-provision) flag was specified.")
 		return nil
+	}
+
+	unprovisionedVM, err := s.Builder.VM(s.VMConfig.Name)
+	if err != nil {
+		return &StartVMError{err}
 	}
 
 	return unprovisionedVM.Provision(opts)

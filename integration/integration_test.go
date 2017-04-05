@@ -361,6 +361,40 @@ var _ = Describe("PCF Dev", func() {
 		Eventually(session).Should(gbytes.Say("Running"))
 	})
 
+	It("preserves services and registries between restarts", func() {
+		pcfdevCommand := exec.Command("cf", "dev", "start", "-c", "1", "-o", ovaPath, "-s", "none", "-r", "host:port")
+		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "10m").Should(gexec.Exit(0))
+		Expect(session).To(gbytes.Say("Waiting for services to start..."))
+		Expect(session).To(gbytes.Say("Services started"))
+
+		pcfdevCommand = exec.Command("cf", "dev", "stop")
+		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "10m").Should(gexec.Exit(0))
+
+		pcfdevCommand = exec.Command("cf", "dev", "start")
+		session, err = gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "10m").Should(gexec.Exit(0))
+
+		securePrivateKey, err := ioutil.ReadFile(filepath.Join(os.Getenv("PCFDEV_HOME"), "vms", "key.pem"))
+		Expect(err).NotTo(HaveOccurred())
+
+		sshClient := &ssh.SSH{}
+		sshPort := getForwardedPort(vBoxManagePath, "pcfdev-custom")
+		output, err := sshClient.GetSSHOutput("cat /var/pcfdev/provision-options.json", []ssh.SSHAddress{{IP: "127.0.0.1", Port: sshPort}}, securePrivateKey, time.Minute)
+
+		var provisionOptions struct {
+			Services string
+			Registries []string
+		}
+		Expect(json.Unmarshal([]byte(output), &provisionOptions)).To(Succeed())
+		Expect(provisionOptions.Services).To(Equal(""))
+		Expect(provisionOptions.Registries[0]).To(Equal("host:port"))
+	})
+
 	Context("when ova is on pivnet or in a temp dir", func() {
 		var (
 			tempOVALocation string

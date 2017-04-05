@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	VmName                = "pcfdev-test"
-	ReleaseID             = "1622"
-	EmptyOvaProductFileId = "8883"
-	EmptyOvaMd5           = "8cfb57f0b6f0305cf6797fe361ed738a"
+	VmName              = "pcfdev-test"
+	ReleaseID           = "1622"
+	SmallProductFileId  = "17702"
+	SmallProductFileMd5 = "eb5c1399a871211c7e7ed732d15e3a8b"
 )
 
 func CompileCLI(releaseID, productFileID, md5 string, vmName string) string {

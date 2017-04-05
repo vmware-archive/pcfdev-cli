@@ -13,6 +13,8 @@ import (
 
 	"runtime"
 
+	"encoding/json"
+
 	"github.com/kr/pty"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,7 +23,6 @@ import (
 	"github.com/pivotal-cf/pcfdev-cli/helpers"
 	. "github.com/pivotal-cf/pcfdev-cli/integration"
 	"github.com/pivotal-cf/pcfdev-cli/ssh"
-	"encoding/json"
 )
 
 var _ = Describe("PCF Dev", func() {
@@ -124,7 +125,7 @@ var _ = Describe("PCF Dev", func() {
 
 		Context("Using a small file", func() {
 			BeforeEach(func() {
-				pluginPath = CompileCLI(ReleaseID, EmptyOvaProductFileId, EmptyOvaMd5, VmName)
+				pluginPath = CompileCLI(ReleaseID, SmallProductFileId, SmallProductFileMd5, VmName)
 			})
 
 			It("should successfully download", func() {

@@ -174,10 +174,18 @@ var _ = Describe("Not Created", func() {
 				})
 			})
 
+			Context("when multiple docker registries are passed in 'host:port' format", func() {
+				It("should succeed", func() {
+					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
+						Registries: "some-host:some-port,some-other-host:some-other-port,another-host:another-port",
+					})).To(Succeed())
+				})
+			})
+
 			Context("when docker registries not passed in 'host:port' format", func() {
 				It("should return an error", func() {
 					Expect(notCreatedVM.VerifyStartOpts(&vm.StartOpts{
-						Registries: "some-host?some-port",
+						Registries: "some-host:some-port,some-other-host",
 					})).To(MatchError("docker registries must be passed in 'host:port' format"))
 				})
 			})

@@ -59,8 +59,12 @@ func (n *NotCreated) VerifyStartOpts(opts *StartOpts) error {
 		}
 	}
 
-	if opts.Registries != "" && strings.Count(opts.Registries, ":") != 1 {
-		return fmt.Errorf("docker registries must be passed in 'host:port' format")
+	if opts.Registries != "" {
+		for _, registry := range strings.Split(opts.Registries, ",") {
+			if strings.Count(registry, ":") != 1 {
+				return fmt.Errorf("docker registries must be passed in 'host:port' format")
+			}
+		}
 	}
 
 	if opts.IP == "" && opts.Domain != "" && !address.IsDomainAllowed(opts.Domain) {

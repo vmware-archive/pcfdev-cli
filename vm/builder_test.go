@@ -21,6 +21,7 @@ var _ = Describe("Builder", func() {
 			mockFS     *mocks.MockFS
 			mockSSH    *mocks.MockSSH
 			mockClient *mocks.MockClient
+			mockUI     *mocks.MockUI
 			builder    *vm.VBoxBuilder
 			conf       *config.Config
 		)
@@ -31,6 +32,7 @@ var _ = Describe("Builder", func() {
 			mockFS = mocks.NewMockFS(mockCtrl)
 			mockSSH = mocks.NewMockSSH(mockCtrl)
 			mockClient = mocks.NewMockClient(mockCtrl)
+			mockUI = mocks.NewMockUI(mockCtrl)
 			conf = &config.Config{
 				MinMemory:      100,
 				MaxMemory:      200,
@@ -43,6 +45,7 @@ var _ = Describe("Builder", func() {
 				FS:     mockFS,
 				SSH:    mockSSH,
 				Client: mockClient,
+				UI:     mockUI,
 				Config: conf,
 			}
 		})

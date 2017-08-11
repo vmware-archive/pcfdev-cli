@@ -40,7 +40,7 @@ var _ = Describe("HelpText", func() {
 is now running.`),
 					mockUI.EXPECT().Say(`To begin using PCF Dev, please run:`),
 					mockUI.EXPECT().Say(`   cf login -a https://api.some-domain --skip-ssl-validation
-Apps Manager URL: https://some-domain
+Apps Manager URL: https://apps.some-domain
 Admin user => Email: admin / Password: admin
 Regular user => Email: user / Password: pass`),
 				)
@@ -62,7 +62,7 @@ Regular user => Email: user / Password: pass`),
 is now running.`),
 					mockUI.EXPECT().Say(`PCF Dev automatically targeted. To target manually, run:`),
 					mockUI.EXPECT().Say(`   cf login -a https://api.some-domain --skip-ssl-validation
-Apps Manager URL: https://some-domain
+Apps Manager URL: https://apps.some-domain
 Admin user => Email: admin / Password: admin
 Regular user => Email: user / Password: pass`),
 				)

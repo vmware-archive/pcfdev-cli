@@ -226,7 +226,7 @@ var _ = Describe("Running", func() {
 
 	Describe("Status", func() {
 		It("should return 'Running' with login instructions", func() {
-			Expect(runningVM.Status()).To(Equal("Running\nCLI Login: cf login -a https://api.some-domain --skip-ssl-validation\nApps Manager URL: https://some-domain\nAdmin user => Email: admin / Password: admin\nRegular user => Email: user / Password: pass"))
+			Expect(runningVM.Status()).To(Equal("Running\nCLI Login: cf login -a https://api.some-domain --skip-ssl-validation\nApps Manager URL: https://apps.some-domain\nAdmin user => Email: admin / Password: admin\nRegular user => Email: user / Password: pass"))
 		})
 	})
 

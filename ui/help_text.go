@@ -28,7 +28,7 @@ is now running.`)
 	}
 
 	h.UI.Say(fmt.Sprintf(`   cf login -a https://api.%s --skip-ssl-validation
-Apps Manager URL: https://%s
+Apps Manager URL: https://apps.%s
 Admin user => Email: admin / Password: admin
 Regular user => Email: user / Password: pass`, domain, domain))
 }
